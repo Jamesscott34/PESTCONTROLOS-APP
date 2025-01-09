@@ -52,4 +52,10 @@ dependencies {
 
     // ✅ File Provider and File Access
     implementation("androidx.core:core-ktx:1.12.0")
+
+    // recyclerview
+    implementation("androidx.recyclerview:recyclerview:1.2.1")
+    implementation("com.github.barteksc:android-pdf-viewer:2.8.2")
+
+
 }
