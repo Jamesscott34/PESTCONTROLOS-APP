@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -46,14 +47,10 @@ public class ReportViewActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 filterReports(s.toString());
             }
-
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override
-            public void afterTextChanged(Editable s) {
-            }
+            public void afterTextChanged(Editable s) {}
         });
 
         returnButton.setOnClickListener(view -> finish());
@@ -75,12 +72,12 @@ public class ReportViewActivity extends AppCompatActivity {
         adapter = new ReportAdapter(this, reportFiles, new ReportAdapter.OnReportClickListener() {
             @Override
             public void onReportClick(File file) {
-                openPDFWithOptions(file);
+                viewPDF(file);
             }
 
             @Override
             public void onReportLongClick(File file) {
-                sharePDFWithOptions(file);
+                shareReport(file);
             }
         });
 
@@ -97,25 +94,42 @@ public class ReportViewActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
     }
 
-    // Open the PDF using the phone's default viewer options
-    private void openPDFWithOptions(File file) {
-        Intent intent = new Intent(this, PdfViewerActivity.class);
-        intent.putExtra("pdf_file_path", file.getAbsolutePath());
-        startActivity(intent);
+    private void shareReport(File file) {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("application/pdf");
+        Uri fileUri = Uri.fromFile(file);
+        shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
+        shareIntent.putExtra(Intent.EXTRA_TEXT, "Sharing Report via GRPC App");
+
+        Intent chooser = Intent.createChooser(shareIntent, "Share Report");
+        chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{
+                createSpecificIntent("com.whatsapp.w4b"),
+                createSpecificIntent("com.phomemmo.android"),
+                createSpecificIntent("com.titan.email")
+        });
+
+        try {
+            startActivity(chooser);
+        } catch (Exception e) {
+            Toast.makeText(this, "No application available to share report.", Toast.LENGTH_SHORT).show();
+        }
     }
 
+    private Intent createSpecificIntent(String packageName) {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("application/pdf");
+        intent.setPackage(packageName);
+        return intent;
+    }
 
-    // Share the PDF using the phone's default sharing options
-    private void sharePDFWithOptions(File file) {
+    private void viewPDF(File file) {
         try {
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("application/pdf");
-            Uri fileUri = Uri.fromFile(file);
-            shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
-            shareIntent.putExtra(Intent.EXTRA_TEXT, "Sharing Report via GRPC App");
-            startActivity(Intent.createChooser(shareIntent, "Share PDF using:"));
+            Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+            viewIntent.setDataAndType(Uri.fromFile(file), "application/pdf");
+            viewIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            startActivity(viewIntent);
         } catch (Exception e) {
-            Toast.makeText(this, "No application available to share this PDF.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No application found to view this PDF.", Toast.LENGTH_SHORT).show();
         }
     }
 }

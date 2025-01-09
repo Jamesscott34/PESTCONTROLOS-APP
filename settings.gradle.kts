@@ -9,7 +9,7 @@ pluginManagement {
         }
         mavenCentral()
         gradlePluginPortal()
-        maven(url = "https://jitpack.io") // Correct Kotlin DSL syntax for maven
+
     }
 }
 
@@ -18,7 +18,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven(url = "https://jitpack.io") // Correct Kotlin DSL syntax for maven
+        
     }
 }
 
