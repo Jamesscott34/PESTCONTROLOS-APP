@@ -18,7 +18,10 @@ import com.itextpdf.io.image.ImageData;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.element.Text;
-
+import com.itextpdf.kernel.events.PdfDocumentEvent;
+import com.itextpdf.kernel.events.IEventHandler;
+import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfPage;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -46,56 +49,55 @@ public class PDFReportGenerator {
             PdfDocument pdfDocument = new PdfDocument(writer);
             Document document = new Document(pdfDocument);
 
-            try {
-                int drawableResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
-                ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(drawableResourceId).readAllBytes());
-                Image logo = new Image(logoData).scaleToFit(200, 200).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
-                document.add(logo);
-            } catch (Exception e) {
-                Toast.makeText(context, "Error loading logo from drawable", Toast.LENGTH_SHORT).show();
-            }
+            // Register watermark and footer for all pages
+            pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new PdfWatermarkAndFooterHandler(context));
 
-            // Adding a watermark (faded image using setTransparency)
-            try {
-                int watermarkResourceId = context.getResources().getIdentifier("bk", "drawable", context.getPackageName());
-                ImageData watermarkData = ImageDataFactory.create(context.getResources().openRawResource(watermarkResourceId).readAllBytes());
-                Image watermark = new Image(watermarkData).scaleToFit(500, 500).setFixedPosition(150, 250);
-                watermark.setOpacity(0.1f);
-                document.add(watermark);
-            } catch (Exception e) {
-                Toast.makeText(context, "Error adding watermark", Toast.LENGTH_SHORT).show();
-            }
+            // Manually add the centered logo and title only on the first page
+            int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
+            ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(logoResourceId).readAllBytes());
+            Image logo = new Image(logoData)
+                    .scaleToFit(150, 150)
+                    .setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
+            document.add(logo);
 
-            document.add(new Paragraph("Good Riddance Pest Control Report")
+            // Center the report title
+            Paragraph title = new Paragraph("Good Riddance Pest Control Report")
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(20)
+                    .setFontSize(24)
                     .setBold()
-                    .setFontColor(ColorConstants.BLUE));
+                    .setFontColor(ColorConstants.BLUE);
+            document.add(title);
 
+            // Adding space before content
+            document.add(new Paragraph("\n"));
+
+            // Content begins after logo and title
             String[] reportDetails = content.split("\\n");
             for (String detail : reportDetails) {
+                if (!detail.trim().endsWith(".")) {
+                    detail = detail.trim() + ".";
+                }
+
+                // Split and format label and value with "N/A" fallback
                 String[] splitDetail = detail.split(":", 2);
                 if (splitDetail.length == 2) {
-                    Text label = new Text(splitDetail[0].trim()).setFontColor(ColorConstants.BLACK).setUnderline().setBold().setFontSize(16);
+                    String labelText = splitDetail[0].trim();
+                    String valueText = splitDetail[1].trim().isEmpty() ? "N/A" : splitDetail[1].trim();
+                    Text label = new Text(labelText).setFontColor(ColorConstants.BLACK).setUnderline().setBold().setFontSize(16);
                     document.add(new Paragraph(label));
 
-                    Paragraph valuePara = new Paragraph(splitDetail[1].trim()).setFontColor(ColorConstants.BLACK).setFontSize(14);
+                    Paragraph valuePara = new Paragraph(valueText).setFontColor(ColorConstants.BLACK).setFontSize(14);
                     document.add(valuePara);
                 } else {
-                    document.add(new Paragraph(detail.trim()).setFontColor(ColorConstants.BLACK));
+                    String fallbackText = detail.trim().isEmpty() ? "N/A" : detail.trim();
+                    document.add(new Paragraph(fallbackText).setFontColor(ColorConstants.BLACK).setFontSize(14));
                 }
             }
 
-
-            document.add(new Paragraph("This report was generated by GRPC Reporting System")
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setFontColor(ColorConstants.BLACK)
-                    .setFontSize(12));
-
             document.close();
-
             Toast.makeText(context, "PDF Created Successfully!", Toast.LENGTH_SHORT).show();
 
+            // Launch MainActivity after generation
             Intent intent = new Intent(context, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             context.startActivity(intent);
@@ -106,6 +108,56 @@ public class PDFReportGenerator {
             e.printStackTrace();
             Toast.makeText(context, "Error Creating PDF!", Toast.LENGTH_SHORT).show();
             return null;
+        }
+    }
+
+
+    /**
+     * Custom Event Handler for watermark and footer on every page.
+     * The watermark is added to every page while the logo and title appear only on the first page.
+     */
+    private static class PdfWatermarkAndFooterHandler implements IEventHandler {
+        private final Context context;
+
+        public PdfWatermarkAndFooterHandler(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        public void handleEvent(com.itextpdf.kernel.events.Event event) {
+            PdfDocumentEvent pdfEvent = (PdfDocumentEvent) event;
+            PdfDocument pdfDoc = pdfEvent.getDocument();
+            PdfPage page = pdfEvent.getPage();
+            Rectangle pageSize = page.getPageSize();
+            float pageWidth = pageSize.getWidth();
+            float pageHeight = pageSize.getHeight();
+
+            try {
+                Document doc = new Document(pdfDoc);
+
+                // Watermark applied to every page
+                int watermarkResourceId = context.getResources().getIdentifier("bk", "drawable", context.getPackageName());
+                ImageData watermarkData = null;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    watermarkData = ImageDataFactory.create(context.getResources().openRawResource(watermarkResourceId).readAllBytes());
+                }
+                Image watermark = new Image(watermarkData)
+                        .scaleToFit(500, 500)
+                        .setFixedPosition(pageWidth / 4, pageHeight / 4);
+                watermark.setOpacity(0.1f);
+                doc.add(watermark);
+
+                // Footer applied to every page
+                Paragraph footer = new Paragraph("This report was generated by GRPC Reporting System")
+                        .setFontSize(12)
+                        .setTextAlignment(TextAlignment.CENTER)
+                        .setFixedPosition(pageWidth / 2 - 150, 20, 300);
+                doc.add(footer);
+
+            } catch (Exception e) {
+                Toast.makeText(context, "Error adding watermark or footer!", Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
+            }
         }
     }
 }

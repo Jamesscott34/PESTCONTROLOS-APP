@@ -115,6 +115,7 @@ public class ReportViewActivity extends AppCompatActivity {
         }
     }
 
+
     private void viewPDF(File file) {
         try {
             Uri fileUri = FileProvider.getUriForFile(
