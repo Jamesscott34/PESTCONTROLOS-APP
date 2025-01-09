@@ -18,11 +18,13 @@
         android:id="@+id/ReportViewButton"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:text="View Reports"/>
+        android:text="View Reports"
+        android:layout_marginBottom="16dp"/>
 
     <Button
         android:id="@+id/buttonOpenCalendar"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:text="Open Calendar" />
+        android:text="Open Calendar"
+        android:layout_marginBottom="16dp"/>
 </LinearLayout>
