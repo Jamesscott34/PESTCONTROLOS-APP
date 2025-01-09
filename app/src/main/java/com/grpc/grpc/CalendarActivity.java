@@ -45,7 +45,7 @@ public class CalendarActivity extends AppCompatActivity {
         loadEventsForDate(selectedDate);
 
         calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
-            selectedDate = year + "-" + (month + 1) + "-" + dayOfMonth;
+            selectedDate = dayOfMonth + "-" + (month + 1) + "-" + year;
             textViewSelectedDate.setText("Selected Date: " + selectedDate);
             loadEventsForDate(selectedDate);
         });
@@ -71,7 +71,7 @@ public class CalendarActivity extends AppCompatActivity {
         layout.setOrientation(LinearLayout.VERTICAL);
 
         final EditText inputEventName = new EditText(this);
-        inputEventName.setHint("Enter Event Name");
+        inputEventName.setHint("Enter Name");
         layout.addView(inputEventName);
 
         final EditText inputAddress = new EditText(this);
