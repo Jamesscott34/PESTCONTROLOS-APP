@@ -9,6 +9,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Button reportButton;
     private Button reportViewButton;
+    private Button buttonOpenCalendar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -17,11 +18,15 @@ public class MainActivity extends AppCompatActivity {
 
         reportButton = findViewById(R.id.ReportButton);
         reportViewButton = findViewById(R.id.ReportViewButton);
+        buttonOpenCalendar = findViewById(R.id.buttonOpenCalendar);
 
         reportButton.setOnClickListener(view ->
                 startActivity(new Intent(this, ReportActivity.class)));
 
         reportViewButton.setOnClickListener(view ->
                 startActivity(new Intent(this, ReportViewActivity.class)));
+
+        buttonOpenCalendar.setOnClickListener(view ->
+                startActivity(new Intent(this, CalendarActivity.class)));
     }
 }
