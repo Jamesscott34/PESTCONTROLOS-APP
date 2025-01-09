@@ -20,7 +20,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class CompanyReportActivity extends AppCompatActivity {
+public class ReportActivity extends AppCompatActivity {
 
     private EditText nameInput, addressInput, dateInput, visitTypeInput, siteInspectionInput, recommendationsInput, followUpInput, prepInput, techInput;
     private Button saveButton, backButton;
@@ -87,7 +87,7 @@ public class CompanyReportActivity extends AppCompatActivity {
 
 
         backButton.setOnClickListener(view -> {
-            Intent intent = new Intent(CompanyReportActivity.this, MainActivity.class);
+            Intent intent = new Intent(ReportActivity.this, MainActivity.class);
             startActivity(intent);
             finish();
         });
