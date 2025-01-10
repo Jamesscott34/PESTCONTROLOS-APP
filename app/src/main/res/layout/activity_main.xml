@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    activity_main.xml
+
+    This layout defines the main screen of the GRPC application.
+    It includes buttons for creating a report, viewing reports, and opening the calendar.
+    The layout is vertically centered and designed for user-friendly interaction.
+-->
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -7,24 +16,30 @@
     android:padding="16dp"
     android:background="@drawable/bk">
 
+    <!-- Button to create a new report -->
     <Button
         android:id="@+id/ReportButton"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
         android:text="Create Report"
+        android:textSize="18sp"
         android:layout_marginBottom="16dp"/>
 
+    <!-- Button to view existing reports -->
     <Button
         android:id="@+id/ReportViewButton"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
         android:text="View Reports"
+        android:textSize="18sp"
         android:layout_marginBottom="16dp"/>
 
+    <!-- Button to open the calendar activity -->
     <Button
         android:id="@+id/buttonOpenCalendar"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
         android:text="Open Calendar"
+        android:textSize="18sp"
         android:layout_marginBottom="16dp"/>
 </LinearLayout>

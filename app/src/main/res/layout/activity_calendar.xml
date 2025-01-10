@@ -1,39 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    activity_calendar.xml
+
+    This layout defines the UI for the CalendarActivity.
+    It includes a CalendarView for date selection, a TextView for displaying the selected date,
+    a button for adding events, a ListView for displaying events, and a button for returning to the main activity.
+-->
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bk">
 
+    <!-- CalendarView for selecting a date -->
     <CalendarView
         android:id="@+id/calendarView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <!-- TextView to display the currently selected date -->
     <TextView
         android:id="@+id/textViewSelectedDate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Selected Date: " />
+        android:text="Selected Date: "
+        android:textSize="16sp"
+        android:paddingTop="8dp"/>
 
+    <!-- Button for adding a new event -->
     <Button
         android:id="@+id/buttonAddEvent"
         android:text="Add Event"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
 
+    <!-- ListView to display events for the selected date -->
     <ListView
         android:id="@+id/listViewEvents"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:maxHeight="300dp"
-        android:scrollbars="vertical"/>
+        android:scrollbars="vertical"
+        android:dividerHeight="8dp"/>
 
+    <!-- Button to return to the previous activity -->
     <Button
         android:id="@+id/buttonback"
         android:text="Return"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"/>
 </LinearLayout>
