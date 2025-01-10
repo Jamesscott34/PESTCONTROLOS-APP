@@ -1,5 +1,6 @@
 package com.grpc.grpc;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -9,6 +10,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -41,7 +43,6 @@ public class ReportViewActivity extends AppCompatActivity {
 
         loadReports();
 
-        // Search functionality
         searchBar.addTextChangedListener(new TextWatcher() {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -74,16 +75,29 @@ public class ReportViewActivity extends AppCompatActivity {
         adapter = new ReportAdapter(this, reportFiles, new ReportAdapter.OnReportClickListener() {
             @Override
             public void onReportClick(File file) {
-                viewPDF(file); // Single press: Open PDF
+                viewPDF(file);
             }
 
             @Override
             public void onReportLongClick(File file) {
-                shareReport(file); // Long press: Share PDF
+                showLongPressOptions(file);
             }
         });
 
         recyclerView.setAdapter(adapter);
+    }
+
+    private void showLongPressOptions(File file) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select an Option")
+                .setItems(new CharSequence[]{"Share", "Delete"}, (dialog, which) -> {
+                    if (which == 0) {
+                        shareReport(file);
+                    } else if (which == 1) {
+                        deleteReport(file);
+                    }
+                })
+                .show();
     }
 
     private void filterReports(String query) {
@@ -115,6 +129,14 @@ public class ReportViewActivity extends AppCompatActivity {
         }
     }
 
+    private void deleteReport(File file) {
+        if (file.delete()) {
+            Toast.makeText(this, "Report deleted successfully!", Toast.LENGTH_SHORT).show();
+            loadReports();
+        } else {
+            Toast.makeText(this, "Failed to delete report.", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     private void viewPDF(File file) {
         try {
