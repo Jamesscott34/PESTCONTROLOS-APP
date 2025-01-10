@@ -1,6 +1,6 @@
 package com.grpc.grpc;
 
-import android.content.DialogInterface;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -75,7 +75,7 @@ public class ReportViewActivity extends AppCompatActivity {
         adapter = new ReportAdapter(this, reportFiles, new ReportAdapter.OnReportClickListener() {
             @Override
             public void onReportClick(File file) {
-                viewPDF(file);
+                showSinglePressOptions(file);
             }
 
             @Override
@@ -85,6 +85,19 @@ public class ReportViewActivity extends AppCompatActivity {
         });
 
         recyclerView.setAdapter(adapter);
+    }
+
+    private void showSinglePressOptions(File file) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select an Option")
+                .setItems(new CharSequence[]{"View", "Edit"}, (dialog, which) -> {
+                    if (which == 0) {
+                        viewPDF(file);
+                    } else if (which == 1) {
+                        editPDF(file);
+                    }
+                })
+                .show();
     }
 
     private void showLongPressOptions(File file) {
@@ -136,6 +149,10 @@ public class ReportViewActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, "Failed to delete report.", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void editPDF(File file) {
+        Toast.makeText(this, "Editing PDF is currently unsupported in this version.", Toast.LENGTH_SHORT).show();
     }
 
     private void viewPDF(File file) {
