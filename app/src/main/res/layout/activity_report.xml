@@ -81,6 +81,13 @@
             android:layout_height="wrap_content"/>
 
         <Button
+            android:id="@+id/selectImageButton"
+            android:text="Add Image"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+
+        <Button
             android:id="@+id/saveButton"
             android:text="Save Report"
             android:layout_width="match_parent"
