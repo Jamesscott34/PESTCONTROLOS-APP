@@ -30,6 +30,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.ArrayList;
 
 public class PDFReportGenerator {
 
@@ -49,55 +50,57 @@ public class PDFReportGenerator {
             PdfDocument pdfDocument = new PdfDocument(writer);
             Document document = new Document(pdfDocument);
 
-            // Register watermark and footer for all pages
             pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new PdfWatermarkAndFooterHandler(context));
 
-            // Manually add the centered logo and title only on the first page
             int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
             ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(logoResourceId).readAllBytes());
-            Image logo = new Image(logoData)
-                    .scaleToFit(150, 150)
-                    .setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
+            Image logo = new Image(logoData).scaleToFit(200, 200).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
             document.add(logo);
 
-            // Center the report title
             Paragraph title = new Paragraph("Good Riddance Pest Control Report")
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(24)
+                    .setFontSize(20)
                     .setBold()
                     .setFontColor(ColorConstants.BLUE);
             document.add(title);
 
-            // Adding space before content
             document.add(new Paragraph("\n"));
 
-            // Content begins after logo and title
             String[] reportDetails = content.split("\\n");
             for (String detail : reportDetails) {
                 if (!detail.trim().endsWith(".")) {
                     detail = detail.trim() + ".";
                 }
 
-                // Split and format label and value with "N/A" fallback
                 String[] splitDetail = detail.split(":", 2);
                 if (splitDetail.length == 2) {
                     String labelText = splitDetail[0].trim();
                     String valueText = splitDetail[1].trim().isEmpty() ? "N/A" : splitDetail[1].trim();
                     Text label = new Text(labelText).setFontColor(ColorConstants.BLACK).setUnderline().setBold().setFontSize(16);
                     document.add(new Paragraph(label));
-
-                    Paragraph valuePara = new Paragraph(valueText).setFontColor(ColorConstants.BLACK).setFontSize(14);
-                    document.add(valuePara);
+                    document.add(new Paragraph(valueText).setFontColor(ColorConstants.BLACK).setFontSize(14));
                 } else {
-                    String fallbackText = detail.trim().isEmpty() ? "N/A" : detail.trim();
-                    document.add(new Paragraph(fallbackText).setFontColor(ColorConstants.BLACK).setFontSize(14));
+                    document.add(new Paragraph(detail).setFontColor(ColorConstants.BLACK).setFontSize(14));
+                }
+            }
+
+            if (imageUris != null && !imageUris.isEmpty()) {
+                for (int i = 0; i < imageUris.size(); i++) {
+                    Uri uri = imageUris.get(i);
+                    try {
+                        document.add(new Paragraph("Tech Field Image " + (i + 1)).setFontSize(16).setBold());
+                        ImageData imageData = ImageDataFactory.create(context.getContentResolver().openInputStream(uri).readAllBytes());
+                        Image image = new Image(imageData).scaleToFit(300, 300).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
+                        document.add(image);
+                    } catch (IOException e) {
+                        Toast.makeText(context, "Error loading image: " + uri.toString(), Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
 
             document.close();
             Toast.makeText(context, "PDF Created Successfully!", Toast.LENGTH_SHORT).show();
 
-            // Launch MainActivity after generation
             Intent intent = new Intent(context, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             context.startActivity(intent);
@@ -110,6 +113,8 @@ public class PDFReportGenerator {
             return null;
         }
     }
+
+
 
 
     /**
