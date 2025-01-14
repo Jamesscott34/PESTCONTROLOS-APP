@@ -1,21 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    activity_report.xml
+
+    This layout defines the UI for creating a property inspection report.
+    It includes input fields for property details, inspection information, and buttons
+    for saving the report, adding images, and navigating back to the main screen.
+
+    The layout is wrapped in a ScrollView to allow scrolling if the content exceeds
+    the screen size, ensuring better usability on smaller devices.
+-->
+
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bk">
 
+    <!-- Linear layout to hold all input fields and buttons in a vertical arrangement -->
     <LinearLayout
         android:orientation="vertical"
         android:padding="16dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <!-- Input field for property name -->
         <EditText
             android:id="@+id/nameInput"
             android:hint="Enter Property Name"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"/>
 
+        <!-- Input field for address with multiline support -->
         <EditText
             android:id="@+id/addressInput"
             android:hint="Enter Address"
@@ -26,18 +42,22 @@
             android:gravity="top"
             android:scrollbars="vertical"/>
 
+        <!-- Input field for date -->
         <EditText
             android:id="@+id/dateInput"
             android:hint="Enter Date"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:inputType="date"/>
 
+        <!-- Input field for visit type -->
         <EditText
             android:id="@+id/visitTypeInput"
             android:hint="Visit Type"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
+        <!-- Input field for site inspection with multiline support -->
         <EditText
             android:id="@+id/siteInspectionInput"
             android:hint="Enter Site Inspection"
@@ -48,6 +68,7 @@
             android:gravity="top"
             android:scrollbars="vertical"/>
 
+        <!-- Input field for recommendations with multiline support -->
         <EditText
             android:id="@+id/recommendationsInput"
             android:hint="Enter Recommendations"
@@ -58,9 +79,10 @@
             android:gravity="top"
             android:scrollbars="vertical"/>
 
+        <!-- Input field for preparation steps with multiline support -->
         <EditText
             android:id="@+id/prepInput"
-            android:hint="Enter Prep"
+            android:hint="Enter Prep Steps"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textMultiLine"
@@ -68,35 +90,45 @@
             android:gravity="top"
             android:scrollbars="vertical"/>
 
+        <!-- Input field for follow-up instructions -->
         <EditText
             android:id="@+id/followUpInput"
-            android:hint="Follow Up"
+            android:hint="Enter Follow Up Details"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
+        <!-- Input field for technician name -->
         <EditText
             android:id="@+id/techInput"
-            android:hint="Tech"
+            android:hint="Enter Technician Name"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"/>
 
+        <!-- Button for selecting images to attach to the report -->
         <Button
             android:id="@+id/selectImageButton"
             android:text="Add Image"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"/>
 
-
+        <!-- Button to save the report to the database -->
         <Button
             android:id="@+id/saveButton"
             android:text="Save Report"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@android:color/holo_green_dark"/>
 
+        <!-- Button to return to the main activity -->
         <Button
             android:id="@+id/backButton"
             android:text="Back to Main"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@android:color/holo_red_light"/>
     </LinearLayout>
 </ScrollView>
