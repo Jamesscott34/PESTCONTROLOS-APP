@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    activity_calendar.xml
-
-    This layout defines the UI for the CalendarActivity.
-    It includes a CalendarView for date selection, a TextView for displaying the selected date,
-    a button for adding events, a ListView for displaying events, and a button for returning to the main activity.
+    Updated activity_calendar.xml
+    Added UI components for visit type and visit number selection.
 -->
 
 <LinearLayout
@@ -29,6 +26,16 @@
         android:text="Selected Date: "
         android:textSize="16sp"
         android:paddingTop="8dp"/>
+
+    <!-- Spinner for selecting visit type -->
+    <Spinner
+        android:id="@+id/spinnerVisitType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"/>
+
+
+
 
     <!-- Button for adding a new event -->
     <Button

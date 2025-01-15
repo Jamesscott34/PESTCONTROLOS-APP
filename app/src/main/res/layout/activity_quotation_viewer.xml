@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bk">
+
+    <!-- Search bar for filtering reports based on user input -->
+    <EditText
+        android:id="@+id/search_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Search reports..."
+        android:padding="12dp"
+        android:inputType="text"
+        android:drawableStart="@android:drawable/ic_menu_search"/>
+
+    <!-- RecyclerView for displaying the list of reports in a scrollable format -->
+    <!-- Replaces the traditional ListView for better performance and flexibility -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/report_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="vertical"
+        android:paddingTop="8dp"/>
+
+    <!-- Return button for navigating back to the previous activity -->
+    <Button
+        android:id="@+id/buttonreturn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Return"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="@android:color/holo_red_light"
+        android:textSize="18sp"/>
+</LinearLayout>

@@ -149,7 +149,7 @@ public class PDFReportGenerator {
     /**
      * Custom event handler to apply watermark and footer on every page of the PDF.
      */
-    private static class PdfWatermarkAndFooterHandler implements IEventHandler {
+    static class PdfWatermarkAndFooterHandler implements IEventHandler {
         private final Context context;
 
         /**

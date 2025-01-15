@@ -53,10 +53,10 @@ public class MainActivity extends AppCompatActivity {
 
         // Set click listeners for each button, directing the user to the appropriate activity
         reportButton.setOnClickListener(view ->
-                startActivity(new Intent(this, ReportActivity.class)));  // Launch report creation screen
+                startActivity(new Intent(this, ReportSelectionActivity.class)));  // Launch report creation screen
 
         reportViewButton.setOnClickListener(view ->
-                startActivity(new Intent(this, ReportViewActivity.class)));  // Launch report viewing screen
+                startActivity(new Intent(this, PDFSelectionActivity.class)));  // Launch report viewing screen
 
         buttonOpenCalendar.setOnClickListener(view ->
                 startActivity(new Intent(this, CalendarActivity.class)));  // Launch calendar screen

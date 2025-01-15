@@ -1,16 +1,3 @@
-/**
- * ReportDatabaseHelper.java
- *
- * This class handles the creation, management, and interaction with the SQLite database
- * for storing company reports and event data. It provides methods for inserting, updating,
- * deleting, and querying data from the database.
- *
- * Key Features:
- * - Manages tables for company reports and events.
- * - Handles database creation and version upgrades.
- * - Provides CRUD (Create, Read, Update, Delete) operations for both reports and events.
- */
-
 package com.grpc.grpc;
 
 import android.content.ContentValues;
@@ -22,15 +9,15 @@ import android.widget.Toast;
 import java.util.ArrayList;
 
 /**
- * SQLite Database Helper for managing Company Reports and Events in the GRPEST application.
+ * SQLite Database Helper for managing Company Reports, Events, and Quotations.
  */
 public class ReportDatabaseHelper extends SQLiteOpenHelper {
 
     // Database Configuration
     private static final String DATABASE_NAME = "grpest_reports.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;  // Incremented for quotes support
 
-    // Company Reports Table and Columns
+    // CompanyReports Table
     private static final String TABLE_COMPANY_REPORTS = "CompanyReports";
     private static final String COLUMN_COMPANY_ID = "id";
     private static final String COLUMN_COMPANY_NAME = "name";
@@ -43,18 +30,28 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_COMPANY_PREP = "prep";
     private static final String COLUMN_COMPANY_TECH = "tech";
 
-    // Events Table and Columns
+    // Events Table
     private static final String TABLE_EVENTS = "events";
     private static final String COLUMN_EVENT_ID = "_id";
     private static final String COLUMN_EVENT_DATE = "date";
     private static final String COLUMN_EVENT_NAME = "event_name";
 
+    // Quotes Table with corrected columns
+    private static final String TABLE_QUOTES = "quotes";
+    private static final String COLUMN_QUOTE_ID = "id";
+    private static final String COLUMN_QUOTE_NUMBER = "quote_number";
+    private static final String COLUMN_QUOTE_DATE = "date";
+    private static final String COLUMN_QUOTE_ADDRESS = "address";
+    private static final String COLUMN_QUOTE_DESCRIPTION = "description";
+    private static final String COLUMN_QUOTE_TOTAL = "total_amount";
+    private static final String COLUMN_QUOTE_EMAIL = "email";
+    private static final String COLUMN_QUOTE_MOBILE = "mobile_number";
+
+
     private final Context context;
 
     /**
-     * Constructor initializes the database helper with the provided context.
-     *
-     * @param context The Android context where the database will be used.
+     * Constructor for initializing the database helper.
      */
     public ReportDatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -62,12 +59,12 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Creates the database tables if they don't already exist.
-     * Called when the database is first created.
+     * Creates the database tables when first initialized.
      */
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Create the Company Reports Table
+
+        // Company Reports Table
         db.execSQL("CREATE TABLE " + TABLE_COMPANY_REPORTS + " (" +
                 COLUMN_COMPANY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_COMPANY_NAME + " TEXT, " +
@@ -80,45 +77,48 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_COMPANY_PREP + " TEXT, " +
                 COLUMN_COMPANY_TECH + " TEXT)");
 
-        // Create the Events Table
+        // Events Table
         db.execSQL("CREATE TABLE " + TABLE_EVENTS + " (" +
                 COLUMN_EVENT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_EVENT_DATE + " TEXT, " +
                 COLUMN_EVENT_NAME + " TEXT)");
+
+        // Create Quotes Table
+        db.execSQL("CREATE TABLE " + TABLE_QUOTES + " (" +
+                COLUMN_QUOTE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COLUMN_QUOTE_NUMBER + " TEXT, " +
+                COLUMN_QUOTE_DATE + " TEXT, " +
+                COLUMN_QUOTE_ADDRESS + " TEXT, " +
+                COLUMN_QUOTE_DESCRIPTION + " TEXT, " +
+                COLUMN_QUOTE_TOTAL + " REAL, " +
+                COLUMN_QUOTE_EMAIL + " TEXT, " +
+                COLUMN_QUOTE_MOBILE + " TEXT)");
     }
 
     /**
-     * Upgrades the database by dropping all existing tables and recreating them.
-     *
-     * @param db The database instance.
-     * @param oldVersion The previous database version.
-     * @param newVersion The new database version.
+     * Upgrades the database by dropping and recreating tables.
      */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Drop the tables and recreate them for a fresh start
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_COMPANY_REPORTS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_EVENTS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_QUOTES);
         onCreate(db);
     }
 
     /**
-     * Clears all data from all tables in the database.
-     *
-     * @param db The writable database instance.
+     * Clears all data from all tables (use with caution).
      */
     public void clearDatabase(SQLiteDatabase db) {
         db.execSQL("DELETE FROM " + TABLE_COMPANY_REPORTS);
         db.execSQL("DELETE FROM " + TABLE_EVENTS);
+        db.execSQL("DELETE FROM " + TABLE_QUOTES);
     }
 
     // ==================== EVENTS CRUD OPERATIONS ====================
 
     /**
-     * Inserts a new event into the events table.
-     *
-     * @param date The date of the event.
-     * @param eventName The name of the event.
+     * Insert a new event into the database.
      */
     public void insertEvent(String date, String eventName) {
         SQLiteDatabase db = this.getWritableDatabase();
@@ -130,60 +130,13 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Updates the date of an existing event.
-     *
-     * @param eventName The name of the event to be updated.
-     * @param newDate The new date for the event.
-     */
-    public void updateEventDate(String eventName, String newDate) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_EVENT_DATE, newDate);
-
-        int rowsAffected = db.update(TABLE_EVENTS, values, COLUMN_EVENT_NAME + "=?", new String[]{eventName});
-        db.close();
-
-        if (rowsAffected > 0) {
-            Toast.makeText(context, "Event date updated successfully!", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, "Error: Event not found.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    /**
-     * Deletes an event from the events table.
-     *
-     * @param eventName The name of the event to delete.
-     */
-    public void deleteEvent(String eventName) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        int rowsDeleted = db.delete(TABLE_EVENTS, COLUMN_EVENT_NAME + "=?", new String[]{eventName});
-        db.close();
-
-        if (rowsDeleted > 0) {
-            Toast.makeText(context, "Event deleted successfully!", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, "Error: Event not found.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    /**
-     * Retrieves all events for a specified date.
-     *
-     * @param date The date for which to retrieve events.
-     * @return A list of event names occurring on the specified date.
+     * Fetch all events by date.
      */
     public ArrayList<String> getEventsByDate(String date) {
         ArrayList<String> events = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-
-        Cursor cursor = db.query(
-                TABLE_EVENTS,
-                new String[]{COLUMN_EVENT_NAME},
-                COLUMN_EVENT_DATE + "=?",
-                new String[]{date},
-                null, null, null
-        );
+        Cursor cursor = db.query(TABLE_EVENTS, new String[]{COLUMN_EVENT_NAME},
+                COLUMN_EVENT_DATE + "=?", new String[]{date}, null, null, null);
 
         if (cursor != null && cursor.moveToFirst()) {
             do {
@@ -193,5 +146,115 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
         }
         db.close();
         return events;
+    }
+
+    // ==================== QUOTES CRUD OPERATIONS ====================
+
+    /**
+     * Insert a new quote into the database.
+     */
+    public void insertQuote(String date, String address,
+                            String quoteDescription, String description, double totalAmount,
+                            String userEmail, String mobileNumber) {
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("date", date);
+        values.put("address", address);
+        values.put("description", quoteDescription);
+        values.put("total_amount", totalAmount);
+        values.put("email", userEmail);
+        values.put("mobile_number", mobileNumber);
+
+        // ✅ Declaring the result variable properly
+        long result = db.insert("quotes", null, values);  // Capture the result of the insert operation
+        db.close();  // Close the database connection
+
+        // ✅ Check the result of the insertion
+        if (result == -1) {
+            Toast.makeText(context, "Error inserting quote.", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(context, "Quote saved successfully!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Fetch all quotes from the database.
+     */
+    public ArrayList<String> getAllQuotes() {
+        ArrayList<String> quotes = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_QUOTES, new String[]{COLUMN_QUOTE_NUMBER, COLUMN_QUOTE_DATE},
+                null, null, null, null, COLUMN_QUOTE_DATE + " DESC");
+
+        if (cursor != null && cursor.moveToFirst()) {
+            do {
+                String quoteInfo = "Quote #" + cursor.getString(0) + " - Date: " + cursor.getString(1);
+                quotes.add(quoteInfo);
+            } while (cursor.moveToNext());
+            cursor.close();
+        }
+        db.close();
+        return quotes;
+    }
+
+    /**
+     * Delete a quote by its quote number.
+     */
+    public void deleteQuote(String quoteNumber) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int rowsDeleted = db.delete(TABLE_QUOTES, COLUMN_QUOTE_NUMBER + "=?", new String[]{quoteNumber});
+        db.close();
+
+        if (rowsDeleted > 0) {
+            Toast.makeText(context, "Quote deleted successfully!", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(context, "Failed to delete quote. Quote not found.", Toast.LENGTH_SHORT).show();
+        }
+    }
+    /**
+     * Fetch all dates for a specific event name.
+     */
+    public ArrayList<String> getDatesByName(String eventName) {
+        ArrayList<String> dates = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(
+                "events", // Table name
+                new String[]{"date"}, // Column to retrieve
+                "event_name LIKE ?", // WHERE clause
+                new String[]{"%" + eventName + "%"}, // Filter value
+                null, null, "date ASC"
+        );
+
+        if (cursor != null && cursor.moveToFirst()) {
+            do {
+                dates.add(cursor.getString(0)); // Adding date to the list
+            } while (cursor.moveToNext());
+            cursor.close();
+        }
+        db.close();
+        return dates;
+    }
+
+    /**
+     * Delete all events related to a specific event name.
+     */
+    public void deleteEventsByName(String eventName) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int deletedRows = db.delete(
+                "events", // Table name
+                "event_name LIKE ?", // WHERE clause
+                new String[]{"%" + eventName + "%"} // Filter value
+        );
+        db.close();
+
+        if (deletedRows > 0) {
+            Toast.makeText(context, "Deleted " + deletedRows + " events for " + eventName, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(context, "No events found for " + eventName, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void GetDatesByName(String eventName) {
     }
 }

@@ -1,117 +1,110 @@
-/**
- * CalendarActivity.java
- *
- * This activity provides a calendar-based interface for managing events.
- * Users can select a date, view existing events, and add new events with
- * details including event name, address, issue, and time. Events are stored
- * in a local SQLite database using the `ReportDatabaseHelper` class.
- *
- * Features:
- * - Calendar view for date selection.
- * - Event list display based on the selected date.
- * - Adding events with custom details.
- * - Return to the main screen from the calendar view.
- */
-
 package com.grpc.grpc;
 
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.text.InputType;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
-import java.util.ArrayList;
-import java.util.Calendar;
 
-/**
- * CalendarActivity manages the calendar-based user interface for event management.
- * Users can select a date, view associated events, and add new events.
- */
+import java.text.SimpleDateFormat;
+import java.util.*;
+
 public class CalendarActivity extends AppCompatActivity {
 
-    // UI components for interacting with the calendar and events
-    private CalendarView calendarView;        // Displays the calendar for date selection
-    private TextView textViewSelectedDate;    // Shows the currently selected date
-    private Button buttonAddEvent;            // Button to add a new event
-    private Button buttonback;                // Button to return to the main activity
-    private ListView listViewEvents;          // Displays the list of events for the selected date
+    CalendarView calendarView;
+    TextView textViewSelectedDate;
+    Button buttonAddEvent;
+    Button buttonback;
+    ListView listViewEvents;
 
-    // Data and utilities
-    private ArrayList<String> eventList;      // Holds the list of events for the selected date
-    private ArrayAdapter<String> adapter;     // Adapter to populate the ListView with events
-    private ReportDatabaseHelper dbHelper;    // Database helper for storing and retrieving events
-    private String selectedDate;              // Currently selected date in the calendar
+    ArrayList<String> eventList;
+    ArrayAdapter<String> adapter;
+    ReportDatabaseHelper dbHelper;
+    String selectedDate;
 
-    /**
-     * Called when the activity is created. Initializes the UI components and
-     * sets up event listeners for date selection, adding events, and navigation.
-     *
-     * @param savedInstanceState If the activity is being re-initialized after being previously shut down,
-     *                           this bundle contains the data it most recently supplied.
-     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_calendar); // Set the XML layout for this activity
+        setContentView(R.layout.activity_calendar);
 
-        // Initialize UI components
         calendarView = findViewById(R.id.calendarView);
         textViewSelectedDate = findViewById(R.id.textViewSelectedDate);
         buttonAddEvent = findViewById(R.id.buttonAddEvent);
         buttonback = findViewById(R.id.buttonback);
         listViewEvents = findViewById(R.id.listViewEvents);
 
-        // Initialize database helper and list components
         dbHelper = new ReportDatabaseHelper(this);
         eventList = new ArrayList<>();
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, eventList);
         listViewEvents.setAdapter(adapter);
 
-        // Set the initial selected date to today
         Calendar calendar = Calendar.getInstance();
-        selectedDate = calendar.get(Calendar.DAY_OF_MONTH) + "-" +
-                (calendar.get(Calendar.MONTH) + 1) + "-" +
-                calendar.get(Calendar.YEAR);
+        selectedDate = formatDate(calendar.get(Calendar.DAY_OF_MONTH), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.YEAR));
         textViewSelectedDate.setText("Selected Date: " + selectedDate);
 
-        // Load events for today's date from the database
         loadEventsForDate(selectedDate);
 
-        // Set a listener for date selection changes in the CalendarView
         calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
-            selectedDate = dayOfMonth + "-" + (month + 1) + "-" + year;
+            selectedDate = formatDate(dayOfMonth, month + 1, year);
             textViewSelectedDate.setText("Selected Date: " + selectedDate);
             loadEventsForDate(selectedDate);
         });
 
-        // Add event button click listener to open the event dialog
-        buttonAddEvent.setOnClickListener(view -> {
-            showAddEventDialog();
-        });
+        buttonAddEvent.setOnClickListener(view -> showAddEventDialog());
 
-        // Return to the main activity when the back button is clicked
         buttonback.setOnClickListener(view -> {
             Intent intent = new Intent(CalendarActivity.this, MainActivity.class);
             startActivity(intent);
             finish();
         });
+
+        listViewEvents.setOnItemClickListener((parent, view, position, id) -> {
+            String selectedItem = eventList.get(position);
+            if (selectedItem.contains("Address:")) {
+                String address = selectedItem.substring(selectedItem.indexOf("Address:") + 8).split("\n")[0];
+                Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(address));
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                mapIntent.setPackage("com.google.android.apps.maps");
+                startActivity(mapIntent);
+            }
+        });
+
+        listViewEvents.setOnItemLongClickListener((parent, view, position, id) -> {
+            String selectedItem = eventList.get(position);
+            String eventName = selectedItem.split("\n")[0].replace("Name: ", "");
+
+            AlertDialog.Builder optionsDialog = new AlertDialog.Builder(this);
+            optionsDialog.setTitle("Options");
+            optionsDialog.setItems(new CharSequence[]{"View Dates", "Delete"}, (dialog, which) -> {
+                if (which == 0) {
+                    ArrayList<String> dates = dbHelper.getDatesByName(eventName);
+                    if (dates.isEmpty()) {
+                        Toast.makeText(this, "No dates found for " + eventName, Toast.LENGTH_SHORT).show();
+                    } else {
+                        showDatesDialog(eventName, dates);
+                    }
+                } else if (which == 1) {
+                    dbHelper.deleteEventsByName(eventName);
+                    loadEventsForDate(selectedDate);
+                    Toast.makeText(this, "All visits deleted for " + eventName, Toast.LENGTH_SHORT).show();
+                }
+            });
+            optionsDialog.show();
+            return true;
+        });
+
+
     }
 
-    /**
-     * Displays a dialog for the user to add a new event with details such as
-     * event name, address, issue, and time. The event is stored in the database
-     * if the user provides a name and time.
-     */
     private void showAddEventDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Add Event");
 
-        // Create a vertical layout for input fields
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
 
-        // Create input fields for event details
         final EditText inputEventName = new EditText(this);
         inputEventName.setHint("Enter Name");
         layout.addView(inputEventName);
@@ -128,44 +121,128 @@ public class CalendarActivity extends AppCompatActivity {
         inputTime.setHint("Enter Time (HH:mm)");
         layout.addView(inputTime);
 
-        // Attach the input layout to the dialog
+        final Spinner visitTypeSpinner = new Spinner(this);
+        ArrayAdapter<String> visitTypeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"Job", "Contract"});
+        visitTypeSpinner.setAdapter(visitTypeAdapter);
+        layout.addView(visitTypeSpinner);
+
+        final EditText inputVisitCount = new EditText(this);
+        inputVisitCount.setHint("Enter Number of Visits");
+        inputVisitCount.setInputType(InputType.TYPE_CLASS_NUMBER);
+        layout.addView(inputVisitCount);
+
         builder.setView(layout);
 
-        // Define actions for the positive button (Add Event)
         builder.setPositiveButton("Add Event", (dialog, which) -> {
             String eventName = inputEventName.getText().toString();
             String address = inputAddress.getText().toString();
             String issue = inputIssue.getText().toString();
             String time = inputTime.getText().toString();
+            String visitType = visitTypeSpinner.getSelectedItem().toString();
 
-            // Validate input before saving the event
-            if (!eventName.isEmpty() && !time.isEmpty()) {
-                String eventDetails = "Event: " + eventName +
-                        "\nAddress: " + address +
-                        "\nIssue: " + issue +
-                        "\nTime: " + time;
-                // Save event details into the database
-                dbHelper.insertEvent(selectedDate, eventDetails);
-                loadEventsForDate(selectedDate);
-            } else {
-                Toast.makeText(this, "Event Name and Time are required!", Toast.LENGTH_SHORT).show();
+            int visitCount;
+            try {
+                visitCount = Integer.parseInt(inputVisitCount.getText().toString());
+            } catch (NumberFormatException e) {
+                Toast.makeText(this, "Invalid number of visits", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            ArrayList<String> visitDates = generateVisitSchedule(selectedDate, visitType, visitCount);
+
+            // Save the main event
+            dbHelper.insertEvent(selectedDate, "Name: " + eventName + "\nAddress: " + address + "\nIssue: " + issue + "\nTime: " + time + "\nVisit Type: " + visitType + "\nVisits: " + visitCount);
+
+            // Save additional visit dates (skip the first visit date, already saved)
+            for (int i = 1; i < visitDates.size(); i++) {
+                String visitDate = visitDates.get(i);
+                dbHelper.insertEvent(visitDate, "Name: " + eventName + "\nAddress: " + address + "\nIssue: " + issue + "\nTime: " + time + "\nVisit Type: " + visitType);
+            }
+
+            // Refresh the event list for the selected date
+            loadEventsForDate(selectedDate);
+
+            // Notify the user
+            Toast.makeText(this, "Event added on " + selectedDate, Toast.LENGTH_SHORT).show();
         });
 
-        // Define actions for the negative button (Cancel)
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
         builder.show();
     }
 
-    /**
-     * Loads and displays all events for the specified date from the database.
-     * Clears the existing event list and repopulates it with the new data.
-     *
-     * @param date The date for which events should be loaded.
-     */
+    private ArrayList<String> generateVisitSchedule(String startDate, String visitType, int visitCount) {
+        ArrayList<String> dates = new ArrayList<>();
+        Calendar calendar = Calendar.getInstance();
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+            calendar.setTime(sdf.parse(startDate));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        int weeksBetweenVisits;
+
+        switch (visitType) {
+            case "Job":
+                weeksBetweenVisits = 1; // Weekly visits
+                break;
+            case "Contract":
+                // Set weeks between visits based on the number of visits
+                if (visitCount == 12) {
+                    weeksBetweenVisits = 4;
+                } else if (visitCount == 8) {
+                    weeksBetweenVisits = 6;
+                } else if (visitCount == 6) {
+                    weeksBetweenVisits = 8;
+                } else if (visitCount == 4) {
+                    weeksBetweenVisits = 12;
+                } else {
+                    weeksBetweenVisits = 1; // Default to weekly if unspecified
+                }
+                break;
+            default:
+                weeksBetweenVisits = 1; // Default to weekly
+        }
+
+        // Add visits
+        for (int i = 0; i < visitCount; i++) {
+            dates.add(formatDate(calendar.get(Calendar.DAY_OF_MONTH), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.YEAR)));
+            calendar.add(Calendar.WEEK_OF_YEAR, weeksBetweenVisits); // Increment by the defined interval
+        }
+
+        return dates;
+    }
+
+
     private void loadEventsForDate(String date) {
-        eventList.clear(); // Clear existing events
-        eventList.addAll(dbHelper.getEventsByDate(date)); // Fetch and add new events
-        adapter.notifyDataSetChanged(); // Update the ListView with the new data
+        eventList.clear();
+        eventList.addAll(dbHelper.getEventsByDate(date));
+        eventList.sort(null);
+        adapter.notifyDataSetChanged();
+    }
+
+    private String formatDate(int day, int month, int year) {
+        return day + "-" + month + "-" + year;
+    }
+    private void showDatesDialog(String eventName, ArrayList<String> dates) {
+        Collections.sort(dates, (d1, d2) -> {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+                return sdf.parse(d1).compareTo(sdf.parse(d2));
+            } catch (Exception e) {
+                return 0;
+            }
+        });
+
+        StringBuilder dateList = new StringBuilder("Dates for " + eventName + ":\n");
+        for (String date : dates) {
+            dateList.append(date).append("\n");
+        }
+
+        AlertDialog.Builder dateDialog = new AlertDialog.Builder(this);
+        dateDialog.setTitle("Dates for " + eventName);
+        dateDialog.setMessage(dateList.toString());
+        dateDialog.setPositiveButton("OK", null);
+        dateDialog.show();
     }
 }
