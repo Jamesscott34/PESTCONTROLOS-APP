@@ -142,18 +142,20 @@ public class PDFViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Displays options when a report is long-clicked (Share or Delete).
+     * Displays options when a report is long-clicked (Share, Delete, or Rename).
      *
      * @param file The selected report file.
      */
     private void showLongPressOptions(File file) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select an Option")
-                .setItems(new CharSequence[]{"Share", "Delete"}, (dialog, which) -> {
+                .setItems(new CharSequence[]{"Share", "Delete", "Rename"}, (dialog, which) -> {
                     if (which == 0) {
                         shareReport(file);
                     } else if (which == 1) {
                         deleteReport(file);
+                    } else if (which == 2) {
+                        renameReport(file);
                     }
                 })
                 .show();
@@ -242,5 +244,39 @@ public class PDFViewActivity extends AppCompatActivity {
         } catch (Exception e) {
             Toast.makeText(this, "No application found to view this PDF.", Toast.LENGTH_SHORT).show();
         }
+    }
+    /**
+     * Renames the selected report and refreshes the report list.
+     *
+     * @param file The report file to be renamed.
+     */
+    private void renameReport(File file) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Rename Report");
+
+        // Create an EditText for the user to input the new name
+        final EditText input = new EditText(this);
+        input.setText(file.getName().replace(".pdf", ""));
+        builder.setView(input);
+
+        // Add "Rename" and "Cancel" buttons
+        builder.setPositiveButton("Rename", (dialog, which) -> {
+            String newName = input.getText().toString().trim();
+            if (!newName.isEmpty() && !newName.equals(file.getName())) {
+                File newFile = new File(file.getParent(), newName + ".pdf");
+                if (file.renameTo(newFile)) {
+                    Toast.makeText(this, "Report renamed successfully!", Toast.LENGTH_SHORT).show();
+                    loadReports(); // Refresh the list after renaming
+                } else {
+                    Toast.makeText(this, "Failed to rename report.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(this, "Invalid name or name unchanged.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
     }
 }

@@ -13,15 +13,34 @@
  */
 
 package com.grpc.grpc;
-
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.widget.Toast;
+
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Image;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.layout.property.TextAlignment;
+import com.itextpdf.kernel.events.PdfDocumentEvent;
+import com.itextpdf.kernel.events.IEventHandler;
+import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfPage;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -29,10 +48,14 @@ import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.io.File;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.pdf.PdfReader;
+
+import com.itextpdf.kernel.events.Event;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * ReportViewActivity displays a list of saved PDF reports and allows users to interact with them.
@@ -135,29 +158,50 @@ public class ReportViewActivity extends AppCompatActivity {
                     if (which == 0) {
                         viewPDF(file);
                     } else if (which == 1) {
-                        editPDF(file);
+                        showEditOptions(file);
                     }
                 })
                 .show();
     }
 
     /**
-     * Displays options when a report is long-clicked (Share or Delete).
+     * Displays options when "Edit" is selected (Follow-Up or Rewrite).
+     *
+     * @param file The selected report file.
+     */
+    private void showEditOptions(File file) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Edit Options")
+                .setItems(new CharSequence[]{"Follow-Up", "Rewrite"}, (dialog, which) -> {
+                    if (which == 0) {
+                        editPDF(file); // Handles Follow-Up functionality
+                    } else if (which == 1) {
+                        rewritePDF(file); // Handles Rewrite functionality
+                    }
+                })
+                .show();
+    }
+
+    /**
+     * Displays options when a report is long-clicked (Share, Delete, or Rename).
      *
      * @param file The selected report file.
      */
     private void showLongPressOptions(File file) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select an Option")
-                .setItems(new CharSequence[]{"Share", "Delete"}, (dialog, which) -> {
+                .setItems(new CharSequence[]{"Share", "Delete", "Rename"}, (dialog, which) -> {
                     if (which == 0) {
                         shareReport(file);
                     } else if (which == 1) {
                         deleteReport(file);
+                    } else if (which == 2) {
+                        renameReport(file);
                     }
                 })
                 .show();
     }
+
 
     /**
      * Filters the displayed reports based on the user's search query.
@@ -213,13 +257,34 @@ public class ReportViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Opens a placeholder method for editing a PDF (not yet implemented).
+     * Edits the selected PDF by adding a follow-up section.
      *
      * @param file The report file to be edited.
      */
     private void editPDF(File file) {
-        Toast.makeText(this, "Editing PDF is currently unsupported in this version.", Toast.LENGTH_SHORT).show();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Add Follow-Up Details");
+
+        // Create an EditText for user input
+        final EditText input = new EditText(this);
+        input.setHint("Enter follow-up details");
+        builder.setView(input);
+
+        // Add "Save" and "Cancel" buttons
+        builder.setPositiveButton("Save", (dialog, which) -> {
+            String followUpDetails = input.getText().toString().trim();
+            if (!followUpDetails.isEmpty()) {
+                addFollowUpToPDF(file, followUpDetails);
+            } else {
+                Toast.makeText(this, "Details cannot be empty!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
     }
+
 
     /**
      * Launches an intent to view the selected PDF file using a PDF viewer app.
@@ -242,5 +307,147 @@ public class ReportViewActivity extends AppCompatActivity {
         } catch (Exception e) {
             Toast.makeText(this, "No application found to view this PDF.", Toast.LENGTH_SHORT).show();
         }
+    }
+    /**
+     * Renames the selected report and refreshes the report list.
+     *
+     * @param file The report file to be renamed.
+     */
+    private void renameReport(File file) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Rename Report");
+
+        // Create an EditText for the user to input the new name
+        final EditText input = new EditText(this);
+        input.setText(file.getName().replace(".pdf", ""));
+        builder.setView(input);
+
+        // Add "Rename" and "Cancel" buttons
+        builder.setPositiveButton("Rename", (dialog, which) -> {
+            String newName = input.getText().toString().trim();
+            if (!newName.isEmpty() && !newName.equals(file.getName())) {
+                File newFile = new File(file.getParent(), newName + ".pdf");
+                if (file.renameTo(newFile)) {
+                    Toast.makeText(this, "Report renamed successfully!", Toast.LENGTH_SHORT).show();
+                    loadReports(); // Refresh the list after renaming
+                } else {
+                    Toast.makeText(this, "Failed to rename report.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(this, "Invalid name or name unchanged.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+
+    /**
+     * Adds follow-up details to an existing PDF file on a new page with a logo, title, watermark, and footer.
+     *
+     * @param file The PDF file to be updated.
+     * @param followUpDetails The follow-up details entered by the user.
+     */
+    private void addFollowUpToPDF(File file, String followUpDetails) {
+        try {
+            // Destination file to save the updated PDF
+            File updatedFile = new File(file.getParent(), "Updated_" + file.getName());
+
+            // Create a PdfDocument from the existing file
+            PdfDocument pdfDoc = new PdfDocument(new PdfReader(file), new PdfWriter(updatedFile));
+
+            // Add a new page to the PDF
+            PdfPage newPage = pdfDoc.addNewPage();
+            Rectangle pageSize = newPage.getPageSize();
+
+            // Use PdfCanvas to directly add content to the new page
+            PdfCanvas canvas = new PdfCanvas(newPage);
+
+            // Add a watermark image to the new page
+            int watermarkResourceId = getResources().getIdentifier("bk", "drawable", getPackageName());
+            ImageData watermarkData = ImageDataFactory.create(getResources().openRawResource(watermarkResourceId).readAllBytes());
+            canvas.saveState();
+            Image watermark = new Image(watermarkData)
+                    .scaleToFit(500, 500)
+                    .setFixedPosition(pageSize.getWidth() / 4, pageSize.getHeight() / 4)
+                    .setOpacity(0.1f);
+            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(watermark);
+            canvas.restoreState();
+
+            // Add a logo image at the top of the new page
+            int logoResourceId = getResources().getIdentifier("logo", "drawable", getPackageName());
+            ImageData logoData = ImageDataFactory.create(getResources().openRawResource(logoResourceId).readAllBytes());
+            Image logo = new Image(logoData)
+                    .scaleToFit(200, 200)
+                    .setFixedPosition(pageSize.getWidth() / 2 - 100, pageSize.getHeight() - 150); // Center at top
+            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(logo);
+
+            // Add a title below the logo
+            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(new Paragraph("Good Riddance Pest Control Report")
+                    .setFontSize(18)
+                    .setBold()
+                    .setFontColor(com.itextpdf.kernel.colors.ColorConstants.BLUE)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFixedPosition(36, pageSize.getHeight() - 200, pageSize.getWidth() - 72));
+
+            // Add the follow-up header
+            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(new Paragraph("Follow-Up Visit")
+                    .setFontSize(18)
+                    .setBold()
+                    .setTextAlignment(TextAlignment.LEFT)
+                    .setFixedPosition(36, pageSize.getHeight() - 250, pageSize.getWidth() - 72));
+
+            // Add the date
+            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(new Paragraph("Date: " + new SimpleDateFormat("dd-MM-yyyy").format(new Date()))
+                    .setFontSize(14)
+                    .setTextAlignment(TextAlignment.LEFT)
+                    .setFixedPosition(36, pageSize.getHeight() - 280, pageSize.getWidth() - 72));
+
+            // Add the follow-up details
+            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(new Paragraph(followUpDetails)
+                    .setFontSize(14)
+                    .setTextAlignment(TextAlignment.LEFT)
+                    .setFixedPosition(36, pageSize.getHeight() - 310, pageSize.getWidth() - 72));
+
+            // Add footer to the new page
+            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(new Paragraph("Good Riddance Pest Control - www.grpestcontrol.ie")
+                    .setFontSize(12)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFixedPosition(0, 20, pageSize.getWidth()));
+
+            // Close the PdfDocument to save changes
+            pdfDoc.close();
+
+            // Replace the original file with the updated one
+            if (file.delete() && updatedFile.renameTo(file)) {
+                Toast.makeText(this, "Follow-up details added successfully on a new page!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Failed to update the original file.", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Error editing PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Placeholder method for rewriting the selected PDF by replacing its content.
+     *
+     * @param file The PDF file to be rewritten.
+     */
+    private void rewritePDF(File file) {
+        // Display a toast message indicating this feature is not yet implemented
+        Toast.makeText(this, "Rewrite functionality is not implemented yet.", Toast.LENGTH_SHORT).show();
+
+        // Alternatively, add a TODO comment if planning to implement later
+        // TODO: Implement the functionality to rewrite the PDF with new content
     }
 }

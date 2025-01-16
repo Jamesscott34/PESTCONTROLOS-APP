@@ -14,7 +14,7 @@
         android:id="@+id/search_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Search reports..."
+        android:hint="GRPC Quotes..."
         android:padding="12dp"
         android:inputType="text"
         android:drawableStart="@android:drawable/ic_menu_search"/>

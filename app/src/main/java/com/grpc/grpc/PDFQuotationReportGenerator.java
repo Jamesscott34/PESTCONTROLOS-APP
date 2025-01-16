@@ -124,7 +124,7 @@ public class PDFQuotationReportGenerator {
             // ✅ Additional Section for Payment Summary at the Bottom
             document.add(new Paragraph("\n\nPayment Summary:").setFontSize(16).setBold().setUnderline());
             document.add(new Paragraph("First Quarter Payment: €" + String.format("%.2f", firstQuarterPayment)).setFontSize(14).setBold());
-            document.add(new Paragraph("Additional Line Items Total: €" + String.format("%.2f", additionalLineItemsTotal)).setFontSize(14));
+            document.add(new Paragraph("Additional Materials Total: €" + String.format("%.2f", additionalLineItemsTotal)).setFontSize(14));
             document.add(new Paragraph("Total Payment Due: €" + String.format("%.2f", (firstQuarterPayment + additionalLineItemsTotal)))
                     .setFontSize(14).setBold());
 
@@ -144,7 +144,7 @@ public class PDFQuotationReportGenerator {
             document.close();
 
             // ✅ Notify user
-            Toast.makeText(context, "Quotation PDF Created and Saved Successfully!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "GRPC QuoteCreated and Saved Successfully!", Toast.LENGTH_SHORT).show();
 
             // ✅ Return to the previous screen
             if (context instanceof AppCompatActivity) {
@@ -164,6 +164,6 @@ public class PDFQuotationReportGenerator {
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
         String date = sdf.format(new Date());
         int randomNum = 1000 + new Random().nextInt(9000); // Random 4-digit number
-        return "GRPEST_Quote_" + date + "-" + randomNum + ".pdf";
+        return "GRPC_Quote_" + randomNum + ".pdf";
     }
 }

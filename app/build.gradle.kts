@@ -55,6 +55,7 @@ dependencies {
     implementation("com.itextpdf:io:7.1.15")
     implementation("com.itextpdf:kernel:7.1.15")
 
+
     // ✅ File Provider and File Access
     implementation("androidx.core:core-ktx:1.12.0")
 

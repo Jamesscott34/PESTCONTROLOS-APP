@@ -10,7 +10,7 @@
         android:id="@+id/search_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Search QUOTES..."
+        android:hint="Search REPORTS..."
         android:padding="12dp" />
 
     <!-- Replacing ListView with RecyclerView -->
