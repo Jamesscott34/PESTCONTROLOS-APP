@@ -27,7 +27,7 @@ public class PDFSelectionActivity extends AppCompatActivity {
 
         // Navigate to CreateQuotationActivity
         buttonViewQuotation.setOnClickListener(v -> {
-            Intent intent = new Intent(this, PDFViewActivity.class);
+            Intent intent = new Intent(this, QuotationViewActivity.class);
             startActivity(intent);
         });
     }

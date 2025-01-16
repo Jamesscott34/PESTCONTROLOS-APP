@@ -170,16 +170,9 @@ public class ReportViewActivity extends AppCompatActivity {
      * @param file The selected report file.
      */
     private void showEditOptions(File file) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Edit Options")
-                .setItems(new CharSequence[]{"Follow-Up", "Rewrite"}, (dialog, which) -> {
-                    if (which == 0) {
-                        editPDF(file); // Handles Follow-Up functionality
-                    } else if (which == 1) {
-                        rewritePDF(file); // Handles Rewrite functionality
-                    }
-                })
-                .show();
+       Intent intent = new Intent(this,FollowUpActivity.class);
+       intent.putExtra("selected_pdf", file.getAbsolutePath());
+       startActivity(intent);
     }
 
     /**
@@ -358,67 +351,64 @@ public class ReportViewActivity extends AppCompatActivity {
             // Create a PdfDocument from the existing file
             PdfDocument pdfDoc = new PdfDocument(new PdfReader(file), new PdfWriter(updatedFile));
 
-            // Add a new page to the PDF
+            // Create a new page and bind it to the document
             PdfPage newPage = pdfDoc.addNewPage();
             Rectangle pageSize = newPage.getPageSize();
 
-            // Use PdfCanvas to directly add content to the new page
-            PdfCanvas canvas = new PdfCanvas(newPage);
+            // Create a separate Document object for the new page
+            Document document = new Document(pdfDoc, new com.itextpdf.kernel.geom.PageSize(pageSize));
+            document.setMargins(36, 36, 36, 36); // Set margins for the new page
 
             // Add a watermark image to the new page
             int watermarkResourceId = getResources().getIdentifier("bk", "drawable", getPackageName());
             ImageData watermarkData = ImageDataFactory.create(getResources().openRawResource(watermarkResourceId).readAllBytes());
-            canvas.saveState();
             Image watermark = new Image(watermarkData)
                     .scaleToFit(500, 500)
                     .setFixedPosition(pageSize.getWidth() / 4, pageSize.getHeight() / 4)
                     .setOpacity(0.1f);
-            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(watermark);
-            canvas.restoreState();
+            document.add(watermark);
 
             // Add a logo image at the top of the new page
             int logoResourceId = getResources().getIdentifier("logo", "drawable", getPackageName());
             ImageData logoData = ImageDataFactory.create(getResources().openRawResource(logoResourceId).readAllBytes());
             Image logo = new Image(logoData)
                     .scaleToFit(200, 200)
-                    .setFixedPosition(pageSize.getWidth() / 2 - 100, pageSize.getHeight() - 150); // Center at top
-            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(logo);
+                    .setFixedPosition(pageSize.getWidth() / 2 - 100, pageSize.getHeight() - 150); // Centered at top
+            document.add(logo);
 
             // Add a title below the logo
-            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(new Paragraph("Good Riddance Pest Control Report")
+            document.add(new Paragraph("Good Riddance Pest Control Report")
                     .setFontSize(18)
                     .setBold()
                     .setFontColor(com.itextpdf.kernel.colors.ColorConstants.BLUE)
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setFixedPosition(36, pageSize.getHeight() - 200, pageSize.getWidth() - 72));
+                    .setTextAlignment(TextAlignment.CENTER));
 
             // Add the follow-up header
-            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(new Paragraph("Follow-Up Visit")
+            document.add(new Paragraph("Follow-Up Visit")
                     .setFontSize(18)
                     .setBold()
-                    .setTextAlignment(TextAlignment.LEFT)
-                    .setFixedPosition(36, pageSize.getHeight() - 250, pageSize.getWidth() - 72));
+                    .setTextAlignment(TextAlignment.LEFT));
 
             // Add the date
-            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(new Paragraph("Date: " + new SimpleDateFormat("dd-MM-yyyy").format(new Date()))
+            document.add(new Paragraph("Date: " + new SimpleDateFormat("dd-MM-yyyy").format(new Date()))
                     .setFontSize(14)
-                    .setTextAlignment(TextAlignment.LEFT)
-                    .setFixedPosition(36, pageSize.getHeight() - 280, pageSize.getWidth() - 72));
+                    .setTextAlignment(TextAlignment.LEFT));
 
-            // Add the follow-up details
-            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(new Paragraph(followUpDetails)
-                    .setFontSize(14)
-                    .setTextAlignment(TextAlignment.LEFT)
-                    .setFixedPosition(36, pageSize.getHeight() - 310, pageSize.getWidth() - 72));
+            // Handle follow-up details (support multi-line content with manual line breaks)
+            String[] lines = followUpDetails.split("\n"); // Split text by newline
+            for (String line : lines) {
+                document.add(new Paragraph(line)
+                        .setFontSize(14)
+                        .setTextAlignment(TextAlignment.LEFT));
+            }
 
             // Add footer to the new page
-            new com.itextpdf.layout.Canvas(canvas, pdfDoc, pageSize).add(new Paragraph("Good Riddance Pest Control - www.grpestcontrol.ie")
+            document.add(new Paragraph("Good Riddance Pest Control - www.grpestcontrol.ie")
                     .setFontSize(12)
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setFixedPosition(0, 20, pageSize.getWidth()));
+                    .setTextAlignment(TextAlignment.CENTER));
 
-            // Close the PdfDocument to save changes
-            pdfDoc.close();
+            // Close the document to save changes
+            document.close();
 
             // Replace the original file with the updated one
             if (file.delete() && updatedFile.renameTo(file)) {
@@ -430,13 +420,6 @@ public class ReportViewActivity extends AppCompatActivity {
             Toast.makeText(this, "Error editing PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
-
-
-
-
-
-
-
 
     /**
      * Placeholder method for rewriting the selected PDF by replacing its content.

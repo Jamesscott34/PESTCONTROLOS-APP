@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bk">
+
+    <!-- Linear layout to hold all input fields and buttons in a vertical arrangement -->
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+
+        <!-- Input field for date -->
+        <EditText
+            android:id="@+id/dateInput"
+            android:hint="Enter Date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="date"/>
+
+        <!-- Input field for visit type -->
+        <EditText
+            android:id="@+id/customerfollowupInput"
+            android:hint="follow up visit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- Input field for site inspection with multiline support -->
+        <EditText
+            android:id="@+id/siteInspectionInput"
+            android:hint="Enter Site Inspection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top"
+            android:scrollbars="vertical"/>
+
+        <!-- Input field for recommendations with multiline support -->
+        <EditText
+            android:id="@+id/recommendationsInput"
+            android:hint="Enter Recommendations"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top"
+            android:scrollbars="vertical"/>
+
+        <!-- Input field for preparation steps with multiline support -->
+        <EditText
+            android:id="@+id/prepInput"
+            android:hint="Enter Prep"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top"
+            android:scrollbars="vertical"/>
+
+        <!-- Input field for follow-up instructions -->
+        <EditText
+            android:id="@+id/followUpInput"
+            android:hint="Enter Follow Up Details"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- Input field for technician name -->
+        <EditText
+            android:id="@+id/techInput"
+            android:hint="Enter Technician Name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"/>
+
+        <!-- Button for selecting images to attach to the report -->
+        <Button
+            android:id="@+id/selectImageButton"
+            android:text="Add Image"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Button to save the report to the database -->
+        <Button
+            android:id="@+id/saveButton"
+            android:text="Save Report"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@android:color/holo_green_dark"/>
+
+        <!-- Button to return to the main activity -->
+        <Button
+            android:id="@+id/backButton"
+            android:text="Back to Main"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@android:color/holo_red_light"/>
+    </LinearLayout>
+</ScrollView>

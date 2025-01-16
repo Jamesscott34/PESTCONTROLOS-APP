@@ -55,7 +55,13 @@
             android:name=".PDFSelectionActivity"
             android:exported="true"/>
         <activity
-            android:name=".PDFViewActivity"
+            android:name=".QuotationViewActivity"
+            android:exported="true"/>
+        <activity
+            android:name=".FollowUpActivity"
+            android:exported="true"/>
+        <activity
+            android:name=".DateDetailActivity"
             android:exported="true"/>
 
 
