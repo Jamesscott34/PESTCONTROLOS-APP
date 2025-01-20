@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "533710012313",
+    "project_id": "grpc-app-d3fc7",
+    "storage_bucket": "grpc-app-d3fc7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533710012313:android:2a9a179e8a2188e5719d08",
+        "android_client_info": {
+          "package_name": "com.grpc.grpc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdsP7r7EN7bfAsNC_zkmEbyndt--7NhwI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

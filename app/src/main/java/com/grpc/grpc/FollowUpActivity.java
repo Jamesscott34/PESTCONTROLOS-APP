@@ -19,6 +19,7 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.layout.Canvas;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.AreaBreak;
 import com.itextpdf.layout.element.Cell;
@@ -32,6 +33,7 @@ import com.itextpdf.layout.property.UnitValue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -139,7 +141,7 @@ public class FollowUpActivity extends AppCompatActivity {
             File updatedFile = new File(file.getParent(), "Updated_" + file.getName());
 
             PdfDocument pdfDoc = new PdfDocument(new PdfReader(file), new PdfWriter(updatedFile));
-            Document document = new Document(pdfDoc); // Use Document for dynamic layout
+            Document document = new Document(pdfDoc);
 
             // Add a new page to the PDF
             PdfPage newPage = pdfDoc.addNewPage();
@@ -161,8 +163,8 @@ public class FollowUpActivity extends AppCompatActivity {
                     .setHorizontalAlignment(HorizontalAlignment.CENTER);
             document.add(logo);
 
-            // Adding a title to the report
-            Paragraph title = new Paragraph("Good Riddance Pest Control Report")
+            // Add title to the report
+            Paragraph title = new Paragraph("Good Riddance Pest Control Follow-Up Report")
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(20)
                     .setBold()
@@ -178,45 +180,51 @@ public class FollowUpActivity extends AppCompatActivity {
                     .setTextAlignment(TextAlignment.LEFT));
 
             // Add follow-up details line by line
-            String[] lines = followUpDetails.split("\\n");
-            for (String line : lines) {
+            for (String line : followUpDetails.split("\\n")) {
                 String[] splitDetail = line.split(":", 2);
                 if (splitDetail.length == 2) {
-                    // Add header (key)
                     document.add(new Paragraph(splitDetail[0].trim())
                             .setFontSize(16)
                             .setBold()
                             .setUnderline());
-
-                    // Add user input (value)
                     document.add(new Paragraph(splitDetail[1].trim())
                             .setFontSize(14));
                 } else {
-                    // Add as plain text if no key-value format is detected
                     document.add(new Paragraph(line.trim())
                             .setFontSize(14));
                 }
             }
 
-            // Add selected images dynamically and manage page space
             if (selectedImageUris != null && !selectedImageUris.isEmpty()) {
                 document.add(new Paragraph("\nAttached Images:").setFontSize(16).setBold());
 
-                for (Uri imageUri : selectedImageUris) {
-                    InputStream inputStream = getContentResolver().openInputStream(imageUri);
-                    if (inputStream != null) {
-                        ImageData imageData = ImageDataFactory.create(inputStream.readAllBytes());
-                        Image image = new Image(imageData)
-                                .scaleToFit(newPage.getPageSize().getWidth() - 72, 400)
-                                .setHorizontalAlignment(HorizontalAlignment.CENTER);
+                for (int i = 0; i < selectedImageUris.size(); i++) {
+                    Uri uri = selectedImageUris.get(i);
+                    try (InputStream inputStream = getContentResolver().openInputStream(uri)) {
+                        if (inputStream != null) {
+                            // Create ImageData from the URI
+                            ImageData imageData = ImageDataFactory.create(inputStream.readAllBytes());
+                            Image image = new Image(imageData)
+                                    .scaleToFit(400, 400) // Scale image to fit within page bounds
+                                    .setHorizontalAlignment(HorizontalAlignment.CENTER);
 
-                        // Check if there's enough space for the image, add a new page if necessary
-                        if (document.getRenderer().getCurrentArea().getBBox().getHeight() < 450) {
-                            document.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
+                            // Add caption for the image
+                            document.add(new Paragraph("Tech Field Image " + (i + 1))
+                                    .setFontSize(16)
+                                    .setBold()
+                                    .setTextAlignment(TextAlignment.CENTER));
+
+                            // Add a new page if there isn't enough space for the image
+                            if (document.getRenderer().getCurrentArea().getBBox().getHeight() < 450) {
+                                addWatermarkToPage(newPage);
+                                document.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
+                            }
+
+                            // Add the image to the document
+                            document.add(image);
                         }
-
-                        document.add(image);
-                        inputStream.close();
+                    } catch (IOException e) {
+                        Toast.makeText(this, "Error loading image: " + uri.toString(), Toast.LENGTH_SHORT).show();
                     }
                 }
             }
@@ -226,7 +234,7 @@ public class FollowUpActivity extends AppCompatActivity {
                     .setFontSize(12)
                     .setTextAlignment(TextAlignment.CENTER));
 
-            // Close the Document and PdfDocument to save changes
+            // Close the Document and PdfDocument
             document.close();
             pdfDoc.close();
 
@@ -237,11 +245,30 @@ public class FollowUpActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "Failed to update the original PDF file.", Toast.LENGTH_SHORT).show();
             }
-
         } catch (Exception e) {
             Toast.makeText(this, "Error editing PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
+    private void addWatermarkToPage(PdfPage page) {
+        try {
+            Rectangle pageSize = page.getPageSize();
+            PdfCanvas canvas = new PdfCanvas(page);
+
+            // Add watermark
+            int watermarkResourceId = getResources().getIdentifier("bk", "drawable", getPackageName());
+            ImageData watermarkData = ImageDataFactory.create(getResources().openRawResource(watermarkResourceId).readAllBytes());
+            Image watermark = new Image(watermarkData)
+                    .scaleToFit(500, 500)
+                    .setFixedPosition((pageSize.getWidth() - 500) / 2, (pageSize.getHeight() - 500) / 2)
+                    .setOpacity(0.1f);
+
+            new Canvas(canvas, page.getDocument(), pageSize).add(watermark);
+        } catch (Exception e) {
+            Toast.makeText(this, "Error adding watermark: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
 
 
 

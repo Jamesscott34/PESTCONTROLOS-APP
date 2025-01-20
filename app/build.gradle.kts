@@ -1,6 +1,8 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.jetbrains.kotlin.android)
+
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -54,6 +56,9 @@ dependencies {
     implementation("com.itextpdf:layout:7.1.15")
     implementation("com.itextpdf:io:7.1.15")
     implementation("com.itextpdf:kernel:7.1.15")
+
+    implementation(platform("com.google.firebase:firebase-bom:33.8.0"))
+    implementation("com.google.firebase:firebase-analytics")
 
 
     // ✅ File Provider and File Access
