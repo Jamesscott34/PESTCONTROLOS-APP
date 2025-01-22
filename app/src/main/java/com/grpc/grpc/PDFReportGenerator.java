@@ -98,9 +98,7 @@ public class PDFReportGenerator {
             // Processing the report content
             String[] reportDetails = content.split("\\n");
             for (String detail : reportDetails) {
-                if (!detail.trim().endsWith(".")) {
-                    detail = detail.trim() + ".";
-                }
+                // Skip appending a period for new lines; preserve the input as is
                 String[] splitDetail = detail.split(":", 2);
                 if (splitDetail.length == 2) {
                     // Adding bold label and value
@@ -110,7 +108,8 @@ public class PDFReportGenerator {
                     document.add(new Paragraph(label));
                     document.add(new Paragraph(valueText).setFontColor(ColorConstants.BLACK).setFontSize(14));
                 } else {
-                    document.add(new Paragraph(detail).setFontColor(ColorConstants.BLACK).setFontSize(14));
+                    // Add line as plain text without appending a period
+                    document.add(new Paragraph(detail.trim()).setFontColor(ColorConstants.BLACK).setFontSize(14));
                 }
             }
 

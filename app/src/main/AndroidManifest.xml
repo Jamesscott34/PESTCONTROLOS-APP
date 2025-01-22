@@ -64,6 +64,10 @@
             android:name=".DateDetailActivity"
             android:exported="true"/>
 
+        <activity
+            android:name=".BirdQuotationActivity"
+            android:exported="true"/>
+
 
 
         <!-- FileProvider Setup -->

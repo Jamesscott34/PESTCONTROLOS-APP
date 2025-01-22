@@ -211,6 +211,8 @@ public class CalendarActivity extends AppCompatActivity {
         }
     }
 
+
+
     private void showOptionsDialog(String eventName) {
         AlertDialog.Builder optionsDialog = new AlertDialog.Builder(this);
         optionsDialog.setTitle("Options");

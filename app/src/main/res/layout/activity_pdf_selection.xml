@@ -15,7 +15,7 @@
         android:id="@+id/buttonViewReports"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:text="View Report"
+        android:text="Report"
         android:textSize="18sp"
         android:layout_marginBottom="16dp"/>
 
@@ -24,9 +24,10 @@
         android:id="@+id/buttonViewQuotation"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:text="View Quotation"
+        android:text="Contract Quotation"
         android:textSize="18sp"
         android:layout_marginBottom="16dp"/>
+
 
 
 </LinearLayout>

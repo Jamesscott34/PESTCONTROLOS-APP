@@ -137,8 +137,8 @@ public class PDFQuotationReportGenerator {
                     quoteDescription,
                     grandTotal,
                     userEmail,
-                    mobileNumber
-            );
+                    mobileNumber,
+                    true);
 
             // ✅ Close the document after successful data saving
             document.close();
@@ -161,8 +161,6 @@ public class PDFQuotationReportGenerator {
 
     }
     private static String generateUniquePdfFileName() {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
-        String date = sdf.format(new Date());
         int randomNum = 1000 + new Random().nextInt(9000); // Random 4-digit number
         return "GRPC_Quote_" + randomNum + ".pdf";
     }

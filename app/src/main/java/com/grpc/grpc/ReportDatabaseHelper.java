@@ -3,7 +3,8 @@ package com.grpc.grpc;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.*;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
 
     // Database Configuration
     private static final String DATABASE_NAME = "grpest_reports.db";
-    private static final int DATABASE_VERSION = 3;  // Incremented for quotes support
+    private static final int DATABASE_VERSION = 3; // Incremented for quotes support
 
     // CompanyReports Table
     private static final String TABLE_COMPANY_REPORTS = "CompanyReports";
@@ -36,7 +37,7 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_EVENT_DATE = "date";
     private static final String COLUMN_EVENT_NAME = "event_name";
 
-    // Quotes Table with corrected columns
+    // General Quotes Table
     private static final String TABLE_QUOTES = "quotes";
     private static final String COLUMN_QUOTE_ID = "id";
     private static final String COLUMN_QUOTE_NUMBER = "quote_number";
@@ -47,6 +48,16 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_QUOTE_EMAIL = "email";
     private static final String COLUMN_QUOTE_MOBILE = "mobile_number";
 
+    // Bird Quotes Table
+    private static final String TABLE_BIRD_QUOTES = "BirdQuotes";
+    private static final String COLUMN_BIRD_QUOTE_ID = "id";
+    private static final String COLUMN_BIRD_QUOTE_NUMBER = "quote_number";
+    private static final String COLUMN_BIRD_QUOTE_DATE = "date";
+    private static final String COLUMN_BIRD_QUOTE_ADDRESS = "address";
+    private static final String COLUMN_BIRD_QUOTE_DESCRIPTION = "description";
+    private static final String COLUMN_BIRD_QUOTE_TOTAL = "total_amount";
+    private static final String COLUMN_BIRD_QUOTE_EMAIL = "email";
+    private static final String COLUMN_BIRD_QUOTE_MOBILE = "mobile_number";
 
     private final Context context;
 
@@ -63,7 +74,6 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
      */
     @Override
     public void onCreate(SQLiteDatabase db) {
-
         // Company Reports Table
         db.execSQL("CREATE TABLE " + TABLE_COMPANY_REPORTS + " (" +
                 COLUMN_COMPANY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -83,7 +93,7 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_EVENT_DATE + " TEXT, " +
                 COLUMN_EVENT_NAME + " TEXT)");
 
-        // Create Quotes Table
+        // General Quotes Table
         db.execSQL("CREATE TABLE " + TABLE_QUOTES + " (" +
                 COLUMN_QUOTE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_QUOTE_NUMBER + " TEXT, " +
@@ -93,6 +103,17 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_QUOTE_TOTAL + " REAL, " +
                 COLUMN_QUOTE_EMAIL + " TEXT, " +
                 COLUMN_QUOTE_MOBILE + " TEXT)");
+
+        // Bird Quotes Table
+        db.execSQL("CREATE TABLE " + TABLE_BIRD_QUOTES + " (" +
+                COLUMN_BIRD_QUOTE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COLUMN_BIRD_QUOTE_NUMBER + " TEXT, " +
+                COLUMN_BIRD_QUOTE_DATE + " TEXT, " +
+                COLUMN_BIRD_QUOTE_ADDRESS + " TEXT, " +
+                COLUMN_BIRD_QUOTE_DESCRIPTION + " TEXT, " +
+                COLUMN_BIRD_QUOTE_TOTAL + " REAL, " +
+                COLUMN_BIRD_QUOTE_EMAIL + " TEXT, " +
+                COLUMN_BIRD_QUOTE_MOBILE + " TEXT)");
     }
 
     /**
@@ -103,22 +124,12 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_COMPANY_REPORTS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_EVENTS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_QUOTES);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_BIRD_QUOTES);
         onCreate(db);
     }
 
     /**
-     * Clears all data from all tables (use with caution).
-     */
-    public void clearDatabase(SQLiteDatabase db) {
-        db.execSQL("DELETE FROM " + TABLE_COMPANY_REPORTS);
-        db.execSQL("DELETE FROM " + TABLE_EVENTS);
-        db.execSQL("DELETE FROM " + TABLE_QUOTES);
-    }
-
-    // ==================== EVENTS CRUD OPERATIONS ====================
-
-    /**
-     * Insert a new event into the database.
+     * Inserts a new event into the database.
      */
     public void insertEvent(String date, String eventName) {
         SQLiteDatabase db = this.getWritableDatabase();
@@ -130,7 +141,7 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Fetch all events by date.
+     * Fetches all events by date.
      */
     public ArrayList<String> getEventsByDate(String date) {
         ArrayList<String> events = new ArrayList<>();
@@ -148,29 +159,22 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
         return events;
     }
 
-    // ==================== QUOTES CRUD OPERATIONS ====================
-
     /**
-     * Insert a new quote into the database.
+     * Inserts a new general quote into the database.
      */
-    public void insertQuote(String date, String address,
-                            String quoteDescription, String description, double totalAmount,
-                            String userEmail, String mobileNumber) {
-
+    public void insertQuote(String number, String date, String address, String description, double totalAmount, String email, String mobile, boolean b) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put("date", date);
-        values.put("address", address);
-        values.put("description", quoteDescription);
-        values.put("total_amount", totalAmount);
-        values.put("email", userEmail);
-        values.put("mobile_number", mobileNumber);
+        values.put(COLUMN_QUOTE_NUMBER, number);
+        values.put(COLUMN_QUOTE_DATE, date);
+        values.put(COLUMN_QUOTE_ADDRESS, address);
+        values.put(COLUMN_QUOTE_DESCRIPTION, description);
+        values.put(COLUMN_QUOTE_TOTAL, totalAmount);
+        values.put(COLUMN_QUOTE_EMAIL, email);
+        values.put(COLUMN_QUOTE_MOBILE, mobile);
+        long result = db.insert(TABLE_QUOTES, null, values);
+        db.close();
 
-        // ✅ Declaring the result variable properly
-        long result = db.insert("quotes", null, values);  // Capture the result of the insert operation
-        db.close();  // Close the database connection
-
-        // ✅ Check the result of the insertion
         if (result == -1) {
             Toast.makeText(context, "Error inserting quote.", Toast.LENGTH_SHORT).show();
         } else {
@@ -179,39 +183,40 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Fetch all quotes from the database.
+     * Inserts a new bird quote into the database.
      */
-    public ArrayList<String> getAllQuotes() {
-        ArrayList<String> quotes = new ArrayList<>();
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_QUOTES, new String[]{COLUMN_QUOTE_NUMBER, COLUMN_QUOTE_DATE},
-                null, null, null, null, COLUMN_QUOTE_DATE + " DESC");
-
-        if (cursor != null && cursor.moveToFirst()) {
-            do {
-                String quoteInfo = "Quote #" + cursor.getString(0) + " - Date: " + cursor.getString(1);
-                quotes.add(quoteInfo);
-            } while (cursor.moveToNext());
-            cursor.close();
-        }
+    public void insertBirdQuote(String number, String date, String address, String description, double totalAmount, String email, String mobile) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_BIRD_QUOTE_NUMBER, number);
+        values.put(COLUMN_BIRD_QUOTE_DATE, date);
+        values.put(COLUMN_BIRD_QUOTE_ADDRESS, address);
+        values.put(COLUMN_BIRD_QUOTE_DESCRIPTION, description);
+        values.put(COLUMN_BIRD_QUOTE_TOTAL, totalAmount);
+        values.put(COLUMN_BIRD_QUOTE_EMAIL, email);
+        values.put(COLUMN_BIRD_QUOTE_MOBILE, mobile);
+        long result = db.insert(TABLE_BIRD_QUOTES, null, values);
         db.close();
-        return quotes;
+
+        if (result == -1) {
+            Toast.makeText(context, "Error inserting bird quote.", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(context, "Bird quote saved successfully!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
-     * Delete a quote by its quote number.
+     * Clears all data from all tables.
      */
-    public void deleteQuote(String quoteNumber) {
+    public void clearDatabase() {
         SQLiteDatabase db = this.getWritableDatabase();
-        int rowsDeleted = db.delete(TABLE_QUOTES, COLUMN_QUOTE_NUMBER + "=?", new String[]{quoteNumber});
+        db.execSQL("DELETE FROM " + TABLE_COMPANY_REPORTS);
+        db.execSQL("DELETE FROM " + TABLE_EVENTS);
+        db.execSQL("DELETE FROM " + TABLE_QUOTES);
+        db.execSQL("DELETE FROM " + TABLE_BIRD_QUOTES);
         db.close();
-
-        if (rowsDeleted > 0) {
-            Toast.makeText(context, "Quote deleted successfully!", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, "Failed to delete quote. Quote not found.", Toast.LENGTH_SHORT).show();
-        }
     }
+
     /**
      * Fetch all dates for a specific event name.
      */
@@ -254,7 +259,9 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
             Toast.makeText(context, "No events found for " + eventName, Toast.LENGTH_SHORT).show();
         }
     }
-
-    public void GetDatesByName(String eventName) {
-    }
 }
+
+
+
+
+

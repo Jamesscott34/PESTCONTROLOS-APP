@@ -1,6 +1,5 @@
 package com.grpc.grpc;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
@@ -118,8 +117,8 @@ public class CreateReportActivity extends AppCompatActivity {
                 quoteDescription,              // Quote Description
                 totalAmount,                   // Total Amount
                 userEmail,                     // User Email
-                mobileNumber                   // Mobile Number
-        );
+                mobileNumber,                   // Mobile Number
+                true);
 
 // Generate the PDF using the corrected arguments
         PDFQuotationReportGenerator.generateQuotationReport(
