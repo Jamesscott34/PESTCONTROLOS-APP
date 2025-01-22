@@ -34,7 +34,6 @@ public class BirdQuotationActivity extends AppCompatActivity {
         addItemButton = findViewById(R.id.addItemButton);
         generatePdfButton = findViewById(R.id.generatePdfButton);
 
-        // Add line item to the list
         addItemButton.setOnClickListener(v -> {
             String description = itemDescriptionInput.getText().toString().trim();
             String priceText = itemPriceInput.getText().toString().trim();
@@ -46,15 +45,20 @@ public class BirdQuotationActivity extends AppCompatActivity {
 
             try {
                 double price = Double.parseDouble(priceText);
+                // Add the inputs to the lists
                 descriptions.add(description);
                 lineTotals.add(price);
+
+                // Clear the input fields after adding
                 itemDescriptionInput.setText("");
                 itemPriceInput.setText("");
-                Toast.makeText(this, "Item added!", Toast.LENGTH_SHORT).show();
+
+                Toast.makeText(this, "Item added! You can add another.", Toast.LENGTH_SHORT).show();
             } catch (NumberFormatException e) {
                 Toast.makeText(this, "Invalid price format!", Toast.LENGTH_SHORT).show();
             }
         });
+
 
         // Generate PDF
         generatePdfButton.setOnClickListener(v -> {
