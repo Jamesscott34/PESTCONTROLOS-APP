@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
         // Button Listeners
         reportButton.setOnClickListener(view -> {
             // Navigate to Create Report screen
-            Intent intent = new Intent(MainActivity.this, CreateReportActivity.class);
+            Intent intent = new Intent(MainActivity.this, ReportSelectionActivity.class);
             startActivity(intent);
         });
 
