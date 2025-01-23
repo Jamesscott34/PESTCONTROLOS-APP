@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="editTextName" type="id" />
+    <item name="editTextAddress" type="id" />
+    <item name="editTextEmail" type="id" />
+    <item name="editTextContact" type="id" />
+    <item name="editTextVisits" type="id" />
+    <item name="buttonAdd" type="id" />
+    <item name="buttonBack" type="id" />
+</resources>

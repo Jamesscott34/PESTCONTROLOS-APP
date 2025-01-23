@@ -25,7 +25,7 @@
 
         <!-- Main Activity -->
         <activity
-            android:name=".MainActivity"
+            android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -34,6 +34,10 @@
         </activity>
 
         <!-- Company Report Activity -->
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"/>
         <activity
             android:name=".ReportActivity"
             android:exported="true"/>
@@ -68,7 +72,21 @@
             android:name=".BirdQuotationActivity"
             android:exported="true"/>
 
+        <activity
+            android:name=".ContractsActivity"
+            android:exported="true"/>
 
+        <activity
+            android:name=".ViewContractActivity"
+            android:exported="true"/>
+
+        <activity
+            android:name=".AddContractActivity"
+            android:exported="true"/>
+
+        <activity
+            android:name=".QuotesActivity"
+            android:exported="true"/>
 
         <!-- FileProvider Setup -->
         <provider
