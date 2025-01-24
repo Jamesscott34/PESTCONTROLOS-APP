@@ -10,9 +10,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.grpc.grpc" />
-                  <option name="mobileSdkAppId" value="1:533710012313:android:2a9a179e8a2188e5719d08" />
-                  <option name="projectId" value="grpc-app-d3fc7" />
-                  <option name="projectNumber" value="533710012313" />
+                  <option name="mobileSdkAppId" value="1:339691567541:android:b563ba924407095dd9c1fc" />
+                  <option name="projectId" value="grpc-main" />
+                  <option name="projectNumber" value="339691567541" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
