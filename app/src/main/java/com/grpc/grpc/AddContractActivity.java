@@ -51,21 +51,42 @@ public class AddContractActivity extends AppCompatActivity {
         addButton.setOnClickListener(view -> {
             String name = nameEditText.getText().toString().trim();
             String address = addressEditText.getText().toString().trim();
-            String enteredEmail = emailEditText.getText().toString().trim(); // This is the contract-specific email
+            String email = emailEditText.getText().toString().trim();
             String contact = contactEditText.getText().toString().trim();
             String visits = visitsEditText.getText().toString().trim();
 
-            if (name.isEmpty() || address.isEmpty() || enteredEmail.isEmpty() || contact.isEmpty() || visits.isEmpty()) {
-                Toast.makeText(AddContractActivity.this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+            // Validate required fields
+            if (name.isEmpty() || address.isEmpty()) {
+                Toast.makeText(AddContractActivity.this, "Name and Address are required.", Toast.LENGTH_SHORT).show();
                 return;
             }
+
+            // Validate Visits field
+            if (visits.isEmpty()) {
+                visits = "N/A"; // Default to "N/A" if blank
+            } else {
+                try {
+                    int visitsValue = Integer.parseInt(visits);
+                    if (visitsValue < 1 || visitsValue > 13) {
+                        Toast.makeText(AddContractActivity.this, "Visits must be between 1 and 13.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    Toast.makeText(AddContractActivity.this, "Visits must be a number between 1 and 13.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+
+            // Default empty email and contact to "N/A"
+            if (email.isEmpty()) email = "N/A";
+            if (contact.isEmpty()) contact = "N/A";
 
             // Use the extracted user name to create the collection
             String tableName = userName + " Contracts"; // e.g., "James Contracts"
 
             // Add contract to Firestore
             CollectionReference contractsCollection = db.collection(tableName);
-            contractsCollection.add(createContractObject(name, address, enteredEmail, contact, visits))
+            contractsCollection.add(createContractObject(name, address, email, contact, visits))
                     .addOnSuccessListener(documentReference -> {
                         Toast.makeText(AddContractActivity.this, "Contract added successfully", Toast.LENGTH_SHORT).show();
                         clearFields();

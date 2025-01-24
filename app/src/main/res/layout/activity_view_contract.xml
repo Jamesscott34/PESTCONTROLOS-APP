@@ -6,6 +6,45 @@
     android:orientation="vertical"
     android:padding="16dp">
 
+    <!-- Statistics Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- Total Contracts -->
+        <TextView
+            android:id="@+id/totalContracts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Total Contracts: 0"
+            android:textSize="16sp"
+            android:layout_marginEnd="8dp" />
+
+        <!-- Behind Contracts -->
+        <TextView
+            android:id="@+id/behindContracts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Behind: 0"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:textColor="@android:color/holo_red_dark" />
+
+        <!-- Up-to-Date Contracts -->
+        <TextView
+            android:id="@+id/upToDateContracts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Up-to-Date: 0"
+            android:textSize="16sp"
+            android:gravity="end"
+            android:textColor="@android:color/holo_green_dark" />
+    </LinearLayout>
+
     <!-- Search Bar -->
     <EditText
         android:id="@+id/searchBar"

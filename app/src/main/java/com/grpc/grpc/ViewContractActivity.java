@@ -21,11 +21,14 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class ViewContractActivity extends AppCompatActivity {
 
@@ -77,16 +80,57 @@ public class ViewContractActivity extends AppCompatActivity {
 
         db.collection(tableName).get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                contractsContainer.removeAllViews();
+                // Create a list to hold the contracts
+                List<Map<String, Object>> contractsList = new ArrayList<>();
+
+                // Initialize counters
+                int total = 0;
+                int behind = 0;
+                int upToDate = 0;
+
+                // Add each contract to the list
                 for (QueryDocumentSnapshot document : task.getResult()) {
                     Map<String, Object> contract = document.getData();
-                    addContractToView(contract, document.getId());
+                    contract.put("documentId", document.getId()); // Save document ID for later use
+                    contractsList.add(contract);
+
+                    // Update counters
+                    total++;
+                    String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
+                    String nextVisit = calculateNextVisit(contract);
+
+                    if ("N/A".equals(lastVisit) || isWithinFiveDays(nextVisit)) {
+                        behind++;
+                    } else {
+                        upToDate++;
+                    }
                 }
+
+                // Sort the list alphabetically by the "name" field
+                contractsList.sort((c1, c2) -> {
+                    String name1 = c1.get("name") != null ? c1.get("name").toString() : "";
+                    String name2 = c2.get("name") != null ? c2.get("name").toString() : "";
+                    return name1.compareToIgnoreCase(name2);
+                });
+
+                // Clear the container before adding sorted contracts
+                contractsContainer.removeAllViews();
+
+                // Add each sorted contract to the container
+                for (Map<String, Object> contract : contractsList) {
+                    String documentId = contract.get("documentId").toString();
+                    addContractToView(contract, documentId);
+                }
+
+                // Update statistics on the UI
+                updateStatistics(total, behind, upToDate);
             } else {
+                // Handle error
                 Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
+
 
     private void filterContracts(String query) {
         query = query.toLowerCase();
@@ -118,18 +162,36 @@ public class ViewContractActivity extends AppCompatActivity {
         contractBox.setPadding(16, 16, 16, 16);
         contractBox.setBackgroundResource(android.R.drawable.dialog_holo_light_frame); // Adds a grey border
 
+        // Retrieve contract details
+        String name = contract.get("name") != null ? contract.get("name").toString() : "N/A";
+        String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
+        String email = contract.get("email") != null ? contract.get("email").toString() : "N/A";
+        String contact = contract.get("contact") != null ? contract.get("contact").toString() : "N/A";
         String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
         String nextVisit = calculateNextVisit(contract);
 
+        // Determine background color based on lastVisit and nextVisit
+        if ("N/A".equals(lastVisit)) {
+            contractBox.setBackgroundColor(Color.RED); // Red background for missing last date
+        } else if (isWithinFiveDays(nextVisit)) {
+            contractBox.setBackgroundColor(Color.YELLOW); // Yellow background if next visit is within 5 days
+        } else {
+            contractBox.setBackgroundColor(Color.WHITE); // Normal background for other cases
+        }
+
+        // Create contract details TextView
         TextView contractDetails = new TextView(this);
         contractDetails.setText(
-                "Name: " + (contract.get("name") != null ? contract.get("name") : "N/A") + "\n" +
-                        "Address: " + (contract.get("address") != null ? contract.get("address") : "N/A") + "\n" +
+                "Name: " + name + "\n" +
+                        "Address: " + address + "\n" +
+                        "Email: " + email + "\n" +
+                        "Contact: " + contact + "\n" +
                         "Last Visit: " + lastVisit + "\n" +
                         "Next Visit: " + nextVisit
         );
         contractDetails.setTextColor(Color.BLACK);
 
+        // Create "Mark as Done" checkbox
         CheckBox checkBox = new CheckBox(this);
         checkBox.setText("Mark as Done");
         checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -138,16 +200,55 @@ public class ViewContractActivity extends AppCompatActivity {
             }
         });
 
+        // Set click listeners
         contractBox.setOnClickListener(view -> showContractOptions(contract, lastVisit, documentId));
         contractBox.setOnLongClickListener(view -> {
             showEditOrDeleteDialog(documentId, contract);
             return true;
         });
 
+        // Add views to contract box
         contractBox.addView(contractDetails);
         contractBox.addView(checkBox);
+
+        // Add the contract box to the container
         contractsContainer.addView(contractBox);
     }
+
+    private boolean isWithinFiveDays(String nextVisit) {
+        if (nextVisit == null || nextVisit.isEmpty() || "N/A".equals(nextVisit)) {
+            return false; // Invalid or missing date
+        }
+
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            Date nextVisitDate = dateFormat.parse(nextVisit);
+            Date currentDate = new Date();
+
+            // Calculate the difference in days
+            long diffInMillis = nextVisitDate.getTime() - currentDate.getTime();
+            long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
+
+            return diffInDays >= 0 && diffInDays <= 5; // Within 5 days
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false; // Error parsing date
+        }
+    }
+
+    private void updateStatistics(int total, int behind, int upToDate) {
+        TextView totalContracts = findViewById(R.id.totalContracts);
+        TextView behindContracts = findViewById(R.id.behindContracts);
+        TextView upToDateContracts = findViewById(R.id.upToDateContracts);
+
+        totalContracts.setText("Total Contracts: " + total);
+        behindContracts.setText("Behind: " + behind);
+        upToDateContracts.setText("Up-to-Date: " + upToDate);
+    }
+
+
+
+
 
 
 
@@ -184,23 +285,31 @@ public class ViewContractActivity extends AppCompatActivity {
         dateInput.setSingleLine();
         layout.addView(dateInput);
 
+        // Add TextWatcher to format date as the user types
+        dateInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // Ensure the user types the entire date (dd/MM/yy) without auto-formatting
+                if (s.length() > 8) {
+                    Toast.makeText(ViewContractActivity.this, "Date should be in format dd/MM/yy (e.g., 12/01/25).", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
         dialog.setView(layout);
 
         dialog.setPositiveButton("Save Date", (dialogInterface, which) -> {
             String newDate = dateInput.getText().toString();
-            if (!newDate.isEmpty()) {
-                String[] dateParts = newDate.split("/");
-                if (dateParts.length == 3) {
-                    String day = dateParts[0].length() == 1 ? "0" + dateParts[0] : dateParts[0];
-                    String month = dateParts[1].length() == 1 ? "0" + dateParts[1] : dateParts[1];
-                    String year = dateParts[2];
-                    String formattedDate = day + "/" + month + "/" + year;
-                    updateVisitDates(documentId, formattedDate);
-                } else {
-                    Toast.makeText(this, "Invalid date format!", Toast.LENGTH_SHORT).show();
-                }
+            if (!newDate.isEmpty() && newDate.matches("\\d{2}/\\d{2}/\\d{4}")) {
+                updateVisitDates(documentId, newDate);
             } else {
-                Toast.makeText(this, "Date cannot be empty!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Invalid date format!", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -212,6 +321,7 @@ public class ViewContractActivity extends AppCompatActivity {
         dialog.setNegativeButton("Cancel", null);
         dialog.show();
     }
+
 
     private String calculateNextVisit(Map<String, Object> contract) {
         String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
@@ -315,6 +425,22 @@ public class ViewContractActivity extends AppCompatActivity {
     // This is the method to update a specific field in the Firestore database
     private void updateContractField(String documentId, String field, String newValue) {
         String tableName = userName + " Contracts";
+
+        // Validate the 'Visits' field to ensure it's a valid single- or double-digit number
+        if (field.equalsIgnoreCase("visits")) {
+            try {
+                int visits = Integer.parseInt(newValue);
+                if (visits < 1 || visits > 99) { // Check if it's a valid single- or double-digit number
+                    Toast.makeText(this, "Visits must be a number between 1 and 99.", Toast.LENGTH_SHORT).show();
+                    return; // Exit without updating
+                }
+            } catch (NumberFormatException e) {
+                Toast.makeText(this, "Invalid number format for Visits.", Toast.LENGTH_SHORT).show();
+                return; // Exit without updating
+            }
+        }
+
+        // Proceed with updating the field in Firestore
         Map<String, Object> updates = new HashMap<>();
         updates.put(field, newValue);
 
