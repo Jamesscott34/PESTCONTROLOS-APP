@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -170,39 +171,31 @@ public class ViewContractActivity extends AppCompatActivity {
         String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
         String nextVisit = calculateNextVisit(contract);
 
-        // Determine background color based on nextVisit and current date
-        if ("N/A".equals(nextVisit)) {
-            contractBox.setBackgroundColor(Color.RED); // Red background for missing next visit date
-        } else {
-            try {
-                Date nextVisitDate = dateFormat.parse(nextVisit);
-                Date currentDate = new Date();
+        // Log values for debugging
+        Log.d("NextVisitDebug", "Contract: " + name + ", Next Visit: " + nextVisit);
 
-                if (currentDate.after(nextVisitDate)) {
-                    // If the next visit date has passed
-                    contractBox.setBackgroundColor(Color.RED);
-                } else if (isWithinFiveDays(nextVisit)) {
-                    // If the next visit is within 5 days
-                    contractBox.setBackgroundColor(Color.YELLOW);
-                } else {
-                    // Normal background for future dates beyond 5 days
-                    contractBox.setBackgroundColor(Color.WHITE);
-                }
-            } catch (Exception e) {
-                // Handle invalid date parsing
-                contractBox.setBackgroundColor(Color.RED);
-            }
+        // Determine background color based on nextVisit
+        if ("N/A".equals(nextVisit)) {
+            // Red background for missing or unavailable next visit date
+            contractBox.setBackgroundColor(Color.RED);
+        } else if (isWithinFiveDays(nextVisit)) {
+            // Yellow background if next visit is within 5 days
+            contractBox.setBackgroundColor(Color.YELLOW);
+        } else {
+            // Default background color for other cases
+            contractBox.setBackgroundColor(Color.WHITE);
+            
         }
 
         // Create contract details TextView
         TextView contractDetails = new TextView(this);
         contractDetails.setText(
                 "Name: " + name + "\n" +
-                        "Address: " + address + "\n" +
-                        "Email: " + email + "\n" +
-                        "Contact: " + contact + "\n" +
-                        "Last Visit: " + lastVisit + "\n" +
-                        "Next Visit: " + nextVisit
+                "Address: " + address + "\n" +
+                "Email: " + email + "\n" +
+                "Contact: " + contact + "\n" +
+                "Last Visit: " + lastVisit + "\n" +
+                "Next Visit: " + nextVisit
         );
         contractDetails.setTextColor(Color.BLACK);
 
@@ -229,6 +222,8 @@ public class ViewContractActivity extends AppCompatActivity {
         // Add the contract box to the container
         contractsContainer.addView(contractBox);
     }
+
+
 
 
     private boolean isWithinFiveDays(String nextVisit) {
@@ -340,20 +335,24 @@ public class ViewContractActivity extends AppCompatActivity {
 
 
     private String calculateNextVisit(Map<String, Object> contract) {
+        // Use dd/MM/yy for two-digit years
+        SimpleDateFormat shortYearFormat = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+
         String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
         int visits = contract.get("visits") != null ? Integer.parseInt(contract.get("visits").toString()) : 0;
 
-        if (lastVisit.equals("N/A") || visits == 0) {
+        if ("N/A".equals(lastVisit) || visits == 0) {
             return "N/A";
         }
 
         Calendar calendar = Calendar.getInstance();
         try {
-            calendar.setTime(dateFormat.parse(lastVisit));
+            calendar.setTime(dateFormat.parse(lastVisit)); // Parse using full date format
         } catch (Exception e) {
             return "Invalid Date";
         }
 
+        // Adjust the next visit date based on the number of visits
         switch (visits) {
             case 8:
                 calendar.add(Calendar.WEEK_OF_YEAR, 6);
@@ -371,8 +370,10 @@ public class ViewContractActivity extends AppCompatActivity {
                 return "N/A";
         }
 
-        return dateFormat.format(calendar.getTime());
+        // Return the next visit date in the short year format (dd/MM/yy)
+        return shortYearFormat.format(calendar.getTime());
     }
+
 
 
     private void updateVisitDates(String documentId, String lastVisit) {
