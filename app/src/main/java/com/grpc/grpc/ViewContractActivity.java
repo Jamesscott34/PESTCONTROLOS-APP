@@ -170,13 +170,28 @@ public class ViewContractActivity extends AppCompatActivity {
         String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
         String nextVisit = calculateNextVisit(contract);
 
-        // Determine background color based on lastVisit and nextVisit
-        if ("N/A".equals(lastVisit)) {
-            contractBox.setBackgroundColor(Color.RED); // Red background for missing last date
-        } else if (isWithinFiveDays(nextVisit)) {
-            contractBox.setBackgroundColor(Color.YELLOW); // Yellow background if next visit is within 5 days
+        // Determine background color based on nextVisit and current date
+        if ("N/A".equals(nextVisit)) {
+            contractBox.setBackgroundColor(Color.RED); // Red background for missing next visit date
         } else {
-            contractBox.setBackgroundColor(Color.WHITE); // Normal background for other cases
+            try {
+                Date nextVisitDate = dateFormat.parse(nextVisit);
+                Date currentDate = new Date();
+
+                if (currentDate.after(nextVisitDate)) {
+                    // If the next visit date has passed
+                    contractBox.setBackgroundColor(Color.RED);
+                } else if (isWithinFiveDays(nextVisit)) {
+                    // If the next visit is within 5 days
+                    contractBox.setBackgroundColor(Color.YELLOW);
+                } else {
+                    // Normal background for future dates beyond 5 days
+                    contractBox.setBackgroundColor(Color.WHITE);
+                }
+            } catch (Exception e) {
+                // Handle invalid date parsing
+                contractBox.setBackgroundColor(Color.RED);
+            }
         }
 
         // Create contract details TextView
@@ -214,6 +229,7 @@ public class ViewContractActivity extends AppCompatActivity {
         // Add the contract box to the container
         contractsContainer.addView(contractBox);
     }
+
 
     private boolean isWithinFiveDays(String nextVisit) {
         if (nextVisit == null || nextVisit.isEmpty() || "N/A".equals(nextVisit)) {
@@ -281,11 +297,11 @@ public class ViewContractActivity extends AppCompatActivity {
 
         // EditText for date input
         EditText dateInput = new EditText(this);
-        dateInput.setHint("Enter Last Visit Date (dd/MM/yyyy)");
+        dateInput.setHint("Enter Last Visit Date (dd/MM/yy)");
         dateInput.setSingleLine();
         layout.addView(dateInput);
 
-        // Add TextWatcher to format date as the user types
+        // Add TextWatcher for basic user feedback
         dateInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -295,9 +311,8 @@ public class ViewContractActivity extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable s) {
-                // Ensure the user types the entire date (dd/MM/yy) without auto-formatting
                 if (s.length() > 8) {
-                    Toast.makeText(ViewContractActivity.this, "Date should be in format dd/MM/yy (e.g., 12/01/25).", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ViewContractActivity.this, "Date should be in format dd/MM/yy (e.g., 15/01/25).", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -305,11 +320,11 @@ public class ViewContractActivity extends AppCompatActivity {
         dialog.setView(layout);
 
         dialog.setPositiveButton("Save Date", (dialogInterface, which) -> {
-            String newDate = dateInput.getText().toString();
-            if (!newDate.isEmpty() && newDate.matches("\\d{2}/\\d{2}/\\d{4}")) {
-                updateVisitDates(documentId, newDate);
+            String newDate = dateInput.getText().toString().trim();
+            if (!newDate.isEmpty() && newDate.matches("^\\d{2}/\\d{2}/\\d{2}$")) {
+                updateVisitDates(documentId, newDate); // Save the date if valid
             } else {
-                Toast.makeText(this, "Invalid date format!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Invalid date format! Please use dd/MM/yy (e.g., 15/01/25).", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -321,6 +336,7 @@ public class ViewContractActivity extends AppCompatActivity {
         dialog.setNegativeButton("Cancel", null);
         dialog.show();
     }
+
 
 
     private String calculateNextVisit(Map<String, Object> contract) {
