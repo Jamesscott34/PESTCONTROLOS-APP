@@ -275,9 +275,9 @@ public class General4ptActivity extends AppCompatActivity {
             document.add(table);
 
             // Payment Summary
-            document.add(new Paragraph("\nPayment Summary").setFontSize(14).setBold().setUnderline());
-            document.add(new Paragraph("First Quarter Payment: €" + String.format("%.2f", firstQuarterPayment)).setFontSize(12));
-            document.add(new Paragraph("Total Payment Due: €" + String.format("%.2f", grandTotal)).setFontSize(12).setBold());
+            document.add(new Paragraph("\nPayment Summary").setFontSize(16).setBold().setUnderline());
+            document.add(new Paragraph("Quarterly Payments: €" + String.format("%.2f", firstQuarterPayment)).setFontSize(14));
+            document.add(new Paragraph("First Quarter Payment Due: €" + String.format("%.2f", firstQuarterPayment)).setFontSize(16).setBold());
 
             document.close();
             return pdfFile;
