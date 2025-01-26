@@ -15,7 +15,7 @@ public class CalendarActivity extends AppCompatActivity {
 
     private CalendarView calendarView;
     private TextView textViewSelectedDate;
-    private Button buttonAddEvent, buttonBack;
+    private Button buttonAddEvent;
     private ListView listViewEvents;
 
     private ArrayList<String> eventList;
@@ -42,7 +42,7 @@ public class CalendarActivity extends AppCompatActivity {
         calendarView = findViewById(R.id.calendarView);
         textViewSelectedDate = findViewById(R.id.textViewSelectedDate);
         buttonAddEvent = findViewById(R.id.buttonAddEvent);
-        buttonBack = findViewById(R.id.buttonback);
+
         listViewEvents = findViewById(R.id.listViewEvents);
 
         dbHelper = new ReportDatabaseHelper(this);
@@ -65,10 +65,7 @@ public class CalendarActivity extends AppCompatActivity {
 
         buttonAddEvent.setOnClickListener(view -> showAddEventDialog());
 
-        buttonBack.setOnClickListener(view -> {
-            startActivity(new Intent(CalendarActivity.this, MainActivity.class));
-            finish();
-        });
+
 
         listViewEvents.setOnItemClickListener((parent, view, position, id) -> openAddressInMaps(eventList.get(position)));
 
@@ -210,8 +207,6 @@ public class CalendarActivity extends AppCompatActivity {
             startActivity(mapIntent);
         }
     }
-
-
 
     private void showOptionsDialog(String eventName) {
         AlertDialog.Builder optionsDialog = new AlertDialog.Builder(this);

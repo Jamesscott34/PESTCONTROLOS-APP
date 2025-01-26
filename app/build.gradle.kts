@@ -62,6 +62,9 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
 
+    implementation("androidx.viewpager2:viewpager2:1.0.0")
+    implementation("androidx.fragment:fragment-ktx:1.6.0")
+
 
     // ✅ File Provider and File Access
     implementation("androidx.core:core-ktx:1.12.0")

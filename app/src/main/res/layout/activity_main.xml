@@ -1,52 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@drawable/bk"
     android:padding="16dp">
 
-    <!-- Welcome Message -->
-    <TextView
-        android:id="@+id/welcomeTextView"
+    <ScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Welcome, User!"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="24dp" />
+        android:layout_height="0dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/LogoutButton">
 
-    <!-- Other UI elements -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <!-- Welcome Message -->
+            <TextView
+                android:id="@+id/welcomeTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Welcome, User!"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Buttons -->
+            <Button
+                android:id="@+id/ReportButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Create Report"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/ReportViewButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="View Reports"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/buttonOpenCalendar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Open Calendar"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/ContractsButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Contracts"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/GeneralQuotesButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="General Quotes"
+                android:layout_marginBottom="8dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Logout Button -->
     <Button
-        android:id="@+id/ReportButton"
+        android:id="@+id/LogoutButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Create Report" />
-
-    <Button
-        android:id="@+id/ReportViewButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="View Reports" />
-
-    <Button
-        android:id="@+id/buttonOpenCalendar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Open Calendar" />
-
-    <Button
-        android:id="@+id/ContractsButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Contracts" />
-
-    <Button
-        android:id="@+id/GeneralQuotesButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="General Quotes" />
-
-</LinearLayout>
+        android:text="Logout"
+        android:background="@android:color/holo_red_dark"
+        android:textColor="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

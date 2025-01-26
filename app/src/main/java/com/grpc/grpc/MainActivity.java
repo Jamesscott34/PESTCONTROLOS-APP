@@ -1,6 +1,5 @@
 package com.grpc.grpc;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
@@ -9,11 +8,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button reportButton, reportViewButton, calendarButton, contractsButton, quotesButton;
+    private Button reportButton, reportViewButton, calendarButton, contractsButton, quotesButton, logoutButton;
     private String userEmail;
-    private TextView welcomeTextView; // TextView to display the welcome message
+    private TextView welcomeTextView;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -27,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize the welcome TextView
         welcomeTextView = findViewById(R.id.welcomeTextView);
-        welcomeTextView.setText("Welcome, " + userName + "!"); // Set the welcome message
+        welcomeTextView.setText("Welcome, " + userName + "!");
 
         // Initialize Buttons
         reportButton = findViewById(R.id.ReportButton);
@@ -35,38 +33,42 @@ public class MainActivity extends AppCompatActivity {
         calendarButton = findViewById(R.id.buttonOpenCalendar);
         contractsButton = findViewById(R.id.ContractsButton);
         quotesButton = findViewById(R.id.GeneralQuotesButton);
+        logoutButton = findViewById(R.id.LogoutButton); // Logout button
 
         // Button Listeners
         reportButton.setOnClickListener(view -> {
-            // Navigate to Create Report screen
             Intent intent = new Intent(MainActivity.this, ReportSelectionActivity.class);
             startActivity(intent);
         });
 
         reportViewButton.setOnClickListener(view -> {
-            // Navigate to View Reports screen
             Intent intent = new Intent(MainActivity.this, PDFSelectionActivity.class);
             startActivity(intent);
         });
 
         calendarButton.setOnClickListener(view -> {
-            // Navigate to Calendar screen
             Intent intent = new Intent(MainActivity.this, CalendarActivity.class);
             startActivity(intent);
         });
 
         contractsButton.setOnClickListener(view -> {
-            // Navigate to Contracts screen
             Intent intent = new Intent(MainActivity.this, ContractsActivity.class);
-            intent.putExtra("USER_NAME", userName); // Pass the extracted name to ContractsActivity
+            intent.putExtra("USER_NAME", userName);
             startActivity(intent);
         });
 
-
         quotesButton.setOnClickListener(view -> {
-            // Navigate to General Quotes screen
             Intent intent = new Intent(MainActivity.this, QuotesActivity.class);
+            intent.putExtra("USER_NAME", userName);
             startActivity(intent);
+        });
+
+        logoutButton.setOnClickListener(view -> {
+            // Navigate back to LoginActivity and clear session data
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clear activity stack
+            startActivity(intent);
+            finish(); // Close the current activity
         });
     }
 
@@ -74,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
     private String extractNameFromEmail(String email) {
         if (email != null && email.contains("@")) {
             String namePart = email.split("@")[0];
-            return namePart.substring(0, 1).toUpperCase() + namePart.substring(1); // Capitalize first letter
+            return namePart.substring(0, 1).toUpperCase() + namePart.substring(1);
         }
         return "User";
     }

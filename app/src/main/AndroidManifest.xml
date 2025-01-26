@@ -35,6 +35,7 @@
 
         <!-- Company Report Activity -->
 
+
         <activity
             android:name=".MainActivity"
             android:exported="true"/>
@@ -86,6 +87,18 @@
 
         <activity
             android:name=".QuotesActivity"
+            android:exported="true"/>
+
+        <activity
+            android:name=".General8ptActivity"
+            android:exported="true"/>
+
+        <activity
+            android:name=".General6ptActivity"
+            android:exported="true"/>
+
+        <activity
+            android:name=".General4ptActivity"
             android:exported="true"/>
 
         <!-- FileProvider Setup -->

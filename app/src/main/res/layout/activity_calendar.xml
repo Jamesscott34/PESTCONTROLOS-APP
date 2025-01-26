@@ -55,11 +55,5 @@
         android:scrollbars="vertical"
         android:dividerHeight="8dp"/>
 
-    <!-- Button to return to the previous activity -->
-    <Button
-        android:id="@+id/buttonback"
-        android:text="Return"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"/>
+
 </LinearLayout>
