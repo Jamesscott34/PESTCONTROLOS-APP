@@ -38,16 +38,19 @@ public class MainActivity extends AppCompatActivity {
         // Button Listeners
         reportButton.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, ReportSelectionActivity.class);
+            intent.putExtra("USER_NAME", userName);
             startActivity(intent);
         });
 
         reportViewButton.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, PDFSelectionActivity.class);
+            intent.putExtra("USER_NAME", userName);
             startActivity(intent);
         });
 
         calendarButton.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, CalendarActivity.class);
+            intent.putExtra("USER_NAME", userName);
             startActivity(intent);
         });
 

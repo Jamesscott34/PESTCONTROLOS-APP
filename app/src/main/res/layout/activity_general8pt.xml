@@ -3,15 +3,58 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center"
     android:padding="16dp"
-    android:background="@drawable/bk">
+    android:background="@drawable/bk"
+    android:gravity="top|center_horizontal">
 
+    <!-- Welcome Text at the Top -->
     <TextView
         android:id="@+id/welcomeTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:textStyle="bold"
         android:text="Welcome!"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        android:layout_marginBottom="16dp" />
+
+    <!-- Input Fields -->
+    <EditText
+        android:id="@+id/companyNameInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Company Name"
+        android:layout_marginBottom="12dp"
+        android:padding="12dp"
+        android:background="@android:drawable/editbox_background_normal" />
+
+    <EditText
+        android:id="@+id/companyAddressInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Company Address"
+        android:layout_marginBottom="12dp"
+        android:padding="12dp"
+        android:background="@android:drawable/editbox_background_normal" />
+
+    <EditText
+        android:id="@+id/companyContactInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Company Contact"
+        android:layout_marginBottom="16dp"
+        android:padding="12dp"
+        android:background="@android:drawable/editbox_background_normal" />
+
+    <!-- Generate PDF Button -->
+    <Button
+        android:id="@+id/generatePdfButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Generate PDF Quote"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:padding="12dp"
+        android:backgroundTint="@color/teal_700"
+        android:textColor="@android:color/white" />
+
 </LinearLayout>

@@ -26,6 +26,7 @@ public class QuotesActivity extends AppCompatActivity {
         Button button8ptContact = findViewById(R.id.button8ptContact);
         Button button6ptContract = findViewById(R.id.button6ptContract);
         Button button4ptContract = findViewById(R.id.button4ptContract);
+        Button button12ptContract = findViewById(R.id.button12ptContract);
 
         // Open General8ptActivity
         button8ptContact.setOnClickListener(view -> {
@@ -44,6 +45,13 @@ public class QuotesActivity extends AppCompatActivity {
         // Open General4ptActivity
         button4ptContract.setOnClickListener(view -> {
             Intent intent = new Intent(QuotesActivity.this, General4ptActivity.class);
+            intent.putExtra("USER_NAME", userName);
+            startActivity(intent);
+        });
+
+        // Open General12ptActivity
+        button12ptContract.setOnClickListener(view -> {
+            Intent intent = new Intent(QuotesActivity.this, General12ptActivity.class);
             intent.putExtra("USER_NAME", userName);
             startActivity(intent);
         });

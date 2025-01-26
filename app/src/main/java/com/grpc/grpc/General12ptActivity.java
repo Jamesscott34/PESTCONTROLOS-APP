@@ -14,14 +14,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
-import com.itextpdf.layout.element.Cell;
-import com.itextpdf.layout.element.Image;
-import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.element.*;
+import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
 
 import java.io.File;
@@ -34,7 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-public class General4ptActivity extends AppCompatActivity {
+public class General12ptActivity extends AppCompatActivity {
 
     private String userName;
     private String userEmail;
@@ -47,7 +44,7 @@ public class General4ptActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_general4pt);
+        setContentView(R.layout.activity_general12pt);
 
         // Retrieve the username
         userName = getIntent().getStringExtra("USER_NAME");
@@ -102,7 +99,7 @@ public class General4ptActivity extends AppCompatActivity {
                 "This fee covers a comprehensive yearly pest control program tailored to your site’s unique requirements. " +
                 "Our service includes regular inspections, proactive treatments, and ongoing monitoring to ensure a pest-free environment. " +
                 "We utilize advanced methods and eco-friendly solutions to deliver effective and sustainable pest management results.");
-        lineTotals.add(500.0);
+        lineTotals.add(900.0);
 
         descriptions.add("Internal Monitors Placement and Maintenance:\n" +
                 "Our skilled technicians will strategically place internal monitors on-site, targeting high-risk areas to detect pest activity. " +
@@ -158,7 +155,7 @@ public class General4ptActivity extends AppCompatActivity {
                 userMobile,                      // User mobile
                 companyName,                     // Company name
                 companyContact,                  // Company contact
-                General4ptActivity.this          // Explicitly pass the activity as Context
+                General12ptActivity.this          // Explicitly pass the activity as Context
         );
 
         if (pdfFile != null) {
@@ -177,7 +174,7 @@ public class General4ptActivity extends AppCompatActivity {
     }
 
     private void navigateBackToQuotesActivity() {
-        Intent intent = new Intent(General4ptActivity.this, QuotesActivity.class);
+        Intent intent = new Intent(General12ptActivity.this, QuotesActivity.class);
         intent.putExtra("USER_NAME", userName);
         startActivity(intent);
         finish();
@@ -288,7 +285,6 @@ public class General4ptActivity extends AppCompatActivity {
             return null;
         }
     }
-
     private String getQuotationDescription() {
         return "Quotation for Comprehensive Pest Management Services\n\n"
                 + "This quotation outlines the pest control services tailored to meet the specific needs of your premises. "
@@ -302,15 +298,15 @@ public class General4ptActivity extends AppCompatActivity {
                 + "   - 24-Hour Response Time: Guaranteed response time for internal pest activity.\n"
                 + "   - 72-Hour Response Time: Guaranteed response time for external pest activity.\n"
                 + "5. Detailed Reporting: Comprehensive documentation of each service visit, including treatments applied and recommendations for further action.\n\n"
-                + "4pt Contract:\n"
-                + "This quotation also includes a 4pt service contract that ensures a structured and consistent approach to pest control management. The 4pt contract includes:\n"
+                + "12pt Contract:\n"
+                + "This quotation also includes a 12pt service contract that ensures a structured and consistent approach to pest control management. The 12pt contract includes:\n"
                 + "1. Initial assessment and customized treatment planning.\n"
                 + "2. Installation of monitoring devices to detect pest activity.\n"
                 + "3. Regular servicing and inspection of all pest control equipment.\n"
                 + "4. Emergency response as per agreed response times.\n"
                 + "5. Preventive measures to reduce future infestations.\n"
                 + "6. Safe and eco-friendly pest control treatments.\n"
-                + "7. Four Visit a Year on site every 12 weeks.\n\n"
+                + "7. Twelve Visit a Year on site every 4 weeks.\n\n"
                 + "Additional Benefits:\n"
                 + "1. **Staff Discounts**: All pest control services are offered to your staff at discounted rates, ensuring comprehensive coverage for personal properties.\n"
                 + "2. **Discounted Spray Treatments**: All-inclusive pest spray treatments are available at a reduced price, offering exceptional value while maintaining high service standards.\n\n"
@@ -322,6 +318,4 @@ public class General4ptActivity extends AppCompatActivity {
                 + "We appreciate the opportunity to serve you and are confident in our ability to deliver quality pest control solutions. "
                 + "Should you have any questions or require further details, please do not hesitate to contact us.";
     }
-
-
 }

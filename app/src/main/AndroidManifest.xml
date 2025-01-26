@@ -101,6 +101,10 @@
             android:name=".General4ptActivity"
             android:exported="true"/>
 
+        <activity
+            android:name=".General12ptActivity"
+            android:exported="true"/>
+
         <!-- FileProvider Setup -->
         <provider
             android:name="androidx.core.content.FileProvider"
