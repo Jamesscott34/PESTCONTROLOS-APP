@@ -67,6 +67,13 @@
                 android:text="General Quotes"
                 android:layout_marginBottom="8dp" />
 
+            <Button
+                android:id="@+id/CommisionButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Commision"
+                android:layout_marginBottom="8dp" />
+
         </LinearLayout>
     </ScrollView>
 

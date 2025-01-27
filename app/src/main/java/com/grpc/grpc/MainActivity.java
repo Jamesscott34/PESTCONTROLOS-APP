@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button reportButton, reportViewButton, calendarButton, contractsButton, quotesButton, logoutButton;
+    private Button reportButton, reportViewButton, calendarButton, contractsButton, quotesButton, logoutButton, CommisionButton;
     private String userEmail;
     private TextView welcomeTextView;
 
@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
         calendarButton = findViewById(R.id.buttonOpenCalendar);
         contractsButton = findViewById(R.id.ContractsButton);
         quotesButton = findViewById(R.id.GeneralQuotesButton);
+        CommisionButton = findViewById(R.id.CommisionButton);
         logoutButton = findViewById(R.id.LogoutButton); // Logout button
 
         // Button Listeners
@@ -62,6 +63,12 @@ public class MainActivity extends AppCompatActivity {
 
         quotesButton.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, QuotesActivity.class);
+            intent.putExtra("USER_NAME", userName);
+            startActivity(intent);
+        });
+
+        CommisionButton.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, LeadsSelectionActivity.class);
             intent.putExtra("USER_NAME", userName);
             startActivity(intent);
         });

@@ -105,6 +105,18 @@
             android:name=".General12ptActivity"
             android:exported="true"/>
 
+        <activity
+            android:name=".LeadsSelectionActivity"
+            android:exported="true"/>
+
+        <activity
+            android:name=".ViewLeadsActivity"
+            android:exported="true"/>
+
+        <activity
+            android:name=".GenerateLeadsActivity"
+            android:exported="true"/>
+
         <!-- FileProvider Setup -->
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -7,4 +7,9 @@
     <item name="editTextVisits" type="id" />
     <item name="buttonAdd" type="id" />
     <item name="buttonBack" type="id" />
+    <item name="paidLeads" type="id" />
+    <item name="unpaidLeads" type="id" />
+    <item name="leadsScrollView" type="id" />
+    <item name="leadsContainer" type="id" />
+    <item name="totalLeads" type="id" />
 </resources>
