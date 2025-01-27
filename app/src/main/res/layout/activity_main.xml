@@ -68,6 +68,13 @@
                 android:layout_marginBottom="8dp" />
 
             <Button
+                android:id="@+id/ServiceAgreementButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Service agreement"
+                android:layout_marginBottom="8dp" />
+
+            <Button
                 android:id="@+id/CommisionButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

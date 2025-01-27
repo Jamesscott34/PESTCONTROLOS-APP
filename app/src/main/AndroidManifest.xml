@@ -117,6 +117,10 @@
             android:name=".GenerateLeadsActivity"
             android:exported="true"/>
 
+        <activity
+            android:name=".ServiceAgreementActivity"
+            android:exported="true"/>
+
         <!-- FileProvider Setup -->
         <provider
             android:name="androidx.core.content.FileProvider"

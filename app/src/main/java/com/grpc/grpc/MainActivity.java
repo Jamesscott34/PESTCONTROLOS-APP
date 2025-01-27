@@ -1,5 +1,6 @@
 package com.grpc.grpc;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
@@ -8,10 +9,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button reportButton, reportViewButton, calendarButton, contractsButton, quotesButton, logoutButton, CommisionButton;
+    private Button reportButton, reportViewButton, calendarButton, contractsButton, quotesButton, logoutButton, CommisionButton, ServiceAgreementButton;
     private String userEmail;
     private TextView welcomeTextView;
 
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
         calendarButton = findViewById(R.id.buttonOpenCalendar);
         contractsButton = findViewById(R.id.ContractsButton);
         quotesButton = findViewById(R.id.GeneralQuotesButton);
+        ServiceAgreementButton = findViewById(R.id.ServiceAgreementButton);
         CommisionButton = findViewById(R.id.CommisionButton);
         logoutButton = findViewById(R.id.LogoutButton); // Logout button
 
@@ -69,6 +72,12 @@ public class MainActivity extends AppCompatActivity {
 
         CommisionButton.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, LeadsSelectionActivity.class);
+            intent.putExtra("USER_NAME", userName);
+            startActivity(intent);
+        });
+
+        ServiceAgreementButton.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, ServiceAgreementActivity.class);
             intent.putExtra("USER_NAME", userName);
             startActivity(intent);
         });
