@@ -1,14 +1,19 @@
 package com.grpc.grpc;
 
+import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
-import android.widget.*;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Activity for creating a detailed quotation report with dynamic line items and professional PDF generation.
- */
 public class CreateReportActivity extends AppCompatActivity {
 
     private EditText dateInput, addressInput, quoteDescriptionInput, emailInput, mobileNumberInput;
@@ -18,10 +23,20 @@ public class CreateReportActivity extends AppCompatActivity {
     private List<EditText> descriptionInputs = new ArrayList<>();
     private List<EditText> lineTotalInputs = new ArrayList<>();
 
+    private String userName;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quotation_report);
+
+        // Retrieve the user's name passed from ContractsActivity
+        userName = getIntent().getStringExtra("USER_NAME");
+        if (userName == null || userName.isEmpty()) {
+            Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         // Initialize UI components
         dateInput = findViewById(R.id.dateInput);
@@ -41,15 +56,19 @@ public class CreateReportActivity extends AppCompatActivity {
         // Button Click Listeners
         addLineItemButton.setOnClickListener(v -> addLineItem());
         generateQuoteButton.setOnClickListener(v -> generatePDFReport());
-        backButton.setOnClickListener(v -> finish());
+        backButton.setOnClickListener(v -> navigateBackToPreviousActivity());
 
         // Add the first line item field automatically
         addLineItem();
     }
 
-    /**
-     * Adds a dynamic line item to the report.
-     */
+    private void navigateBackToPreviousActivity() {
+        Intent backIntent = new Intent();
+        backIntent.putExtra("USER_NAME", userName); // Pass the username back
+        setResult(RESULT_OK, backIntent); // Set result for the previous activity
+        finish(); // Close the activity
+    }
+
     private void addLineItem() {
         LinearLayout lineItemLayout = new LinearLayout(this);
         lineItemLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -71,13 +90,6 @@ public class CreateReportActivity extends AppCompatActivity {
         lineTotalInputs.add(lineTotalInput);
     }
 
-    /**
-     * Generates the PDF quotation report and saves it to the GRPEST_QUOTES folder.
-     * Validates user inputs, collects line items, and stores the report in the database.
-     */
-    /**
-     * Generates a PDF quotation report and saves it to the database.
-     */
     private void generatePDFReport() {
         String userEmail = emailInput.getText().toString().trim();
         String mobileNumber = mobileNumberInput.getText().toString().trim();
@@ -105,35 +117,24 @@ public class CreateReportActivity extends AppCompatActivity {
             }
         }
 
-        // Save the report to the database and generate the PDF
         double totalAmount = calculateTotal(lineTotals);
+
+        // Save the report to the database
         ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
-
-// Insert the quote into the database with corrected arguments
         dbHelper.insertQuote(
-                quoteNumber,                   // Quote Number
-                date,                          // Date
-                address,                       // Address
-                quoteDescription,              // Quote Description
-                totalAmount,                   // Total Amount
-                userEmail,                     // User Email
-                mobileNumber,                   // Mobile Number
-                true);
+                quoteNumber, date, address, quoteDescription,
+                totalAmount, userEmail, mobileNumber, true);
 
-// Generate the PDF using the corrected arguments
+        // Generate the PDF
         PDFQuotationReportGenerator.generateQuotationReport(
-                quoteNumber,                   // Quote Number
-                address,                       // Customer Address
-                quoteDescription,              // Quote Description
-                descriptions,                  // List of Descriptions for Line Items
-                lineTotals,                    // List of Line Totals
-                userEmail,                     // User Email
-                mobileNumber,                  // Mobile Number
-                this                           // Context
-        );
+                quoteNumber, address, quoteDescription,
+                descriptions, lineTotals, userEmail, mobileNumber, this);
 
         Toast.makeText(this, "Report Generated Successfully!", Toast.LENGTH_SHORT).show();
         quoteNumberCounter++;
+
+        // Return to the previous activity with username
+        navigateBackToPreviousActivity();
     }
 
     private double calculateTotal(List<Double> lineTotals) {

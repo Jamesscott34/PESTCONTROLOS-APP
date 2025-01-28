@@ -3,7 +3,6 @@ package com.grpc.grpc;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -20,6 +19,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -121,7 +121,7 @@ public class ViewLeadsActivity extends AppCompatActivity {
 
                             // Check if the current user can view the lead
                             String addedBy = (String) lead.get("Added By");
-                            if (userName.equalsIgnoreCase("James") || userName.equalsIgnoreCase("Ian") ||
+                            if (userName.equalsIgnoreCase("James") || userName.equalsIgnoreCase("Ian") || userName.equalsIgnoreCase("Kristine") ||
                                     (addedBy != null && addedBy.equalsIgnoreCase(userName))) {
                                 allLeads.add(lead);
 
@@ -171,12 +171,13 @@ public class ViewLeadsActivity extends AppCompatActivity {
 
         String addedBy = (String) lead.get("Added By");
         String premiseName = (String) lead.get("Premise Name");
-        String premiseAddress = (String) lead.get("Premise Address");
-        String commission = String.format(Locale.getDefault(), "%.2f", (double) lead.get("Commission"));
+        double priceQuoted = (double) lead.get("Price Quoted");
+        double commission = (double) lead.get("Commission");
         String dateSubmitted = (String) lead.get("Date");
         String reason = (String) lead.get("Reason");
         String invoiceStatus = (String) lead.get("Invoice Status");
         String paymentDate = (String) lead.get("Payment Date");
+        double materialsCost = lead.get("Materials Cost") != null ? (double) lead.get("Materials Cost") : 0.0;
 
         // Format Invoice Status
         String formattedInvoiceStatus;
@@ -187,34 +188,56 @@ public class ViewLeadsActivity extends AppCompatActivity {
         }
 
         TextView leadDetails = new TextView(this);
-        leadDetails.setText(
-                "Added By: " + addedBy + "\n" +
+        String leadInfo = "Added By: " + addedBy + "\n" +
                 "Premise Name: " + premiseName + "\n" +
-                "Commission: €" + commission + "\n" +
+                "Price Quoted: €" + String.format(Locale.getDefault(), "%.2f", priceQuoted) + "\n";
+
+        if ("Job".equalsIgnoreCase(reason)) {
+            leadInfo += "Materials/Contractors Cost: €" + String.format(Locale.getDefault(), "%.2f", materialsCost) + "\n";
+        }
+
+        leadInfo += "Commission: €" + String.format(Locale.getDefault(), "%.2f", commission) + "\n" +
                 "Reason: " + reason + "\n" +
                 "Date Submitted: " + dateSubmitted + "\n" +
-                formattedInvoiceStatus
-        );
+                formattedInvoiceStatus;
 
+        leadDetails.setText(leadInfo);
+
+        // Single press: Show options for "Mark as Paid" or "Edit Materials"
         leadBox.setOnClickListener(v -> {
-            if (userName.equalsIgnoreCase("James") || userName.equalsIgnoreCase("Ian")) {
-                new AlertDialog.Builder(this)
-                        .setTitle("Company Payment Made?")
-                        .setMessage("Do you want to mark this invoice as paid?")
-                        .setPositiveButton("Yes", (dialog, which) -> {
-                            String currentDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
-                            DocumentReference docRef = db.collection("Leads").document(documentId);
-                            docRef.update("Invoice Status", "Paid", "Payment Date", currentDate)
-                                    .addOnSuccessListener(aVoid -> Toast.makeText(this, "Invoice marked as paid!", Toast.LENGTH_SHORT).show())
-                                    .addOnFailureListener(e -> Toast.makeText(this, "Failed to update lead: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-                        })
-                        .setNegativeButton("No", null)
-                        .show();
+            AlertDialog.Builder optionsDialog = new AlertDialog.Builder(this);
+            optionsDialog.setTitle("Select an Action");
+
+            // Check the reason to determine the options to display
+            if ("Contract".equalsIgnoreCase(reason)) {
+                // Only show "Mark as Paid" for contracts
+                optionsDialog.setItems(new String[]{"Mark as Paid"}, (dialog, which) -> {
+                    if (which == 0) {
+                        // Mark as Paid
+                        markAsPaid(documentId);
+                    }
+                });
+            } else if ("Job".equalsIgnoreCase(reason)) {
+                // Show both options for jobs
+                optionsDialog.setItems(new String[]{"Mark as Paid", "Add/Edit Materials"}, (dialog, which) -> {
+                    if (which == 0) {
+                        // Mark as Paid
+                        markAsPaid(documentId);
+                    } else if (which == 1) {
+                        // Edit Materials
+                        showEditMaterialsDialog(lead, documentId);
+                    }
+                });
             }
+
+            optionsDialog.setNegativeButton("Cancel", null);
+            optionsDialog.show();
         });
 
+
+        // Long press: Delete the lead
         leadBox.setOnLongClickListener(v -> {
-            if (userName.equalsIgnoreCase("James") || userName.equalsIgnoreCase("Ian")) {
+            if (userName.equalsIgnoreCase("James") || userName.equalsIgnoreCase("Ian") || userName.equalsIgnoreCase("Kristine")) {
                 new AlertDialog.Builder(this)
                         .setTitle("Delete Lead")
                         .setMessage("Are you sure you want to delete this lead?")
@@ -236,6 +259,67 @@ public class ViewLeadsActivity extends AppCompatActivity {
         leadBox.addView(leadDetails);
         leadsContainer.addView(leadBox);
     }
+
+    private void markAsPaid(String documentId) {
+        String currentDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
+        db.collection("Leads").document(documentId)
+                .update("Invoice Status", "Paid", "Payment Date", currentDate)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Invoice marked as paid!", Toast.LENGTH_SHORT).show();
+                    loadAllLeads(); // Reload leads to reflect changes
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Failed to update invoice: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void showEditMaterialsDialog(Map<String, Object> lead, String documentId) {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setTitle("Add/Edit Materials Cost");
+
+        // Layout for dialog
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(16, 16, 16, 16);
+
+        // Materials Cost input
+        EditText materialsCostInput = new EditText(this);
+        materialsCostInput.setHint("Materials/Contractors Cost");
+        materialsCostInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        materialsCostInput.setText(String.valueOf(lead.get("Materials Cost") != null ? (double) lead.get("Materials Cost") : 0.0));
+        layout.addView(materialsCostInput);
+
+        dialog.setView(layout);
+
+        dialog.setPositiveButton("Save", (dialogInterface, which) -> {
+            String materialsCostStr = materialsCostInput.getText().toString().trim();
+            if (materialsCostStr.isEmpty()) {
+                Toast.makeText(this, "Materials cost is required.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            double materialsCost = Double.parseDouble(materialsCostStr);
+            double priceQuoted = (double) lead.get("Price Quoted");
+            double newCommission = (priceQuoted - materialsCost) * 0.10;
+            if (newCommission < 0) newCommission = 0; // Prevent negative commission
+
+            // Update Firestore
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("Materials Cost", materialsCost);
+            updates.put("Commission", newCommission);
+
+            db.collection("Leads").document(documentId).update(updates)
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(this, "Materials cost updated successfully!", Toast.LENGTH_SHORT).show();
+                        loadAllLeads(); // Reload leads
+                    })
+                    .addOnFailureListener(e -> Toast.makeText(this, "Failed to update materials cost: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        });
+
+        dialog.setNegativeButton("Cancel", null);
+        dialog.show();
+    }
+
+
+
 
     private void updateStatistics(int total, int paid, int unpaid) {
         totalLeads.setText("Total Leads: " + total);

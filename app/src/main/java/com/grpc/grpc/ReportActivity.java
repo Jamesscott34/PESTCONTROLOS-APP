@@ -47,6 +47,8 @@ public class ReportActivity extends AppCompatActivity {
             siteInspectionInput, recommendationsInput, followUpInput,
             prepInput, techInput;
 
+    private String userName;
+
     // Buttons for actions
     private Button saveButton, backButton, selectImageButton;
 
@@ -64,6 +66,15 @@ public class ReportActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_report);
+
+
+        // Retrieve the user's name passed from ContractsActivity
+        userName = getIntent().getStringExtra("USER_NAME");
+        if (userName == null || userName.isEmpty()) {
+            Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         // Initialize input fields
         nameInput = findViewById(R.id.nameInput);
@@ -91,10 +102,17 @@ public class ReportActivity extends AppCompatActivity {
 
         // Set up button actions
         selectImageButton.setOnClickListener(view -> openImageSelector());
-        saveButton.setOnClickListener(view -> saveReport(db));
+        saveButton.setOnClickListener(view -> {
+            saveReport(db); // Keep the save functionality
+            Intent intent = new Intent(ReportActivity.this, ReportViewActivity.class);
+            intent.putExtra("USER_NAME", userName); // Pass the userName to the main activity
+            startActivity(intent); // Navigate to MainActivity
+            finish(); // Close the current activity
+        });
         backButton.setOnClickListener(view -> {
-            Intent intent = new Intent(ReportActivity.this, MainActivity.class);
-            startActivity(intent);
+            Intent intent = new Intent(ReportActivity.this,MainActivity.class);
+            intent.putExtra("USER_NAME", userName); // Pass the userName to the main activity
+            startActivity(intent); // Start the main activity
             finish(); // Close the current activity
         });
     }

@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">grpc</string>
+
+    <string-array name="reason_options">
+        <item>Job</item>
+        <item>Contract</item>
+    </string-array>
+
 </resources>

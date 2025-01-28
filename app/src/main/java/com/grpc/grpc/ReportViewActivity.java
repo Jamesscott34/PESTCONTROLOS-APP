@@ -72,6 +72,8 @@ public class ReportViewActivity extends AppCompatActivity {
     private List<File> reportFiles;
     private List<File> allReportFiles;
 
+    private String userName;
+
     /**
      * Initializes the activity and sets up the RecyclerView, search bar, and return button.
      *
@@ -81,6 +83,16 @@ public class ReportViewActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_report_viewer);
+
+
+
+        // Retrieve the user's name passed from ContractsActivity
+        userName = getIntent().getStringExtra("USER_NAME");
+        if (userName == null || userName.isEmpty()) {
+            Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         // Initialize UI components
         recyclerView = findViewById(R.id.report_recycler_view);
@@ -108,7 +120,12 @@ public class ReportViewActivity extends AppCompatActivity {
         });
 
         // Return to the main activity when the return button is clicked
-        returnButton.setOnClickListener(view -> finish());
+        returnButton.setOnClickListener(view -> {
+            Intent intent = new Intent(ReportViewActivity.this, MainActivity.class);
+            intent.putExtra("USER_NAME", userName); // Pass the userName to the main activity
+            startActivity(intent); // Start the main activity
+            finish(); // Close the current activity
+        });
     }
 
     /**
@@ -421,16 +438,5 @@ public class ReportViewActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Placeholder method for rewriting the selected PDF by replacing its content.
-     *
-     * @param file The PDF file to be rewritten.
-     */
-    private void rewritePDF(File file) {
-        // Display a toast message indicating this feature is not yet implemented
-        Toast.makeText(this, "Rewrite functionality is not implemented yet.", Toast.LENGTH_SHORT).show();
 
-        // Alternatively, add a TODO comment if planning to implement later
-        // TODO: Implement the functionality to rewrite the PDF with new content
-    }
 }

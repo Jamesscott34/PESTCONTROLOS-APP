@@ -72,7 +72,11 @@ public class General12ptActivity extends AppCompatActivity {
         generatePdfButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                generateQuote();
+                generateQuote(); // Keep the existing functionality
+                Intent intent = new Intent(General12ptActivity.this, QuotationViewActivity.class); // Adjust MainActivity if necessary
+                intent.putExtra("USER_NAME", userName); // Pass the userName to the next activity
+                startActivity(intent); // Navigate to MainActivity
+                finish(); // Close the current activity
             }
         });
     }

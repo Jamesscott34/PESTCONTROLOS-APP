@@ -52,12 +52,17 @@
             android:layout_marginBottom="12dp" />
 
         <!-- Reason -->
-        <EditText
-            android:id="@+id/reasonEditText"
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Reason"
-            android:inputType="text"
+            android:text="Reason"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/reasonSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="12dp" />
 
         <!-- Price Quoted -->

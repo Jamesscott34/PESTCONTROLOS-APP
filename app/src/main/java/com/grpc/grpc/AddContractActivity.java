@@ -1,6 +1,7 @@
 package com.grpc.grpc;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -47,7 +48,6 @@ public class AddContractActivity extends AppCompatActivity {
         addButton = findViewById(R.id.buttonAdd);
         backButton = findViewById(R.id.buttonBack);
 
-        // Add Button Listener
         addButton.setOnClickListener(view -> {
             String name = nameEditText.getText().toString().trim();
             String address = addressEditText.getText().toString().trim();
@@ -81,24 +81,78 @@ public class AddContractActivity extends AppCompatActivity {
             if (email.isEmpty()) email = "N/A";
             if (contact.isEmpty()) contact = "N/A";
 
-            // Use the extracted user name to create the collection
-            String tableName = userName + " Contracts"; // e.g., "James Contracts"
-
-            // Add contract to Firestore
-            CollectionReference contractsCollection = db.collection(tableName);
-            contractsCollection.add(createContractObject(name, address, email, contact, visits))
-                    .addOnSuccessListener(documentReference -> {
-                        Toast.makeText(AddContractActivity.this, "Contract added successfully", Toast.LENGTH_SHORT).show();
-                        clearFields();
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(AddContractActivity.this, "Failed to add contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
+            if ("Kristine".equalsIgnoreCase(userName)) {
+                // Show dialog to select which user's contract to add
+                showUserSelectionDialog(name, address, email, contact, visits);
+            } else {
+                // Use the extracted user name to create the collection
+                String tableName = userName + " Contracts"; // e.g., "James Contracts"
+                addContractToFirestore(tableName, name, address, email, contact, visits);
+            }
         });
 
-        // Back Button Listener
-        backButton.setOnClickListener(view -> finish());
+
+
+
+        backButton.setOnClickListener(view -> {
+            // Create an intent to go back to the previous screen
+            Intent intent = new Intent(AddContractActivity.this, ContractsActivity.class);
+            // Pass the username back to the previous screen
+            intent.putExtra("USER_NAME", userName);
+            // Start the previous activity
+            startActivity(intent);
+            // Finish the current activity to prevent going back to it
+            finish();
+        });
     }
+
+    private void showUserSelectionDialog(String name, String address, String email, String contact, String visits) {
+        // List of usernames (replace with your actual list)
+        String[] userNames = {"James", "Ian"};
+
+        // Create a dialog
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Select User")
+                .setItems(userNames, (dialog, which) -> {
+                    String selectedUser = userNames[which];
+                    String tableName = selectedUser + " Contracts"; // e.g., "James Contracts"
+
+                    // Add contract with the selected user as the owner
+                    addContractToFirestoreWithOwner(tableName, name, address, email, contact, visits, selectedUser);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void addContractToFirestore(String tableName, String name, String address, String email, String contact, String visits) {
+        CollectionReference contractsCollection = db.collection(tableName);
+        contractsCollection.add(createContractObject(name, address, email, contact, visits))
+                .addOnSuccessListener(documentReference -> {
+                    Toast.makeText(AddContractActivity.this, "Contract added successfully to " + tableName, Toast.LENGTH_SHORT).show();
+                    clearFields();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(AddContractActivity.this, "Failed to add contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void addContractToFirestoreWithOwner(String tableName, String name, String address, String email, String contact, String visits, String owner) {
+        CollectionReference contractsCollection = db.collection(tableName);
+        Map<String, Object> contract = createContractObject(name, address, email, contact, visits);
+        contract.put("owner", owner); // Set the owner
+        contractsCollection.add(contract)
+                .addOnSuccessListener(documentReference -> {
+                    Toast.makeText(AddContractActivity.this, "Contract added successfully to " + tableName, Toast.LENGTH_SHORT).show();
+                    clearFields();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(AddContractActivity.this, "Failed to add contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+
+
+
 
     private Map<String, Object> createContractObject(String name, String address, String email, String contact, String visits) {
         Map<String, Object> contract = new HashMap<>();

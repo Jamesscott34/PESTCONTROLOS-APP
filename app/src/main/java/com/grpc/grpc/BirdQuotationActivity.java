@@ -1,6 +1,8 @@
 package com.grpc.grpc;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -16,6 +18,8 @@ public class BirdQuotationActivity extends AppCompatActivity {
     private EditText itemDescriptionInput, itemPriceInput;
     private Button addItemButton, generatePdfButton;
 
+    private String userName;
+
     private final List<String> descriptions = new ArrayList<>();
     private final List<Double> lineTotals = new ArrayList<>();
 
@@ -23,6 +27,14 @@ public class BirdQuotationActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bird_quotation);
+
+        // Retrieve the user's name passed from ContractsActivity
+        userName = getIntent().getStringExtra("USER_NAME");
+        if (userName == null || userName.isEmpty()) {
+            Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         // Initialize inputs
         addressInput = findViewById(R.id.addressInput);
@@ -34,58 +46,113 @@ public class BirdQuotationActivity extends AppCompatActivity {
         addItemButton = findViewById(R.id.addItemButton);
         generatePdfButton = findViewById(R.id.generatePdfButton);
 
-        addItemButton.setOnClickListener(v -> {
-            String description = itemDescriptionInput.getText().toString().trim();
-            String priceText = itemPriceInput.getText().toString().trim();
+        // Add Item Button Listener
+        addItemButton.setOnClickListener(v -> addItem());
 
-            if (description.isEmpty() || priceText.isEmpty()) {
-                Toast.makeText(this, "Please fill in both description and price!", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        // Generate PDF Button Listener
+        generatePdfButton.setOnClickListener(v -> generatePdf());
+    }
 
-            try {
-                double price = Double.parseDouble(priceText);
-                // Add the inputs to the lists
-                descriptions.add(description);
-                lineTotals.add(price);
+    /**
+     * Adds a line item to the quotation.
+     */
+    private void addItem() {
+        String description = itemDescriptionInput.getText().toString().trim();
+        String priceText = itemPriceInput.getText().toString().trim();
 
-                // Clear the input fields after adding
-                itemDescriptionInput.setText("");
-                itemPriceInput.setText("");
+        if (description.isEmpty() || priceText.isEmpty()) {
+            Toast.makeText(this, "Please fill in both description and price!", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-                Toast.makeText(this, "Item added! You can add another.", Toast.LENGTH_SHORT).show();
-            } catch (NumberFormatException e) {
-                Toast.makeText(this, "Invalid price format!", Toast.LENGTH_SHORT).show();
-            }
-        });
+        try {
+            double price = Double.parseDouble(priceText);
 
+            // Add the inputs to the lists
+            descriptions.add(description);
+            lineTotals.add(price);
 
-        // Generate PDF
-        generatePdfButton.setOnClickListener(v -> {
-            String address = addressInput.getText().toString().trim();
-            String quoteDescription = quoteDescriptionInput.getText().toString().trim();
-            String userEmail = userEmailInput.getText().toString().trim();
-            String mobileNumber = mobileNumberInput.getText().toString().trim();
+            // Clear the input fields after adding
+            itemDescriptionInput.setText("");
+            itemPriceInput.setText("");
 
-            if (address.isEmpty() || quoteDescription.isEmpty() || userEmail.isEmpty() || mobileNumber.isEmpty()) {
-                Toast.makeText(this, "Please fill in all required fields!", Toast.LENGTH_SHORT).show();
-                return;
-            }
+            Toast.makeText(this, "Item added! You can add another.", Toast.LENGTH_SHORT).show();
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Invalid price format!", Toast.LENGTH_SHORT).show();
+        }
+    }
 
-            if (descriptions.isEmpty() || lineTotals.isEmpty()) {
-                Toast.makeText(this, "Please add at least one line item!", Toast.LENGTH_SHORT).show();
-                return;
-            }
+    /**
+     * Generates a PDF for the quotation.
+     */
+    private void generatePdf() {
+        String address = addressInput.getText().toString().trim();
+        String quoteDescription = quoteDescriptionInput.getText().toString().trim();
+        String userEmail = userEmailInput.getText().toString().trim();
+        String mobileNumber = mobileNumberInput.getText().toString().trim();
 
-            BirdQuotationPDFGenerator.generateBirdQuotation(
-                    address,
-                    quoteDescription,
-                    descriptions,
-                    lineTotals,
-                    userEmail,
-                    mobileNumber,
-                    this
-            );
-        });
+        // Validate inputs
+        if (address.isEmpty() || quoteDescription.isEmpty() || userEmail.isEmpty() || mobileNumber.isEmpty()) {
+            Toast.makeText(this, "Please fill in all required fields!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!Patterns.EMAIL_ADDRESS.matcher(userEmail).matches()) {
+            Toast.makeText(this, "Please enter a valid email address!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!mobileNumber.matches("\\d{10,15}")) { // Check for a valid mobile number
+            Toast.makeText(this, "Please enter a valid mobile number!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (descriptions.isEmpty() || lineTotals.isEmpty()) {
+            Toast.makeText(this, "Please add at least one line item!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Generate the PDF
+        BirdQuotationPDFGenerator.generateBirdQuotation(
+                address,
+                quoteDescription,
+                descriptions,
+                lineTotals,
+                userEmail,
+                mobileNumber,
+                this
+        );
+
+        Toast.makeText(this, "PDF Generated Successfully!", Toast.LENGTH_SHORT).show();
+
+        // Clear all fields after generating the PDF
+        clearFields();
+
+        // Navigate back to the previous activity with a result
+        navigateBack();
+    }
+
+    /**
+     * Clears all input fields and resets the lists.
+     */
+    private void clearFields() {
+        addressInput.setText("");
+        quoteDescriptionInput.setText("");
+        userEmailInput.setText("");
+        mobileNumberInput.setText("");
+        itemDescriptionInput.setText("");
+        itemPriceInput.setText("");
+        descriptions.clear();
+        lineTotals.clear();
+    }
+
+    /**
+     * Navigates back to the previous activity with the username as a result.
+     */
+    private void navigateBack() {
+        Intent backIntent = new Intent();
+        backIntent.putExtra("USER_NAME", userName);
+        setResult(RESULT_OK, backIntent);
+        finish();
     }
 }
