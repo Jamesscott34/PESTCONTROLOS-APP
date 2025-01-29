@@ -60,7 +60,12 @@ public class ViewContractActivity extends AppCompatActivity {
 
         loadContracts();
 
-        backButton.setOnClickListener(view -> finish());
+        backButton.setOnClickListener(view -> {
+            Intent intent = new Intent(ViewContractActivity.this, ContractsActivity.class);
+            intent.putExtra("USER_NAME", userName);
+            startActivity(intent);
+            finish();
+        });
 
         searchBar.addTextChangedListener(new TextWatcher() {
             @Override
@@ -248,14 +253,25 @@ public class ViewContractActivity extends AppCompatActivity {
         TextView contractDetails = new TextView(this);
         contractDetails.setText(
                 "Owner: " + owner + "\n" + // Display the contract owner
-                        "Name: " + name + "\n" +
-                        "Address: " + address + "\n" +
-                        "Email: " + email + "\n" +
-                        "Contact: " + contact + "\n" +
-                        "Last Visit: " + lastVisit + "\n" +
-                        "Next Visit: " + nextVisit
+                "Name: " + name + "\n" +
+                "Address: " + address + "\n" +
+                "Email: " + email + "\n" +
+                "Contact: " + contact + "\n" +
+                "Last Visit: " + lastVisit + "\n" +
+                "Next Visit: " + nextVisit
         );
         contractDetails.setTextColor(Color.BLACK);
+
+        // "Mark Done" checkbox
+        CheckBox markDoneCheckBox = new CheckBox(this);
+        markDoneCheckBox.setText("Mark Done");
+
+        // Disable checkbox if last visit is today
+        String todayDate = dateFormat.format(new Date());
+        if (lastVisit.equals(todayDate)) {
+            markDoneCheckBox.setChecked(true);
+            markDoneCheckBox.setEnabled(false);
+        }
 
         // Add short press action
         contractBox.setOnClickListener(v -> {
@@ -273,8 +289,12 @@ public class ViewContractActivity extends AppCompatActivity {
             return true; // Indicate that the long press was handled
         });
 
+        markDoneCheckBox.setOnClickListener(v -> showRoutinePopup(name, documentId, markDoneCheckBox));
+
         // Add views to contract box
         contractBox.addView(contractDetails);
+
+        contractBox.addView(markDoneCheckBox);
 
         // Add the contract box to the container
         contractsContainer.addView(contractBox);
@@ -391,6 +411,8 @@ public class ViewContractActivity extends AppCompatActivity {
 
 
 
+
+
     private boolean isWithinFiveDays(String nextVisit) {
         if (nextVisit == null || nextVisit.isEmpty() || "N/A".equals(nextVisit)) {
             return false; // Invalid or missing date
@@ -428,20 +450,25 @@ public class ViewContractActivity extends AppCompatActivity {
 
 
 
-    private void showRoutinePopup(String documentId, String nextVisit, CheckBox checkBox) {
+    private void showRoutinePopup(String contractName, String documentId, CheckBox checkBox) {
         AlertDialog.Builder dialog = new AlertDialog.Builder(this);
         dialog.setTitle("Routine Confirmation");
-        dialog.setMessage("Have you completed a routine today?");
+        dialog.setMessage("Was a routine done on " + contractName + "?");
 
         dialog.setPositiveButton("Yes", (dialogInterface, which) -> {
             String currentDate = dateFormat.format(Calendar.getInstance().getTime());
+
+            // Update Firestore with the new lastVisit and calculate nextVisit
             updateVisitDates(documentId, currentDate);
+
+            // Disable checkbox after updating
+            checkBox.setChecked(true);
             checkBox.setEnabled(false);
+
+            Toast.makeText(this, "Routine marked complete for " + contractName, Toast.LENGTH_SHORT).show();
         });
 
-        dialog.setNegativeButton("No", (dialogInterface, which) -> {
-            checkBox.setChecked(false);
-        });
+        dialog.setNegativeButton("No", (dialogInterface, which) -> checkBox.setChecked(false));
 
         dialog.show();
     }
@@ -479,7 +506,7 @@ public class ViewContractActivity extends AppCompatActivity {
 
         dialog.setView(layout);
 
-        dialog.setPositiveButton("Save Date", (dialogInterface, which) -> {
+        dialog.setPositiveButton("Update", (dialogInterface, which) -> {
             String newDate = dateInput.getText().toString().trim();
             if (!newDate.isEmpty() && newDate.matches("^\\d{2}/\\d{2}/\\d{2}$")) {
                 updateVisitDates(documentId, newDate); // Save the date if valid
@@ -488,12 +515,12 @@ public class ViewContractActivity extends AppCompatActivity {
             }
         });
 
-        dialog.setNeutralButton("Open in Maps", (dialogInterface, which) -> {
+        dialog.setNeutralButton("Route", (dialogInterface, which) -> {
             String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
             openInMaps(address);
         });
 
-        dialog.setNegativeButton("Cancel", null);
+        dialog.setNegativeButton("Report", null);
         dialog.show();
     }
 

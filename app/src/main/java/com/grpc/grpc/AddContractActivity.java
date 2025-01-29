@@ -87,12 +87,9 @@ public class AddContractActivity extends AppCompatActivity {
             } else {
                 // Use the extracted user name to create the collection
                 String tableName = userName + " Contracts"; // e.g., "James Contracts"
-                addContractToFirestore(tableName, name, address, email, contact, visits);
+                addContractToFirestore(tableName, name, address, email, contact, visits, userName);
             }
         });
-
-
-
 
         backButton.setOnClickListener(view -> {
             // Create an intent to go back to the previous screen
@@ -118,49 +115,35 @@ public class AddContractActivity extends AppCompatActivity {
                     String tableName = selectedUser + " Contracts"; // e.g., "James Contracts"
 
                     // Add contract with the selected user as the owner
-                    addContractToFirestoreWithOwner(tableName, name, address, email, contact, visits, selectedUser);
+                    addContractToFirestore(tableName, name, address, email, contact, visits, selectedUser);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private void addContractToFirestore(String tableName, String name, String address, String email, String contact, String visits) {
+    private void addContractToFirestore(String tableName, String name, String address, String email, String contact, String visits, String owner) {
         CollectionReference contractsCollection = db.collection(tableName);
-        contractsCollection.add(createContractObject(name, address, email, contact, visits))
-                .addOnSuccessListener(documentReference -> {
-                    Toast.makeText(AddContractActivity.this, "Contract added successfully to " + tableName, Toast.LENGTH_SHORT).show();
-                    clearFields();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(AddContractActivity.this, "Failed to add contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
-    }
+        Map<String, Object> contract = createContractObject(name, address, email, contact, visits, owner);
 
-    private void addContractToFirestoreWithOwner(String tableName, String name, String address, String email, String contact, String visits, String owner) {
-        CollectionReference contractsCollection = db.collection(tableName);
-        Map<String, Object> contract = createContractObject(name, address, email, contact, visits);
-        contract.put("owner", owner); // Set the owner
         contractsCollection.add(contract)
                 .addOnSuccessListener(documentReference -> {
                     Toast.makeText(AddContractActivity.this, "Contract added successfully to " + tableName, Toast.LENGTH_SHORT).show();
                     clearFields();
+                    returnToContractsActivity();
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(AddContractActivity.this, "Failed to add contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
-
-
-
-
-    private Map<String, Object> createContractObject(String name, String address, String email, String contact, String visits) {
+    private Map<String, Object> createContractObject(String name, String address, String email, String contact, String visits, String owner) {
         Map<String, Object> contract = new HashMap<>();
         contract.put("name", name);
         contract.put("address", address);
         contract.put("email", email);
         contract.put("contact", contact);
         contract.put("visits", visits);
+        contract.put("addedBy", owner); // Keep track of who added the contract
         return contract;
     }
 
@@ -170,5 +153,12 @@ public class AddContractActivity extends AppCompatActivity {
         emailEditText.setText("");
         contactEditText.setText("");
         visitsEditText.setText("");
+    }
+
+    private void returnToContractsActivity() {
+        Intent intent = new Intent(AddContractActivity.this, ContractsActivity.class);
+        intent.putExtra("USER_NAME", userName);
+        startActivity(intent);
+        finish();
     }
 }

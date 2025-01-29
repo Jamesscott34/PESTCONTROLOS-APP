@@ -120,12 +120,14 @@ public class ReportViewActivity extends AppCompatActivity {
         });
 
         // Return to the main activity when the return button is clicked
-        returnButton.setOnClickListener(view -> {
-            Intent intent = new Intent(ReportViewActivity.this, MainActivity.class);
-            intent.putExtra("USER_NAME", userName); // Pass the userName to the main activity
-            startActivity(intent); // Start the main activity
-            finish(); // Close the current activity
-        });
+        returnButton.setOnClickListener(view -> navigateBackToMainActivity());
+    }
+
+    private void navigateBackToMainActivity() {
+        Intent intent = new Intent(ReportViewActivity.this, MainActivity.class);
+        intent.putExtra("USER_NAME", userName);
+        startActivity(intent);
+        finish();
     }
 
     /**

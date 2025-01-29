@@ -140,38 +140,15 @@ public class GenerateLeadsActivity extends AppCompatActivity {
             }
         });
 
-        addLeadButton.setOnClickListener(view -> {
-            String premiseName = premiseNameEditText.getText().toString().trim();
-            String premiseAddress = premiseAddressEditText.getText().toString().trim();
-            String priceQuotedStr = priceQuotedEditText.getText().toString().trim();
-
-            // Validate required fields
-            if (premiseName.isEmpty() || premiseAddress.isEmpty() || priceQuotedStr.isEmpty()) {
-                Toast.makeText(this, "All fields are required.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            double priceQuoted;
-            try {
-                priceQuoted = Double.parseDouble(priceQuotedStr);
-            } catch (NumberFormatException e) {
-                Toast.makeText(this, "Please enter a valid price.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            double commission = "Contract".equalsIgnoreCase(selectedReason) ? priceQuoted * 0.10 : 0.0;
-
-            if ("Kristine".equalsIgnoreCase(userName)) {
-                // If Kristine, show a dialog to assign the lead
-                showAssignToDialog(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason);
-            } else {
-                // Save lead with the current user's name
-                saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason, userName);
-            }
-        });
+        addLeadButton.setOnClickListener(view -> addLead(currentDate));
 
         // Back Button Listener
-        backButton.setOnClickListener(view -> finish());
+        backButton.setOnClickListener(view -> {
+            Intent intent = new Intent(GenerateLeadsActivity.this, MainActivity.class);
+            intent.putExtra("USER_NAME", userName); // Pass username to MainActivity
+            startActivity(intent);
+            finish();
+        });
     }
 
     // Method to save the lead to Firestore
@@ -189,6 +166,34 @@ public class GenerateLeadsActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to add lead: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
+    }
+
+
+    private void addLead(String currentDate) {
+        String premiseName = premiseNameEditText.getText().toString().trim();
+        String premiseAddress = premiseAddressEditText.getText().toString().trim();
+        String priceQuotedStr = priceQuotedEditText.getText().toString().trim();
+
+        if (premiseName.isEmpty() || premiseAddress.isEmpty() || priceQuotedStr.isEmpty()) {
+            Toast.makeText(this, "All fields are required.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        double priceQuoted;
+        try {
+            priceQuoted = Double.parseDouble(priceQuotedStr);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Please enter a valid price.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        double commission = "Contract".equalsIgnoreCase(selectedReason) ? priceQuoted * 0.10 : 0.0;
+
+        if ("Kristine".equalsIgnoreCase(userName)) {
+            showAssignToDialog(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason);
+        } else {
+            saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason, userName);
+        }
     }
 
     // Method to show the dialog for Kristine to assign the lead
@@ -236,5 +241,11 @@ public class GenerateLeadsActivity extends AppCompatActivity {
         lead.put("Reason", reason); // Add reason to the database object
         lead.put("Added By", userName); // Add username to the database object
         return lead;
+    }
+
+    private void openQuotationViewActivity() {
+        Intent intent = new Intent(GenerateLeadsActivity.this, QuotationViewActivity.class);
+        intent.putExtra("USER_NAME", userName);
+        startActivity(intent);
     }
 }
