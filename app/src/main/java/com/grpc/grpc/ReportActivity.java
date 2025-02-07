@@ -105,10 +105,10 @@ public class ReportActivity extends AppCompatActivity {
         saveButton.setOnClickListener(view -> {
             saveReport(db); // Keep the save functionality
             clearFields();
-            goBackToPreviousActivity(); // Close the current activity
+
         });
         backButton.setOnClickListener(view -> {
-            goBackToPreviousActivity();
+            clearFields();
         });
     }
 

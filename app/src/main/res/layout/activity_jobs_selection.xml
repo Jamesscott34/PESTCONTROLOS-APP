@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="16dp"
+    android:background="@drawable/bk">
+
+    <!-- Welcome Message -->
+    <TextView
+        android:id="@+id/welcomeTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Welcome, User!"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+
+
+    <!-- Button to create a new report -->
+
+    <!-- Button to create a quotation -->
+    <Button
+        android:id="@+id/buttonCreateJobs"
+        android:layout_width="wrap_content"
+        android:layout_height="58dp"
+        android:text="Create Job"
+        android:textSize="18sp"
+        tools:layout_editor_absoluteX="119dp"
+        tools:layout_editor_absoluteY="427dp" />
+
+    <Button
+        android:id="@+id/buttonViewJobs"
+        android:layout_width="wrap_content"
+        android:layout_height="58dp"
+        android:text="View Jobs"
+        android:textSize="18sp"
+        tools:layout_editor_absoluteX="117dp"
+        tools:layout_editor_absoluteY="203dp" />
+
+</LinearLayout>
+

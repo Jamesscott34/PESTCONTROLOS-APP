@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button reportButton, reportViewButton, calendarButton, contractsButton, quotesButton, logoutButton, CommisionButton, ServiceAgreementButton, JobButton, CustomerMapButton;
+    private Button reportButton, reportViewButton, calendarButton, contractsButton, quotesButton, logoutButton, CommisionButton, ServiceAgreementButton, JobButton, CustomerMapButton, EnviromentButton;
     private String userEmail, userName;
     private TextView welcomeTextView;
 
@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
         CommisionButton = findViewById(R.id.CommisionButton);
         JobButton = findViewById(R.id.JobsButton);
         CustomerMapButton = findViewById(R.id.CustomerMapButton);
+        EnviromentButton = findViewById(R.id.EnviromentButton);
         logoutButton = findViewById(R.id.LogoutButton); // Logout button
 
         // Set Button Click Listeners
@@ -72,6 +73,9 @@ public class MainActivity extends AppCompatActivity {
 
         if (CommisionButton != null) {
             CommisionButton.setOnClickListener(view -> openActivity(LeadsSelectionActivity.class));
+        }
+        if (EnviromentButton != null) {
+            EnviromentButton.setOnClickListener(view -> openActivity(EnvironmentSelectionActivity.class));
         }
 
         if (ServiceAgreementButton != null) {

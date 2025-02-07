@@ -93,7 +93,7 @@ public class PDFReportGenerator {
             // Adding a title to the report
             Paragraph title = new Paragraph("Good Riddance Pest Control Report")
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(20)
+                    .setFontSize(18)
                     .setBold()
                     .setFontColor(ColorConstants.BLUE);
             document.add(title);
@@ -117,13 +117,13 @@ public class PDFReportGenerator {
                             .setFontColor(ColorConstants.BLACK)
                             .setBackgroundColor(ColorConstants.LIGHT_GRAY)
                             .setBold()
-                            .setFontSize(16)
+                            .setFontSize(14)
                             .setTextAlignment(TextAlignment.CENTER);
 
                     // Value Paragraph
                     Paragraph valueParagraph = new Paragraph(valueText)
                             .setFontColor(ColorConstants.BLACK)
-                            .setFontSize(14)
+                            .setFontSize(12)
                             ;
 
                     // Add elements to the document

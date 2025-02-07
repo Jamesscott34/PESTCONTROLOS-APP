@@ -94,6 +94,12 @@
                 android:layout_height="wrap_content"
                 android:text="Customer Map"
                 android:layout_marginBottom="8dp" />
+            <Button
+                android:id="@+id/EnviromentButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ERA"
+                android:layout_marginBottom="8dp" />
 
         </LinearLayout>
     </ScrollView>

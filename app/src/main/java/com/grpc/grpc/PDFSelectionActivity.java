@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class PDFSelectionActivity extends AppCompatActivity {
 
-    private Button buttonViewReports, buttonViewQuotation,buttonViewAgreements;
+    private Button buttonViewReports, buttonViewQuotation,buttonViewAgreements,buttonViewERA;
     private TextView welcomeTextView;
     private String userName;
 
@@ -30,6 +30,7 @@ public class PDFSelectionActivity extends AppCompatActivity {
         buttonViewReports = findViewById(R.id.buttonViewReports);
         buttonViewQuotation = findViewById(R.id.buttonViewQuotation);
         buttonViewAgreements = findViewById(R.id.buttonViewAgreements);
+        buttonViewERA = findViewById(R.id.buttonViewERA);
 
         // Set button listeners
         buttonViewReports.setOnClickListener(v -> {
@@ -45,6 +46,11 @@ public class PDFSelectionActivity extends AppCompatActivity {
         });
         buttonViewAgreements.setOnClickListener(v -> {
             Intent intent = new Intent(PDFSelectionActivity.this, ServiceAgreementViewActivity.class);
+            intent.putExtra("USER_NAME", userName); // Pass username to the next activity
+            startActivity(intent);
+        });
+        buttonViewERA.setOnClickListener(v -> {
+            Intent intent = new Intent(PDFSelectionActivity.this, ERAViewActivity.class);
             intent.putExtra("USER_NAME", userName); // Pass username to the next activity
             startActivity(intent);
         });
