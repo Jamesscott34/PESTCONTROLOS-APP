@@ -121,6 +121,48 @@
             android:name=".ServiceAgreementActivity"
             android:exported="true"/>
 
+        <activity
+            android:name=".JobsActivity"
+            android:exported="true"/>
+
+        <activity
+            android:name=".AddJobsActivity"
+            android:exported="true"/>
+
+        <activity
+            android:name=".ViewJobActivity"
+            android:exported="true"/>
+
+        <activity android:name=".RodentRoutineActivity"
+            android:exported="false"/>
+
+        <activity android:name=".RodentCallOutActivity"
+            android:exported="false"/>
+
+        <activity android:name=".RodentInitialActivity"
+            android:exported="false"/>
+
+        <activity android:name=".RodentActivityRoutine"
+            android:exported="false"/>
+
+        <activity android:name=".RodentJobActivity"
+            android:exported="false"/>
+
+        <activity android:name=".ServiceAgreementViewActivity"
+            android:exported="true"/>
+
+        <activity android:name=".CustomerMapActivity"
+            android:exported="true"/>
+
+        <activity android:name=".ViewMapActivity"
+            android:exported="true"/>
+
+        <activity android:name=".AddMapActivity"
+            android:exported="true"/>
+
+        <activity android:name=".GeneralQuotationActivity"
+            android:exported="true"/>
+
         <!-- FileProvider Setup -->
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -130,6 +172,8 @@
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/filepaths"/>
+
+
         </provider>
 
     </application>

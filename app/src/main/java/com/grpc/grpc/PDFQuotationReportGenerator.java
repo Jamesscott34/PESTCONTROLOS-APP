@@ -160,7 +160,7 @@ public class PDFQuotationReportGenerator {
         }
 
     }
-    private static String generateUniquePdfFileName() {
+    static String generateUniquePdfFileName() {
         int randomNum = 1000 + new Random().nextInt(9000); // Random 4-digit number
         return "GRPC_Quote_" + randomNum + ".pdf";
     }

@@ -104,18 +104,41 @@ public class ReportActivity extends AppCompatActivity {
         selectImageButton.setOnClickListener(view -> openImageSelector());
         saveButton.setOnClickListener(view -> {
             saveReport(db); // Keep the save functionality
-            Intent intent = new Intent(ReportActivity.this, ReportViewActivity.class);
-            intent.putExtra("USER_NAME", userName); // Pass the userName to the main activity
-            startActivity(intent); // Navigate to MainActivity
-            finish(); // Close the current activity
+            clearFields();
+            goBackToPreviousActivity(); // Close the current activity
         });
         backButton.setOnClickListener(view -> {
-            Intent intent = new Intent(ReportActivity.this,MainActivity.class);
-            intent.putExtra("USER_NAME", userName); // Pass the userName to the main activity
-            startActivity(intent); // Start the main activity
-            finish(); // Close the current activity
+            goBackToPreviousActivity();
         });
     }
+
+    // Function to navigate back to the previous activity
+    private void goBackToPreviousActivity() {
+        Intent intent = new Intent();
+        if (userName != null && !userName.isEmpty()) {
+            intent.putExtra("USER_NAME", userName); // Ensure username is passed
+        } else {
+            intent.putExtra("USER_NAME", "Unknown User"); // Fallback in case username is null
+        }
+        setResult(RESULT_OK, intent);
+        finish();
+    }
+
+
+    // Function to clear all input fields
+    private void clearFields() {
+        nameInput.setText("");
+        addressInput.setText("");
+        dateInput.setText(new SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(new Date())); // Reset to current date
+        visitTypeInput.setText("");
+        siteInspectionInput.setText("");
+        recommendationsInput.setText("");
+        followUpInput.setText("");
+        prepInput.setText("");
+        techInput.setText("");
+        selectedImageUris.clear(); // Clear selected images
+    }
+
 
     /**
      * Opens the Android system image selector for choosing multiple images.

@@ -45,4 +45,12 @@
         android:text="Bird Quotation"
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/buttonCreateGeneralQuotation"
+        android:layout_width="wrap_content"
+        android:layout_height="58dp"
+        android:text="General Quotation"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
 </LinearLayout>

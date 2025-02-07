@@ -3,14 +3,15 @@ package com.grpc.grpc;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button reportButton, reportViewButton, calendarButton, contractsButton, quotesButton, logoutButton, CommisionButton, ServiceAgreementButton;
-    private String userEmail;
+    private Button reportButton, reportViewButton, calendarButton, contractsButton, quotesButton, logoutButton, CommisionButton, ServiceAgreementButton, JobButton, CustomerMapButton;
+    private String userEmail, userName;
     private TextView welcomeTextView;
 
     @SuppressLint("MissingInflatedId")
@@ -22,12 +23,19 @@ public class MainActivity extends AppCompatActivity {
         // Retrieve the user's email from the intent
         userEmail = getIntent().getStringExtra("USER_EMAIL");
 
-        // Extract the name from the email
-        String userName = extractNameFromEmail(userEmail);
+        if (userEmail == null || userEmail.isEmpty()) {
+            userName = "User";  // Fallback name
+        } else {
+            userName = extractNameFromEmail(userEmail);
+        }
 
         // Initialize the welcome TextView
         welcomeTextView = findViewById(R.id.welcomeTextView);
-        welcomeTextView.setText("Welcome, " + userName + "!");
+        if (welcomeTextView != null) {
+            welcomeTextView.setText("Welcome, " + userName + "!");
+        } else {
+            Log.e("MainActivity", "welcomeTextView is NULL! Check XML ID.");
+        }
 
         // Initialize Buttons
         reportButton = findViewById(R.id.ReportButton);
@@ -37,58 +45,70 @@ public class MainActivity extends AppCompatActivity {
         quotesButton = findViewById(R.id.GeneralQuotesButton);
         ServiceAgreementButton = findViewById(R.id.ServiceAgreementButton);
         CommisionButton = findViewById(R.id.CommisionButton);
+        JobButton = findViewById(R.id.JobsButton);
+        CustomerMapButton = findViewById(R.id.CustomerMapButton);
         logoutButton = findViewById(R.id.LogoutButton); // Logout button
 
-        // Button Listeners
-        reportButton.setOnClickListener(view -> {
-            Intent intent = new Intent(MainActivity.this, ReportSelectionActivity.class);
-            intent.putExtra("USER_NAME", userName);
-            startActivity(intent);
-        });
+        // Set Button Click Listeners
+        if (reportButton != null) {
+            reportButton.setOnClickListener(view -> openActivity(ReportSelectionActivity.class));
+        }
 
-        reportViewButton.setOnClickListener(view -> {
-            Intent intent = new Intent(MainActivity.this, PDFSelectionActivity.class);
-            intent.putExtra("USER_NAME", userName);
-            startActivity(intent);
-        });
+        if (reportViewButton != null) {
+            reportViewButton.setOnClickListener(view -> openActivity(PDFSelectionActivity.class));
+        }
 
-        calendarButton.setOnClickListener(view -> {
-            Intent intent = new Intent(MainActivity.this, CalendarActivity.class);
-            intent.putExtra("USER_NAME", userName);
-            startActivity(intent);
-        });
+        if (calendarButton != null) {
+            calendarButton.setOnClickListener(view -> openActivity(CalendarActivity.class));
+        }
 
-        contractsButton.setOnClickListener(view -> {
-            Intent intent = new Intent(MainActivity.this, ContractsActivity.class);
-            intent.putExtra("USER_NAME", userName);
-            startActivity(intent);
-        });
+        if (contractsButton != null) {
+            contractsButton.setOnClickListener(view -> openActivity(ContractsActivity.class));
+        }
 
-        quotesButton.setOnClickListener(view -> {
-            Intent intent = new Intent(MainActivity.this, QuotesActivity.class);
-            intent.putExtra("USER_NAME", userName);
-            startActivity(intent);
-        });
+        if (quotesButton != null) {
+            quotesButton.setOnClickListener(view -> openActivity(QuotesActivity.class));
+        }
 
-        CommisionButton.setOnClickListener(view -> {
-            Intent intent = new Intent(MainActivity.this, LeadsSelectionActivity.class);
-            intent.putExtra("USER_NAME", userName);
-            startActivity(intent);
-        });
+        if (CommisionButton != null) {
+            CommisionButton.setOnClickListener(view -> openActivity(LeadsSelectionActivity.class));
+        }
 
-        ServiceAgreementButton.setOnClickListener(view -> {
-            Intent intent = new Intent(MainActivity.this, ServiceAgreementActivity.class);
-            intent.putExtra("USER_NAME", userName);
-            startActivity(intent);
-        });
+        if (ServiceAgreementButton != null) {
+            ServiceAgreementButton.setOnClickListener(view -> {
 
-        logoutButton.setOnClickListener(view -> {
-            // Navigate back to LoginActivity and clear session data
-            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clear activity stack
-            startActivity(intent);
-            finish(); // Close the current activity
-        });
+                Intent intent = new Intent(MainActivity.this, ServiceAgreementActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
+            });
+        }
+
+
+        if (JobButton != null) {
+            JobButton.setOnClickListener(view -> openActivity(JobsActivity.class));
+        }
+
+        if (CustomerMapButton != null) {
+            CustomerMapButton.setOnClickListener(view -> openActivity(CustomerMapActivity.class));
+        }
+
+        if (logoutButton != null) {
+            logoutButton.setOnClickListener(view -> {
+                // Navigate back to LoginActivity and clear session data
+                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clear activity stack
+                startActivity(intent);
+                finish(); // Close the current activity
+            });
+        }
+    }
+
+    // Helper method to start a new activity safely
+    private void openActivity(Class<?> targetActivity) {
+        Log.d("MainActivity", "Opening " + targetActivity.getSimpleName() + " with USER_NAME: " + userName);
+        Intent intent = new Intent(MainActivity.this, targetActivity);
+        intent.putExtra("USER_NAME", userName);
+        startActivity(intent);
     }
 
     // Helper to extract the first part of the email as the user's name

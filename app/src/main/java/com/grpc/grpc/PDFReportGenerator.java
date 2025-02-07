@@ -22,7 +22,10 @@ import androidx.annotation.RequiresApi;
 
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
 import com.itextpdf.layout.Document;
+import com.itextpdf.layout.borders.SolidBorder;
+import com.itextpdf.layout.element.LineSeparator;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.io.image.ImageDataFactory;
@@ -34,6 +37,7 @@ import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.events.IEventHandler;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.layout.property.UnitValue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -98,20 +102,43 @@ public class PDFReportGenerator {
             // Processing the report content
             String[] reportDetails = content.split("\\n");
             for (String detail : reportDetails) {
-                // Skip appending a period for new lines; preserve the input as is
                 String[] splitDetail = detail.split(":", 2);
                 if (splitDetail.length == 2) {
-                    // Adding bold label and value
                     String labelText = splitDetail[0].trim();
                     String valueText = splitDetail[1].trim().isEmpty() ? "N/A" : splitDetail[1].trim();
-                    Text label = new Text(labelText).setFontColor(ColorConstants.BLACK).setUnderline().setBold().setFontSize(16);
-                    document.add(new Paragraph(label));
-                    document.add(new Paragraph(valueText).setFontColor(ColorConstants.BLACK).setFontSize(14));
+
+                    // Add a horizontal line before each heading
+                    LineSeparator topLine = new LineSeparator(new SolidLine())
+                            .setWidth(UnitValue.createPercentValue(100))
+                            .setMarginBottom(5);
+
+                    // Heading Paragraph
+                    Paragraph labelParagraph = new Paragraph(labelText)
+                            .setFontColor(ColorConstants.BLACK)
+                            .setBackgroundColor(ColorConstants.LIGHT_GRAY)
+                            .setBold()
+                            .setFontSize(16)
+                            .setTextAlignment(TextAlignment.CENTER);
+
+                    // Value Paragraph
+                    Paragraph valueParagraph = new Paragraph(valueText)
+                            .setFontColor(ColorConstants.BLACK)
+                            .setFontSize(14)
+                            ;
+
+                    // Add elements to the document
+                    document.add(topLine);
+                    document.add(labelParagraph);
+                    document.add(valueParagraph);
+
                 } else {
-                    // Add line as plain text without appending a period
-                    document.add(new Paragraph(detail.trim()).setFontColor(ColorConstants.BLACK).setFontSize(14));
+                    document.add(new Paragraph(detail.trim())
+                            .setFontColor(ColorConstants.BLACK)
+                            .setFontSize(14));
                 }
             }
+
+
 
             // Adding images if provided
             if (imageUris != null && !imageUris.isEmpty()) {

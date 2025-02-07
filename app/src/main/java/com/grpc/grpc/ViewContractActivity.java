@@ -1,6 +1,5 @@
 package com.grpc.grpc;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -20,6 +19,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
+
+import org.w3c.dom.Text;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -477,52 +481,54 @@ public class ViewContractActivity extends AppCompatActivity {
         AlertDialog.Builder dialog = new AlertDialog.Builder(this);
         dialog.setTitle("Contract Options");
 
-        // Layout for dialog
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(16, 16, 16, 16);
 
-        // EditText for date input
-        EditText dateInput = new EditText(this);
-        dateInput.setHint("Enter Last Visit Date (dd/MM/yy)");
-        dateInput.setSingleLine();
-        layout.addView(dateInput);
-
-        // Add TextWatcher for basic user feedback
-        dateInput.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (s.length() > 8) {
-                    Toast.makeText(ViewContractActivity.this, "Date should be in format dd/MM/yy (e.g., 15/01/25).", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        dialog.setView(layout);
-
-        dialog.setPositiveButton("Update", (dialogInterface, which) -> {
-            String newDate = dateInput.getText().toString().trim();
-            if (!newDate.isEmpty() && newDate.matches("^\\d{2}/\\d{2}/\\d{2}$")) {
-                updateVisitDates(documentId, newDate); // Save the date if valid
-            } else {
-                Toast.makeText(this, "Invalid date format! Please use dd/MM/yy (e.g., 15/01/25).", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        dialog.setNeutralButton("Route", (dialogInterface, which) -> {
+        dialog.setItems(new CharSequence[]{"Routine", "Callout", "Update Last Visit", "Route", "InitialSetup"}, (dialogInterface, which) -> {
+            String companyName = contract.get("name") != null ? contract.get("name").toString() : "N/A";
             String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
-            openInMaps(address);
+
+            switch (which) {
+                case 0: // Routine
+                    showRoutineDialog(documentId, contract); // Open No Activity / Activity options
+                    break;
+
+                case 1: // Callout
+                    // Start RodentRoutineActivity with "Callout" type
+                    Intent calloutIntent = new Intent(ViewContractActivity.this, RodentCallOutActivity.class);
+                    calloutIntent.putExtra("ROUTINE_TYPE", "Callout"); // Callout should be Callout
+                    calloutIntent.putExtra("USER_NAME", userName);
+                    calloutIntent.putExtra("COMPANY_NAME", companyName);
+                    calloutIntent.putExtra("ADDRESS", address);
+                    calloutIntent.putExtra("DOCUMENT_ID", documentId);
+                    startActivity(calloutIntent);
+                    break;
+
+                case 2: // Update Last Visit
+                    showUpdateVisitDialog(documentId);
+                    break;
+
+                case 3: // Route
+                    openInMaps(address);
+                    break;
+
+                case 4: // Initial Setup
+                    Intent initialsetupIntent = new Intent(ViewContractActivity.this, RodentInitialActivity.class);
+                    initialsetupIntent.putExtra("ROUTINE_TYPE", "InitialSetup");
+                    initialsetupIntent.putExtra("USER_NAME", userName);
+                    initialsetupIntent.putExtra("COMPANY_NAME", companyName);
+                    initialsetupIntent.putExtra("ADDRESS", address);
+                    initialsetupIntent.putExtra("DOCUMENT_ID", documentId);
+                    startActivity( initialsetupIntent);
+            }
         });
 
-        dialog.setNegativeButton("Report", null);
+        dialog.setNegativeButton("Report", (dialogInterface, which) -> {
+            showRoutineDialog(documentId, contract);
+        });
+
         dialog.show();
     }
+
+
 
 
 
@@ -564,6 +570,73 @@ public class ViewContractActivity extends AppCompatActivity {
 
         // Return the next visit date in the short year format (dd/MM/yy)
         return shortYearFormat.format(calendar.getTime());
+    }
+
+    private void showRoutineDialog(String documentId, Map<String, Object> contract) {
+        AlertDialog.Builder routineDialog = new AlertDialog.Builder(this);
+        routineDialog.setTitle("Routine Type");
+
+        routineDialog.setItems(new CharSequence[]{"No Activity", "Activity"}, (dialogInterface, which) -> {
+            String companyName = contract.get("name") != null ? contract.get("name").toString() : "N/A";
+            String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
+
+            Intent intent;
+
+            switch (which) {
+                case 0: // No Activity
+                    intent = new Intent(ViewContractActivity.this, RodentRoutineActivity.class);
+                    intent.putExtra("ROUTINE_TYPE", "No Activity"); // ✅ Explicitly setting correct routine type
+                    break;
+                case 1: // Activity
+                    intent = new Intent(ViewContractActivity.this, RodentActivityRoutine.class);
+                    intent.putExtra("ROUTINE_TYPE", "Activity"); // ✅ Explicitly setting correct routine type
+                    break;
+                default:
+                    return; // Exit if something unexpected happens
+            }
+
+            intent.putExtra("USER_NAME", userName);
+            intent.putExtra("COMPANY_NAME", companyName);
+            intent.putExtra("ADDRESS", address);
+            intent.putExtra("DOCUMENT_ID", documentId);
+
+            startActivity(intent);
+        });
+
+        routineDialog.show();
+    }
+
+
+
+
+
+
+    private void showUpdateVisitDialog(String documentId) {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setTitle("Update Last Visit");
+
+        EditText dateInput = new EditText(this);
+        dateInput.setHint("Enter Last Visit Date (dd/MM/yy)");
+        dateInput.setSingleLine();
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(16, 16, 16, 16);
+        layout.addView(dateInput);
+
+        dialog.setView(layout);
+
+        dialog.setPositiveButton("Update", (dialogInterface, which) -> {
+            String newDate = dateInput.getText().toString().trim();
+            if (!newDate.isEmpty() && newDate.matches("^\\d{2}/\\d{2}/\\d{2}$")) {
+                updateVisitDates(documentId, newDate);
+            } else {
+                Toast.makeText(this, "Invalid date format! Use dd/MM/yy.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        dialog.setNegativeButton("Cancel", null);
+        dialog.show();
     }
 
 
@@ -640,6 +713,5 @@ public class ViewContractActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to delete contract: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
-
 
 }

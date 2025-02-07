@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class ReportSelectionActivity extends AppCompatActivity {
 
-    private Button createReportButton, createQuotationButton, createBirdQuotationButton;
+    private Button createReportButton, createQuotationButton, createBirdQuotationButton, buttonCreateGeneralQuotation;
     private TextView welcomeTextView;
     private String userName;
 
@@ -30,6 +30,7 @@ public class ReportSelectionActivity extends AppCompatActivity {
         createReportButton = findViewById(R.id.buttonCreateReport);
         createQuotationButton = findViewById(R.id.buttonCreateQuotation);
         createBirdQuotationButton = findViewById(R.id.buttonCreateBirdQuotation);
+        buttonCreateGeneralQuotation = findViewById(R.id.buttonCreateGeneralQuotation);
 
         // Navigate to ReportActivity
         createReportButton.setOnClickListener(v -> {
@@ -50,6 +51,14 @@ public class ReportSelectionActivity extends AppCompatActivity {
             Intent intent = new Intent(this, BirdQuotationActivity.class);
             intent.putExtra("USER_NAME", userName); // Pass username
             startActivity(intent);
+        });
+
+        // Navigate to GeneralQuotationActivity
+        buttonCreateGeneralQuotation.setOnClickListener(v -> {
+            Intent intent = new Intent(this, GeneralQuotationActivity.class);
+            intent.putExtra("USER_NAME", userName); // Pass username
+            startActivity(intent);
+
         });
     }
 }
