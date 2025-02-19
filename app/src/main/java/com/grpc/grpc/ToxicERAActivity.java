@@ -17,7 +17,7 @@ import java.io.File;
 public class ToxicERAActivity extends AppCompatActivity {
 
     private EditText editCompanyName, editAddress, editEmail;
-    private ImageView signatureImageView;
+
     private Bitmap signatureBitmap = null;
     private static final int REQUEST_SIGNATURE_CAPTURE = 1;
 
@@ -49,7 +49,7 @@ public class ToxicERAActivity extends AppCompatActivity {
             Bundle extras = data.getExtras();
             if (extras != null) {
                 signatureBitmap = (Bitmap) extras.get("data");
-                signatureImageView.setImageBitmap(signatureBitmap);
+
             }
         }
     }
@@ -73,11 +73,6 @@ public class ToxicERAActivity extends AppCompatActivity {
             editAddress.setText("");
             editEmail.setText("");
 
-            // Reset the signature image if applicable
-            if (signatureImageView != null) {
-                signatureImageView.setImageDrawable(null);
-                signatureBitmap = null; // Clear the stored signature
-            }
         } else {
             Toast.makeText(this, "Error creating PDF", Toast.LENGTH_SHORT).show();
         }
