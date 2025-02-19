@@ -64,7 +64,7 @@ public class ToxicERAActivity extends AppCompatActivity {
             return;
         }
 
-        String pdfPath = NonToxERAPDFGenerator.generateEnvironmentalRiskAssessment(this, companyName, address, email, signatureBitmap);
+        String pdfPath = ToxicERAPDFGenerator.generateEnvironmentalRiskAssessment(this, companyName, address, email, signatureBitmap);
         if (pdfPath != null) {
             Toast.makeText(this, "PDF Saved: " + pdfPath, Toast.LENGTH_LONG).show();
 

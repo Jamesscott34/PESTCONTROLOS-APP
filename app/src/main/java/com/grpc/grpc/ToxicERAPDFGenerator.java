@@ -61,11 +61,13 @@ public class ToxicERAPDFGenerator {
             document.add(logo);
 
 // Add Title
-            document.add(new Paragraph("GRPC Environmental Risk Assessment")
-                    .setBold()
+            // Adding a title to the report
+            Paragraph title = new Paragraph("GRPC Environmental Risk Assessment")
+                    .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(18)
-                    .setTextAlignment(TextAlignment.CENTER));
-
+                    .setBold()
+                    .setFontColor(ColorConstants.BLUE);
+            document.add(title);
             document.add(new Paragraph("\n"));
 
 // Add Company and Customer Details in a Table with Left and Right Alignment

@@ -112,19 +112,6 @@ public class ReportActivity extends AppCompatActivity {
         });
     }
 
-    // Function to navigate back to the previous activity
-    private void goBackToPreviousActivity() {
-        Intent intent = new Intent();
-        if (userName != null && !userName.isEmpty()) {
-            intent.putExtra("USER_NAME", userName); // Ensure username is passed
-        } else {
-            intent.putExtra("USER_NAME", "Unknown User"); // Fallback in case username is null
-        }
-        setResult(RESULT_OK, intent);
-        finish();
-    }
-
-
     // Function to clear all input fields
     private void clearFields() {
         nameInput.setText("");
