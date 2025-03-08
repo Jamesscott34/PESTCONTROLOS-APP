@@ -158,10 +158,6 @@ public class PDFReportGenerator {
             document.close();  // Close the document after content is added
             Toast.makeText(context, "PDF Created Successfully!", Toast.LENGTH_SHORT).show();
 
-            // Redirecting back to the main activity
-            Intent intent = new Intent(context, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            context.startActivity(intent);
 
             return pdfFile;
 

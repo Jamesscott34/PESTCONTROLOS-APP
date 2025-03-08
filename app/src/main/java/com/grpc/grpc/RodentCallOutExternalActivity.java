@@ -33,7 +33,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class RodentInitialActivity extends AppCompatActivity {
+public class RodentCallOutExternalActivity extends AppCompatActivity {
 
     private String documentId, userName, companyName, address, routineType;
     private String dateTime, siteInspection, recommendation, followUp, preparation, techName, techContact;
@@ -55,7 +55,10 @@ public class RodentInitialActivity extends AppCompatActivity {
         if (companyName == null) companyName = "N/A";
         if (address == null) address = "N/A";
 
-       routineType="Initial Setup";
+        // ✅ Ensure Visit Type is "Routine" unless it's "Callout"
+        if (routineType == null || !routineType.equalsIgnoreCase("Callout")) {
+            routineType = "Call Out";
+        }
 
 
         // Auto-fill all fields
@@ -84,15 +87,18 @@ public class RodentInitialActivity extends AppCompatActivity {
      */
     private String getSiteInspection() {
         switch (routineType) {
-            case "InitialSetup":
-                return "An initial setup was carried out on the above site all new monitors an labels have been installed. "
-                +"map and checklist have been update on this visit ";
 
-
+            case "Callout":
+                return "An Emergency call out was carried out due to suspected rodent sighting Externally. All monitors located on site were inspected on this visit" +
+                        "As a precaution baits have been replenished throughout the area."
+                        +"All baits will be inspected on follow up to ensure rodent control is been attained.";
 
             default:
-                return "An initial setup was carried out on the above site all new monitors an labels have been installed. "
-                        +"map and checklist have been update on this visit ";
+                return "An Emergency call out was carried out due to suspected rodent sighting. All monitors located on site were inspected on this visit" +
+                        "As a precaution baits have been replenished throughout the area."
+                        +"All baits will be inspected on follow up to ensure rodent control is been attained.";
+
+
 
         }
     }
@@ -105,16 +111,18 @@ public class RodentInitialActivity extends AppCompatActivity {
      */
     private String getRecommendation() {
         switch (routineType) {
-            case "InitialSetup":
-                return "No specific recommendations were noted at this time.";
 
+            case "Callout":
+                return "Further recommendations will follow upon reassessment.";
 
             default:
-                return "No specific recommendations were noted at this time.";
+                return "Further recommendations will follow upon reassessment.";
+
+
         }
 
-    }
 
+    }
 
 
     /**
@@ -126,17 +134,14 @@ public class RodentInitialActivity extends AppCompatActivity {
      */
     private String getFollowUp() {
         switch (routineType) {
-            case "InitialSetup":
-                return "A follow-up inspection will be scheduled to assess the effectiveness of the setup and" +
-                        " to recommend any necessary adjustments, such as proofing works or additional control measures.";
-
-
+            case "Callout":
+                return "A follow-up visit is scheduled within the next 5 - 7 working days.";
 
 
 
             default:
-                return "A follow-up inspection will be scheduled to assess the effectiveness of the setup and to recommend any" +
-                        " necessary adjustments, such as proofing works or additional control measures.";
+                return "A follow-up visit is scheduled within the next 5 - 7 working days.";
+
 
         }
     }
@@ -149,12 +154,11 @@ public class RodentInitialActivity extends AppCompatActivity {
     private String getPreparation() {
         switch (routineType) {
 
-            case "InitialSetup":
-                return "An adequate amount of baits has been utilized to maximize effectiveness, ensuring optimal pest control measures. ";
-
-
+            case "Callout":
+                return "All monitors on site were replenished using vertox.";
             default:
-                return "An adequate amount of baits has been utilized to maximize effectiveness, ensuring optimal pest control measures.";
+                return "All monitors on site were replenished using vertox.";
+
         }
     }
 
@@ -178,7 +182,7 @@ public class RodentInitialActivity extends AppCompatActivity {
 
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     private void generateAndSaveReport() {
-        Context context = RodentInitialActivity.this;
+        Context context = RodentCallOutExternalActivity.this;
 
         // Ensure external storage is available
         File pdfFolder;
@@ -208,7 +212,7 @@ public class RodentInitialActivity extends AppCompatActivity {
             // Adding Logo
             int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
             ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(logoResourceId).readAllBytes());
-            Image logo = new Image(logoData).scaleToFit(150, 150).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
+            Image logo = new Image(logoData).scaleToFit(200, 200).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
             document.add(logo);
 
             // Adding Report Title
@@ -266,7 +270,7 @@ public class RodentInitialActivity extends AppCompatActivity {
                 .setFontSize(12)
                 .setFontColor(ColorConstants.BLACK)
                 .setTextAlignment(TextAlignment.LEFT)
-                .setMarginBottom(5);
+                .setMarginBottom(10);
 
         // Add elements to the document
         document.add(headingParagraph);
@@ -275,4 +279,3 @@ public class RodentInitialActivity extends AppCompatActivity {
     }
 
 }
-

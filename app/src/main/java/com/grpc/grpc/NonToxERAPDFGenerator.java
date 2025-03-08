@@ -6,6 +6,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -29,7 +32,7 @@ import java.util.Locale;
 public class NonToxERAPDFGenerator {
 
     @SuppressLint("DefaultLocale")
-    public static String generateEnvironmentalRiskAssessment(Context context, String companyName, String address, String email, Bitmap signature) {
+    public static String generateNonToxicEnvironmentalRiskAssessment(Context context, String companyName, String address, String email, Bitmap signature) {
 
         File assessmentsFolder = new File(context.getExternalFilesDir(null), "EnvironmentalRiskAssessments");
         if (!assessmentsFolder.exists() && !assessmentsFolder.mkdirs()) {
@@ -48,19 +51,13 @@ public class NonToxERAPDFGenerator {
             // Add Watermark or Footer if needed
             pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new PDFReportGenerator.PdfWatermarkAndFooterHandler(context));
 
-            // Add Centered Logo
-            Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.logo);
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            logoBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-            Image logo = new Image(com.itextpdf.io.image.ImageDataFactory.create(stream.toByteArray()))
-                    .setWidth(150)
-                    .setHeight(150)
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER); // Ensure it's centered
+            // Adding a logo image at the top of the report
+            int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
+            ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(logoResourceId).readAllBytes());
+            Image logo = new Image(logoData).scaleToFit(200, 200).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
+            document.add(logo); // Ensure it's centered
 
-            document.add(logo);
 
-// Add Title
             // Adding a title to the report
             Paragraph title = new Paragraph("GRPC Environmental Risk Assessment")
                     .setTextAlignment(TextAlignment.CENTER)
@@ -107,7 +104,7 @@ public class NonToxERAPDFGenerator {
 
 // Add Sections
             addSection(document, "1. Applicable Areas and Baits Used",
-                    "Applicable Areas: Dublin, Kildare, Meath, Wicklow\nRodenticides Used: Cholecalciferol, Difenacoum");
+                    "Applicable Areas: Dublin, Kildare, Meath, Wicklow\nNon-toxic monitoring blocks, grain-based non-toxic bait\n");
 
             addSection(document, "2. Purpose",
                     "This environmental risk assessment outlines the considerations and best practices for the use of non-toxic bait in rodent monitoring. " +
@@ -131,7 +128,10 @@ public class NonToxERAPDFGenerator {
                             "- Food source encouragement: Inconsistent bait removal may provide an additional food source for rodents rather than controlling their population.\n" +
                             "- Waterway concerns: Grain-based bait should not be placed near open water sources, as it can contribute to contamination and attract pests.");
 
-            addSection(document, "3. Risk Mitigation Measures", "");
+            addSection(document, "3. Risk Mitigation Measures",
+                    "To ensure effective pest control while minimizing risks to non-target species, the environment," +
+                            " and human health, the following risk mitigation strategies are implemented. " +
+                            "These measures prioritize safety, sustainability, and responsible use of control methods.");
 
             addSection(document, "3.1 Secure Bait Placement",
                     "- Use tamper-resistant bait stations to protect bait from non-target species.\n" +

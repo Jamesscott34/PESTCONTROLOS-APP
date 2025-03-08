@@ -144,7 +144,7 @@ public class RodentJobActivity extends AppCompatActivity {
 
 
             default:
-                return  "A follow-up visit is scheduled within the next 5 - 7 working days.";
+                return  "A follow-up visit is scheduled within the next 7-10 working days.";
 
 
 
@@ -160,13 +160,13 @@ public class RodentJobActivity extends AppCompatActivity {
         switch (routineType) {
 
             case "Rodent Riddance":
-                return "As part of the routine pest control service, Vertox block bait has been strategically placed throughout the site in designated bait stations."
+                return "As part of the rodent riddance pest programme, Vertox block bait has been strategically placed throughout the site in designated bait stations."
                         + "Clients have been advised to ensure that food storage areas remain sealed, waste is properly disposed of"
                         + "The placement of baits will be monitored in subsequent visits to assess consumption levels and effectiveness.";
 
 
             default:
-                return "As part of the routine pest control service, Vertox block bait has been strategically placed throughout the site in designated bait stations."
+                return "As part of the rodent riddance pest programme, Vertox block bait has been strategically placed throughout the site in designated bait stations."
                         + "Clients have been advised to ensure that food storage areas remain sealed, waste is properly disposed of"
                         + "The placement of baits will be monitored in subsequent visits to assess consumption levels and effectiveness.";
 
@@ -225,13 +225,13 @@ public class RodentJobActivity extends AppCompatActivity {
             // Adding Logo
             int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
             ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(logoResourceId).readAllBytes());
-            Image logo = new Image(logoData).scaleToFit(200, 200).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
+            Image logo = new Image(logoData).scaleToFit(150, 150).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
             document.add(logo);
 
             // Adding Report Title
             Paragraph title = new Paragraph("Good Riddance Pest Control Report")
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(18)
+                    .setFontSize(16)
                     .setBold()
                     .setFontColor(ColorConstants.BLUE);
             document.add(title);
@@ -263,7 +263,7 @@ public class RodentJobActivity extends AppCompatActivity {
     private void addReportSection(Document document, String heading, String content) {
         // Create Heading Paragraph with full-width background
         Paragraph headingParagraph = new Paragraph(heading)
-                .setFontSize(14)
+                .setFontSize(12)
                 .setBold()
                 .setUnderline()
                 .setTextAlignment(TextAlignment.CENTER)

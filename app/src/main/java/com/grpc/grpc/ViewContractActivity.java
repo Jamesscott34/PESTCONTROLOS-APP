@@ -273,8 +273,8 @@ public class ViewContractActivity extends AppCompatActivity {
         // Disable checkbox if last visit is today
         String todayDate = dateFormat.format(new Date());
         if (lastVisit.equals(todayDate)) {
-            markDoneCheckBox.setChecked(true);
-            markDoneCheckBox.setEnabled(false);
+            markDoneCheckBox.setChecked(false);
+            markDoneCheckBox.setEnabled(true);
         }
 
         // Add short press action
@@ -492,14 +492,7 @@ public class ViewContractActivity extends AppCompatActivity {
                     break;
 
                 case 1: // Callout
-                    // Start RodentRoutineActivity with "Callout" type
-                    Intent calloutIntent = new Intent(ViewContractActivity.this, RodentCallOutActivity.class);
-                    calloutIntent.putExtra("ROUTINE_TYPE", "Callout"); // Callout should be Callout
-                    calloutIntent.putExtra("USER_NAME", userName);
-                    calloutIntent.putExtra("COMPANY_NAME", companyName);
-                    calloutIntent.putExtra("ADDRESS", address);
-                    calloutIntent.putExtra("DOCUMENT_ID", documentId);
-                    startActivity(calloutIntent);
+                   showCallOutDialog(documentId, contract);
                     break;
 
                 case 2: // Update Last Visit
@@ -606,6 +599,41 @@ public class ViewContractActivity extends AppCompatActivity {
         routineDialog.show();
     }
 
+
+
+    private void showCallOutDialog(String documentId, Map<String, Object> contract){
+        AlertDialog.Builder routineDialog = new AlertDialog.Builder(this);
+        routineDialog.setTitle("Routine Type");
+
+        routineDialog.setItems(new CharSequence[]{"Internal", "External"}, (dialogInterface, which) -> {
+            String companyName = contract.get("name") != null ? contract.get("name").toString() : "N/A";
+            String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
+
+            Intent intent;
+
+            switch (which) {
+                case 0: // No Activity
+                    intent = new Intent(ViewContractActivity.this, RodentCallOutActivity.class);
+                    intent.putExtra("ROUTINE_TYPE", "Internal"); // ✅ Explicitly setting correct routine type
+                    break;
+                case 1: // Activity
+                    intent = new Intent(ViewContractActivity.this, RodentCallOutExternalActivity.class);
+                    intent.putExtra("ROUTINE_TYPE", "External"); // ✅ Explicitly setting correct routine type
+                    break;
+                default:
+                    return; // Exit if something unexpected happens
+            }
+
+            intent.putExtra("USER_NAME", userName);
+            intent.putExtra("COMPANY_NAME", companyName);
+            intent.putExtra("ADDRESS", address);
+            intent.putExtra("DOCUMENT_ID", documentId);
+
+            startActivity(intent);
+        });
+
+        routineDialog.show();
+    }
 
 
 

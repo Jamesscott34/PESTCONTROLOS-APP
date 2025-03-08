@@ -6,6 +6,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -29,7 +32,7 @@ import java.util.Locale;
 public class ToxicERAPDFGenerator {
 
     @SuppressLint("DefaultLocale")
-    public static String generateEnvironmentalRiskAssessment(Context context, String companyName, String address, String email, Bitmap signature) {
+    public static String generateToxicEnvironmentalRiskAssessment(Context context, String companyName, String address, String email, Bitmap signature) {
 
         File assessmentsFolder = new File(context.getExternalFilesDir(null), "EnvironmentalRiskAssessments");
         if (!assessmentsFolder.exists() && !assessmentsFolder.mkdirs()) {
@@ -48,17 +51,12 @@ public class ToxicERAPDFGenerator {
             // Add Watermark or Footer if needed
             pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new PDFReportGenerator.PdfWatermarkAndFooterHandler(context));
 
-            // Add Centered Logo
-            Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.logo);
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            logoBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-            Image logo = new Image(com.itextpdf.io.image.ImageDataFactory.create(stream.toByteArray()))
-                    .setWidth(150)
-                    .setHeight(150)
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER); // Ensure it's centered
+            // Adding a logo image at the top of the report
+            int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
+            ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(logoResourceId).readAllBytes());
+            Image logo = new Image(logoData).scaleToFit(200, 200).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
+            document.add(logo); // Ensure it's centered
 
-            document.add(logo);
 
 // Add Title
             // Adding a title to the report
@@ -105,8 +103,7 @@ public class ToxicERAPDFGenerator {
 
             // Sections
             addSection(document, "1. Applicable Areas and Baits Used",
-                    "Applicable Areas: Dublin, Kildare, Meath, Wicklow\nRodenticides Used: Cholecalciferol, Difenacoum" +
-                            "Rodenticides Used: Cholecalciferol, Difenacoum");
+                    "Applicable Areas: Dublin, Kildare, Meath, Wicklow\nRodenticides Used: Cholecalciferol, Difenacoum");
 
             addSection(document, "1. Purpose",
                     "This environmental risk assessment provides an overview of the potential risks associated with rodenticide use and outlines best practices " +
@@ -118,11 +115,11 @@ public class ToxicERAPDFGenerator {
                             "to prevent unintended impacts on wildlife, water sources, and biodiversity.");
 
             addSection(document, "2.1 Non-Target Species at Risk",
-                    "The following species are commonly found in Dublin, Kildare, Meath, and Wicklow and may be at risk from rodenticide use:\n\n" +
-                            "- **Birds of prey**: Barn owls, kestrels, and buzzards, which may feed on poisoned rodents.\n" +
-                            "- **Scavenger birds**: Crows, magpies, and ravens, which may ingest bait or poisoned rodents.\n" +
-                            "- **Mammals**: Foxes, badgers, hedgehogs, and domestic pets, which may consume bait or secondary-poisoned rodents.\n" +
-                            "- **Small rodents**: Field mice and voles, which may inadvertently consume bait.");
+                    "The following species are commonly found in Dublin, Kildare, Meath, and Wicklow and may be at risk from rodenticide use:\n" +
+                            "- Birds of prey: Barn owls, kestrels, and buzzards, which may feed on poisoned rodents.\n" +
+                            "- Scavenger birds: Crows, magpies, and ravens, which may ingest bait or poisoned rodents.\n" +
+                            "- Mammals: Foxes, badgers, hedgehogs, and domestic pets, which may consume bait or secondary-poisoned rodents.\n" +
+                            "- Small rodents: Field mice and voles, which may inadvertently consume bait.");
 
             addSection(document, "2.2 Water Contamination Risks",
                     "Rodenticides must not enter watercourses, as contamination could impact aquatic ecosystems. Areas of concern include rivers, canals, lakes, and drainage systems.");
@@ -131,7 +128,10 @@ public class ToxicERAPDFGenerator {
                     "Predators and scavengers that consume poisoned rodents can be affected, particularly by second-generation anticoagulants like difenacoum. " +
                             "Cholecalciferol poses a lower secondary poisoning risk but must still be managed carefully.");
 
-            addSection(document, "3. Risk Mitigation Measures", "");
+            addSection(document, "3. Risk Mitigation Measures",
+                    "Effective risk mitigation is essential to ensure the safe and responsible use of rodenticides "
+                            +"while minimizing risks to non-target species, the environment, and human health. " +
+                            "This section outlines key measures to enhance the safety and effectiveness of pest control practices");
 
             addSection(document, "3.1 Secure and Targeted Baiting",
                     "- Use tamper-resistant bait stations in all external locations to prevent access by non-target species.\n" +
@@ -139,8 +139,8 @@ public class ToxicERAPDFGenerator {
                             "- Use bait blocks securely fixed within stations to reduce the risk of bait being removed or scattered.");
 
             addSection(document, "3.2 Rodenticide Selection",
-                    "- **Difenacoum (0.005%)** is used where a second-generation anticoagulant is necessary, as it poses a lower risk to non-target species compared to stronger alternatives.\n" +
-                            "- **Cholecalciferol** is preferred in locations where secondary poisoning risk must be minimized, as it does not bioaccumulate in predators.");
+                    "- Difenacoum (0.005%) is used where a second-generation anticoagulant is necessary, as it poses a lower risk to non-target species compared to stronger alternatives.\n" +
+                            "- Cholecalciferol is preferred in locations where secondary poisoning risk must be minimized, as it does not bioaccumulate in predators.");
 
             addSection(document, "3.3 Carcass Removal and Site Monitoring",
                     "- Conduct regular inspections to remove dead rodents promptly.\n" +

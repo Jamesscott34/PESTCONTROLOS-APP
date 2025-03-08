@@ -136,6 +136,9 @@
         <activity android:name=".RodentRoutineActivity"
             android:exported="false"/>
 
+        <activity android:name=".RodentCallOutExternalActivity"
+            android:exported="false"/>
+
         <activity android:name=".RodentCallOutActivity"
             android:exported="false"/>
 

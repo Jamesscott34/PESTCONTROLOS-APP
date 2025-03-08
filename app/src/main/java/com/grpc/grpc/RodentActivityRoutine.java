@@ -55,10 +55,7 @@ public class RodentActivityRoutine extends AppCompatActivity {
         if (companyName == null) companyName = "N/A";
         if (address == null) address = "N/A";
 
-        // ✅ Ensure Visit Type is "Routine" unless it's "Callout"
-        if (routineType == null) {
-            routineType = "Routine";
-        }
+        routineType = "Routine";
 
 
         // Auto-fill all fields
@@ -89,18 +86,15 @@ public class RodentActivityRoutine extends AppCompatActivity {
         switch (routineType) {
 
             case "Activity":
-                return "A routine pest control inspection was conducted, with a detailed examination of all monitoring points, bait stations, and surrounding environments."
-                        + "During the assessment, evidence of rodent activity was identified in specific areas of the site. Notable indicators included droppings, gnaw marks, and visible disturbances within bait stations, confirming recent rodent presence."
-                        + "In response, all affected areas have been replenished with professionally approved toxic bait, strategically placed to maximize control efficacy while ensuring minimal risk to non-target species. Existing bait stations and traps were also inspected for functionality and repositioned where necessary to optimize coverage."
-                        + "A follow-up monitoring plan has been put in place to track bait uptake and evaluate the effectiveness of the control measures implemented. The site will remain under close surveillance, and additional corrective actions will be recommended if activity levels persist or increase.";
+                return "A routine inspection of the above site was carried out on this day " +
+                        "All monitors located on site were inspected and found to have light rodent activity. " +
+                        "During this visit all monitors were replenished as required During this visit";
 
 
             default:
-                return  "A routine pest control inspection was conducted, with a detailed examination of all monitoring points, bait stations, and surrounding environments."
-                        + "During the assessment, evidence of rodent activity was identified in specific areas of the site. Notable indicators included droppings, gnaw marks, and visible disturbances within bait stations, confirming recent rodent presence."
-                        + "In response, all affected areas have been replenished with professionally approved toxic bait, strategically placed to maximize control efficacy while ensuring minimal risk to non-target species. Existing bait stations and traps were also inspected for functionality and repositioned where necessary to optimize coverage."
-                        + "A follow-up monitoring plan has been put in place to track bait uptake and evaluate the effectiveness of the control measures implemented. The site will remain under close surveillance, and additional corrective actions will be recommended if activity levels persist or increase.";
-
+                return "A routine inspection of the above site was carried out on this day " +
+                        "All monitors located on site were inspected and found to have light rodent activity. " +
+                        "During this visit all monitors were replenished as required During this visit";
         }
     }
 
@@ -114,15 +108,11 @@ public class RodentActivityRoutine extends AppCompatActivity {
         switch (routineType) {
 
             case "Activity":
-                return "Further recommendations will be provided during the follow-up inspection."
-                        + "Rodent activity has been detected, and necessary control measures have been implemented, including replenishment of bait stations and repositioning of traps where required. \n"
-                        + "A follow-up visit is advised to assess bait uptake and monitor rodent presence. Additional recommendations may be provided based on the level of activity noted in subsequent inspections.";
-
+                return "Recomendation will follow on follow up ";
 
             default:
-                return "Standard recommendations apply based on routine pest control assessments.\n\n"
-                        + "All monitoring stations were checked and remain in good condition. No immediate issues were identified, and existing preventive measures continue to be effective.\n"
-                        + "Regular monitoring and good hygiene practices are advised to maintain a pest-free environment. Any adjustments to the pest control strategy will be determined during subsequent visits.";
+                return "Recomendation will follow on follow up ";
+
         }
     }
 
@@ -158,16 +148,9 @@ public class RodentActivityRoutine extends AppCompatActivity {
         switch (routineType) {
 
             case "Activity":
-                return "As part of the routine pest control service, Vertox block bait has been strategically placed throughout the site in designated bait stations."
-                        + "Clients have been advised to ensure that food storage areas remain sealed, waste is properly disposed of, and entry points are secured to reduce the risk of further rodent activity."
-                        + "The placement of baits will be monitored in subsequent visits to assess consumption levels and effectiveness.";
-
-
+                return "An adequate amount of baits has been utilized to maxamize effectivness.";
             default:
-                return "As part of the routine pest control service, Vertox block bait has been strategically placed throughout the site in designated bait stations."
-                        + "Clients have been advised to ensure that food storage areas remain sealed, waste is properly disposed of, and entry points are secured to reduce the risk of further rodent activity."
-                        + "The placement of baits will be monitored in subsequent visits to assess consumption levels and effectiveness.";
-
+                return "An adequate amount of baits has been utilized to maxamize effectivness.";
 
         }
     }
@@ -228,7 +211,7 @@ public class RodentActivityRoutine extends AppCompatActivity {
             // Adding Report Title
             Paragraph title = new Paragraph("Good Riddance Pest Control Report")
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(18)
+                    .setFontSize(16)
                     .setBold()
                     .setFontColor(ColorConstants.BLUE);
             document.add(title);

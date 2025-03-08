@@ -89,16 +89,16 @@ public class RodentCallOutActivity extends AppCompatActivity {
         switch (routineType) {
 
             case "Callout":
-                return "An emergency callout was initiated following reports of suspected rodent activity on-site. Upon arrival, a thorough pest control inspection was undertaken to assess the extent of the issue and implement appropriate control measures."
-                        + "All accessible monitoring points and high-risk areas were examined for evidence of rodent activity, with particular focus on potential entry points, harborage sites, and food storage areas. Signs of pest presence, including droppings, gnaw marks, and disturbance of existing bait stations, were observed, indicating recent activity."
-                        + "As a precautionary measure, toxic bait has been strategically deployed in key locations to mitigate infestation risks. Additional control techniques, including sealing of identified entry points and removal of attractants, have been recommended to enhance site protection."
-                        + "The client has been provided with detailed guidance on preventive measures, such as proper waste disposal, improved sanitation, and proactive maintenance. A follow-up visit has been scheduled to reassess the situation, review bait uptake, and determine whether further intervention is required.";
+                return "An Emergency call out was carried out due to suspected rodent sighting. All monitors located on site were inspected on this visit" +
+                        "As a precaution baits have been replenished throughout the area."
+                        +"All baits will be inspected on follow up to ensure rodent control is been attained.";
 
             default:
-                return "An emergency callout was initiated following reports of suspected rodent activity on-site. Upon arrival, a thorough pest control inspection was undertaken to assess the extent of the issue and implement appropriate control measures."
-                        + "All accessible monitoring points and high-risk areas were examined for evidence of rodent activity, with particular focus on potential entry points, harborage sites, and food storage areas. Signs of pest presence, including droppings, gnaw marks, and disturbance of existing bait stations, were observed, indicating recent activity."
-                        + "As a precautionary measure, toxic bait has been strategically deployed in key locations to mitigate infestation risks. Additional control techniques, including sealing of identified entry points and removal of attractants, have been recommended to enhance site protection."
-                        + "The client has been provided with detailed guidance on preventive measures, such as proper waste disposal, improved sanitation, and proactive maintenance. A follow-up visit has been scheduled to reassess the situation, review bait uptake, and determine whether further intervention is required.";
+                return "An Emergency call out was carried out due to suspected rodent sighting. All monitors located on site were inspected on this visit" +
+                        "As a precaution baits have been replenished throughout the area."
+                        +"All baits will be inspected on follow up to ensure rodent control is been attained.";
+
+
 
         }
     }
@@ -155,15 +155,9 @@ public class RodentCallOutActivity extends AppCompatActivity {
         switch (routineType) {
 
             case "Callout":
-                return "Following reports of rodent activity, Vertox block bait has been placed throughout key areas of the site as a precautionary measure."
-                        + "Monitors and bait stations have been checked, and additional safety measures have been taken to minimize further infestation risks. "
-                        + "Clients are advised to maintain high standards of hygiene and ensure structural proofing where necessary. Follow-up inspections will be conducted to evaluate bait uptake and overall site conditions.";
-
-
+                return "All monitors on site were replenished using vertox.";
             default:
-                return "Following reports of rodent activity, Vertox block bait has been placed throughout key areas of the site as a precautionary measure."
-                        + "Monitors and bait stations have been checked, and additional safety measures have been taken to minimize further infestation risks. "
-                        + "Clients are advised to maintain high standards of hygiene and ensure structural proofing where necessary. Follow-up inspections will be conducted to evaluate bait uptake and overall site conditions.";
+                return "All monitors on site were replenished using vertox.";
 
                 }
         }
@@ -224,7 +218,7 @@ public class RodentCallOutActivity extends AppCompatActivity {
             // Adding Report Title
             Paragraph title = new Paragraph("Good Riddance Pest Control Report")
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(20)
+                    .setFontSize(16)
                     .setBold()
                     .setFontColor(ColorConstants.BLUE);
             document.add(title);
@@ -256,7 +250,7 @@ public class RodentCallOutActivity extends AppCompatActivity {
     private void addReportSection(Document document, String heading, String content) {
         // Create Heading Paragraph with full-width background
         Paragraph headingParagraph = new Paragraph(heading)
-                .setFontSize(16)
+                .setFontSize(14)
                 .setBold()
                 .setUnderline()
                 .setTextAlignment(TextAlignment.CENTER)
@@ -273,7 +267,7 @@ public class RodentCallOutActivity extends AppCompatActivity {
 
         // Create Content Paragraph
         Paragraph contentParagraph = new Paragraph(content)
-                .setFontSize(14)
+                .setFontSize(12)
                 .setFontColor(ColorConstants.BLACK)
                 .setTextAlignment(TextAlignment.LEFT)
                 .setMarginBottom(10);

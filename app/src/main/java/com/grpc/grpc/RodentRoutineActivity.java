@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 
 public class RodentRoutineActivity extends AppCompatActivity {
 
@@ -55,10 +56,8 @@ public class RodentRoutineActivity extends AppCompatActivity {
         if (companyName == null) companyName = "N/A";
         if (address == null) address = "N/A";
 
-        // ✅ Ensure Visit Type is "Routine" unless it's "Callout"
-        if (routineType == null) {
-            routineType = "Routine";
-        }
+
+        routineType = "Routine";
 
 
         // Auto-fill all fields
@@ -87,20 +86,16 @@ public class RodentRoutineActivity extends AppCompatActivity {
      */
     private String getSiteInspection() {
         switch (routineType) {
-            case "No Activity":
-                return "As part of the scheduled pest management program, a comprehensive routine inspection of the site was conducted."
-                        + "During the assessment, all designated monitoring stations were thoroughly examined, and no evidence of rodent activity was detected at this time. There were no visible signs of pest ingress, contamination, or structural vulnerabilities that could facilitate future infestations."
-                        + "All bait stations, traps, and monitoring devices were found to be intact, undisturbed, and fully operational. Environmental factors, such as hygiene levels and waste management practices, were reviewed and determined to be in compliance with pest control best practices."
-                        + "Given the absence of rodent activity, no further intervention is required at this stage. However, the site will continue to be monitored as per the routine pest control schedule to ensure ongoing protection and early detection of any potential pest concerns.";
+            case "Routine":
+                return "A Routine inspection of the above site was carried out on this day, All monitors located on site were inspected on this visit"
+                        + ",and no evidence of rodent activity was detected at this time of visit. ";
 
 
             default:
-                return "A scheduled routine pest control service was carried out as part of the ongoing maintenance program for this site."
-                        + "All designated monitoring stations, bait stations, and traps were inspected to ensure they remain operational and strategically positioned for optimal effectiveness. No evidence of new or increased rodent activity was observed at this time."
-                        + "The surrounding environment, including waste management procedures, structural integrity, and general hygiene conditions, was also reviewed. No immediate risk factors contributing to pest attraction or infestation were identified."
-                        + "Pest control measures currently in place continue to function as intended, providing a proactive defense against potential rodent intrusion. The site will remain under routine monitoring, with any necessary adjustments to the pest control strategy made in response to future developments.";
+                return "A Routine inspection of the above site was carried out on this day, All monitors located on site were inspected on this visit"
+                        + ",and no evidence of rodent activity was detected at this time of visit. ";
+            }
         }
-    }
 
 
 
@@ -110,17 +105,13 @@ public class RodentRoutineActivity extends AppCompatActivity {
      */
     private String getRecommendation() {
         switch (routineType) {
-            case "No Activity":
-                return "No specific recommendations were noted at this time."
-                        + "The site remains well-maintained, with no signs of rodent activity observed. It is advised to continue with regular cleaning and general maintenance practices to ensure the environment remains inhospitable to pests.\n"
-                        + "Routine monitoring will continue as part of the scheduled pest management program, with adjustments made if necessary based on future findings.";
+            case "Routine":
+                return "No specific recommendations were noted at this time.";
 
 
 
             default:
-                return "Standard recommendations apply based on routine pest control assessments.\n\n"
-                        + "All monitoring stations were checked and remain in good condition. No immediate issues were identified, and existing preventive measures continue to be effective.\n"
-                        + "Regular monitoring and good hygiene practices are advised to maintain a pest-free environment. Any adjustments to the pest control strategy will be determined during subsequent visits.";
+                return "No specific recommendations were noted at this time.";
         }
     }
 
@@ -134,10 +125,8 @@ public class RodentRoutineActivity extends AppCompatActivity {
      */
     private String getFollowUp() {
         switch (routineType) {
-            case "No Activity":
-                return "No follow-up is required at this time."
-                        + "The site remains free of pest activity, and all monitoring stations were found to be in good condition. "
-                        + "Routine inspections will continue as per the agreed pest control schedule to ensure ongoing protection.";
+            case "Routine":
+                return "No follow-up is required at this time.";
 
 
 
@@ -145,9 +134,7 @@ public class RodentRoutineActivity extends AppCompatActivity {
 
 
             default:
-                return "Routine follow-up will be conducted as per the contract."
-                        + "All monitoring stations remain in place, and no immediate concerns were noted. "
-                        + "Regular inspections will continue to ensure the site remains pest-free, with adjustments made if necessary based on future findings.";
+                return "No follow-up is required at this time.";
         }
     }
 
@@ -158,16 +145,16 @@ public class RodentRoutineActivity extends AppCompatActivity {
      */
     private String getPreparation() {
         switch (routineType) {
-            case "No Activity":
-                return "No preparatory actions were required during this visit."
-                        + "The site was found to be well-maintained, with no evidence of pest activity. All monitoring stations remain in place and undisturbed. "
-                        + "Standard hygiene and housekeeping practices should continue to prevent any potential infestations.";
+            case "Routine":
+                return "No prep used on this visit.";
 
 
 
             default:
-                return "Routine pest control measures have been implemented as per standard preparation guidelines."
-                        + "Bait stations have been inspected, and environmental conditions assessed. No immediate concerns were noted, and the site remains under continuous monitoring for any necessary adjustments.";
+                return "No preparatory actions were required during this visit."
+                    + "The site was found to be well-maintained, with no evidence of pest activity.";
+
+
         }
     }
 
@@ -221,13 +208,13 @@ public class RodentRoutineActivity extends AppCompatActivity {
             // Adding Logo
             int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
             ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(logoResourceId).readAllBytes());
-            Image logo = new Image(logoData).scaleToFit(200, 200).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
+            Image logo = new Image(logoData).scaleToFit(150, 150).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
             document.add(logo);
 
             // Adding Report Title
             Paragraph title = new Paragraph("Good Riddance Pest Control Report")
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(18)
+                    .setFontSize(16)
                     .setBold()
                     .setFontColor(ColorConstants.BLUE);
             document.add(title);
@@ -279,7 +266,7 @@ public class RodentRoutineActivity extends AppCompatActivity {
                 .setFontSize(12)
                 .setFontColor(ColorConstants.BLACK)
                 .setTextAlignment(TextAlignment.LEFT)
-                .setMarginBottom(10);
+                .setMarginBottom(5);
 
         // Add elements to the document
         document.add(headingParagraph);
