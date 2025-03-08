@@ -12,4 +12,5 @@
     <item name="leadsScrollView" type="id" />
     <item name="leadsContainer" type="id" />
     <item name="totalLeads" type="id" />
+    <item name="dueContracts" type="id" />
 </resources>

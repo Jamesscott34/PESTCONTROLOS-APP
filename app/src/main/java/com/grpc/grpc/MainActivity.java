@@ -40,13 +40,13 @@ public class MainActivity extends AppCompatActivity {
         // Initialize Buttons
         reportButton = findViewById(R.id.ReportButton);
         reportViewButton = findViewById(R.id.ReportViewButton);
-        calendarButton = findViewById(R.id.buttonOpenCalendar);
+       // calendarButton = findViewById(R.id.buttonOpenCalendar);
         contractsButton = findViewById(R.id.ContractsButton);
         quotesButton = findViewById(R.id.GeneralQuotesButton);
         ServiceAgreementButton = findViewById(R.id.ServiceAgreementButton);
         CommisionButton = findViewById(R.id.CommisionButton);
         JobButton = findViewById(R.id.JobsButton);
-        CustomerMapButton = findViewById(R.id.CustomerMapButton);
+        // CustomerMapButton = findViewById(R.id.CustomerMapButton);
         EnviromentButton = findViewById(R.id.EnviromentButton);
         logoutButton = findViewById(R.id.LogoutButton); // Logout button
 
@@ -59,9 +59,9 @@ public class MainActivity extends AppCompatActivity {
             reportViewButton.setOnClickListener(view -> openActivity(PDFSelectionActivity.class));
         }
 
-        if (calendarButton != null) {
-            calendarButton.setOnClickListener(view -> openActivity(CalendarActivity.class));
-        }
+       // if (calendarButton != null) {
+       //     calendarButton.setOnClickListener(view -> openActivity(CalendarActivity.class));
+       // }
 
         if (contractsButton != null) {
             contractsButton.setOnClickListener(view -> openActivity(ContractsActivity.class));
@@ -92,9 +92,9 @@ public class MainActivity extends AppCompatActivity {
             JobButton.setOnClickListener(view -> openActivity(JobsActivity.class));
         }
 
-        if (CustomerMapButton != null) {
-            CustomerMapButton.setOnClickListener(view -> openActivity(CustomerMapActivity.class));
-        }
+       // if (CustomerMapButton != null) {
+       //     CustomerMapButton.setOnClickListener(view -> openActivity(CustomerMapActivity.class));
+      //  }
 
         if (logoutButton != null) {
             logoutButton.setOnClickListener(view -> {

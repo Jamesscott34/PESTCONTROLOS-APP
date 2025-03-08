@@ -24,7 +24,7 @@
         android:id="@+id/buttonCreateReport"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:text="Customer Report"
+        android:text="Report"
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 
@@ -33,7 +33,7 @@
         android:id="@+id/buttonCreateQuotation"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:text="Quotation Report"
+        android:text="Contracts Quote"
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 
@@ -42,7 +42,7 @@
         android:id="@+id/buttonCreateBirdQuotation"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:text="Bird Quotation"
+        android:text="Bird Quote"
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 
@@ -50,7 +50,7 @@
         android:id="@+id/buttonCreateGeneralQuotation"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:text="General Quotation"
+        android:text="Generic Quote"
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 </LinearLayout>

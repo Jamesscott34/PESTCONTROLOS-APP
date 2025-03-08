@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -37,7 +38,9 @@ public class StencilMapActivity extends AppCompatActivity {
     private float scaleFactor = 1.0f; // Default scale factor
 
     private ScaleGestureDetector scaleGestureDetector;
+    private GestureDetector gestureDetector;
     private boolean addCircleMode = false;
+    private float logoX = (selectedImage.getWidth() - logoImage.getWidth()) / 2.0f, logoY = 20;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -64,11 +67,13 @@ public class StencilMapActivity extends AppCompatActivity {
         btnSetAddress.setOnClickListener(v -> promptAddress());
         btnUndo.setOnClickListener(v -> undoLastAction());
 
-        btnRed.setOnClickListener(v -> circleColor = Color.RED);
-        btnGreen.setOnClickListener(v -> circleColor = Color.GREEN);
-        btnBlue.setOnClickListener(v -> circleColor = Color.BLUE);
+        btnRed.setOnClickListener(v -> toggleCircleMode(Color.RED));
+        btnGreen.setOnClickListener(v -> toggleCircleMode(Color.GREEN));
+        btnBlue.setOnClickListener(v -> toggleCircleMode(Color.BLUE));
+
 
         scaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
+        gestureDetector = new GestureDetector(this, new GestureListener());
 
         imgMapPreview.setOnTouchListener((v, event) -> {
             scaleGestureDetector.onTouchEvent(event);
@@ -85,9 +90,19 @@ public class StencilMapActivity extends AppCompatActivity {
     }
 
     private void selectLogo() {
-        Intent pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(pickIntent, PICK_LOGO);
+        // Load the logo from drawable
+        logoImage = BitmapFactory.decodeResource(getResources(), R.drawable.logo);
+
+        if (logoImage != null && selectedImage != null) {
+            // Position logo at the top center of the photo
+            logoX = (selectedImage.getWidth() - logoImage.getWidth()) / 2.0f;
+            logoY =20 ; // Small margin from the top
+        }
+
+        imgMapPreview.setImageBitmap(drawOnBitmap());
     }
+
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -107,6 +122,14 @@ public class StencilMapActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+    private void toggleCircleMode(int color) {
+        if (circleColor == color && addCircleMode) {
+            addCircleMode = false; // Disable drawing mode
+        } else {
+            circleColor = color;
+            addCircleMode = true; // Enable drawing mode
         }
     }
 
@@ -151,17 +174,11 @@ public class StencilMapActivity extends AppCompatActivity {
         }
     }
 
+    // Adds circle at exact touch location
     private void addCircle(float x, float y) {
         if (!addCircleMode) return;
 
-        int number;
-        if (circleColor == Color.RED) {
-            number = redCounter++;
-        } else if (circleColor == Color.GREEN) {
-            number = greenCounter++;
-        } else {
-            number = blueCounter++;
-        }
+        int number = (circleColor == Color.RED) ? redCounter++ : (circleColor == Color.GREEN) ? greenCounter++ : blueCounter++;
         drawnItems.add(new DrawnItem(x, y, circleColor, number, null));
         imgMapPreview.setImageBitmap(drawOnBitmap());
     }
@@ -206,13 +223,36 @@ public class StencilMapActivity extends AppCompatActivity {
         }
     }
 
+    // Pinch-to-zoom functionality
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
             scaleFactor *= detector.getScaleFactor();
-            scaleFactor = Math.max(0.5f, Math.min(scaleFactor, 3.0f));
+            scaleFactor = Math.max(1.0f, Math.min(scaleFactor, 3.0f));
             imgMapPreview.setScaleX(scaleFactor);
             imgMapPreview.setScaleY(scaleFactor);
+            imgMapPreview.setPivotX(detector.getFocusX());
+            imgMapPreview.setPivotY(detector.getFocusY());
+            return true;
+        }
+    }
+
+    // Double tap zoom and area focus
+    private class GestureListener extends GestureDetector.SimpleOnGestureListener {
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            float x = e.getX();
+            float y = e.getY();
+
+            if (scaleFactor < 2.0f) {
+                scaleFactor = 2.0f;  // Zoom in
+            } else {
+                scaleFactor = 1.0f;  // Reset zoom
+            }
+            imgMapPreview.setScaleX(scaleFactor);
+            imgMapPreview.setScaleY(scaleFactor);
+            imgMapPreview.setPivotX(x);
+            imgMapPreview.setPivotY(y);
             return true;
         }
     }

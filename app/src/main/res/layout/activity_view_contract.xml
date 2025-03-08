@@ -4,45 +4,71 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@android:color/white">
 
     <!-- Statistics Section -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:background="@android:color/darker_gray"
+        android:layout_marginBottom="10dp">
 
-        <!-- Total Contracts -->
-        <TextView
-            android:id="@+id/totalContracts"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Total Contracts: 0"
-            android:textSize="16sp"
-            android:layout_marginEnd="8dp" />
+            android:orientation="horizontal">
 
-        <!-- Behind Contracts -->
-        <TextView
-            android:id="@+id/behindContracts"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Behind: 0"
-            android:textSize="16sp"
-            android:gravity="center"
-            android:textColor="@android:color/holo_red_dark" />
+            <!-- Total Contracts -->
+            <TextView
+                android:id="@+id/totalContracts"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Total: 0"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:gravity="start" />
 
-        <!-- Up-to-Date Contracts -->
-        <TextView
-            android:id="@+id/upToDateContracts"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Up-to-Date: 0"
-            android:textSize="16sp"
-            android:gravity="end"
-            android:textColor="@android:color/holo_green_dark" />
+            <!-- Behind Contracts -->
+            <TextView
+                android:id="@+id/behindContracts"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Behind: 0"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_red_dark"
+                android:gravity="center" />
+
+            <!-- Due Contracts (NEW) -->
+            <TextView
+                android:id="@+id/dueContracts"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Due: 0"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_orange_dark"
+                android:gravity="center" />
+
+            <!-- Up-to-Date Contracts -->
+            <TextView
+                android:id="@+id/upToDateContracts"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Up-to-Date: 0"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_green_dark"
+                android:gravity="end" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Search Bar -->
@@ -51,9 +77,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Search by name"
-        android:padding="8dp"
-        android:layout_marginBottom="16dp"
-        android:background="@android:drawable/edit_text" />
+        android:padding="12dp"
+        android:textSize="16sp"
+        android:background="@android:drawable/edit_text"
+        android:layout_marginBottom="12dp" />
 
     <!-- Scroll View for Contracts -->
     <ScrollView
@@ -61,13 +88,15 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:background="@android:color/white">
 
         <LinearLayout
             android:id="@+id/contractsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical"
+            android:padding="8dp" />
     </ScrollView>
 
     <!-- Back Button -->
@@ -76,5 +105,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Back"
-        android:layout_marginTop="16dp" />
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:background="@android:color/holo_blue_dark"
+        android:textColor="@android:color/white"
+        android:layout_marginTop="12dp"
+        android:padding="10dp"/>
 </LinearLayout>

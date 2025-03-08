@@ -13,17 +13,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.LineSeparator;
 import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Text;
-import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
 
 import java.io.File;
@@ -43,236 +41,202 @@ public class RodentInitialActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Retrieve intent data
+        // Retrieve and Validate Intent Data
+        extractIntentData();
+
+        // Auto-fill all fields
+        populateReportFields();
+
+        // Generate & Save Report
+        generateAndSaveReport();
+    }
+
+    /**
+     * Extracts intent data and ensures default values are set.
+     */
+    private void extractIntentData() {
         Intent intent = getIntent();
         documentId = intent.getStringExtra("DOCUMENT_ID");
         userName = intent.getStringExtra("USER_NAME");
         companyName = intent.getStringExtra("COMPANY_NAME");
         address = intent.getStringExtra("ADDRESS");
-        routineType = intent.getStringExtra("ROUTINE_TYPE");
+        routineType = "Initial Setup"; // Force Initial Setup for this activity
 
-        // Ensure required fields are not null
-        if (companyName == null) companyName = "N/A";
-        if (address == null) address = "N/A";
-
-       routineType="Initial Setup";
-
-
-        // Auto-fill all fields
-        dateTime = getCurrentDateTime();
-        siteInspection = getSiteInspection();
-        recommendation = getRecommendation();
-        followUp = getFollowUp();
-        preparation = getPreparation();
-        setTechnicianDetails();
-
-        // Automatically generate and save the PDF report
-        generateAndSaveReport();
+        // Ensure values are not null
+        companyName = (companyName != null) ? companyName : "N/A";
+        address = (address != null) ? address : "N/A";
     }
 
     /**
-     * Gets the current date and time in the format "dd-MM-yyyy HH:mm"
+     * Populates the report fields with necessary values.
+     */
+    private void populateReportFields() {
+        dateTime = getCurrentDateTime();
+        siteInspection = generateSiteInspection();
+        recommendation = generateRecommendation();
+        followUp = generateFollowUp();
+        preparation = generatePreparation();
+        setTechnicianDetails();
+    }
+
+    /**
+     * Returns the current date & time in "dd-MM-yyyy HH:mm" format.
      */
     private String getCurrentDateTime() {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault());
-        return sdf.format(new Date());
+        return new SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(new Date());
     }
 
     /**
-     * Generates a professional site inspection report based on the visit type.
-     * This ensures a structured and thorough record of findings, actions taken, and future recommendations.
+     * Generates the site inspection report.
      */
-    private String getSiteInspection() {
-        switch (routineType) {
-            case "InitialSetup":
-                return "An initial setup was carried out on the above site all new monitors an labels have been installed. "
-                +"map and checklist have been update on this visit ";
-
-
-
-            default:
-                return "An initial setup was carried out on the above site all new monitors an labels have been installed. "
-                        +"map and checklist have been update on this visit ";
-
-        }
+    private String generateSiteInspection() {
+        return "An initial setup was carried out on the above site. "
+                + "All new monitors and labels have been installed. "
+                + "The map and checklist have been updated on this visit.";
     }
 
-
-
     /**
-     * Generates professional recommendations based on the visit type.
-     * This provides site-specific guidance for continued pest management and prevention.
+     * Generates recommendations based on the visit type.
      */
-    private String getRecommendation() {
-        switch (routineType) {
-            case "InitialSetup":
-                return "No specific recommendations were noted at this time.";
-
-
-            default:
-                return "No specific recommendations were noted at this time.";
-        }
-
+    private String generateRecommendation() {
+        return "No specific recommendations were noted at this time.";
     }
 
-
-
-    /**
-     * Auto-fills follow-up details based on the visit type.
-     */
     /**
      * Determines follow-up actions based on the visit type.
-     * This ensures continuous monitoring and necessary interventions where required.
      */
-    private String getFollowUp() {
-        switch (routineType) {
-            case "InitialSetup":
-                return "A follow-up inspection will be scheduled to assess the effectiveness of the setup and" +
-                        " to recommend any necessary adjustments, such as proofing works or additional control measures.";
-
-
-
-
-
-            default:
-                return "A follow-up inspection will be scheduled to assess the effectiveness of the setup and to recommend any" +
-                        " necessary adjustments, such as proofing works or additional control measures.";
-
-        }
+    private String generateFollowUp() {
+        return "A follow-up inspection will be scheduled to assess the effectiveness of the setup "
+                + "and recommend any necessary adjustments, such as proofing works or additional control measures.";
     }
-
 
     /**
-     * Auto-fills preparation details based on the visit type.
-     * This section ensures appropriate safety measures and site readiness for pest control interventions.
+     * Auto-fills preparation details.
      */
-    private String getPreparation() {
-        switch (routineType) {
-
-            case "InitialSetup":
-                return "An adequate amount of baits has been utilized to maximize effectiveness, ensuring optimal pest control measures. ";
-
-
-            default:
-                return "An adequate amount of baits has been utilized to maximize effectiveness, ensuring optimal pest control measures.";
-        }
+    private String generatePreparation() {
+        return "An adequate amount of baits has been utilized to maximize effectiveness, ensuring optimal pest control measures.";
     }
-
-
 
     /**
      * Sets the technician's name and contact based on the username.
      */
     private void setTechnicianDetails() {
-        if ("James".equalsIgnoreCase(userName)) {
-            techName = "James Scott";
-            techContact = "0879000271";
-        } else if ("Ian".equalsIgnoreCase(userName)) {
-            techName = "Ian Winston";
-            techContact = "0879134971";
-        } else {
-            techName = "Unknown Technician";
-            techContact = "N/A";
+        switch (userName) {
+            case "James":
+                techName = "James Scott";
+                techContact = "0879000271";
+                break;
+            case "Ian":
+                techName = "Ian Winston";
+                techContact = "0879134971";
+                break;
+            default:
+                techName = "Unknown Technician";
+                techContact = "N/A";
+                break;
         }
     }
 
+    /**
+     * Generates and saves the PDF report.
+     */
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     private void generateAndSaveReport() {
-        Context context = RodentInitialActivity.this;
+        Context context = this;
+        File pdfFolder = getReportDirectory(context);
 
-        // Ensure external storage is available
-        File pdfFolder;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            pdfFolder = new File(context.getExternalFilesDir(null), "GRPEST REPORTS");
-        } else {
-            pdfFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "GRPEST REPORTS");
-        }
+        if (!pdfFolder.exists()) pdfFolder.mkdirs();
 
-        if (!pdfFolder.exists()) {
-            pdfFolder.mkdirs();
-        }
-
-        // Generate a timestamped file name
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
-        String currentDate = sdf.format(new Date());
-        String sanitizedReportName = companyName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + currentDate + ".pdf";
-        File pdfFile = new File(pdfFolder, sanitizedReportName);
+        String fileName = sanitizeFileName(companyName) + "_" + getCurrentDate() + ".pdf";
+        File pdfFile = new File(pdfFolder, fileName);
 
         try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
             PdfDocument pdfDocument = new PdfDocument(writer);
             Document document = new Document(pdfDocument);
 
-            // ✅ Apply watermark and footer from PDFReportGenerator
+            // Add watermark & footer
             pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new PDFReportGenerator.PdfWatermarkAndFooterHandler(context));
 
-            // Adding Logo
-            int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
-            ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(logoResourceId).readAllBytes());
-            Image logo = new Image(logoData).scaleToFit(150, 150).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
-            document.add(logo);
-
-            // Adding Report Title
-            Paragraph title = new Paragraph("Good Riddance Pest Control Report")
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(16)
-                    .setBold()
-                    .setFontColor(ColorConstants.BLUE);
-            document.add(title);
-            document.add(new Paragraph("\n"));  // Spacing after title
-
-            // Adding Report Sections
-            addReportSection(document, "Company Name", companyName);
-            addReportSection(document, "Address", address);
-            addReportSection(document, "Date & Time", dateTime);
-            addReportSection(document, "Visit Type", routineType);
-            addReportSection(document, "Site Inspection", siteInspection);
-            addReportSection(document, "Recommendations", recommendation);
-            addReportSection(document, "Follow-up Required", followUp);
-            addReportSection(document, "Preparation", preparation);
-            addReportSection(document, "Technician", techName + " - " + techContact);
+            // Generate PDF content
+            addPdfContent(document, context);
 
             document.close();
-
-
         } catch (IOException e) {
-            e.printStackTrace();
             Toast.makeText(context, "Error Creating PDF!", Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
         }
 
         finish();
     }
 
+    /**
+     * Returns the appropriate report directory based on Android version.
+     */
+    private File getReportDirectory(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return new File(context.getExternalFilesDir(null), "GRPEST REPORTS");
+        } else {
+            return new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "GRPEST REPORTS");
+        }
+    }
 
+    /**
+     * Returns the current date in "dd-MM-yyyy" format.
+     */
+    private String getCurrentDate() {
+        return new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
+    }
+
+    /**
+     * Sanitizes the file name by replacing special characters.
+     */
+    private String sanitizeFileName(String name) {
+        return name.replaceAll("[^a-zA-Z0-9]", "_");
+    }
+
+    /**
+     * Adds content to the PDF document.
+     */
+    private void addPdfContent(Document document, Context context) throws IOException {
+        // Add Logo
+        int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
+        ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(logoResourceId).readAllBytes());
+        Image logo = new Image(logoData).scaleToFit(150, 150).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
+        document.add(logo);
+
+        // Add Report Title
+        document.add(new Paragraph("Good Riddance Pest Control Report")
+                .setTextAlignment(TextAlignment.CENTER)
+                .setFontSize(16)
+                .setBold()
+                .setFontColor(ColorConstants.BLUE));
+
+        document.add(new Paragraph("\n"));  // Spacing
+
+        // Add Report Sections
+        addReportSection(document, "Company Name", companyName);
+        addReportSection(document, "Address", address);
+        addReportSection(document, "Date & Time", dateTime);
+        addReportSection(document, "Visit Type", routineType);
+        addReportSection(document, "Site Inspection", siteInspection);
+        addReportSection(document, "Recommendations", recommendation);
+        addReportSection(document, "Follow-up Required", followUp);
+        addReportSection(document, "Preparation", preparation);
+        addReportSection(document, "Technician", techName + " - " + techContact);
+    }
+
+    /**
+     * Adds a formatted section to the PDF document.
+     */
     private void addReportSection(Document document, String heading, String content) {
-        // Create Heading Paragraph with full-width background
-        Paragraph headingParagraph = new Paragraph(heading)
+        document.add(new Paragraph(heading)
                 .setFontSize(14)
                 .setBold()
                 .setUnderline()
-                .setTextAlignment(TextAlignment.CENTER)
                 .setBackgroundColor(ColorConstants.LIGHT_GRAY)
-                .setMarginTop(10)
-                .setMarginBottom(5)
-                .setPadding(5)
-                .setWidth(UnitValue.createPercentValue(100)); // Full width
+                .setTextAlignment(TextAlignment.CENTER));
 
-        // Add a horizontal line (divider) under the heading
-        LineSeparator line = new LineSeparator(new SolidLine())
-                .setWidth(UnitValue.createPercentValue(100)) // Full width
-                .setMarginBottom(5);
-
-        // Create Content Paragraph
-        Paragraph contentParagraph = new Paragraph(content)
-                .setFontSize(12)
-                .setFontColor(ColorConstants.BLACK)
-                .setTextAlignment(TextAlignment.LEFT)
-                .setMarginBottom(5);
-
-        // Add elements to the document
-        document.add(headingParagraph);
-        document.add(line); // Adds line separator
-        document.add(contentParagraph);
+        document.add(new LineSeparator(new SolidLine()).setMarginBottom(5));
+        document.add(new Paragraph(content).setFontSize(12).setTextAlignment(TextAlignment.LEFT));
     }
-
 }
-

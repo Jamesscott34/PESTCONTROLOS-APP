@@ -130,34 +130,77 @@ public class ViewContractActivity extends AppCompatActivity {
     }
 
     private void handleContractsData(List<Map<String, Object>> contractsList) {
-        int total = 0, behind = 0, upToDate = 0;
+        int totalContracts = contractsList.size();
+        int behindContracts = 0;
+        int dueContracts = 0;
+        int upToDateContracts = 0;
 
         for (Map<String, Object> contract : contractsList) {
-            total++;
             String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
             String nextVisit = calculateNextVisit(contract);
 
-            if ("N/A".equals(lastVisit) || isWithinFiveDays(nextVisit)) {
-                behind++;
+            if ("N/A".equals(lastVisit) || isPastDue(nextVisit)) {
+                behindContracts++; // Mark as behind if no last visit or next visit is overdue
+            } else if (isDueSoon(nextVisit)) {
+                dueContracts++; // Mark as due if it's within 7 days
             } else {
-                upToDate++;
+                upToDateContracts++; // Otherwise, it's up to date
             }
         }
 
+        // Update UI with new statistics
+        updateStatistics(totalContracts, behindContracts, dueContracts, upToDateContracts);
+
+        // Sort contracts alphabetically
         contractsList.sort((c1, c2) -> {
             String name1 = c1.get("name") != null ? c1.get("name").toString() : "";
             String name2 = c2.get("name") != null ? c2.get("name").toString() : "";
             return name1.compareToIgnoreCase(name2);
         });
 
+        // Clear and add updated contract views
         contractsContainer.removeAllViews();
-
         for (Map<String, Object> contract : contractsList) {
             String documentId = contract.get("documentId").toString();
             addContractToView(contract, documentId);
         }
+    }
 
-        updateStatistics(total, behind, upToDate);
+    private boolean isDueSoon(String nextVisit) {
+        if (nextVisit == null || nextVisit.trim().isEmpty() || "N/A".equalsIgnoreCase(nextVisit)) {
+            return false; // Not due soon if missing
+        }
+
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+            Date nextVisitDate = dateFormat.parse(nextVisit);
+            Date currentDate = new Date();
+
+            long diffInMillis = nextVisitDate.getTime() - currentDate.getTime();
+            long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
+
+            return diffInDays >= 0 && diffInDays < 7; // True if due in the next 7 days
+        } catch (Exception e) {
+            Log.e("DateError", "Error parsing next visit date: " + nextVisit, e);
+            return false; // Assume not due if error occurs
+        }
+    }
+
+    private boolean isPastDue(String nextVisit) {
+        if (nextVisit == null || nextVisit.trim().isEmpty() || "N/A".equalsIgnoreCase(nextVisit)) {
+            return true; // Consider past due if missing
+        }
+
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+            Date nextVisitDate = dateFormat.parse(nextVisit);
+            Date currentDate = new Date();
+
+            return nextVisitDate.before(currentDate); // True if next visit date has passed
+        } catch (Exception e) {
+            Log.e("DateError", "Error parsing next visit date: " + nextVisit, e);
+            return true; // Assume past due if parsing fails
+        }
     }
 
 
@@ -232,7 +275,6 @@ public class ViewContractActivity extends AppCompatActivity {
         contractBox.setPadding(16, 16, 16, 16);
         contractBox.setBackgroundResource(android.R.drawable.dialog_holo_light_frame); // Adds a grey border
 
-        // Retrieve contract details
         String owner = contract.get("owner") != null ? contract.get("owner").toString() : "Unknown";
         String name = contract.get("name") != null ? contract.get("name").toString() : "N/A";
         String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
@@ -241,34 +283,24 @@ public class ViewContractActivity extends AppCompatActivity {
         String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
         String nextVisit = calculateNextVisit(contract);
 
-        // Log values for debugging
-        Log.d("NextVisitDebug", "Contract: " + name + ", Owner: " + owner + ", Next Visit: " + nextVisit);
+        // Determine background color based on nextVisit conditions
+        contractBox.setBackgroundColor(getBackgroundColor(lastVisit, nextVisit));
 
-        // Determine background color based on nextVisit
-        if ("N/A".equals(nextVisit)) {
-            contractBox.setBackgroundColor(Color.RED); // Red for missing next visit
-        } else if (isWithinFiveDays(nextVisit)) {
-            contractBox.setBackgroundColor(Color.YELLOW); // Yellow for upcoming visits
-        } else {
-            contractBox.setBackgroundColor(Color.WHITE); // Default for others
-        }
-
-        // Create contract details TextView
         TextView contractDetails = new TextView(this);
         contractDetails.setText(
-                "Owner: " + owner + "\n" + // Display the contract owner
-                "Name: " + name + "\n" +
-                "Address: " + address + "\n" +
-                "Email: " + email + "\n" +
-                "Contact: " + contact + "\n" +
-                "Last Visit: " + lastVisit + "\n" +
-                "Next Visit: " + nextVisit
+                "Owner: " + owner + "\n" +
+                        "Name: " + name + "\n" +
+                        "Address: " + address + "\n" +
+                        "Email: " + email + "\n" +
+                        "Contact: " + contact + "\n" +
+                        "Last Visit: " + lastVisit + "\n" +
+                        "Next Visit: " + nextVisit
         );
         contractDetails.setTextColor(Color.BLACK);
 
-        // "Mark Done" checkbox
+        // ✅ Add the "Mark as Done" Checkbox
         CheckBox markDoneCheckBox = new CheckBox(this);
-        markDoneCheckBox.setText("Mark Done");
+        markDoneCheckBox.setText("Mark as Done");
 
         // Disable checkbox if last visit is today
         String todayDate = dateFormat.format(new Date());
@@ -277,14 +309,18 @@ public class ViewContractActivity extends AppCompatActivity {
             markDoneCheckBox.setEnabled(true);
         }
 
-        // Add short press action
-        contractBox.setOnClickListener(v -> {
-            showContractOptions(contract, lastVisit, documentId);
+        // Handle checkbox click event
+        markDoneCheckBox.setOnClickListener(v -> {
+            if (markDoneCheckBox.isChecked()) {
+                showRoutinePopup(name, documentId, markDoneCheckBox);
+            }
         });
 
-        // Add long press action
+        // Click Listener for Showing Contract Options
+        contractBox.setOnClickListener(v -> showContractOptions(contract, lastVisit, documentId));
+
+        // Long Click Listener for Edit/Delete Dialog
         contractBox.setOnLongClickListener(v -> {
-            // Allow only James, Ian, and Kristine to edit or delete
             if ("James".equalsIgnoreCase(userName) || "Ian".equalsIgnoreCase(userName) || "Kristine".equalsIgnoreCase(userName)) {
                 showEditOrDeleteDialog(documentId, contract);
             } else {
@@ -293,16 +329,49 @@ public class ViewContractActivity extends AppCompatActivity {
             return true; // Indicate that the long press was handled
         });
 
-        markDoneCheckBox.setOnClickListener(v -> showRoutinePopup(name, documentId, markDoneCheckBox));
-
-        // Add views to contract box
+        // ✅ Add views to contract box
         contractBox.addView(contractDetails);
+        contractBox.addView(markDoneCheckBox);  // ✅ Add checkbox
 
-        contractBox.addView(markDoneCheckBox);
-
-        // Add the contract box to the container
+        // ✅ Add the contract box to the container
         contractsContainer.addView(contractBox);
     }
+
+    private int getBackgroundColor(String lastVisit, String nextVisit) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yy", Locale.getDefault()); // Adjust to match Firestore format
+
+        if (lastVisit == null || lastVisit.trim().isEmpty() || "N/A".equalsIgnoreCase(lastVisit)) {
+            return Color.RED; // Red if last visit is missing
+        }
+
+        if (nextVisit == null || nextVisit.trim().isEmpty() || "N/A".equalsIgnoreCase(nextVisit)) {
+            return Color.RED; // Red if next visit is missing
+        }
+
+        try {
+            Date nextVisitDate = dateFormat.parse(nextVisit);
+            Date currentDate = new Date();
+
+            if (nextVisitDate.before(currentDate)) {
+                return Color.RED; // Red if next visit date has already passed
+            }
+
+            long diffInMillis = nextVisitDate.getTime() - currentDate.getTime();
+            long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
+
+            if (diffInDays < 7) {
+                return Color.YELLOW; // Yellow if next visit is within 7 days
+            }
+        } catch (Exception e) {
+            Log.e("DateError", "Error parsing next visit date: " + nextVisit, e);
+            return Color.RED; // Default to red if there's an error
+        }
+
+        return Color.WHITE; // Default to white
+    }
+
+
+
 
     private void showEditOrDeleteDialog(String documentId, Map<String, Object> contract) {
         // Ensure only James, Ian, and Kristine can access this
@@ -417,35 +486,17 @@ public class ViewContractActivity extends AppCompatActivity {
 
 
 
-    private boolean isWithinFiveDays(String nextVisit) {
-        if (nextVisit == null || nextVisit.isEmpty() || "N/A".equals(nextVisit)) {
-            return false; // Invalid or missing date
-        }
 
-        try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            Date nextVisitDate = dateFormat.parse(nextVisit);
-            Date currentDate = new Date();
+    private void updateStatistics(int total, int behind, int due, int upToDate) {
+        TextView totalContractsText = findViewById(R.id.totalContracts);
+        TextView behindContractsText = findViewById(R.id.behindContracts);
+        TextView dueContractsText = findViewById(R.id.dueContracts);
+        TextView upToDateContractsText = findViewById(R.id.upToDateContracts);
 
-            // Calculate the difference in days
-            long diffInMillis = nextVisitDate.getTime() - currentDate.getTime();
-            long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
-
-            return diffInDays >= 0 && diffInDays <= 5; // Within 5 days
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false; // Error parsing date
-        }
-    }
-
-    private void updateStatistics(int total, int behind, int upToDate) {
-        TextView totalContracts = findViewById(R.id.totalContracts);
-        TextView behindContracts = findViewById(R.id.behindContracts);
-        TextView upToDateContracts = findViewById(R.id.upToDateContracts);
-
-        totalContracts.setText("Total Contracts: " + total);
-        behindContracts.setText("Behind: " + behind);
-        upToDateContracts.setText("Up-to-Date: " + upToDate);
+        totalContractsText.setText("Total: " + total);
+        behindContractsText.setText("Behind: " + behind);
+        dueContractsText.setText("Due: " + due);
+        upToDateContractsText.setText("Up-to-Date: " + upToDate);
     }
 
 

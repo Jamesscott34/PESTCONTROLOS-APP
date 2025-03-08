@@ -46,12 +46,13 @@
                 android:text="View Reports"
                 android:layout_marginBottom="8dp" />
 
+            <!--
             <Button
                 android:id="@+id/buttonOpenCalendar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Open Calendar"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="8dp" /> -->
 
             <Button
                 android:id="@+id/ContractsButton"
@@ -88,12 +89,13 @@
                 android:text="Job Work"
                 android:layout_marginBottom="8dp" />
 
+            <!--
             <Button
                 android:id="@+id/CustomerMapButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Customer Map"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="8dp" /> -->
             <Button
                 android:id="@+id/EnviromentButton"
                 android:layout_width="match_parent"
