@@ -6,6 +6,23 @@ import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
+/**
+ * QuotesActivity.java
+ *
+ * This activity serves as a hub for generating various types of pest control service quotations.
+ * Users can select from 4pt, 6pt, 8pt, and 12pt contracts, which direct them to the respective quotation generation activity.
+ * The username is retrieved from the intent and passed to the selected quotation activity.
+ *
+ * Features:
+ * - Displays a welcome message with the user's name
+ * - Provides navigation to different quotation generation activities
+ * - Ensures USER_NAME is always passed to the next activity
+ * - Supports multiple service contract types (4pt, 6pt, 8pt, 12pt)
+ *
+ * Author: James Scott
+ */
+
+
 public class QuotesActivity extends AppCompatActivity {
 
     private String userName;

@@ -34,6 +34,23 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
+/**
+ * General4ptActivity.java
+ *
+ * This activity generates a comprehensive pest management quotation report.
+ * Users can input company details, and a structured quote is created based on predefined services.
+ * The generated quotation includes pest control services, monitoring plans, pricing, and contract details.
+ * The report is saved as a PDF and includes a professional format with a company logo and payment structure.
+ *
+ * Features:
+ * - Allows users to enter company details for the quotation
+ * - Generates a structured PDF report with pre-defined services
+ * - Automatically assigns quarterly payments and VAT calculations
+ * - Saves the generated quote and allows navigation back to the main quote activity
+ *
+ * Author: James Scott
+ */
+
 public class General4ptActivity extends AppCompatActivity {
 
     private String userName;

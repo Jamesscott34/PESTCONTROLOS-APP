@@ -22,16 +22,12 @@ import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.layout.Canvas;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.AreaBreak;
-import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.property.AreaBreakType;
 import com.itextpdf.layout.property.HorizontalAlignment;
 import com.itextpdf.layout.property.TextAlignment;
-import com.itextpdf.layout.property.UnitValue;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +36,23 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+/**
+ * FollowUpActivity.java
+ *
+ * This activity allows users to add follow-up details to an existing pest control report.
+ * Users can input follow-up information, select images, and append them to a PDF report.
+ * The updated report includes structured details, images, and watermarks for professional formatting.
+ *
+ * Features:
+ * - Input follow-up details and technician observations
+ * - Select multiple images to attach to the report
+ * - Append new data and images to an existing PDF report
+ * - Apply a watermark and structured formatting to the updated report
+ * - Save the updated report and replace the original file
+ *
+ * Author: James Scott
+ */
 
 public class FollowUpActivity extends AppCompatActivity {
 
@@ -50,7 +63,13 @@ public class FollowUpActivity extends AppCompatActivity {
 
     private List<Uri> selectedImageUris = new ArrayList<>();
 
-
+    /**
+     * Initializes the activity, sets up UI elements, retrieves the selected PDF file path,
+     * and handles user interactions for follow-up report creation.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
+     *                           this Bundle contains the most recent data.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -94,7 +113,9 @@ public class FollowUpActivity extends AppCompatActivity {
     }
 
     /**
-     * Opens the system image selector for choosing images.
+     * Opens the system image selector to allow users to pick multiple images for the report.
+     *
+     * @param selectedImageUris List of selected image URIs to store user-selected images.
      */
     private void openImageSelector(List<Uri> selectedImageUris) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -105,6 +126,11 @@ public class FollowUpActivity extends AppCompatActivity {
 
     /**
      * Handles the result from the image selector activity.
+     * Stores selected images and displays a toast message with the count.
+     *
+     * @param requestCode The request code to identify the activity result.
+     * @param resultCode  The result code indicating success or failure.
+     * @param data        The intent data containing selected image URIs.
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -123,7 +149,13 @@ public class FollowUpActivity extends AppCompatActivity {
             Toast.makeText(this, selectedImageUris.size() + " images selected!", Toast.LENGTH_SHORT).show();
         }
     }
-
+    /**
+     * Appends follow-up details and selected images to the existing PDF report.
+     * Updates the PDF with structured data, images, and watermarks.
+     *
+     * @param pdfFilePath        The file path of the selected PDF report.
+     * @param selectedImageUris  List of image URIs to be attached to the PDF.
+     */
     private void saveFollowUpToPDF(String pdfFilePath, List<Uri> selectedImageUris) {
         try {
             // Prepare follow-up details from the input fields
@@ -249,6 +281,12 @@ public class FollowUpActivity extends AppCompatActivity {
             Toast.makeText(this, "Error editing PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
+
+    /**
+     * Adds a watermark image to a specific page in the PDF.
+     *
+     * @param page The PdfPage where the watermark will be added.
+     */
     private void addWatermarkToPage(PdfPage page) {
         try {
             Rectangle pageSize = page.getPageSize();

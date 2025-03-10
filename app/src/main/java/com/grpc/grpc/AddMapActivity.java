@@ -7,9 +7,33 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+/**
+ * AddMapActivity.java
+ *
+ * This activity handles the display of a map-related screen with a personalized
+ * welcome message. It retrieves the username from the intent and displays it on
+ * the screen. If the username is missing or invalid, a default value is assigned
+ * to prevent crashes.
+ *
+ * Features:
+ * - Retrieves username from intent
+ * - Displays a welcome message
+ * - Handles missing or empty username input gracefully
+ *
+ * Author: James Scott
+ */
+
 public class AddMapActivity extends AppCompatActivity {
 
     private String userName;
+
+    /**
+     * Initializes the activity, retrieves the username from intent, and sets up
+     * the UI with a welcome message.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
+     *                           this Bundle contains the most recent data.
+     */
 
     @SuppressLint("MissingInflatedId")
     @Override

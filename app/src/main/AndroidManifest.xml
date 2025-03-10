@@ -47,9 +47,7 @@
             android:name=".ReportViewActivity"
             android:exported="true"/>
 
-        <activity
-            android:name=".CalendarActivity"
-            android:exported="true"/>
+
         <activity
             android:name=".CreateReportActivity"
             android:exported="true"/>
@@ -64,9 +62,6 @@
             android:exported="true"/>
         <activity
             android:name=".FollowUpActivity"
-            android:exported="true"/>
-        <activity
-            android:name=".DateDetailActivity"
             android:exported="true"/>
 
         <activity
@@ -154,10 +149,13 @@
         <activity android:name=".ServiceAgreementViewActivity"
             android:exported="true"/>
 
-        <activity android:name=".CustomerMapActivity"
+        <activity android:name=".FolderContentsActivity"
             android:exported="true"/>
 
-        <activity android:name=".ViewMapActivity"
+        <activity android:name=".MessagingActivity"
+            android:exported="true"/>
+
+        <activity android:name=".StoredReportsActivity"
             android:exported="true"/>
 
         <activity android:name=".AddMapActivity"
@@ -177,10 +175,6 @@
 
 
         <activity android:name=".ERAViewActivity"
-            android:exported="true"/>
-
-
-        <activity android:name=".StencilMapActivity"
             android:exported="true"/>
 
 

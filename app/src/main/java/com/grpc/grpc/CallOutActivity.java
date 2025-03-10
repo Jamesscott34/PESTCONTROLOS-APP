@@ -13,14 +13,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.LineSeparator;
 import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Text;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
@@ -33,8 +31,31 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class CallOutActivity extends AppCompatActivity {
+/**
+ * CallOutActivity.java
+ *
+ * This activity automatically generates and saves a PDF report for pest control callouts and routine visits.
+ * It retrieves details such as company name, address, technician information, site inspection results,
+ * recommendations, follow-ups, and preparations, then structures them into a professional PDF report.
+ *
+ * Features:
+ * - Retrieves user and company details from intent
+ * - Auto-fills visit-related fields based on the visit type
+ * - Generates a structured PDF with site inspection details, recommendations, and technician details
+ * - Saves the PDF to external storage
+ * - Applies a watermark and footer to the report
+ *
+ * Author: James Scott
+ */
 
+public class CallOutActivity extends AppCompatActivity {
+    /**
+     * Initializes the activity, retrieves intent data, fills in report details,
+     * and triggers automatic PDF generation.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
+     *                           this Bundle contains the most recent data.
+     */
     private String documentId, userName, companyName, address, routineType;
     private String dateTime, siteInspection, recommendation, followUp, preparation, techName, techContact;
 
@@ -180,6 +201,10 @@ public class CallOutActivity extends AppCompatActivity {
             techContact = "N/A";
         }
     }
+    /**
+     * Generates and saves the pest control report as a PDF file.
+     * Applies a watermark, includes all report sections, and saves it to external storage.
+     */
 
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     private void generateAndSaveReport() {
@@ -247,6 +272,14 @@ public class CallOutActivity extends AppCompatActivity {
         finish();
     }
 
+    /**
+     * Adds a formatted section to the PDF report.
+     * Each section includes a heading, a horizontal line, and the relevant content.
+     *
+     * @param document The PDF document where the section will be added.
+     * @param heading  The title of the section.
+     * @param content  The content of the section.
+     */
 
     private void addReportSection(Document document, String heading, String content) {
         // Create Heading Paragraph with full-width background

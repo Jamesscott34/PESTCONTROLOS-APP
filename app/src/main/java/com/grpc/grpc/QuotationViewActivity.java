@@ -35,8 +35,21 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * ReportViewActivity displays a list of saved PDF reports and allows users to interact with them.
+ * QuotationViewActivity.java
+ *
+ * This activity allows users to view, search, share, rename, and delete stored quotation reports in PDF format.
+ * The quotations are displayed in a RecyclerView, enabling easy interaction with single and long press options.
+ *
+ * Features:
+ * - Displays a list of stored PDF quotations
+ * - Supports searching quotations by name using a search bar
+ * - Enables viewing quotations with a PDF viewer
+ * - Allows users to share, rename, and delete quotations
+ * - Ensures user-friendly alerts for report interactions
+ *
+ * Author: James Scott
  */
+
 public class QuotationViewActivity extends AppCompatActivity {
 
     // UI Components

@@ -18,7 +18,6 @@ import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.element.*;
-import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
 
 import java.io.File;
@@ -30,6 +29,25 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+
+/**
+ * General8ptActivity.java
+ *
+ * This activity generates a comprehensive pest management quotation report for an 8-point service contract.
+ * Users can input company details, and a structured quote is created based on predefined services.
+ * The generated quotation includes pest control services, monitoring plans, pricing, and contract details.
+ * The report is saved as a PDF and formatted professionally with a company logo and payment structure.
+ *
+ * Features:
+ * - Allows users to enter company details for the quotation
+ * - Generates a structured PDF report with pre-defined services
+ * - Automatically assigns quarterly payments and VAT calculations
+ * - Saves the generated quote and allows navigation back to the main quote activity
+ * - Supports an 8-visit service contract (every 6 weeks)
+ *
+ * Author: James Scott
+ */
+
 
 public class General8ptActivity extends AppCompatActivity {
 

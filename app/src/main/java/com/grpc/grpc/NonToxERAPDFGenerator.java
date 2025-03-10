@@ -3,7 +3,6 @@ package com.grpc.grpc;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -21,13 +20,32 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
-import java.io.ByteArrayOutputStream;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+
+/**
+ * NonToxERAPDFGenerator.java
+ *
+ * This class generates a professionally formatted Non-Toxic Environmental Risk Assessment (ERA) PDF report.
+ * It includes company details, risk mitigation strategies, environmental considerations, and technician signatures.
+ * The generated PDF is saved locally and contains structured sections to ensure compliance and clarity.
+ *
+ * Features:
+ * - Generates a structured PDF with company and customer details
+ * - Includes risk mitigation measures and environmental impact considerations
+ * - Supports technician signature capture for validation
+ * - Saves the PDF file to a designated folder
+ * - Applies a watermark and structured formatting to the document
+ * - Ensures responsible pest control practices through an Integrated Pest Management (IPM) approach
+ *
+ * Author: James Scott
+ */
+
 
 public class NonToxERAPDFGenerator {
 

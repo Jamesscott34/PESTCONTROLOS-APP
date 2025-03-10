@@ -7,6 +7,23 @@ import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
+/**
+ * ReportSelectionActivity.java
+ *
+ * This activity serves as a hub for creating different types of reports and quotations.
+ * Users can navigate to various report creation activities based on their selection.
+ * The username is retrieved from the intent and passed to the selected report activity.
+ *
+ * Features:
+ * - Displays a welcome message with the user's name
+ * - Provides navigation to different report creation activities
+ * - Ensures USER_NAME is always passed to the next activity
+ * - Supports creating company reports, pest control quotations, bird control quotations, and general quotations
+ *
+ * Author: James Scott
+ */
+
+
 public class ReportSelectionActivity extends AppCompatActivity {
 
     private Button createReportButton, createQuotationButton, createBirdQuotationButton, buttonCreateGeneralQuotation;

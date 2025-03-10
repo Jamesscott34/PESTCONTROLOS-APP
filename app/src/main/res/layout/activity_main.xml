@@ -32,6 +32,13 @@
                 android:layout_marginBottom="16dp" />
 
             <!-- Buttons -->
+           <!-- <Button
+                android:id="@+id/InstantMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="messaging"
+                android:layout_marginBottom="8dp" /> -->
+
             <Button
                 android:id="@+id/ReportButton"
                 android:layout_width="match_parent"
@@ -102,6 +109,21 @@
                 android:layout_height="wrap_content"
                 android:text="ERA"
                 android:layout_marginBottom="8dp" />
+            <Button
+                android:id="@+id/InstantMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Messaging"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/WebsiteButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Visit GRPC Staff"
+                android:onClick="openWebsite"
+                android:layout_marginBottom="8dp" />
+
 
         </LinearLayout>
     </ScrollView>

@@ -24,8 +24,23 @@ import java.util.Locale;
 import java.util.Random;
 
 /**
- * PDF Quotation Generator for GRPEST with corrected layout and payment calculations.
+ * PDFQuotationReportGenerator.java
+ *
+ * This class generates a professionally formatted PDF quotation report for pest control services.
+ * The report includes company details, customer information, itemized pricing, VAT calculations,
+ * and payment instructions. The generated PDF is saved locally and recorded in the database.
+ *
+ * Features:
+ * - Generates a structured PDF with company branding and customer details
+ * - Includes an itemized table with automatic VAT (23%) calculations
+ * - Calculates the first quarter payment for contract-based services
+ * - Saves the quotation details in the local database for future reference
+ * - Applies a watermark and structured formatting to the report
+ * - Ensures compliance with professional pest control service quotations
+ *
+ * Author: James Scott
  */
+
 public class PDFQuotationReportGenerator {
 
     public static File generateQuotationReport(

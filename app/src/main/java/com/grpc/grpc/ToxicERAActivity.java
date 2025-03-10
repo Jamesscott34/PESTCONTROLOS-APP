@@ -4,15 +4,30 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import java.io.File;
+
+
+
+/**
+ * ToxicERAActivity.java
+ *
+ * This activity allows users to generate a Toxic Environmental Risk Assessment (ERA) report.
+ * Users can input company details, capture a signature, and generate a structured PDF report.
+ *
+ * Features:
+ * - Input validation for company name, address, and email
+ * - Captures a signature for inclusion in the report
+ * - Generates a professionally formatted PDF document
+ * - Clears input fields after generating the report
+ * - Displays a confirmation message upon successful PDF creation
+ *
+ * Author: James Scott
+ */
+
 
 public class ToxicERAActivity extends AppCompatActivity {
 

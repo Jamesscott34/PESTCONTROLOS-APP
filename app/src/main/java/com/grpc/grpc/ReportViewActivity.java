@@ -1,23 +1,32 @@
 /**
  * ReportViewActivity.java
  *
- * This activity allows the user to view, search, share, and delete reports stored as PDF files.
- * It provides a RecyclerView to display the list of reports and offers single-click and long-click
- * options for interacting with the reports.
+ * This activity allows users to view, search, share, rename, delete, and upload stored reports in PDF format.
+ * The reports are displayed in a RecyclerView, and users can interact with them using single-click or long-click options.
  *
- * Key Features:
- * - List all stored PDF reports.
- * - Search reports by name using a search bar.
- * - View, share, and delete reports.
- * - Provides user-friendly alerts for actions like deletion and sharing.
+ * Features:
+ * - Displays a list of stored PDF reports
+ * - Supports searching reports by name using a search bar
+ * - Allows users to view reports with a PDF viewer
+ * - Enables sharing, renaming, and deleting reports
+ * - Provides an option to upload reports to Firebase Storage
+ * - Supports adding follow-up details to an existing PDF report
+ * - Ensures user-friendly alerts for all interactions
+ *
+ * Author: James Scott
  */
 
+
 package com.grpc.grpc;
-import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
+import android.provider.OpenableColumns;
 import android.widget.Toast;
 
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.layout.Document;
@@ -26,8 +35,6 @@ import com.itextpdf.layout.element.Image;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.layout.property.TextAlignment;
-import com.itextpdf.kernel.events.PdfDocumentEvent;
-import com.itextpdf.kernel.events.IEventHandler;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfPage;
 
@@ -48,11 +55,7 @@ import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfReader;
-
-import com.itextpdf.kernel.events.Event;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -165,6 +168,47 @@ public class ReportViewActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
     }
 
+
+
+
+    private String selectedFolderForUpload;
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
+            Uri fileUri = data.getData();
+            if (fileUri != null) {
+                String originalFileName = getFileNameFromUri(fileUri);
+                uploadFileToFirebase(fileUri, selectedFolderForUpload, originalFileName);
+            }
+        }
+    }
+
+    private String getFileNameFromUri(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (index != -1) {
+                        result = cursor.getString(index);
+                    }
+                }
+            }
+        }
+        if (result == null) {
+            result = uri.getLastPathSegment();
+        }
+        return result;
+    }
+
+
+
+
+
+
+
     /**
      * Displays options when a report is single-clicked (View or Edit).
      *
@@ -195,24 +239,137 @@ public class ReportViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Displays options when a report is long-clicked (Share, Delete, or Rename).
+     * Displays options when a report is long-clicked (Share, Delete, Rename, or Upload to Firebase).
      *
      * @param file The selected report file.
      */
     private void showLongPressOptions(File file) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select an Option")
-                .setItems(new CharSequence[]{"Share", "Delete", "Rename"}, (dialog, which) -> {
+                .setItems(new CharSequence[]{"Share", "Delete", "Rename", "Upload to Firebase"}, (dialog, which) -> {
                     if (which == 0) {
                         shareReport(file);
                     } else if (which == 1) {
                         deleteReport(file);
                     } else if (which == 2) {
                         renameReport(file);
+                    } else if (which == 3) {
+                        showFolderSelectionDialog(file);
                     }
                 })
                 .show();
     }
+
+    /**
+     * Displays a folder selection dialog before uploading to Firebase.
+     *
+     * @param file The file to be uploaded.
+     */
+    private void showFolderSelectionDialog(File file) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageRef = storage.getReference();
+
+        storageRef.listAll().addOnSuccessListener(listResult -> {
+            List<String> folderList = new ArrayList<>();
+            for (StorageReference prefix : listResult.getPrefixes()) {
+                String folderName = prefix.getName();
+                if (!folderName.equals("backup")) { // Exclude the backup folder
+                    folderList.add(folderName);
+                }
+            }
+
+            if (folderList.isEmpty()) {
+                Toast.makeText(this, "No available folders to select.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Convert list to array for AlertDialog
+            String[] foldersArray = folderList.toArray(new String[0]);
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Select a Parent Folder");
+            builder.setItems(foldersArray, (dialog, which) -> {
+                String selectedFolder = foldersArray[which];
+                showSubFolderSelectionDialog(file, selectedFolder);
+            });
+
+            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+            builder.show();
+
+        }).addOnFailureListener(e ->
+                Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+        );
+    }
+
+
+    /**
+     * Displays a subfolder selection dialog after selecting a parent folder.
+     *
+     * @param file The file to be uploaded.
+     * @param parentFolder The selected parent folder.
+     */
+    private void showSubFolderSelectionDialog(File file, String parentFolder) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference parentFolderRef = storage.getReference().child(parentFolder);
+
+        parentFolderRef.listAll().addOnSuccessListener(listResult -> {
+            List<String> subFolderList = new ArrayList<>();
+            for (StorageReference prefix : listResult.getPrefixes()) {
+                subFolderList.add(prefix.getName());
+            }
+
+            if (subFolderList.isEmpty()) {
+                Toast.makeText(this, "No subfolders found. Uploading directly to " + parentFolder, Toast.LENGTH_SHORT).show();
+                uploadFileToFirebase(Uri.fromFile(file), parentFolder, file.getName());
+                return;
+            }
+
+            // Show subfolder selection dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Select a Subfolder");
+            builder.setItems(subFolderList.toArray(new String[0]), (dialog, which) -> {
+                String selectedSubFolder = subFolderList.get(which);
+                uploadFileToFirebase(Uri.fromFile(file), parentFolder + "/" + selectedSubFolder, file.getName());
+            });
+
+            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+            builder.show();
+
+        }).addOnFailureListener(e ->
+                Toast.makeText(this, "Failed to load subfolders: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+        );
+    }
+
+
+    /**
+     * Uploads the selected file to Firebase Storage inside the selected folder while keeping the original name.
+     *
+     * @param fileUri The URI of the file to be uploaded.
+     * @param folderPath The path in Firebase Storage where the file should be saved.
+     * @param originalFileName The original name of the file.
+     */
+    private void uploadFileToFirebase(Uri fileUri, String folderPath, String originalFileName) {
+        if (fileUri == null || folderPath == null || originalFileName == null) {
+            Toast.makeText(this, "Invalid file or folder selection.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageReference = storage.getReference();
+
+        // Create a reference using the original file name
+        StorageReference fileRef = storageReference.child(folderPath + "/" + originalFileName);
+
+        UploadTask uploadTask = fileRef.putFile(fileUri);
+        uploadTask.addOnSuccessListener(taskSnapshot ->
+                Toast.makeText(this, "File uploaded successfully to " + folderPath, Toast.LENGTH_SHORT).show()
+        ).addOnFailureListener(e ->
+                Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+        );
+    }
+
+
+
 
 
     /**

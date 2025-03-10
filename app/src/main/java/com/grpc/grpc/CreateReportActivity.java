@@ -1,18 +1,33 @@
 package com.grpc.grpc;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.ArrayList;
 import java.util.List;
+
+/**
+ * CreateReportActivity.java
+ *
+ * This activity allows users to generate a quotation report by entering customer details,
+ * adding line items, and generating a structured PDF report. The report is then stored in
+ * the database and can be reviewed later.
+ *
+ * Features:
+ * - User input validation for customer details
+ * - Dynamic addition of line items
+ * - Auto-generated quote number with incremental updates
+ * - PDF generation and database storage of the quotation
+ * - Navigation back to the previous activity with user details
+ *
+ * Author: James Scott
+ */
 
 public class CreateReportActivity extends AppCompatActivity {
 
@@ -24,7 +39,13 @@ public class CreateReportActivity extends AppCompatActivity {
     private List<EditText> lineTotalInputs = new ArrayList<>();
 
     private String userName;
-
+    /**
+     * Initializes the activity, retrieves the username from intent, sets up UI elements,
+     * and handles button click events for adding line items and generating reports.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
+     *                           this Bundle contains the most recent data.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,14 +82,20 @@ public class CreateReportActivity extends AppCompatActivity {
         // Add the first line item field automatically
         addLineItem();
     }
-
+    /**
+     * Navigates back to the previous activity, passing the username as a result
+     * to maintain session continuity.
+     */
     private void navigateBackToPreviousActivity() {
         Intent backIntent = new Intent();
         backIntent.putExtra("USER_NAME", userName); // Pass the username back
         setResult(RESULT_OK, backIntent); // Set result for the previous activity
         finish(); // Close the activity
     }
-
+    /**
+     * Dynamically adds a new line item input field for description and price.
+     * Allows users to enter multiple items for the quotation.
+     */
     private void addLineItem() {
         LinearLayout lineItemLayout = new LinearLayout(this);
         lineItemLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -89,7 +116,10 @@ public class CreateReportActivity extends AppCompatActivity {
         descriptionInputs.add(descriptionInput);
         lineTotalInputs.add(lineTotalInput);
     }
-
+    /**
+     * Gathers all input data, validates the fields, calculates the total price,
+     * saves the report to the database, and generates a PDF report.
+     */
     private void generatePDFReport() {
         String userEmail = emailInput.getText().toString().trim();
         String mobileNumber = mobileNumberInput.getText().toString().trim();
@@ -136,7 +166,12 @@ public class CreateReportActivity extends AppCompatActivity {
         // Return to the previous activity with username
         navigateBackToPreviousActivity();
     }
-
+    /**
+     * Calculates the total amount based on the line item prices.
+     *
+     * @param lineTotals A list of double values representing item prices.
+     * @return The total calculated amount.
+     */
     private double calculateTotal(List<Double> lineTotals) {
         double total = 0;
         for (double lineTotal : lineTotals) {

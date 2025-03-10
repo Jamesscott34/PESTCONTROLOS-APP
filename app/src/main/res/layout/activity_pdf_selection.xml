@@ -28,6 +28,14 @@
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 
+    <Button
+        android:id="@+id/buttonStoredReports"
+        android:layout_width="wrap_content"
+        android:layout_height="58dp"
+        android:text="Stored Reports"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
+
     <!-- Button to view quotations -->
     <Button
         android:id="@+id/buttonViewQuotation"

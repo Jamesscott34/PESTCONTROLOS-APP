@@ -10,6 +10,24 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 
+/**
+ * LoginActivity.java
+ *
+ * This activity handles user authentication using Firebase Authentication.
+ * Users enter their email and password to log in, and upon successful authentication,
+ * they are redirected to the main activity with their email passed along.
+ *
+ * Features:
+ * - User authentication using Firebase
+ * - Input validation for email and password fields
+ * - Displays a welcome message upon successful login
+ * - Extracts the user's name from their email for a personalized experience
+ * - Redirects to the main activity upon successful authentication
+ *
+ * Author: James Scott
+ */
+
+
 public class LoginActivity extends AppCompatActivity {
 
     private EditText emailEditText, passwordEditText;

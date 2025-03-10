@@ -12,6 +12,24 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * GeneralQuotationActivity.java
+ *
+ * This activity allows users to create a general quotation by entering customer details,
+ * adding multiple line items, and generating a structured PDF report.
+ * The quotation is validated before generating the final document.
+ *
+ * Features:
+ * - User input validation for address, email, and mobile number
+ * - Allows adding multiple line items with descriptions and prices
+ * - Generates a formatted PDF quotation
+ * - Clears input fields after PDF generation
+ * - Navigates back to the previous activity with user details
+ *
+ * Author: James Scott
+ */
+
+
 public class GeneralQuotationActivity extends AppCompatActivity {
 
     private EditText addressInput, quoteDescriptionInput, userEmailInput, mobileNumberInput;

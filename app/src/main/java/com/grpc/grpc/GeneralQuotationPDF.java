@@ -23,6 +23,24 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
+/**
+ * GeneralQuotationPDF.java
+ *
+ * This class generates a professional PDF quotation for pest control services.
+ * The generated quotation includes customer details, line items, VAT calculations,
+ * and payment instructions. The PDF is saved locally and stored in the database.
+ *
+ * Features:
+ * - Generates a structured PDF with customer and quotation details
+ * - Calculates VAT (13.5%) and total payment values
+ * - Saves the PDF file to a dedicated folder
+ * - Stores the quotation details in the local database
+ * - Displays success or error messages to the user
+ *
+ * Author: James Scott
+ */
+
+
 public class GeneralQuotationPDF {
 
     public static File generateQuotation(

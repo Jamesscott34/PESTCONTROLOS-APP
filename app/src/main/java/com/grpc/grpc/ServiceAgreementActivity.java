@@ -4,13 +4,32 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+
+
+/**
+ * ServiceAgreementActivity.java
+ *
+ * This activity allows users to generate a structured service agreement for pest control services.
+ * Users can input customer details, select the number of visits per year, and generate a professional
+ * PDF service agreement.
+ *
+ * Features:
+ * - Input validation for customer name, address, email, phone, VAT number, and service cost
+ * - Allows users to select between 4, 6, 8, or 12 visits per year
+ * - Calculates VAT and total cost based on user input
+ * - Generates a structured PDF service agreement
+ * - Clears input fields after successful PDF generation
+ * - Navigates back to the previous activity with user details
+ *
+ * Author: James Scott
+ */
+
 
 public class ServiceAgreementActivity extends AppCompatActivity {
 

@@ -15,8 +15,32 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * AddContractActivity.java
+ *
+ * This activity handles the addition of contracts to the Firestore database.
+ * Users input contract details, and the data is validated before being stored.
+ * If the logged-in user is "Kristine," they can choose which user's contract
+ * to add. Otherwise, the contract is stored under the logged-in user's name.
+ *
+ * Features:
+ * - User input validation
+ * - Contract storage in Firestore
+ * - Navigation to the ContractsActivity
+ *
+ * Author: James Scott
+ */
+
 public class AddContractActivity extends AppCompatActivity {
 
+
+    /**
+     * Initializes the activity, retrieves user information, and sets up UI elements.
+     * Handles button click events for adding contracts and returning to the previous screen.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
+     *                           this Bundle contains the most recent data.
+     */
     private EditText nameEditText, addressEditText, emailEditText, contactEditText, visitsEditText;
     private Button addButton, backButton;
     private FirebaseFirestore db;
@@ -102,6 +126,16 @@ public class AddContractActivity extends AppCompatActivity {
             finish();
         });
     }
+    /**
+     * Displays a dialog for user selection when "Kristine" is adding a contract.
+     * Allows selection between different users for contract assignment.
+     *
+     * @param name     The name of the contract holder.
+     * @param address  The address of the contract holder.
+     * @param email    The email associated with the contract.
+     * @param contact  The contact number associated with the contract.
+     * @param visits   The number of visits assigned in the contract.
+     */
 
     private void showUserSelectionDialog(String name, String address, String email, String contact, String visits) {
         // List of usernames (replace with your actual list)
@@ -120,7 +154,18 @@ public class AddContractActivity extends AppCompatActivity {
                 .setNegativeButton("Cancel", null)
                 .show();
     }
-
+    /**
+     * Adds the contract to Firestore under the specified user's contract collection.
+     * Validates and processes the input before uploading.
+     *
+     * @param tableName The Firestore collection where the contract will be stored.
+     * @param name      The name of the contract holder.
+     * @param address   The address of the contract holder.
+     * @param email     The email associated with the contract.
+     * @param contact   The contact number associated with the contract.
+     * @param visits    The number of visits assigned in the contract.
+     * @param owner     The owner of the contract entry.
+     */
     private void addContractToFirestore(String tableName, String name, String address, String email, String contact, String visits, String owner) {
         CollectionReference contractsCollection = db.collection(tableName);
         Map<String, Object> contract = createContractObject(name, address, email, contact, visits, owner);
@@ -135,7 +180,18 @@ public class AddContractActivity extends AppCompatActivity {
                     Toast.makeText(AddContractActivity.this, "Failed to add contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
-
+    /**
+     * Creates a contract object formatted as a HashMap.
+     * Stores contract details including name, address, email, contact, visits, and owner.
+     *
+     * @param name     The name of the contract holder.
+     * @param address  The address of the contract holder.
+     * @param email    The email associated with the contract.
+     * @param contact  The contact number associated with the contract.
+     * @param visits   The number of visits assigned in the contract.
+     * @param owner    The owner of the contract entry.
+     * @return A Map containing the contract details.
+     */
     private Map<String, Object> createContractObject(String name, String address, String email, String contact, String visits, String owner) {
         Map<String, Object> contract = new HashMap<>();
         contract.put("name", name);
@@ -146,7 +202,10 @@ public class AddContractActivity extends AppCompatActivity {
         contract.put("addedBy", owner); // Keep track of who added the contract
         return contract;
     }
-
+    /**
+     * Clears the input fields after a contract is successfully added.
+     * Resets all EditText fields to blank.
+     */
     private void clearFields() {
         nameEditText.setText("");
         addressEditText.setText("");
@@ -154,7 +213,10 @@ public class AddContractActivity extends AppCompatActivity {
         contactEditText.setText("");
         visitsEditText.setText("");
     }
-
+    /**
+     * Returns to the ContractsActivity after successfully adding a contract.
+     * Passes the username back to maintain user session.
+     */
     private void returnToContractsActivity() {
         Intent intent = new Intent(AddContractActivity.this, ContractsActivity.class);
         intent.putExtra("USER_NAME", userName);

@@ -37,9 +37,23 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * ReportActivity allows users to fill in a report form, select images, and save the data locally
- * in a SQLite database. It also supports generating a PDF with the report data.
+ * ReportActivity.java
+ *
+ * This activity allows users to create a company report by filling out multiple input fields.
+ * Users can also select multiple images to include in the report and save the report data
+ * to a local SQLite database. Once saved, the report can be exported as a PDF using the
+ * `PDFReportGenerator`.
+ *
+ * Features:
+ * - Input fields for report details such as name, address, date, visit type, and more
+ * - Image selection for including visual data in the report
+ * - Data persistence using an SQLite database
+ * - PDF generation with optional images for enhanced documentation
+ * - User-friendly interface with validation and confirmation messages
+ *
+ * Author: James Scott
  */
+
 public class ReportActivity extends AppCompatActivity {
 
     // Input fields for report details

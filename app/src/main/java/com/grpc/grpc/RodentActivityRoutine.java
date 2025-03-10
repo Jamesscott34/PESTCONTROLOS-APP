@@ -13,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
 import com.itextpdf.layout.Document;
@@ -23,7 +22,6 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.layout.property.UnitValue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,6 +29,25 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+
+/**
+ * RodentActivityRoutine.java
+ *
+ * This activity automatically generates and saves a structured PDF report for routine rodent activity inspections.
+ * It retrieves relevant company and technician details, pre-fills the report fields, and applies a professional format.
+ * The generated report is saved locally with a standardized filename.
+ *
+ * Features:
+ * - Automatically extracts intent data for report generation
+ * - Pre-fills site inspection, recommendations, and follow-up details
+ * - Generates and saves a structured PDF report
+ * - Includes technician details and contact information
+ * - Applies a watermark and footer for branding
+ * - Ensures compatibility with Android versions supporting scoped storage
+ *
+ * Author: James Scott
+ */
+
 
 public class RodentActivityRoutine extends AppCompatActivity {
 

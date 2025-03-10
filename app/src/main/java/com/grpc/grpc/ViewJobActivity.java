@@ -1,16 +1,45 @@
 package com.grpc.grpc;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.widget.*;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+
 import com.google.firebase.firestore.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
+
+/**
+ * ViewJobActivity.java
+ *
+ * This activity allows users to view, search, accept, delete, and manage jobs stored in Firebase Firestore.
+ * It dynamically loads jobs assigned to technicians, categorizes them by status, and provides various actions,
+ * including marking jobs as completed, changing technicians, adding payment details, and generating reports.
+ *
+ * Features:
+ * - Loads and displays job assignments from Firebase Firestore
+ * - Provides a search bar to filter jobs by technician name, customer name, or address
+ * - Categorizes jobs as completed or pending
+ * - Supports job acceptance, deletion, and technician reassignment
+ * - Enables adding customer details such as email and payment method
+ * - Integrates Google Maps for job location navigation
+ * - Supports WhatsApp notifications for technician job assignment
+ * - Generates routine pest control reports based on job details
+ * - Provides an intuitive UI with click and long-press options for job management
+ *
+ * Author: James Scott
+ */
+
 
 public class ViewJobActivity extends AppCompatActivity {
 
@@ -67,35 +96,49 @@ public class ViewJobActivity extends AppCompatActivity {
     }
 
     private void loadAllJobs() {
-        allJobs.clear();
-        total = 0;
-        completed = 0;
-        pending = 0;
+        db.collection("JobWork").addSnapshotListener((snapshots, error) -> {
+            if (error != null) {
+                Toast.makeText(this, "Error loading jobs: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-        db.collection("JobWork")
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            Map<String, Object> job = document.getData();
-                            job.put("documentId", document.getId());
+            if (snapshots == null || snapshots.isEmpty()) {
+                Toast.makeText(this, "No jobs found.", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                            allJobs.add(job);
-                            total++;
+            allJobs.clear();
+            total = completed = pending = 0;
 
-                            String status = (String) job.get("Status");
-                            if ("Completed".equalsIgnoreCase(status)) {
-                                completed++;
-                            } else {
-                                pending++;
-                            }
-                        }
+            for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                QueryDocumentSnapshot document = dc.getDocument();
+                Map<String, Object> job = document.getData();
+                job.put("documentId", document.getId());
+                allJobs.add(job);
 
-                        displayJobs(allJobs);
-                    } else {
-                        Toast.makeText(this, "Failed to load jobs: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
+                String status = (String) job.get("Status");
+                if ("Completed".equalsIgnoreCase(status)) {
+                    completed++;
+                } else {
+                    pending++;
+                }
+            }
+
+            displayJobs(allJobs);
+            updateStatistics(total, completed, pending);
+        });
+
+        db.collection("JobWork").addSnapshotListener((snapshots, e) -> {
+            if (e != null) {
+                Log.w("Firestore", "Listen failed.", e);
+                return;
+            }
+            for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                if (dc.getType() == DocumentChange.Type.ADDED || dc.getType() == DocumentChange.Type.MODIFIED) {
+                    showNotification("Database Updated", "A job was added or modified.");
+                }
+            }
+        });
     }
 
     private void filterJobs(String query) {
@@ -114,6 +157,21 @@ public class ViewJobActivity extends AppCompatActivity {
 
         displayJobs(filteredJobs);
     }
+
+    private void showNotification(String title, String message) {
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel("job_updates", "Job Updates", NotificationManager.IMPORTANCE_HIGH);
+            notificationManager.createNotificationChannel(channel);
+        }
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "job_updates")
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setAutoCancel(true);
+        notificationManager.notify(1, builder.build());
+    }
+
 
     private void displayJobs(List<Map<String, Object>> jobsList) {
         jobsContainer.removeAllViews();

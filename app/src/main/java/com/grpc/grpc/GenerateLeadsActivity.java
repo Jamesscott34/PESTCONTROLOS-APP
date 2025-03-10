@@ -26,6 +26,26 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * GenerateLeadsActivity.java
+ *
+ * This activity allows users to generate and manage leads for pest control services.
+ * Users can input premise details, price quoted, and select a reason for the lead.
+ * The commission is automatically calculated for contracts, and leads are stored in Firestore.
+ * If the user is "Kristine," they can assign the lead to another user.
+ *
+ * Features:
+ * - Input validation for premise name, address, and price quoted
+ * - Automatic commission calculation for contracts (10% of quoted price)
+ * - Firebase Firestore integration for storing lead details
+ * - Allows "Kristine" to assign leads to other users
+ * - Supports lead categorization based on "Job" or "Contract"
+ * - Provides user-friendly alerts and error handling
+ *
+ * Author: James Scott
+ */
+
+
 public class GenerateLeadsActivity extends AppCompatActivity {
 
     private EditText premiseNameEditText, premiseAddressEditText, priceQuotedEditText;

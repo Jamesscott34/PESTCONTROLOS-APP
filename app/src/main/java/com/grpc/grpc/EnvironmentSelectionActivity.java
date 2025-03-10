@@ -8,12 +8,34 @@ import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
+/**
+ * EnvironmentSelectionActivity.java
+ *
+ * This activity allows users to select between a Toxic or Non-Toxic Environment Risk Assessment (ERA).
+ * It retrieves the username from the intent and displays a welcome message.
+ * Users can choose between Toxic and Non-Toxic ERAs, which will open their respective activities.
+ *
+ * Features:
+ * - Displays a welcome message with the user's name
+ * - Allows selection between Toxic and Non-Toxic ERAs
+ * - Passes the username to the selected ERA activity
+ *
+ * Author: James Scott
+ */
+
 public class EnvironmentSelectionActivity extends AppCompatActivity {
 
     private Button NonToxButton,ToxicButton;
     private String userEmail, userName;
     private TextView welcomeTextView;
 
+    /**
+     * Initializes the activity, retrieves the username from intent, sets up UI elements,
+     * and handles button click events for navigating to the ERA selection screens.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
+     *                           this Bundle contains the most recent data.
+     */
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +62,11 @@ public class EnvironmentSelectionActivity extends AppCompatActivity {
         }
     }
 
-    // Helper method to start a new activity safely
+    /**
+     * Opens the selected ERA activity and passes the username along.
+     *
+     * @param targetActivity The activity class to open (ToxicERAActivity or NonToxERAActivity).
+     */
     private void openActivity(Class<?> targetActivity) {
         Log.d("MainActivity", "Opening " + targetActivity.getSimpleName() + " with USER_NAME: " + userName);
         Intent intent = new Intent(EnvironmentSelectionActivity.this, targetActivity);
@@ -48,12 +74,4 @@ public class EnvironmentSelectionActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    // Helper to extract the first part of the email as the user's name
-    private String extractNameFromEmail(String email) {
-        if (email != null && email.contains("@")) {
-            String namePart = email.split("@")[0];
-            return namePart.substring(0, 1).toUpperCase() + namePart.substring(1);
-        }
-        return "User";
-    }
 }

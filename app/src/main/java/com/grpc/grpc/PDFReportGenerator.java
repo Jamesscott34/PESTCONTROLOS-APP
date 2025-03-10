@@ -43,14 +43,30 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
- * PDFReportGenerator generates a PDF report containing event details and optional images.
- * It applies a custom watermark and footer on every page.
+ * PDFReportGenerator.java
+ *
+ * This class handles the generation of structured PDF reports for Good Riddance Pest Control.
+ * Users can create a report containing event details and optional images, with a watermark and footer applied.
+ * The generated PDF is saved locally and includes company branding for professional documentation.
+ *
+ * Features:
+ * - Generates a structured PDF with report details and images
+ * - Applies a watermark and footer on every page for branding
+ * - Saves the report locally in the designated folder
+ * - Formats report content with structured headings and separators
+ * - Allows users to attach images to the report for additional documentation
+ *
+ * Author: James Scott
  */
+
 public class PDFReportGenerator {
 
     /**
@@ -99,44 +115,73 @@ public class PDFReportGenerator {
             document.add(title);
             document.add(new Paragraph("\n"));  // Adding spacing after the title
 
-            // Processing the report content
-            String[] reportDetails = content.split("\\n");
+            // Normalize line breaks before splitting
+            String normalizedContent = content.replace("\r\n", "\n");
+            String[] reportDetails = normalizedContent.split("\n");
+
+// Create a black line separator
+            LineSeparator blackSeparator = new LineSeparator(new SolidLine()).setStrokeColor(ColorConstants.BLACK);
+
+// Define headings that should have separators (except "Premise Name" at the top)
+            Set<String> headingsWithSeparator = new HashSet<>(Arrays.asList(
+                    "Address", "Date", "Visit Type", "Site Inspection", "Recommendations", "Follow-Up", "Prep", "Tech"
+            ));
+
             for (String detail : reportDetails) {
                 String[] splitDetail = detail.split(":", 2);
+
                 if (splitDetail.length == 2) {
                     String labelText = splitDetail[0].trim();
                     String valueText = splitDetail[1].trim().isEmpty() ? "N/A" : splitDetail[1].trim();
 
-                    // Add a horizontal line before each heading
-                    LineSeparator topLine = new LineSeparator(new SolidLine())
-                            .setWidth(UnitValue.createPercentValue(100))
-                            .setMarginBottom(5);
+                    // Add top separator **only if the heading is not "Premise Name"**
+                    if (headingsWithSeparator.contains(labelText)) {
+                        document.add(blackSeparator);
+                    }
 
-                    // Heading Paragraph
+                    // Add a heading with reduced spacing
                     Paragraph labelParagraph = new Paragraph(labelText)
                             .setFontColor(ColorConstants.BLACK)
                             .setBackgroundColor(ColorConstants.LIGHT_GRAY)
                             .setBold()
                             .setFontSize(14)
-                            .setTextAlignment(TextAlignment.CENTER);
+                            .setTextAlignment(TextAlignment.CENTER)
+                            .setMarginBottom(8)
+                            .setMarginTop(8);
 
-                    // Value Paragraph
+                    // Add the heading to the document
+                    document.add(labelParagraph);
+
+                    // Add bottom separator **after the heading**
+                    document.add(blackSeparator);
+
+                    // Add the value text with tight spacing
                     Paragraph valueParagraph = new Paragraph(valueText)
                             .setFontColor(ColorConstants.BLACK)
                             .setFontSize(12)
-                            ;
+                            .setTextAlignment(TextAlignment.LEFT)
+                            .setMargin(0)
+                            .setMultipliedLeading(1.2f);
 
-                    // Add elements to the document
-                    document.add(topLine);
-                    document.add(labelParagraph);
                     document.add(valueParagraph);
 
                 } else {
+                    // For single-line paragraphs, reduce spacing
                     document.add(new Paragraph(detail.trim())
                             .setFontColor(ColorConstants.BLACK)
-                            .setFontSize(14));
+                            .setFontSize(12)
+                            .setTextAlignment(TextAlignment.LEFT)
+                            .setMargin(0)
+                            .setMultipliedLeading(1.2f));
                 }
             }
+
+
+
+
+
+
+
 
 
 
@@ -145,7 +190,7 @@ public class PDFReportGenerator {
                 for (int i = 0; i < imageUris.size(); i++) {
                     Uri uri = imageUris.get(i);
                     try {
-                        document.add(new Paragraph("Tech Field Image " + (i + 1)).setFontSize(16).setBold());
+                        document.add(new Paragraph("Images " + (i + 1)).setFontSize(16).setBold());
                         ImageData imageData = ImageDataFactory.create(context.getContentResolver().openInputStream(uri).readAllBytes());
                         Image image = new Image(imageData).scaleToFit(300, 300).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
                         document.add(image);

@@ -10,6 +10,24 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+
+/**
+ * NonToxERAActivity.java
+ *
+ * This activity allows users to generate a Non-Toxic Environmental Risk Assessment (ERA) report.
+ * Users can enter company details and capture a signature before generating a structured PDF report.
+ *
+ * Features:
+ * - Input validation for company name, address, and email
+ * - Captures a signature for inclusion in the report
+ * - Generates a professionally formatted PDF document
+ * - Clears input fields after generating the report
+ * - Displays a confirmation message upon successful PDF creation
+ *
+ * Author: James Scott
+ */
+
+
 public class NonToxERAActivity extends AppCompatActivity {
 
     private EditText editCompanyName, editAddress, editEmail;

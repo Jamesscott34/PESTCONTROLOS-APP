@@ -24,9 +24,21 @@ import java.io.File;
 import java.util.List;
 
 /**
- * Adapter class for binding report files to a RecyclerView.
- * Each item represents a report file and allows both click and long-click interactions.
+ * ReportAdapter.java
+ *
+ * This adapter is responsible for displaying a list of report files in a RecyclerView.
+ * It binds report file data and provides click and long-click interactions for viewing,
+ * sharing, renaming, or deleting reports.
+ *
+ * Features:
+ * - Displays a list of stored report files
+ * - Handles user interactions through click and long-click events
+ * - Supports opening, sharing, renaming, and deleting reports
+ * - Efficiently binds report data to the RecyclerView
+ *
+ * Author: James Scott
  */
+
 public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportViewHolder> {
 
     // List of report files to display in the RecyclerView

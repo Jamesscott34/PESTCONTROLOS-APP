@@ -3,7 +3,6 @@ package com.grpc.grpc;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -21,13 +20,34 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
-import java.io.ByteArrayOutputStream;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+
+
+
+/**
+ * ToxicERAPDFGenerator.java
+ *
+ * This class generates a professionally formatted Toxic Environmental Risk Assessment (ERA) PDF report.
+ * The document includes company details, environmental considerations, risk mitigation strategies,
+ * and technician signatures. The generated PDF is saved locally with a structured layout.
+ *
+ * Features:
+ * - Generates a structured PDF with company branding and customer details
+ * - Includes environmental risk factors and mitigation measures
+ * - Supports technician signature capture for validation
+ * - Saves the PDF file to a designated folder
+ * - Applies a watermark and structured formatting to the document
+ * - Ensures compliance with responsible pest control practices
+ *
+ * Author: James Scott
+ */
+
 
 public class ToxicERAPDFGenerator {
 

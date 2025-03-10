@@ -24,6 +24,26 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * ViewLeadsActivity.java
+ *
+ * This activity allows users to view, search, manage, and categorize sales leads stored in Firebase Firestore.
+ * Leads are displayed in a structured format, with options to mark invoices as paid, edit material costs,
+ * and delete leads (for admin users). The user can search leads based on the "Added By" field.
+ *
+ * Features:
+ * - Loads and displays leads dynamically from Firebase Firestore
+ * - Provides a search bar to filter leads by the "Added By" field
+ * - Categorizes leads as paid or unpaid based on invoice status
+ * - Allows marking invoices as paid with an automatic timestamp
+ * - Supports editing materials cost and recalculating commission for jobs
+ * - Enables lead deletion for admin users (James, Ian, Kristine)
+ * - Provides an intuitive UI with click and long-press options for lead management
+ *
+ * Author: James Scott
+ */
+
+
 public class ViewLeadsActivity extends AppCompatActivity {
 
     private EditText searchBar;

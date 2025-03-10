@@ -30,6 +30,25 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+/**
+ * ServiceAgreementGenerator.java
+ *
+ * This class generates a professionally formatted service agreement PDF for pest control services.
+ * The document includes customer details, service terms, pricing information, VAT calculations,
+ * and agreement conditions. The PDF is saved locally with a structured layout.
+ *
+ * Features:
+ * - Generates a structured PDF with company branding and customer details
+ * - Includes VAT and total cost calculations
+ * - Details service scope, technician responsibilities, and compliance measures
+ * - Supports customer and technician signatures for authorization
+ * - Saves the agreement locally in the designated folder
+ * - Ensures contract compliance with regulatory standards
+ *
+ * Author: James Scott
+ */
+
+
 public class ServiceAgreementGenerator {
 
     @SuppressLint("DefaultLocale")

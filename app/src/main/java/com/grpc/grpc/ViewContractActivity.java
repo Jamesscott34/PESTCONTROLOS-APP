@@ -19,11 +19,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
-
-import org.w3c.dom.Text;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -34,6 +29,27 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+/**
+ * ViewContractActivity.java
+ *
+ * This activity allows users to view, search, edit, update, and manage contracts stored in Firebase Firestore.
+ * It retrieves contracts based on the logged-in user and provides options to update last visit dates, mark contracts as completed,
+ * navigate to contract locations, and generate reports. Admin users (James, Ian, Kristine) can edit or delete contracts.
+ *
+ * Features:
+ * - Loads and displays contracts dynamically from Firebase Firestore
+ * - Provides search functionality to filter contracts by name
+ * - Categorizes contracts as behind, due, or up-to-date based on visit dates
+ * - Allows updating last visit dates and calculates the next visit date
+ * - Supports marking contracts as completed with automatic updates
+ * - Enables navigation to contract locations using Google Maps
+ * - Allows administrators to edit, transfer, or delete contracts
+ * - Generates routine, callout, and initial setup reports based on contract status
+ *
+ * Author: James Scott
+ */
+
 
 public class ViewContractActivity extends AppCompatActivity {
 

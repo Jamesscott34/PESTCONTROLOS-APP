@@ -10,8 +10,22 @@ import android.widget.Toast;
 import java.util.ArrayList;
 
 /**
- * SQLite Database Helper for managing Company Reports, Events, and Quotations.
+ * ReportDatabaseHelper.java
+ *
+ * This class is an SQLite database helper that manages the storage of company reports, events,
+ * general quotations, and bird control quotations. It provides methods for inserting, retrieving,
+ * and deleting data related to pest control reports and quotations.
+ *
+ * Features:
+ * - Creates and manages tables for company reports, events, general quotations, and bird quotations
+ * - Supports inserting and retrieving events based on date and name
+ * - Handles database version upgrades by recreating tables when needed
+ * - Provides methods for saving and deleting reports and quotes
+ * - Ensures data persistence for structured reporting in pest control operations
+ *
+ * Author: James Scott
  */
+
 public class ReportDatabaseHelper extends SQLiteOpenHelper {
 
     // Database Configuration

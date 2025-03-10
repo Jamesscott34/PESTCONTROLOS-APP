@@ -23,8 +23,40 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-public class BirdQuotationPDFGenerator {
+/**
+ * BirdQuotationPDFGenerator.java
+ *
+ * This class generates a PDF quotation for bird control services.
+ * It takes customer details, a list of items, and pricing details,
+ * formats them into a structured PDF, and saves the file.
+ * The generated PDF includes a company logo, quote number, date,
+ * customer details, itemized pricing, and payment instructions.
+ *
+ * Features:
+ * - Generates a structured PDF with customer and quotation details.
+ * - Calculates VAT (13.5%) and total payment values.
+ * - Saves the PDF file to a dedicated folder.
+ * - Stores the quotation details in the local database.
+ * - Displays success or error messages to the user.
+ *
+ * Author: James Scott
+ */
 
+public class BirdQuotationPDFGenerator {
+    /**
+     * Generates a PDF quotation for bird control services.
+     * It formats the document, adds customer details, line items,
+     * pricing, VAT calculations, and a payment summary.
+     *
+     * @param address         The customer's address.
+     * @param quoteDescription A description of the bird control services quoted.
+     * @param descriptions    A list of line item descriptions.
+     * @param lineTotals      A list of corresponding line item prices.
+     * @param userEmail       The customer's email address.
+     * @param mobileNumber    The customer's mobile number.
+     * @param context         The Android context for file storage and UI feedback.
+     * @return The generated PDF file.
+     */
     public static File generateBirdQuotation(
             String address, String quoteDescription,
             List<String> descriptions, List<Double> lineTotals,

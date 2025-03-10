@@ -22,7 +22,6 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.layout.property.TextAlignment;
-import com.itextpdf.layout.property.UnitValue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,6 +29,25 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+
+/**
+ * RodentCallOutExternalActivity.java
+ *
+ * This activity automatically generates and saves a structured PDF report for external rodent control call-outs.
+ * It retrieves company and technician details, pre-fills the report fields, and applies a professional format.
+ * The generated report is saved locally with a standardized filename.
+ *
+ * Features:
+ * - Extracts intent data for report generation
+ * - Pre-fills site inspection, recommendations, and follow-up details
+ * - Generates and saves a structured PDF report
+ * - Includes technician details and contact information
+ * - Applies a watermark and footer for branding
+ * - Supports external call-out reports for emergency pest control interventions
+ *
+ * Author: James Scott
+ */
+
 
 public class RodentCallOutExternalActivity extends AppCompatActivity {
 

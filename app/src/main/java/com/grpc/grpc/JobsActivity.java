@@ -9,6 +9,23 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+/**
+ * JobsActivity.java
+ *
+ * This activity serves as the main hub for job management. Users can either create new jobs
+ * or view existing job records. The username is retrieved from the intent and passed to
+ * subsequent activities to maintain user session.
+ *
+ * Features:
+ * - Displays a welcome message with the user's name
+ * - Allows navigation to the job creation screen
+ * - Allows navigation to the job viewing screen
+ * - Ensures USER_NAME is always passed to the next activity
+ *
+ * Author: James Scott
+ */
+
+
 public class JobsActivity extends AppCompatActivity {
 
     private FirebaseFirestore db;

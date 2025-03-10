@@ -12,6 +12,23 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * BirdQuotationActivity.java
+ *
+ * This activity allows users to create a bird control service quotation.
+ * Users can input customer details, add line items to the quotation,
+ * and generate a PDF file containing all the details.
+ *
+ * Features:
+ * - Input validation for customer details
+ * - Ability to add multiple line items with descriptions and prices
+ * - PDF generation for quotations
+ * - Automatic field clearing after PDF generation
+ * - Navigation back to the previous activity with user details
+ *
+ * Author: James Scott
+ */
+
 public class BirdQuotationActivity extends AppCompatActivity {
 
     private EditText addressInput, quoteDescriptionInput, userEmailInput, mobileNumberInput;
@@ -22,6 +39,16 @@ public class BirdQuotationActivity extends AppCompatActivity {
 
     private final List<String> descriptions = new ArrayList<>();
     private final List<Double> lineTotals = new ArrayList<>();
+
+    /**
+     * Initializes the activity, retrieves the username from intent,
+     * and sets up UI elements. Handles button click events for adding
+     * items and generating PDFs.
+     *
+     * @param savedInstanceState If the activity is being re-initialized
+     *                           after previously being shut down, this
+     *                           Bundle contains the most recent data.
+     */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +81,8 @@ public class BirdQuotationActivity extends AppCompatActivity {
     }
 
     /**
-     * Adds a line item to the quotation.
+     * Adds a line item to the quotation, including a description and a price.
+     * Validates the input fields before adding them to the list.
      */
     private void addItem() {
         String description = itemDescriptionInput.getText().toString().trim();
@@ -83,7 +111,9 @@ public class BirdQuotationActivity extends AppCompatActivity {
     }
 
     /**
-     * Generates a PDF for the quotation.
+     * Generates a PDF for the quotation with all the entered details.
+     * Validates required fields, including email and mobile number format.
+     * Calls the BirdQuotationPDFGenerator to create the file.
      */
     private void generatePdf() {
         String address = addressInput.getText().toString().trim();
@@ -133,7 +163,8 @@ public class BirdQuotationActivity extends AppCompatActivity {
     }
 
     /**
-     * Clears all input fields and resets the lists.
+     * Clears all input fields and resets the lists of descriptions and prices.
+     * This is called after a PDF is successfully generated.
      */
     private void clearFields() {
         addressInput.setText("");
@@ -147,7 +178,8 @@ public class BirdQuotationActivity extends AppCompatActivity {
     }
 
     /**
-     * Navigates back to the previous activity with the username as a result.
+     * Navigates back to the previous activity, passing the username back
+     * as a result to maintain user session.
      */
     private void navigateBack() {
         Intent backIntent = new Intent();

@@ -59,7 +59,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * ReportViewActivity displays a list of saved PDF reports and allows users to interact with them.
+ * ERAViewActivity.java
+ *
+ * This activity allows the user to view, search, share, rename, and delete Environmental Risk Assessment (ERA) reports
+ * stored as PDF files. The reports are displayed in a RecyclerView, and users can interact with them via single or long clicks.
+ *
+ * Features:
+ * - Lists all stored ERA PDF reports
+ * - Enables searching for reports by name using a search bar
+ * - Supports viewing reports using a PDF viewer
+ * - Allows sharing, renaming, and deleting reports
+ * - Provides user-friendly alerts for report interactions
+ *
+ * Author: James Scott
  */
 public class ERAViewActivity extends AppCompatActivity {
 
@@ -68,7 +80,6 @@ public class ERAViewActivity extends AppCompatActivity {
     private EditText searchBar;
     private Button returnButton;
 
-    // Adapter and data structures for managing reports
     private ReportAdapter adapter;
     private List<File> reportFiles;
     private List<File> allReportFiles;
@@ -76,7 +87,8 @@ public class ERAViewActivity extends AppCompatActivity {
     private String userName;
 
     /**
-     * Initializes the activity and sets up the RecyclerView, search bar, and return button.
+     * Initializes the activity, sets up the RecyclerView, search bar, and return button,
+     * and loads all stored reports for display.
      *
      * @param savedInstanceState The saved state of the activity, used for restoring data.
      */
@@ -124,7 +136,9 @@ public class ERAViewActivity extends AppCompatActivity {
         // Return to the main activity when the return button is clicked
         returnButton.setOnClickListener(view -> navigateBackToMainActivity());
     }
-
+    /**
+     * Navigates back to the main activity, passing the username along.
+     */
     private void navigateBackToMainActivity() {
         Intent intent = new Intent(ERAViewActivity.this, MainActivity.class);
         intent.putExtra("USER_NAME", userName);
@@ -133,7 +147,7 @@ public class ERAViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Loads all PDF reports from the designated report storage folder.
+     * Loads all PDF reports from the designated ERA storage folder and initializes the RecyclerView adapter.
      */
     private void loadReports() {
         reportFiles = new ArrayList<>();
@@ -168,7 +182,7 @@ public class ERAViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Displays options when a report is single-clicked (View or Edit).
+     * Displays options when a report is single-clicked (View).
      *
      * @param file The selected report file.
      */
@@ -315,9 +329,4 @@ public class ERAViewActivity extends AppCompatActivity {
 
         builder.show();
     }
-
-
-
-
-
 }

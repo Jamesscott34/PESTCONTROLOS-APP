@@ -23,9 +23,21 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * ServiceAgreementViewActivity displays a list of saved Service Agreement PDFs
- * and allows users to interact with them (view, search, share, delete, rename).
+ * ServiceAgreementViewActivity.java
+ *
+ * This activity allows users to view, search, share, rename, and delete stored service agreements in PDF format.
+ * The agreements are displayed in a RecyclerView, providing user-friendly interaction with single-click and long-click options.
+ *
+ * Features:
+ * - Displays a list of stored service agreement PDFs
+ * - Allows searching agreements by name using a search bar
+ * - Supports viewing agreements using a PDF viewer
+ * - Enables sharing, renaming, and deleting agreements
+ * - Ensures user-friendly alerts and UI interaction
+ *
+ * Author: James Scott
  */
+
 public class ServiceAgreementViewActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;

@@ -6,8 +6,29 @@ import android.widget.Button;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
-public class ContractsActivity extends AppCompatActivity {
+/**
+ * ContractsActivity.java
+ *
+ * This activity serves as the main contract management screen, allowing users
+ * to either add new contracts or view existing ones. It retrieves the user's
+ * name from the intent and passes it to the respective contract-related activities.
+ *
+ * Features:
+ * - Displays a welcome message to the user
+ * - Provides navigation options for adding or viewing contracts
+ * - Passes the username to subsequent activities for contract management
+ *
+ * Author: James Scott
+ */
 
+public class ContractsActivity extends AppCompatActivity {
+    /**
+     * Initializes the activity, retrieves the username from intent, and sets up UI elements.
+     * Handles button click events for navigating to the contract management screens.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
+     *                           this Bundle contains the most recent data.
+     */
     private Button addContractButton, viewContractButton;
     private String userName;
 
