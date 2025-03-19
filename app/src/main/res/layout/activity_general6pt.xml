@@ -1,11 +1,22 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:padding="16dp"
+    android:paddingTop="?attr/actionBarSize"
     android:background="@drawable/bk"
     android:gravity="top|center_horizontal">
+
+    <!-- Top Spacer to avoid notch -->
+    <View
+        android:id="@+id/statusSpacer"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="@android:color/transparent" />
 
     <!-- Welcome Text at the Top -->
     <TextView

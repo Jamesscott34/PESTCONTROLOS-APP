@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:paddingTop="?attr/actionBarSize"
     android:padding="16dp"
     android:background="@drawable/bk">
 
+    <!-- ✅ ONE direct child only -->
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- Mobile Number Input -->
+        <!-- ✅ Moved inside LinearLayout -->
+        <View
+            android:id="@+id/statusSpacer"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/transparent" />
+
         <EditText
             android:id="@+id/mobileNumberInput"
             android:hint="Enter Mobile Number"
@@ -19,7 +28,6 @@
             android:inputType="phone"
             android:padding="12dp" />
 
-        <!-- Email Address Input -->
         <EditText
             android:id="@+id/emailInput"
             android:hint="Enter Email Address"
@@ -28,17 +36,13 @@
             android:inputType="textEmailAddress"
             android:padding="12dp" />
 
-        <!-- Date and Quote Number (Auto-Generated) -->
         <EditText
             android:id="@+id/dateInput"
             android:hint="Date (Auto-generated)"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="false"/>
+            android:enabled="false" />
 
-
-
-        <!-- Customer Address -->
         <EditText
             android:id="@+id/addressInput"
             android:hint="Enter Customer Address"
@@ -46,9 +50,7 @@
             android:layout_height="wrap_content"
             android:inputType="textMultiLine"
             android:minLines="2"
-            android:padding="12dp"/>
-
-
+            android:padding="12dp" />
 
         <EditText
             android:id="@+id/quoteDescriptionInput"
@@ -57,45 +59,41 @@
             android:layout_height="wrap_content"
             android:inputType="textMultiLine"
             android:minLines="2"
-            android:padding="12dp"/>
+            android:padding="12dp" />
 
-        <!-- Dynamic Section for Line Items -->
         <LinearLayout
             android:id="@+id/lineItemsContainer"
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"/>
+            android:layout_marginTop="12dp" />
 
-        <!-- Button to Add Line Items -->
         <Button
             android:id="@+id/addLineItemButton"
             android:text="Add Line Item"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"/>
+            android:layout_marginTop="12dp" />
 
-        <!-- Button to Generate the Quote PDF -->
         <Button
             android:id="@+id/generateQuoteButton"
             android:text="Generate Quote PDF"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"/>
+            android:layout_marginTop="12dp" />
 
-        <!-- Button to Return to Main -->
         <Button
             android:id="@+id/backButton"
             android:text="Return to Main"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"/>
+            android:layout_marginTop="12dp" />
+
         <EditText
             android:id="@+id/quoteNumberInput"
             android:hint="Quote Number (Auto-generated)"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="false"/>
-
+            android:enabled="false" />
     </LinearLayout>
 </ScrollView>

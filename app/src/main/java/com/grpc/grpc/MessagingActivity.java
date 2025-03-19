@@ -100,11 +100,15 @@ public class MessagingActivity extends AppCompatActivity {
         message.put("timestamp", Timestamp.now());
 
         firestore.collection("messages").add(message)
-                .addOnSuccessListener(documentReference -> Log.d("Firestore", "Message sent"))
+                .addOnSuccessListener(documentReference -> {
+                    Log.d("Firestore", "Message sent");
+                    Toast.makeText(this, "Message sent", Toast.LENGTH_SHORT).show();
+                })
                 .addOnFailureListener(e -> Log.e("Firestore", "Error sending message", e));
 
         messageInput.setText("");
     }
+
 
     private void loadMessages() {
         firestore.collection("messages")
@@ -120,9 +124,6 @@ public class MessagingActivity extends AppCompatActivity {
                         return;
                     }
 
-                    messages.clear();
-                    messageIds.clear();
-
                     for (DocumentChange change : snapshots.getDocumentChanges()) {
                         QueryDocumentSnapshot doc = change.getDocument();
                         String sender = doc.getString("sender");
@@ -130,14 +131,22 @@ public class MessagingActivity extends AppCompatActivity {
                         Timestamp timestamp = doc.getTimestamp("timestamp");
 
                         if (sender != null && body != null && timestamp != null) {
-                            String formattedTime = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy", Locale.getDefault()).format(timestamp.toDate());
-                            messages.add(String.format("%s (%s): %s", sender, formattedTime, body));
-                            messageIds.add(doc.getId());
+                            String formattedTime = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy", Locale.getDefault())
+                                    .format(timestamp.toDate());
+                            String fullMessage = String.format("%s (%s): %s", sender, formattedTime, body);
+
+                            // Avoid adding duplicates
+                            if (!messageIds.contains(doc.getId())) {
+                                messages.add(fullMessage);
+                                messageIds.add(doc.getId());
+                                messageAdapter.notifyDataSetChanged();
+                            }
+
                         }
                     }
-                    messageAdapter.notifyDataSetChanged();
                 });
     }
+
 
     private void confirmDeleteAllMessages() {
         new AlertDialog.Builder(this)

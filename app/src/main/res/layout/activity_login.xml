@@ -1,11 +1,13 @@
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:paddingTop="?attr/actionBarSize"
     android:fillViewport="true"
-    android:background="@drawable/bk"
-    >
+    android:background="@drawable/bk">
 
+    <!-- ✅ Only ONE direct child inside ScrollView -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -13,6 +15,14 @@
         android:gravity="center"
         android:padding="16dp">
 
+        <!-- Spacer for status bar or notch -->
+        <View
+            android:id="@+id/statusSpacer"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/transparent" />
+
+        <!-- Email input -->
         <EditText
             android:id="@+id/emailEditText"
             android:layout_width="match_parent"
@@ -24,6 +34,7 @@
             android:padding="12dp"
             android:background="@android:drawable/edit_text" />
 
+        <!-- Password input -->
         <EditText
             android:id="@+id/passwordEditText"
             android:layout_width="match_parent"
@@ -35,6 +46,7 @@
             android:padding="12dp"
             android:background="@android:drawable/edit_text" />
 
+        <!-- Login button -->
         <Button
             android:id="@+id/loginButton"
             android:layout_width="match_parent"

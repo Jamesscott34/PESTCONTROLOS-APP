@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_height="match_parent"
+    android:background="@drawable/bk"
+    android:padding="16dp"
+    android:paddingTop="?attr/actionBarSize">
+
+    <!-- Top Spacer to avoid notch -->
+    <View
+        android:id="@+id/statusSpacer"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="@android:color/transparent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add New Job"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+        <!-- Technician Information -->
+        <EditText
+            android:id="@+id/techName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Technician Name"
+            android:inputType="textPersonName"
+            android:padding="10dp"
+            android:background="@android:drawable/editbox_background"/>
+
+
+
+
+
+        <!-- Customer Information -->
+        <EditText
+            android:id="@+id/customerName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Managment Company"
+            android:inputType="textPersonName"
+            android:padding="10dp"
+            android:background="@android:drawable/editbox_background"/>
+
+
+
+        <EditText
+            android:id="@+id/customerContact"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Tenant Contact"
+            android:inputType="phone"
+            android:padding="10dp"
+            android:background="@android:drawable/editbox_background"/>
+
+        <EditText
+            android:id="@+id/issueDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter Issue Details"
+            android:inputType="textMultiLine"
+            android:minHeight="100dp"
+            android:padding="10dp"
+            android:background="@android:drawable/editbox_background"/>
+
+
+        <Button
+            android:id="@+id/submitButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Submit Job"
+            android:backgroundTint="@android:color/holo_blue_dark"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="10dp"/>
+
+    </LinearLayout>
+</ScrollView>

@@ -114,7 +114,7 @@ public class RodentCallOutActivity extends AppCompatActivity {
      * Generates the site inspection report.
      */
     private String generateSiteInspection() {
-        return "An emergency call-out was carried out due to suspected rodent sighting. "
+        return "An emergency call-out was carried out due to suspected rodent sighting Internally. "
                 + "All monitors located on site were inspected. "
                 + "As a precaution, baits have been replenished throughout the area. "
                 + "All baits will be inspected on follow-up to ensure rodent control is being attained.";
@@ -131,7 +131,7 @@ public class RodentCallOutActivity extends AppCompatActivity {
      * Determines follow-up actions based on the visit type.
      */
     private String generateFollowUp() {
-        return "A follow-up visit is scheduled within the next 5 - 7 working days.";
+        return "A follow-up visit is scheduled within the next 3-5 working days.";
     }
 
     /**

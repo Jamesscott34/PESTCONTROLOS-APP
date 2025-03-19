@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import android.content.SharedPreferences;
+
 
 /**
  * ViewContractActivity.java
@@ -103,29 +105,48 @@ public class ViewContractActivity extends AppCompatActivity {
 
     private void loadContracts() {
         if ("Kristine".equalsIgnoreCase(userName)) {
-            // Query each top-level collection manually
-            String[] contractCollections = {"Ian Contracts", "James Contracts"}; // Add all relevant collections here
+            // Load both Ian & James contracts in parallel
+            String[] contractCollections = {"Ian Contracts", "James Contracts"};
             List<Map<String, Object>> allContracts = new ArrayList<>();
+            Map<String, List<Map<String, Object>>> groupedContracts = new HashMap<>();
+
+            int[] loadedCount = {0}; // To track when all async calls return
 
             for (String collectionName : contractCollections) {
                 db.collection(collectionName).get().addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
+                        List<Map<String, Object>> techContracts = new ArrayList<>();
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             Map<String, Object> contract = document.getData();
                             contract.put("documentId", document.getId());
-                            contract.put("owner", collectionName.replace(" Contracts", "")); // Extract owner name
+                            contract.put("owner", collectionName.replace(" Contracts", ""));
                             allContracts.add(contract);
+                            techContracts.add(contract);
                         }
 
-                        // After all collections are processed, display the contracts
-                        handleContractsData(allContracts);
+                        // Save for WhatsApp grouping
+                        String techName = collectionName.replace(" Contracts", "");
+                        groupedContracts.put(techName, techContracts);
+
                     } else {
-                        Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Failed to load " + collectionName, Toast.LENGTH_SHORT).show();
+                    }
+
+                    // When both collections return, proceed
+                    loadedCount[0]++;
+                    if (loadedCount[0] == contractCollections.length) {
+                        handleContractsData(allContracts);
+
+                        // 🟢 Send WhatsApp summary for each tech
+                        for (String tech : groupedContracts.keySet()) {
+                            sendDailyBehindSummaryIfNeeded(tech, groupedContracts.get(tech));
+                        }
                     }
                 });
             }
+
         } else {
-            // Default behavior for specific user's contracts
+            // Default load for Ian or James
             String tableName = userName + " Contracts";
 
             db.collection(tableName).get().addOnCompleteListener(task -> {
@@ -134,16 +155,62 @@ public class ViewContractActivity extends AppCompatActivity {
                     for (QueryDocumentSnapshot document : task.getResult()) {
                         Map<String, Object> contract = document.getData();
                         contract.put("documentId", document.getId());
-                        contract.put("owner", userName); // Add the current username as the owner
+                        contract.put("owner", userName);
                         contractsList.add(contract);
                     }
                     handleContractsData(contractsList);
+                    sendDailyBehindSummaryIfNeeded(userName, contractsList);
                 } else {
                     Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         }
     }
+
+
+    private void sendDailyBehindSummaryIfNeeded(String technician, List<Map<String, Object>> contracts) {
+        SharedPreferences prefs = getSharedPreferences("ContractReminders", MODE_PRIVATE);
+        String key = "sent_" + technician.toLowerCase();
+        String lastSentDate = prefs.getString(key, "");
+
+        String today = new SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(new Date());
+        if (today.equals(lastSentDate)) return; // Already sent today ❌
+
+        // Filter overdue contracts
+        List<String> overdueSummaries = new ArrayList<>();
+        for (Map<String, Object> contract : contracts) {
+            String nextVisit = calculateNextVisit(contract);
+            if (isPastDue(nextVisit)) {
+                String name = contract.get("name") != null ? contract.get("name").toString() : "N/A";
+                String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
+                overdueSummaries.add("🔹 " + name + "\n📍 " + address + "\n📅 Next Visit: " + nextVisit);
+            }
+        }
+
+        if (!overdueSummaries.isEmpty()) {
+            String message = "🛑 Overdue Contracts for " + technician + ":\n\n" + String.join("\n\n", overdueSummaries);
+            String number = technician.equalsIgnoreCase("James") ? "0879000271" : "0879134971";
+            launchWhatsAppMessage(number, message);
+
+            // Store date as sent
+            prefs.edit().putString(key, today).apply();
+        }
+    }
+
+    private void launchWhatsAppMessage(String phoneNumber, String message) {
+        try {
+            String formatted = phoneNumber.replaceFirst("^0", "353"); // Irish number formatting
+            String url = "https://wa.me/" + formatted + "?text=" + Uri.encode(message);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse(url));
+            intent.setPackage("com.whatsapp");
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "Could not launch WhatsApp", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
 
     private void handleContractsData(List<Map<String, Object>> contractsList) {
         int totalContracts = contractsList.size();

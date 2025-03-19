@@ -29,10 +29,10 @@ import java.util.Map;
  */
 
 public class AddJobsActivity extends AppCompatActivity {
-    private EditText techName, techMobile, techEmail, customerName, customerEmail, customerContact, issueDetails;
+    private EditText techName,  customerName, customerEmail, customerContact, issueDetails;
     private Button submitButton;
     private FirebaseFirestore db;
-    private String userName, techMobileNumber, custName, custEmail, custContact, issueDetailsText; // Stores values for WhatsApp
+    private String userName,  custName, custEmail, custContact, issueDetailsText; // Stores values for WhatsApp
 
     /**
      * Initializes the activity, retrieves user information, and sets up UI elements.
@@ -49,8 +49,6 @@ public class AddJobsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_jobs);
 
         techName = findViewById(R.id.techName);
-        techMobile = findViewById(R.id.techMobile);
-        techEmail = findViewById(R.id.techEmail);
         customerName = findViewById(R.id.customerName);
         customerEmail = findViewById(R.id.customerEmail);
         customerContact = findViewById(R.id.customerContact);
@@ -76,13 +74,12 @@ public class AddJobsActivity extends AppCompatActivity {
      */
     private void validateAndSubmitJob() {
         String name = techName.getText().toString().trim();
-        techMobileNumber = formatIrishMobile(techMobile.getText().toString().trim()); // Convert number format
         custName = customerName.getText().toString().trim();
         custEmail = customerEmail.getText().toString().trim();
         custContact = formatIrishMobile(customerContact.getText().toString().trim());
         issueDetailsText = issueDetails.getText().toString().trim();
 
-        if (TextUtils.isEmpty(name) || TextUtils.isEmpty(techMobileNumber) || TextUtils.isEmpty(custName) ||
+        if (TextUtils.isEmpty(name) || TextUtils.isEmpty(custName) ||
                 TextUtils.isEmpty(custContact) || TextUtils.isEmpty(issueDetailsText)) {
             Toast.makeText(this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
             return;
@@ -90,8 +87,10 @@ public class AddJobsActivity extends AppCompatActivity {
 
         custEmail = custEmail.isEmpty() ? "N/A" : custEmail; // Default value if empty
 
-        addJobToFirestore(name, custName, custEmail, custContact, issueDetailsText, techMobileNumber);
+        // No techMobile passed here anymore
+        addJobToFirestore(name, custName, custEmail, custContact, issueDetailsText);
     }
+
     /**
      * Adds a job entry to Firestore under the "JobWork" collection.
      * Stores technician details, customer details, and issue information.
@@ -101,9 +100,9 @@ public class AddJobsActivity extends AppCompatActivity {
      * @param custEmail   The customer's email address.
      * @param custContact The customer's contact number.
      * @param issue       The issue description.
-     * @param techMobile  The mobile number of the technician.
+
      */
-    private void addJobToFirestore(String techName, String custName, String custEmail, String custContact, String issue, String techMobile) {
+    private void addJobToFirestore(String techName, String custName, String custEmail, String custContact, String issue) {
         Map<String, Object> job = new HashMap<>();
         job.put("AssignedTech", techName);
         job.put("CustomerName", custName);
@@ -129,45 +128,8 @@ public class AddJobsActivity extends AppCompatActivity {
         intent.putExtra("USER_NAME", userName);
         startActivity(intent);
         finish();
-
-        // **After navigating back to JobsActivity, open WhatsApp**
-        new android.os.Handler().postDelayed(this::sendWhatsAppMessage, 1000);  // Delay by 1 second to ensure smooth transition
     }
-    /**
-     * Sends a WhatsApp message to the assigned technician with job details.
-     * Extracts customer details, formats them, and creates a pre-filled message.
-     * Opens WhatsApp for sending the message.
-     */
-    private void sendWhatsAppMessage() {
-        if (techMobileNumber == null || techMobileNumber.isEmpty()) {
-            Toast.makeText(this, "Technician mobile number is missing!", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
-        String message = "Hello, a new job has been assigned to you.\n\n" +
-                "🔹 Customer Name: " + (custName != null ? custName : "N/A") + "\n" +
-                "🔹 Customer Email: " + (custEmail != null ? custEmail : "N/A") + "\n" +
-                "🔹 Customer Contact: " + (custContact != null ? custContact : "N/A") + "\n" +
-                "🔹 Issue: " + (issueDetailsText != null ? issueDetailsText : "N/A") + "\n\n" +
-                "📞 Please check your GRPC app for details.";
-
-        String formattedNumber = techMobileNumber.replace("+", "").replace(" ", "").trim();
-
-        try {
-            Uri uri = Uri.parse("https://wa.me/" + formattedNumber + "?text=" + Uri.encode(message));
-            Intent sendIntent = new Intent(Intent.ACTION_VIEW, uri);
-            startActivity(sendIntent);
-        } catch (Exception e) {
-            Toast.makeText(this, "WhatsApp not installed or failed to open", Toast.LENGTH_SHORT).show();
-        }
-    }
-    /**
-     * Formats Irish mobile numbers to international format (+353).
-     * Only applies to valid Irish mobile prefixes (087, 086, 085, etc.).
-     *
-     * @param number The mobile number to be formatted.
-     * @return The formatted mobile number with the international prefix.
-     */
     private String formatIrishMobile(String number) {
         if (number.startsWith("087") || number.startsWith("086") || number.startsWith("085") ||
                 number.startsWith("089") || number.startsWith("083") || number.startsWith("088")) {
@@ -182,8 +144,6 @@ public class AddJobsActivity extends AppCompatActivity {
      */
     private void clearInputFields() {
         techName.setText("");
-        techMobile.setText("");
-        techEmail.setText("");
         customerName.setText("");
         customerEmail.setText("");
         customerContact.setText("");

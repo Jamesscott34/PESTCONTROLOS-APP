@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:gravity="center"
+    android:paddingTop="?attr/actionBarSize"
     android:padding="16dp"
     android:background="@drawable/bk">
+
+
+    <!-- Top Spacer to avoid notch -->
+    <View
+        android:id="@+id/statusSpacer"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="@android:color/transparent" />
 
     <!-- Welcome Message -->
     <TextView
@@ -28,12 +40,21 @@
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 
+
+    <Button
+        android:id="@+id/buttonGenericReport"
+        android:layout_width="wrap_content"
+        android:layout_height="58dp"
+        android:text="Generic Report"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
+
     <!-- Button to create a quotation -->
     <Button
         android:id="@+id/buttonCreateQuotation"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:text="Contracts Quote"
+        android:text="Contracts Quotation"
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 
@@ -42,7 +63,7 @@
         android:id="@+id/buttonCreateBirdQuotation"
         android:layout_width="wrap_content"
         android:layout_height="58dp"
-        android:text="Bird Quote"
+        android:text="Bird Quotation"
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
 

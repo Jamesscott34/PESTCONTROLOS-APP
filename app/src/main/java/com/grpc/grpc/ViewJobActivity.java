@@ -4,6 +4,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,6 +19,7 @@ import androidx.core.app.NotificationCompat;
 import com.google.firebase.firestore.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * ViewJobActivity.java
@@ -116,11 +118,24 @@ public class ViewJobActivity extends AppCompatActivity {
                 job.put("documentId", document.getId());
                 allJobs.add(job);
 
+                // Update counters
                 String status = (String) job.get("Status");
                 if ("Completed".equalsIgnoreCase(status)) {
                     completed++;
                 } else {
                     pending++;
+                }
+
+                // ✅ Check if reminder needed
+                String techName = getOrDefault(job, "AssignedTech");
+                String followUpDate = getOrDefault(job, "FollowUpDate");
+
+                if (shouldNotifyTechnician(followUpDate)) {
+                    if (techName.equalsIgnoreCase("James")) {
+                        sendWhatsAppReminder("0879000271", job);
+                    } else if (techName.equalsIgnoreCase("Ian")) {
+                        sendWhatsAppReminder("0879134971", job);
+                    }
                 }
             }
 
@@ -128,18 +143,60 @@ public class ViewJobActivity extends AppCompatActivity {
             updateStatistics(total, completed, pending);
         });
 
-        db.collection("JobWork").addSnapshotListener((snapshots, e) -> {
-            if (e != null) {
-                Log.w("Firestore", "Listen failed.", e);
-                return;
-            }
-            for (DocumentChange dc : snapshots.getDocumentChanges()) {
-                if (dc.getType() == DocumentChange.Type.ADDED || dc.getType() == DocumentChange.Type.MODIFIED) {
-                    showNotification("Database Updated", "A job was added or modified.");
-                }
-            }
-        });
     }
+
+
+    private boolean shouldNotifyTechnician(String followUpDateStr) {
+        if (followUpDateStr == null || followUpDateStr.equalsIgnoreCase("N/A")) return false;
+
+        List<String> formats = Arrays.asList("dd/MM/yyyy HH:mm", "dd/MM/yy HH:mm", "dd/MM/yyyy", "dd/MM/yy");
+
+        for (String format : formats) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.getDefault());
+                Date followUp = sdf.parse(followUpDateStr);
+                Date now = new Date();
+
+                long diffMillis = followUp.getTime() - now.getTime();
+                long hours = TimeUnit.MILLISECONDS.toHours(diffMillis);
+
+                return hours <= 24 && hours > 0; // Between now and 24h ahead
+
+            } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
+    private void sendWhatsAppReminder(String phoneNumber, Map<String, Object> job) {
+        String customer = getOrDefault(job, "CustomerName");
+        String contact = getOrDefault(job, "CustomerContact");
+        String email = getOrDefault(job, "CustomerEmail");
+        String issue = getOrDefault(job, "IssueDetails");
+        String address = getOrDefault(job, "Address");
+        String followUp = getOrDefault(job, "FollowUpDate");
+
+        String message = "📢 Follow-Up Reminder\n\n" +
+                "🧑 Customer: " + customer + "\n" +
+                "📞 Contact: " + contact + "\n" +
+                "📧 Email: " + email + "\n" +
+                "🏠 Address: " + address + "\n" +
+                "📝 Issue: " + issue + "\n" +
+                "📅 Follow-Up: " + followUp + "\n\n" +
+                "⚠️ This visit is due in 24 hours.";
+
+        try {
+            String formatted = formatIrishMobile(phoneNumber);
+            String url = "https://wa.me/" + formatted + "?text=" + Uri.encode(message);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse(url));
+            intent.setPackage("com.whatsapp");
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "Could not launch WhatsApp", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
 
     private void filterJobs(String query) {
         query = query.toLowerCase();
@@ -158,19 +215,6 @@ public class ViewJobActivity extends AppCompatActivity {
         displayJobs(filteredJobs);
     }
 
-    private void showNotification(String title, String message) {
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel("job_updates", "Job Updates", NotificationManager.IMPORTANCE_HIGH);
-            notificationManager.createNotificationChannel(channel);
-        }
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "job_updates")
-                .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle(title)
-                .setContentText(message)
-                .setAutoCancel(true);
-        notificationManager.notify(1, builder.build());
-    }
 
 
     private void displayJobs(List<Map<String, Object>> jobsList) {
@@ -198,6 +242,10 @@ public class ViewJobActivity extends AppCompatActivity {
         String setupDate = getOrDefault(job, "SetupDate");
         String paymentAmount = getOrDefault(job, "PaymentAmount");
         String paymentMethod = getOrDefault(job, "PaymentMethod");
+        String followUpDate = getOrDefault(job, "FollowUpDate"); // Format: dd/MM/yyyy
+
+        // 🔥 Apply color coding based on follow-up rules
+        jobBox.setBackgroundColor(getJobBackgroundColor(followUpDate));
 
         String jobDetailsText = "Technician: " + techName + "\n" +
                 "Customer Name: " + customerName + "\n" +
@@ -206,7 +254,8 @@ public class ViewJobActivity extends AppCompatActivity {
                 "Issue: " + issue + "\n" +
                 "Address: " + address + "\n" +
                 "Initial Setup: " + setupDate + "\n" +
-                "Payment: " + paymentAmount + " (" + paymentMethod + ")";
+                "Payment: " + paymentAmount + " (" + paymentMethod + ")\n" +
+                "Follow-Up Date: " + followUpDate;
 
         // Job Details TextView
         TextView jobDetails = new TextView(this);
@@ -228,8 +277,53 @@ public class ViewJobActivity extends AppCompatActivity {
             return true;
         });
 
+        // Add to container
         jobsContainer.addView(jobBox);
     }
+
+
+    private int getJobBackgroundColor(String followUpDateStr) {
+        if (followUpDateStr.equalsIgnoreCase("N/A")) return Color.WHITE;
+        if (followUpDateStr.trim().isEmpty()) return Color.RED;
+
+        followUpDateStr = followUpDateStr.trim();
+
+        List<String> acceptedFormats = Arrays.asList(
+                "dd/MM/yyyy HH:mm",
+                "dd/MM/yy HH:mm",
+                "dd/MM/yyyy",
+                "dd/MM/yy"
+        );
+
+        for (String format : acceptedFormats) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.getDefault());
+                sdf.setLenient(false);
+
+                Date followUpDate = sdf.parse(followUpDateStr);
+                Date now = new Date();
+
+                long diffMillis = followUpDate.getTime() - now.getTime();
+                long diffHours = TimeUnit.MILLISECONDS.toHours(diffMillis);
+
+                Log.d("FollowUpCheck", "Parsed with format " + format + ": " + followUpDateStr + " → " + diffHours + "h");
+
+                if (followUpDate.before(now)) return Color.RED;
+                if (diffHours < 72) return Color.YELLOW;
+
+                return Color.WHITE;
+
+            } catch (Exception e) {
+                Log.e("FollowUpParse", "Failed to parse " + followUpDateStr + " with format " + format);
+            }
+        }
+
+        return Color.RED; // default if all formats fail
+    }
+
+
+
+
 
 
     private String getOrDefault(Map<String, Object> job, String key) {
@@ -347,16 +441,6 @@ public class ViewJobActivity extends AppCompatActivity {
     }
 
 
-
-
-
-
-
-
-
-
-
-
     private void showJobOptions(String documentId) {
         db.collection("JobWork").document(documentId).get().addOnSuccessListener(documentSnapshot -> {
             boolean initialSetupDone = documentSnapshot.contains("SetupDate");
@@ -368,6 +452,7 @@ public class ViewJobActivity extends AppCompatActivity {
             options.add("Change Technician");
             options.add("Add/Change Email"); // ✅ Always show this option
             options.add("Delete");
+            options.add("Add Follow-Up");
 
             String[] jobOptions = options.toArray(new String[0]);
 
@@ -387,10 +472,84 @@ public class ViewJobActivity extends AppCompatActivity {
                         } else if (selectedOption.equals("Delete")) {
                             deleteJob(documentId);
                         }
+                        else if (selectedOption.equals("Add Follow-Up")) {
+                            showFollowUpDialog(documentId);
+                        }
                     })
                     .show();
         });
     }
+    private void showFollowUpDialog(String documentId) {
+        EditText input = new EditText(this);
+        input.setHint("dd/MM/yyyy [HH:mm or 930] or N/A");
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Add Follow-Up Date & Time")
+                .setView(input)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String rawInput = input.getText().toString().trim();
+
+                    if (rawInput.equalsIgnoreCase("N/A")) {
+                        saveFollowUpDate(documentId, "N/A");
+                        return;
+                    }
+
+                    String normalized = normalizeDateTimeInput(rawInput);
+                    if (normalized == null) {
+                        Toast.makeText(this, "Invalid format. Try dd/MM/yyyy or dd/MM/yyyy HHmm", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    saveFollowUpDate(documentId, normalized);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private String normalizeDateTimeInput(String input) {
+        input = input.trim();
+
+        if (input.matches("^\\d{2}/\\d{2}/\\d{4}$")) {
+            return input; // Date only
+        }
+
+        if (input.matches("^\\d{2}/\\d{2}/\\d{4}\\s\\d{1,2}:\\d{2}$")) {
+            return input; // Date + standard time
+        }
+
+        if (input.matches("^\\d{2}/\\d{2}/\\d{4}\\s\\d{3,4}$")) {
+            // Example: 26/03/2025 930 or 0930
+            try {
+                String[] parts = input.split("\\s");
+                String datePart = parts[0];
+                String timeRaw = parts[1];
+
+                if (timeRaw.length() == 3) timeRaw = "0" + timeRaw;
+                String hour = timeRaw.substring(0, 2);
+                String min = timeRaw.substring(2, 4);
+
+                return datePart + " " + hour + ":" + min;
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        return null; // Invalid format
+    }
+
+
+    private void saveFollowUpDate(String documentId, String dateTime) {
+        db.collection("JobWork").document(documentId)
+                .update("FollowUpDate", dateTime)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Follow-up saved", Toast.LENGTH_SHORT).show();
+                    loadAllJobs();
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Error saving follow-up", Toast.LENGTH_SHORT).show());
+    }
+
+
+
 
 
 
@@ -502,9 +661,44 @@ public class ViewJobActivity extends AppCompatActivity {
 
 
     private void applyInitialSetup(String documentId) {
-        String date = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-        db.collection("JobWork").document(documentId).update("SetupDate", date);
+        EditText input = new EditText(this);
+        input.setHint("Enter date (dd/MM/yyyy or dd/MM/yyyy HH:mm)");
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Set Initial Setup Date")
+                .setView(input)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String userInput = input.getText().toString().trim();
+                    if (isValidDateFormat(userInput)) {
+                        db.collection("JobWork").document(documentId)
+                                .update("SetupDate", userInput)
+                                .addOnSuccessListener(aVoid -> {
+                                    Toast.makeText(this, "Setup date saved", Toast.LENGTH_SHORT).show();
+                                    loadAllJobs();
+                                })
+                                .addOnFailureListener(e -> Toast.makeText(this, "Error saving setup date", Toast.LENGTH_SHORT).show());
+                    } else {
+                        Toast.makeText(this, "Invalid date format. Use dd/MM/yyyy or dd/MM/yyyy HH:mm", Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
+
+    private boolean isValidDateFormat(String input) {
+        List<String> formats = Arrays.asList("dd/MM/yyyy", "dd/MM/yyyy HH:mm");
+        for (String format : formats) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.getDefault());
+                sdf.setLenient(false);
+                sdf.parse(input); // throws exception if invalid
+                return true;
+            } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
+
 
     private void showPaymentDialog(String documentId) {
         LinearLayout layout = new LinearLayout(this);

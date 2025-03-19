@@ -2,12 +2,18 @@ package com.grpc.grpc;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.messaging.FirebaseMessaging;
 
 /**
  * MainActivity.java
@@ -59,11 +65,24 @@ public class MainActivity extends AppCompatActivity {
     private String userEmail, userName;
     private TextView welcomeTextView;
 
+
+    // You can use any request code value
+    private static final int REQUEST_NOTIFICATION_PERMISSION = 1;
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Request notification permission on Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATION_PERMISSION);
+        }
+
+
+
+
 
         userEmail = getIntent().getStringExtra("USER_EMAIL");
 
@@ -73,12 +92,34 @@ public class MainActivity extends AppCompatActivity {
             userName = extractNameFromEmail(userEmail);
         }
 
+        // Subscribe to topics AFTER userName is ready
+        FirebaseMessaging.getInstance().subscribeToTopic("all")
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("FCM", "✅ Subscribed to topic: all");
+                    } else {
+                        Log.e("FCM", "❌ Failed to subscribe", task.getException());
+                    }
+                });
+
+        // Subscribe to personal topic to allow exclusion from their own push notifications
+        FirebaseMessaging.getInstance().subscribeToTopic(userName.toLowerCase())
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("FCM", "✅ Subscribed to personal topic: " + userName.toLowerCase());
+                    } else {
+                        Log.e("FCM", "❌ Failed to subscribe to personal topic", task.getException());
+                    }
+                });
+
         welcomeTextView = findViewById(R.id.welcomeTextView);
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
         } else {
             Log.e("MainActivity", "welcomeTextView is NULL! Check XML ID.");
         }
+
+
 
         // Initialize Buttons
         InstantMessage = findViewById(R.id.InstantMessage);
@@ -165,5 +206,19 @@ public class MainActivity extends AppCompatActivity {
             return namePart.substring(0, 1).toUpperCase() + namePart.substring(1);
         }
         return "User";
+    }
+
+    // Optional: Handle result of permission request
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("Permissions", "✅ Notification permission granted!");
+            } else {
+                Log.w("Permissions", "❌ Notification permission denied.");
+            }
+        }
     }
 }

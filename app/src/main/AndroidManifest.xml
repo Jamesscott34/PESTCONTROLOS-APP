@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.WRITE_CALENDAR"/>
 
 
+
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -131,6 +133,9 @@
         <activity android:name=".RodentRoutineActivity"
             android:exported="false"/>
 
+        <activity android:name=".RodentActivityExternalRoutine"
+            android:exported="false"/>
+
         <activity android:name=".RodentCallOutExternalActivity"
             android:exported="false"/>
 
@@ -158,8 +163,6 @@
         <activity android:name=".StoredReportsActivity"
             android:exported="true"/>
 
-        <activity android:name=".AddMapActivity"
-            android:exported="true"/>
 
         <activity android:name=".GeneralQuotationActivity"
             android:exported="true"/>
@@ -176,6 +179,30 @@
 
         <activity android:name=".ERAViewActivity"
             android:exported="true"/>
+
+
+
+        <activity android:name=".GeneralReportActivity"
+            android:exported="true"/>
+
+        <activity android:name=".AddManagmentJobsActivity"
+            android:exported="true"/>
+
+        <activity android:name=".ViewManagmentJobActivity"
+            android:exported="true"/>
+
+
+
+
+        <!-- FCM Push Notification Service -->
+        <service
+            android:name="FirebaseMessagingServiceGRPC"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
 
 
         <!-- FileProvider Setup -->

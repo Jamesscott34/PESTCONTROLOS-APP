@@ -112,14 +112,14 @@ public class RodentRoutineActivity extends AppCompatActivity {
      */
     private String generateSiteInspection() {
         return "A routine inspection of the above site was carried out today. "
-                + "All monitors were inspected, and no evidence of rodent activity was detected.";
+                + "All monitors were inspected, and no evidence of rodent activity was detected. During this visit";
     }
 
     /**
      * Generates recommendations based on the visit type.
      */
     private String generateRecommendation() {
-        return "No specific recommendations were noted at this time.";
+        return "No specific recommendations were noted at this time of visit.";
     }
 
     /**

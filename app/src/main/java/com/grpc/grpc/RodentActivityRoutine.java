@@ -110,8 +110,8 @@ public class RodentActivityRoutine extends AppCompatActivity {
      */
     private String generateSiteInspection() {
         return "A routine inspection of the site was carried out today. " +
-                "All monitors were inspected and found to have light rodent activity. " +
-                "Monitors were replenished as needed.";
+                "All monitors were inspected and found to have light Internal rodent activity at this time of visit. " +
+                "Monitors were replenished as needed During this visit.";
     }
 
     /**
@@ -125,7 +125,7 @@ public class RodentActivityRoutine extends AppCompatActivity {
      * Determines follow-up actions based on the visit type.
      */
     private String generateFollowUp() {
-        return "A follow-up visit is scheduled within the next 5 - 7 working days.";
+        return "A follow-up visit is scheduled within the next 3-5 working days.";
     }
 
     /**

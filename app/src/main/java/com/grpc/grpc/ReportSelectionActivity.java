@@ -26,7 +26,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class ReportSelectionActivity extends AppCompatActivity {
 
-    private Button createReportButton, createQuotationButton, createBirdQuotationButton, buttonCreateGeneralQuotation;
+    private Button createReportButton, createQuotationButton, createBirdQuotationButton, buttonCreateGeneralQuotation,buttonGenericReport;
     private TextView welcomeTextView;
     private String userName;
 
@@ -48,6 +48,7 @@ public class ReportSelectionActivity extends AppCompatActivity {
         createQuotationButton = findViewById(R.id.buttonCreateQuotation);
         createBirdQuotationButton = findViewById(R.id.buttonCreateBirdQuotation);
         buttonCreateGeneralQuotation = findViewById(R.id.buttonCreateGeneralQuotation);
+        buttonGenericReport = findViewById(R.id.buttonGenericReport);
 
         // Navigate to ReportActivity
         createReportButton.setOnClickListener(v -> {
@@ -73,6 +74,13 @@ public class ReportSelectionActivity extends AppCompatActivity {
         // Navigate to GeneralQuotationActivity
         buttonCreateGeneralQuotation.setOnClickListener(v -> {
             Intent intent = new Intent(this, GeneralQuotationActivity.class);
+            intent.putExtra("USER_NAME", userName); // Pass username
+            startActivity(intent);
+
+        });
+        // Navigate to GenericReportActivity
+        buttonGenericReport.setOnClickListener(v -> {
+            Intent intent = new Intent(this, GeneralReportActivity.class);
             intent.putExtra("USER_NAME", userName); // Pass username
             startActivity(intent);
 
