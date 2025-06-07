@@ -4,14 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingTop="?attr/actionBarSize"
-    android:background="@drawable/bk">
+    android:background="@drawable/bk"
+    android:fillViewport="true"> <!-- important for centering -->
 
     <!-- ✅ Only one direct child: this LinearLayout -->
     <LinearLayout
         android:orientation="vertical"
         android:padding="16dp"
+        android:gravity="center"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent"> <!-- must be match_parent -->
 
         <!-- Top Spacer to avoid notch -->
         <View
