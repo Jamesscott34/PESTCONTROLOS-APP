@@ -45,7 +45,7 @@
             android:inputType="textPersonName"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary"/>
 
@@ -61,20 +61,20 @@
             android:scrollbars="vertical"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary"/>
 
-        <!-- Date -->
+        <!-- Date and Time -->
         <EditText
             android:id="@+id/dateInput"
-            android:hint="Enter Date"
+            android:hint="Enter Date and Time (e.g., 26/07/25 16:25)"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="date"
+            android:inputType="datetime"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary"/>
 
@@ -86,7 +86,7 @@
             android:layout_height="wrap_content"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary"/>
 
@@ -102,7 +102,7 @@
             android:scrollbars="vertical"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary"/>
 
@@ -118,7 +118,7 @@
             android:scrollbars="vertical"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary"/>
 
@@ -134,7 +134,7 @@
             android:scrollbars="vertical"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary"/>
 
@@ -146,7 +146,7 @@
             android:layout_height="wrap_content"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary"/>
 
@@ -159,7 +159,7 @@
             android:inputType="textPersonName"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary"/>
 

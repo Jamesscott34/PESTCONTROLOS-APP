@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
     // UI Components - Navigation buttons for all major features
     private Button reportButton, reportViewButton, contractsButton, quotesButton, logoutButton, 
                    CommisionButton, ServiceAgreementButton, JobButton, EnviromentButton, 
-                   InstantMessage, WebsiteButton;
+                   InstantMessage, WebsiteButton, WorkViewButton;
     
     // User information extracted from login
     private String userEmail, userName;
@@ -201,6 +201,7 @@ public class MainActivity extends AppCompatActivity {
         EnviromentButton = findViewById(R.id.EnviromentButton);
         logoutButton = findViewById(R.id.LogoutButton);
         WebsiteButton = findViewById(R.id.WebsiteButton);
+        WorkViewButton = findViewById(R.id.WorkViewButton);
     }
 
     /**
@@ -260,6 +261,11 @@ public class MainActivity extends AppCompatActivity {
         // Job assignment and tracking
         if (JobButton != null) {
             JobButton.setOnClickListener(view -> openActivity(JobsActivity.class));
+        }
+
+        // Work View Calendar and scheduling
+        if (WorkViewButton != null) {
+            WorkViewButton.setOnClickListener(view -> openActivity(WorkViewActivity.class));
         }
 
         // Secure logout - clears activity stack and returns to login

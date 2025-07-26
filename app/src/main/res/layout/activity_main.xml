@@ -109,9 +109,23 @@
                 android:layout_marginBottom="8dp" />
 
             <!-- ============================================================================
-                 CONTRACT & CUSTOMER MANAGEMENT
+                 WORK MANAGEMENT BUTTONS
                  ============================================================================
-                 Button for managing service contracts and customers
+                 Buttons for calendar and work scheduling
+                 ============================================================================ -->
+            
+            <!-- Work View Calendar -->
+            <Button
+                android:id="@+id/WorkViewButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Work View"
+                android:layout_marginBottom="8dp" />
+
+            <!-- ============================================================================
+                 CONTRACT MANAGEMENT BUTTONS
+                 ============================================================================
+                 Buttons for managing pest control contracts
                  ============================================================================ -->
             
             <!-- Manage service contracts and customer relationships -->

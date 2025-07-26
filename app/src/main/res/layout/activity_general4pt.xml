@@ -37,7 +37,7 @@
         android:hint="Enter Company Name"
         android:layout_marginBottom="12dp"
         android:padding="12dp"
-        android:background="?attr/colorSurface"
+        android:background="@drawable/edit_text_border"
         android:textColor="?android:attr/textColorPrimary"
         android:textColorHint="?android:attr/textColorSecondary" />
 
@@ -48,7 +48,7 @@
         android:hint="Enter Company Address"
         android:layout_marginBottom="12dp"
         android:padding="12dp"
-        android:background="?attr/colorSurface"
+        android:background="@drawable/edit_text_border"
         android:textColor="?android:attr/textColorPrimary"
         android:textColorHint="?android:attr/textColorSecondary" />
 
@@ -59,7 +59,9 @@
         android:hint="Enter Company Contact"
         android:layout_marginBottom="16dp"
         android:padding="12dp"
-        android:background="@android:drawable/editbox_background_normal" />
+        android:background="@drawable/edit_text_border"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary" />
 
     <!-- Generate PDF Button -->
     <Button

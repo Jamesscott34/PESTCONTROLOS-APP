@@ -77,7 +77,12 @@ import android.widget.EditText;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import android.app.AlertDialog;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -93,7 +98,7 @@ public class ReportActivity extends AppCompatActivity {
     // Core company and visit information
     private EditText nameInput, addressInput, dateInput, visitTypeInput;
     
-    // Technical details and findings
+    // Detailed report information
     private EditText siteInspectionInput, recommendationsInput, followUpInput,
             prepInput, techInput;
 
@@ -128,7 +133,6 @@ public class ReportActivity extends AppCompatActivity {
         // USER AUTHENTICATION & VALIDATION
         // ============================================================================
         
-        // Retrieve and validate user information from intent
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.isEmpty()) {
             Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
@@ -137,20 +141,63 @@ public class ReportActivity extends AppCompatActivity {
         }
 
         // ============================================================================
+        // EVENT DATA HANDLING - Pre-fill form if coming from WorkView
+        // ============================================================================
+        
+        String eventName = getIntent().getStringExtra("EVENT_NAME");
+        String eventType = getIntent().getStringExtra("EVENT_TYPE");
+        String eventAddress = getIntent().getStringExtra("EVENT_ADDRESS");
+        String eventIssue = getIntent().getStringExtra("EVENT_ISSUE");
+
+        // ============================================================================
         // UI COMPONENT INITIALIZATION
         // ============================================================================
         
-        // Initialize all input fields for report data entry
         initializeInputFields();
-        
-        // Set up action buttons and their click listeners
         initializeButtons();
-        
-        // Configure keyboard handling for optimal mobile experience
         setupKeyboardHandling();
-        
-        // Set current date as default for the date field
         setCurrentDate();
+        
+        // Set up welcome message with user's name
+        setupWelcomeMessage();
+
+        // ============================================================================
+        // PRE-FILL FORM DATA FROM EVENT
+        // ============================================================================
+        
+        if (eventName != null && !eventName.isEmpty()) {
+            nameInput.setText(eventName);
+        }
+        
+        if (eventAddress != null && !eventAddress.isEmpty()) {
+            addressInput.setText(eventAddress);
+        }
+        
+        if (eventType != null && !eventType.isEmpty()) {
+            String visitType = eventType.equals("contract") ? "Contract Visit" : "Job Visit";
+            visitTypeInput.setText(visitType);
+        }
+        
+        if (eventIssue != null && !eventIssue.isEmpty()) {
+            // Add issue to site inspection or recommendations
+            String currentInspection = siteInspectionInput.getText().toString();
+            if (currentInspection.isEmpty()) {
+                siteInspectionInput.setText("Issue: " + eventIssue);
+            } else {
+                siteInspectionInput.setText(currentInspection + "\n\nIssue: " + eventIssue);
+            }
+        }
+
+        // ============================================================================
+        // SAVE BUTTON FUNCTIONALITY
+        // ============================================================================
+        
+        // Save button - stores report data and generates PDF
+        saveButton.setOnClickListener(v -> {
+            ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            saveReport(db);
+        });
     }
 
     /**
@@ -167,6 +214,16 @@ public class ReportActivity extends AppCompatActivity {
         followUpInput = findViewById(R.id.followUpInput);
         prepInput = findViewById(R.id.prepInput);
         techInput = findViewById(R.id.techInput);
+    }
+
+    /**
+     * Set up welcome message with user's name
+     */
+    private void setupWelcomeMessage() {
+        android.widget.TextView welcomeTextView = findViewById(R.id.welcomeTextView);
+        if (welcomeTextView != null) {
+            welcomeTextView.setText("Welcome, " + userName + "!");
+        }
     }
 
     /**
@@ -228,6 +285,11 @@ public class ReportActivity extends AppCompatActivity {
         String currentDate = sdf.format(new Date());
         if (dateInput != null) {
             dateInput.setText(currentDate);
+        }
+        SimpleDateFormat timeSdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        String currentTime = timeSdf.format(new Date());
+        if (dateInput != null) { // Assuming dateInput is used for both date and time
+            dateInput.setText(currentDate + " " + currentTime);
         }
     }
 
@@ -313,8 +375,160 @@ public class ReportActivity extends AppCompatActivity {
                         !selectedImageUris.isEmpty() ? selectedImageUris : null
                 );
             }
+            
+            // Show Firebase folder selection popup after successful save
+            showFirebaseFolderSelectionPopup();
         } else {
             Toast.makeText(this, "Error Saving Report!", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /**
+     * Shows Firebase folder selection popup for uploading the saved report
+     */
+    private void showFirebaseFolderSelectionPopup() {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageRef = storage.getReference();
+
+        storageRef.listAll().addOnSuccessListener(listResult -> {
+            List<String> folderList = new ArrayList<>();
+            for (StorageReference prefix : listResult.getPrefixes()) {
+                String folderName = prefix.getName();
+                // Only show Reports folders (Reports25, Reports26, etc.)
+                if (folderName.matches("Reports\\d+")) {
+                    folderList.add(folderName);
+                }
+            }
+
+            if (folderList.isEmpty()) {
+                Toast.makeText(this, "No Reports folders found.", Toast.LENGTH_SHORT).show();
+                clearInputFields();
+                return;
+            }
+
+            // Convert list to array for AlertDialog
+            String[] foldersArray = folderList.toArray(new String[0]);
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Select Reports Folder");
+            builder.setMessage("Choose where to save your report:");
+            builder.setItems(foldersArray, (dialog, which) -> {
+                String selectedFolder = foldersArray[which];
+                showSubFolderSelectionDialog(selectedFolder);
+            });
+
+            builder.setNegativeButton("Cancel", (dialog, which) -> {
+                clearInputFields();
+                dialog.dismiss();
+            });
+            builder.show();
+
+        }).addOnFailureListener(e ->
+                Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    /**
+     * Shows subfolder selection dialog after selecting a parent folder
+     *
+     * @param parentFolder The selected parent folder
+     */
+    private void showSubFolderSelectionDialog(String parentFolder) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference parentFolderRef = storage.getReference().child(parentFolder);
+
+        parentFolderRef.listAll().addOnSuccessListener(listResult -> {
+            List<String> subFolderList = new ArrayList<>();
+            for (StorageReference prefix : listResult.getPrefixes()) {
+                subFolderList.add(prefix.getName());
+            }
+
+            if (subFolderList.isEmpty()) {
+                Toast.makeText(this, "No subfolders found. Uploading directly to " + parentFolder, Toast.LENGTH_SHORT).show();
+                uploadReportToFirebase(parentFolder);
+                return;
+            }
+
+            // Show subfolder selection dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Select Subfolder in " + parentFolder);
+            builder.setItems(subFolderList.toArray(new String[0]), (dialog, which) -> {
+                String selectedSubFolder = subFolderList.get(which);
+                uploadReportToFirebase(parentFolder + "/" + selectedSubFolder);
+            });
+
+            builder.setNegativeButton("Cancel", (dialog, which) -> {
+                clearInputFields();
+                dialog.dismiss();
+            });
+            builder.show();
+
+        }).addOnFailureListener(e ->
+                Toast.makeText(this, "Failed to load subfolders: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    /**
+     * Uploads the generated report to Firebase Storage
+     *
+     * @param folderPath The path in Firebase Storage where the report should be saved
+     */
+    private void uploadReportToFirebase(String folderPath) {
+        // Find the generated PDF file
+        File reportsFolder = new File(getExternalFilesDir(null), "GRPEST REPORTS");
+        if (!reportsFolder.exists()) {
+            Toast.makeText(this, "Report folder not found!", Toast.LENGTH_SHORT).show();
+            clearInputFields();
+            return;
+        }
+
+        // Look for the most recent PDF file (the one we just generated)
+        File[] files = reportsFolder.listFiles((dir, name) -> name.endsWith(".pdf"));
+        if (files == null || files.length == 0) {
+            Toast.makeText(this, "No PDF report found to upload!", Toast.LENGTH_SHORT).show();
+            clearInputFields();
+            return;
+        }
+
+        // Get the most recent file
+        File latestFile = files[files.length - 1];
+        for (File file : files) {
+            if (file.lastModified() > latestFile.lastModified()) {
+                latestFile = file;
+            }
+        }
+
+        // Upload to Firebase
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageReference = storage.getReference();
+        StorageReference fileRef = storageReference.child(folderPath + "/" + latestFile.getName());
+
+        UploadTask uploadTask = fileRef.putFile(Uri.fromFile(latestFile));
+        uploadTask.addOnSuccessListener(taskSnapshot -> {
+            Toast.makeText(this, "Report uploaded successfully to " + folderPath, Toast.LENGTH_SHORT).show();
+            clearInputFields();
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            clearInputFields();
+        });
+    }
+
+    /**
+     * Clears all input fields after successful save and upload
+     */
+    private void clearInputFields() {
+        nameInput.setText("");
+        addressInput.setText("");
+        dateInput.setText("");
+        visitTypeInput.setText("");
+        siteInspectionInput.setText("");
+        recommendationsInput.setText("");
+        followUpInput.setText("");
+        prepInput.setText("");
+        techInput.setText("");
+        selectedImageUris.clear();
+        
+        // Set current date as default
+        setCurrentDate();
     }
 }

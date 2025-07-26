@@ -46,11 +46,18 @@ public class StoredReportsActivity extends AppCompatActivity {
     private List<String> folderList = new ArrayList<>();
     private Button buttonBack;
     private String selectedParentFolder = null; // Keeps track of the currently selected parent folder
+    private String userName; // User name for permission checking
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_stored_reports);
+
+        // Get user name from intent
+        userName = getIntent().getStringExtra("USER_NAME");
+        if (userName == null) {
+            userName = "Unknown";
+        }
 
         folderRecyclerView = findViewById(R.id.folderRecyclerView);
         folderRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -202,7 +209,7 @@ public class StoredReportsActivity extends AppCompatActivity {
             // Set up RecyclerView
             resultsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
             SearchResultsAdapter adapter = new SearchResultsAdapter(fileList, selectedItem -> {
-                viewFile(folderPath, selectedItem);
+                showFileOptions(folderPath, selectedItem);
             });
             resultsRecyclerView.setAdapter(adapter);
             
@@ -231,6 +238,55 @@ public class StoredReportsActivity extends AppCompatActivity {
             builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
         }
         builder.show();
+    }
+
+    /**
+     * Shows file options dialog (View/Delete for James)
+     */
+    private void showFileOptions(String folderPath, String fileName) {
+        if ("james".equalsIgnoreCase(userName)) {
+            // James can view or delete files
+            String[] options = {"View", "Delete"};
+            new AlertDialog.Builder(this)
+                .setTitle("File Options")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            viewFile(folderPath, fileName);
+                            break;
+                        case 1:
+                            deleteFile(folderPath, fileName);
+                            break;
+                    }
+                })
+                .show();
+        } else {
+            // Other users can only view files
+            viewFile(folderPath, fileName);
+        }
+    }
+
+    /**
+     * Deletes a file from Firebase Storage
+     */
+    private void deleteFile(String folderPath, String fileName) {
+        new AlertDialog.Builder(this)
+            .setTitle("Delete File")
+            .setMessage("Are you sure you want to delete '" + fileName + "'? This action cannot be undone.")
+            .setPositiveButton("Delete", (dialog, which) -> {
+                FirebaseStorage storage = FirebaseStorage.getInstance();
+                StorageReference fileRef = storage.getReference().child(folderPath + "/" + fileName);
+
+                fileRef.delete().addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "File deleted successfully!", Toast.LENGTH_SHORT).show();
+                    // Refresh the file list
+                    loadFilesFromFolder(folderPath);
+                }).addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to delete file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     /**

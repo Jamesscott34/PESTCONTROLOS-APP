@@ -140,6 +140,9 @@ public class ContractsActivity extends AppCompatActivity {
         // Initialize all navigation and action buttons
         initializeButtons();
         
+        // Set up welcome message with user's name
+        setupWelcomeMessage();
+        
         // Set up click listeners for all button actions
         setupButtonClickListeners();
     }
@@ -153,6 +156,16 @@ public class ContractsActivity extends AppCompatActivity {
         viewContractButton = findViewById(R.id.ViewContractButton);
         behindsListButton = findViewById(R.id.BehindsListButton);
         viewBehindsButton = findViewById(R.id.ViewBehindsButton);
+    }
+
+    /**
+     * Set up the welcome message TextView with the user's name
+     */
+    private void setupWelcomeMessage() {
+        android.widget.TextView welcomeTextView = findViewById(R.id.welcomeTextView);
+        if (welcomeTextView != null) {
+            welcomeTextView.setText("Welcome, " + userName + "!");
+        }
     }
 
     /**

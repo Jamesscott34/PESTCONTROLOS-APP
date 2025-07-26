@@ -78,6 +78,24 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Work View Activity - Calendar and work scheduling -->
+        <activity
+            android:name=".WorkViewActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
+
+        <!-- Add Job From Calendar Activity -->
+        <activity
+            android:name=".AddJobFromCalendarActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
+
+        <!-- Add Follow-up Activity -->
+        <activity
+            android:name=".AddFollowUpActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
+
         <!-- ============================================================================
              REPORT MANAGEMENT ACTIVITIES
              ============================================================================

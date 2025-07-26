@@ -17,20 +17,28 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:background="@android:color/transparent" />
 
-    <!-- Welcome Message -->
-    <TextView
-        android:id="@+id/welcomeTextView"
+    <!-- Main Content Container -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Welcome, User!"
-        android:textSize="24sp"
-        android:textStyle="bold"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="16dp"
-        android:textColor="?android:attr/textColorPrimary" />
+        android:padding="16dp">
 
-    <!-- Add Contract Button -->
+        <!-- Welcome Message -->
+        <TextView
+            android:id="@+id/welcomeTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Welcome, User!"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <!-- Add Contract Button -->
         <Button
             android:id="@+id/AddContractButton"
             android:layout_width="wrap_content"
@@ -66,6 +74,5 @@
             android:textSize="18sp"
             android:layout_marginBottom="16dp" />
     </LinearLayout>
-
 
 </FrameLayout>
