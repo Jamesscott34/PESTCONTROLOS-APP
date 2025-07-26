@@ -23,31 +23,56 @@
             android:id="@+id/addressInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Customer Address" />
+            android:hint="Customer Address"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
         <EditText
             android:id="@+id/quoteDescriptionInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Quote Breakdown" />
+            android:hint="Quote Breakdown"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
         <EditText
             android:id="@+id/userEmailInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="User Email" />
+            android:hint="User Email"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
         <EditText
             android:id="@+id/mobileNumberInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Mobile Number" />
+            android:hint="Mobile Number"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
         <EditText
             android:id="@+id/itemDescriptionInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Item Description" />
+            android:hint="Item Description"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
         <EditText
             android:id="@+id/itemPriceInput"

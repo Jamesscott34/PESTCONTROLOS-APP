@@ -2,7 +2,10 @@ package com.grpc.grpc;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -21,6 +24,7 @@ import java.util.List;
  *
  * This activity allows users to browse and manage stored reports in Firebase Storage.
  * Users can navigate through parent folders, access subfolders, and view stored report files.
+ * Updated: Added search functionality to folder and file selection dialogs.
  *
  * Features:
  * - Loads parent folders from Firebase Storage
@@ -29,6 +33,7 @@ import java.util.List;
  * - Allows users to open and view reports in PDF format
  * - Excludes backup folders from the listing
  * - Provides user-friendly dialogs for file selection
+ * - NEW: Search bars in folder and file selection dialogs
  *
  * Author: James Scott
  */
@@ -86,7 +91,7 @@ public class StoredReportsActivity extends AppCompatActivity {
     }
 
     /**
-     * Loads subfolders within the selected parent folder.
+     * Loads subfolders within the selected parent folder with search functionality.
      */
     private void loadSubFolders(String parentFolder) {
         selectedParentFolder = parentFolder; // Track the current parent folder
@@ -103,17 +108,8 @@ public class StoredReportsActivity extends AppCompatActivity {
                 // If no subfolders exist, display the files instead
                 loadFilesFromFolder(parentFolder);
             } else {
-                // Show subfolder selection dialog
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Select Subfolder");
-
-                builder.setItems(subFolderList.toArray(new String[0]), (dialog, which) -> {
-                    String selectedSubFolder = subFolderList.get(which);
-                    loadFilesFromFolder(parentFolder + "/" + selectedSubFolder);
-                });
-
-                builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-                builder.show();
+                // Show subfolder selection dialog with search
+                showFolderSelectionDialog(subFolderList, parentFolder);
             }
 
         }).addOnFailureListener(e ->
@@ -122,7 +118,52 @@ public class StoredReportsActivity extends AppCompatActivity {
     }
 
     /**
-     * Loads files from the selected subfolder.
+     * Shows folder selection dialog with search functionality.
+     */
+    private void showFolderSelectionDialog(List<String> subFolderList, String parentFolder) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Subfolder");
+
+        // Create custom layout for search and results
+        android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_search_with_list, null);
+        EditText searchBar = dialogView.findViewById(R.id.searchBar);
+        RecyclerView resultsRecyclerView = dialogView.findViewById(R.id.resultsRecyclerView);
+        
+        // Set up RecyclerView
+        resultsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        SearchResultsAdapter adapter = new SearchResultsAdapter(subFolderList, selectedItem -> {
+            loadFilesFromFolder(parentFolder + "/" + selectedItem);
+        });
+        resultsRecyclerView.setAdapter(adapter);
+        
+        builder.setView(dialogView);
+
+        // Add search functionality
+        searchBar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                List<String> filteredList = new ArrayList<>();
+                for (String folder : subFolderList) {
+                    if (folder.toLowerCase().contains(s.toString().toLowerCase())) {
+                        filteredList.add(folder);
+                    }
+                }
+                adapter.updateResults(filteredList);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        builder.show();
+    }
+
+    /**
+     * Loads files from the selected subfolder with search functionality.
      */
     private void loadFilesFromFolder(String folderPath) {
         FirebaseStorage storage = FirebaseStorage.getInstance();
@@ -135,23 +176,61 @@ public class StoredReportsActivity extends AppCompatActivity {
             }
 
             runOnUiThread(() -> {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Files in " + folderPath);
-
-                if (fileList.isEmpty()) {
-                    builder.setMessage("No files found in this folder.")
-                            .setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
-                } else {
-                    builder.setItems(fileList.toArray(new String[0]), (dialog, which) -> {
-                        String selectedFile = fileList.get(which);
-                        viewFile(folderPath, selectedFile);
-                    });
-                }
-                builder.show();
+                showFileSelectionDialog(fileList, folderPath);
             });
         }).addOnFailureListener(e ->
                 runOnUiThread(() -> Toast.makeText(this, "Failed to load files: " + e.getMessage(), Toast.LENGTH_SHORT).show())
         );
+    }
+
+    /**
+     * Shows file selection dialog with search functionality.
+     */
+    private void showFileSelectionDialog(List<String> fileList, String folderPath) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Files in " + folderPath);
+
+        if (fileList.isEmpty()) {
+            builder.setMessage("No files found in this folder.")
+                    .setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
+        } else {
+            // Create custom layout for search and results
+            android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_search_with_list, null);
+            EditText searchBar = dialogView.findViewById(R.id.searchBar);
+            RecyclerView resultsRecyclerView = dialogView.findViewById(R.id.resultsRecyclerView);
+            
+            // Set up RecyclerView
+            resultsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+            SearchResultsAdapter adapter = new SearchResultsAdapter(fileList, selectedItem -> {
+                viewFile(folderPath, selectedItem);
+            });
+            resultsRecyclerView.setAdapter(adapter);
+            
+            builder.setView(dialogView);
+
+            // Add search functionality
+            searchBar.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    List<String> filteredList = new ArrayList<>();
+                    for (String file : fileList) {
+                        if (file.toLowerCase().contains(s.toString().toLowerCase())) {
+                            filteredList.add(file);
+                        }
+                    }
+                    adapter.updateResults(filteredList);
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+
+            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        }
+        builder.show();
     }
 
     /**

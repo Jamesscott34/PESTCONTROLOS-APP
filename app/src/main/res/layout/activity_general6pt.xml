@@ -26,7 +26,8 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:text="Welcome!"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="16dp"
+        android:textColor="?android:attr/textColorPrimary" />
 
     <!-- Input Fields -->
     <EditText
@@ -36,7 +37,9 @@
         android:hint="Enter Company Name"
         android:layout_marginBottom="12dp"
         android:padding="12dp"
-        android:background="@android:drawable/editbox_background_normal" />
+        android:background="?attr/colorSurface"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary" />
 
     <EditText
         android:id="@+id/companyAddressInput"
@@ -45,7 +48,9 @@
         android:hint="Enter Company Address"
         android:layout_marginBottom="12dp"
         android:padding="12dp"
-        android:background="@android:drawable/editbox_background_normal" />
+        android:background="?attr/colorSurface"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary" />
 
     <EditText
         android:id="@+id/companyContactInput"

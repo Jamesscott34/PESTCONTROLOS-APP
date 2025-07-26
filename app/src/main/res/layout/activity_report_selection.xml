@@ -29,7 +29,8 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="24dp"
+        android:textColor="?android:attr/textColorPrimary" />
 
     <!-- Button to create a new report -->
     <Button

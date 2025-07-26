@@ -8,8 +8,7 @@
     android:padding="16dp"
     android:background="@color/white">
 
-
-    <!-- Top Spacer to avoid notch -->
+    <!-- Top Spacer to avoid notch/camera -->
     <View
         android:id="@+id/statusSpacer"
         android:layout_width="0dp"
@@ -28,7 +27,8 @@
         android:textSize="22sp"
         android:textStyle="bold"
         android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
+        android:textColor="?android:attr/textColorPrimary"
+        app:layout_constraintTop_toBottomOf="@id/statusSpacer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="12dp" />

@@ -8,21 +8,16 @@
     android:background="@drawable/bk"
     android:padding="16dp">
 
-
-    <!-- Top Spacer to avoid notch -->
-    <View
-        android:id="@+id/statusSpacer"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:background="@android:color/transparent" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
+
+        <!-- Top Spacer to avoid notch -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/transparent" />
 
         <!-- Search Bar -->
         <EditText

@@ -16,83 +16,141 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 /**
- * MainActivity.java
- *
- * This is the central hub of the GRPest Control application, providing access to all key features.
- * Users can navigate through various functionalities including report generation, contract management,
- * job assignments, service agreements, environmental risk assessments, messaging, and lead tracking.
- *
- * Features:
- * - **User Authentication & Personalization**:
- *   - Retrieves the user's email and extracts their name for a personalized welcome message.
- * - **Report Management**:
- *   - Create, view, and manage pest control reports.
- *   - Supports different report types, including rodent control, bird control, and general quotations.
- *   - Stores reports locally and in Firebase for easy access.
- * - **Contracts & Jobs**:
- *   - View, add, and manage service contracts.
- *   - Track contract status, update last visit dates, and generate contract-based reports.
- *   - Manage job assignments, including technician allocation, job status tracking, and WhatsApp notifications.
- * - **Quotations & Service Agreements**:
- *   - Generate professional quotations for pest control services with automatic VAT calculations.
- *   - Create and store structured service agreements for customers.
- * - **Leads & Commission Tracking**:
- *   - Generate and manage sales leads.
- *   - Assign contracts and jobs, track invoice payments, and manage commission calculations.
- * - **Environmental Risk Assessments (ERA)**:
- *   - Create Toxic and Non-Toxic ERA reports with structured data and digital signatures.
- * - **Messaging & Notifications**:
- *   - Provides instant messaging between staff members.
- *   - Supports job notifications via WhatsApp.
- * - **Cloud Integration**:
- *   - Uses Firebase Firestore for contract, job, lead, and report management.
- *   - Stores reports and agreements in Firebase Storage for remote access.
- * - **Navigation & External Links**:
- *   - Allows users to open Google Maps for job locations.
- *   - Directs users to the company website for additional information.
- * - **User Management & Security**:
- *   - Supports admin users (James, Ian, Kristine) with special permissions for contract and lead management.
- *   - Ensures secure login with Firebase Authentication.
- *   - Provides a logout button to securely exit the application.
- *
+ * ============================================================================
+ * GRPest Control Application - Main Activity
+ * ============================================================================
+ * 
+ * PROJECT OVERVIEW:
+ * This is a comprehensive pest control management application for Good Riddance 
+ * Pest Control (GRPC). The app serves as a complete business management solution
+ * for pest control operations, allowing technicians and administrators to manage
+ * all aspects of the business from a single mobile application.
+ * 
+ * CORE FUNCTIONALITIES:
+ * 
+ * 1. REPORT MANAGEMENT SYSTEM
+ *    - Generate detailed pest control reports for various services
+ *    - Support for rodent control, bird control, and general pest treatments
+ *    - PDF generation with professional formatting and company branding
+ *    - Local and cloud storage for easy access and sharing
+ * 
+ * 2. CONTRACT & CUSTOMER MANAGEMENT
+ *    - Track service contracts with automatic renewal reminders
+ *    - Manage customer information and service history
+ *    - Generate "behinds list" reports for overdue contracts
+ *    - View contract-specific reports and documentation
+ * 
+ * 3. JOB ASSIGNMENT & TRACKING
+ *    - Assign jobs to technicians with location tracking
+ *    - Real-time job status updates and completion tracking
+ *    - WhatsApp integration for instant job notifications
+ *    - Route optimization and scheduling capabilities
+ * 
+ * 4. QUOTATION & SERVICE AGREEMENTS
+ *    - Professional quotation generation with automatic VAT calculations
+ *    - Service agreement templates with digital signatures
+ *    - Customer approval tracking and contract management
+ * 
+ * 5. SALES & COMMISSION TRACKING
+ *    - Lead generation and management system
+ *    - Commission calculation and tracking for sales staff
+ *    - Invoice management and payment tracking
+ *    - Performance analytics and reporting
+ * 
+ * 6. ENVIRONMENTAL COMPLIANCE
+ *    - Toxic and Non-Toxic Environmental Risk Assessments (ERA)
+ *    - Regulatory compliance documentation
+ *    - Safety procedure tracking and certification
+ * 
+ * 7. COMMUNICATION & NOTIFICATIONS
+ *    - Internal messaging system for staff communication
+ *    - Push notifications for job assignments and updates
+ *    - WhatsApp integration for customer communications
+ * 
+ * 8. CLOUD INTEGRATION & DATA MANAGEMENT
+ *    - Firebase Firestore for real-time data synchronization
+ *    - Firebase Storage for document and report storage
+ *    - Multi-user access with role-based permissions
+ *    - Offline capability with local data caching
+ * 
+ * TECHNICAL ARCHITECTURE:
+ * - Android Native Application (Java)
+ * - Firebase Backend (Firestore + Storage + Authentication)
+ * - PDF Generation using iText7 library
+ * - Real-time data synchronization
+ * - Push notification system
+ * - External API integrations (WhatsApp, Maps)
+ * 
+ * USER ROLES & PERMISSIONS:
+ * - Admin Users (James, Ian, Kristine): Full access to all features
+ * - Technicians: Job assignment, report generation, customer management
+ * - Sales Staff: Lead management, quotation generation, commission tracking
+ * 
+ * SECURITY FEATURES:
+ * - Firebase Authentication for secure login
+ * - Role-based access control
+ * - Encrypted data transmission
+ * - Secure document storage
+ * 
+ * EXTERNAL INTEGRATIONS:
+ * - Google Maps for location services
+ * - WhatsApp Business API for communications
+ * - Company website integration
+ * - Email and SMS notifications
+ * 
  * Author: James Scott
+ * Company: Good Riddance Pest Control
+ * Version: 1.0
+ * Last Updated: 2024
+ * ============================================================================
  */
-
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button reportButton, reportViewButton, contractsButton, quotesButton, logoutButton, CommisionButton, ServiceAgreementButton, JobButton, EnviromentButton, InstantMessage, WebsiteButton;
+    // UI Components - Navigation buttons for all major features
+    private Button reportButton, reportViewButton, contractsButton, quotesButton, logoutButton, 
+                   CommisionButton, ServiceAgreementButton, JobButton, EnviromentButton, 
+                   InstantMessage, WebsiteButton;
+    
+    // User information extracted from login
     private String userEmail, userName;
+    
+    // Welcome message display
     private TextView welcomeTextView;
 
-
-    // You can use any request code value
+    // Permission request code for notification access
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1;
 
+    /**
+     * Main entry point of the application
+     * Sets up the user interface, handles user authentication,
+     * and initializes all navigation buttons and features
+     */
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Request notification permission on Android 13+
+        // Request notification permission for Android 13+ devices
+        // This is required for push notifications to work properly
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATION_PERMISSION);
         }
 
-
-
-
-
+        // Extract user information from login intent
         userEmail = getIntent().getStringExtra("USER_EMAIL");
 
+        // Set default user name if email is not provided
         if (userEmail == null || userEmail.isEmpty()) {
             userName = "User";
         } else {
+            // Extract name from email address (e.g., "james@grpc.com" -> "James")
             userName = extractNameFromEmail(userEmail);
         }
 
-        // Subscribe to topics AFTER userName is ready
+        // Subscribe to Firebase Cloud Messaging topics for push notifications
+        // "all" topic receives general notifications
         FirebaseMessaging.getInstance().subscribeToTopic("all")
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -103,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
                 });
 
         // Subscribe to personal topic to allow exclusion from their own push notifications
+        // This prevents users from receiving notifications they sent themselves
         FirebaseMessaging.getInstance().subscribeToTopic(userName.toLowerCase())
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -112,6 +171,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
+        // Set up welcome message with user's name
         welcomeTextView = findViewById(R.id.welcomeTextView);
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
@@ -119,9 +179,17 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MainActivity", "welcomeTextView is NULL! Check XML ID.");
         }
 
+        // Initialize all navigation buttons
+        initializeButtons();
+        
+        // Set up click listeners for all buttons
+        setupButtonClickListeners();
+    }
 
-
-        // Initialize Buttons
+    /**
+     * Initialize all UI button components by finding them in the layout
+     */
+    private void initializeButtons() {
         InstantMessage = findViewById(R.id.InstantMessage);
         reportButton = findViewById(R.id.ReportButton);
         reportViewButton = findViewById(R.id.ReportViewButton);
@@ -133,39 +201,54 @@ public class MainActivity extends AppCompatActivity {
         EnviromentButton = findViewById(R.id.EnviromentButton);
         logoutButton = findViewById(R.id.LogoutButton);
         WebsiteButton = findViewById(R.id.WebsiteButton);
+    }
 
+    /**
+     * Set up click listeners for all navigation buttons
+     * Each button opens a specific activity with user information passed along
+     */
+    private void setupButtonClickListeners() {
+        // Instant messaging system for staff communication
         if (InstantMessage != null) {
             InstantMessage.setOnClickListener(view -> openActivity(MessagingActivity.class));
         }
 
+        // Company website access
         if (WebsiteButton != null) {
             WebsiteButton.setOnClickListener(view -> openWebsite());
         }
 
+        // Report generation and management
         if (reportButton != null) {
             reportButton.setOnClickListener(view -> openActivity(ReportSelectionActivity.class));
         }
 
+        // View and manage stored reports
         if (reportViewButton != null) {
             reportViewButton.setOnClickListener(view -> openActivity(PDFSelectionActivity.class));
         }
 
+        // Contract management and customer tracking
         if (contractsButton != null) {
             contractsButton.setOnClickListener(view -> openActivity(ContractsActivity.class));
         }
 
+        // Quotation generation and management
         if (quotesButton != null) {
             quotesButton.setOnClickListener(view -> openActivity(QuotesActivity.class));
         }
 
+        // Sales leads and commission tracking
         if (CommisionButton != null) {
             CommisionButton.setOnClickListener(view -> openActivity(LeadsSelectionActivity.class));
         }
 
+        // Environmental Risk Assessments (ERA)
         if (EnviromentButton != null) {
             EnviromentButton.setOnClickListener(view -> openActivity(EnvironmentSelectionActivity.class));
         }
 
+        // Service agreement creation and management
         if (ServiceAgreementButton != null) {
             ServiceAgreementButton.setOnClickListener(view -> {
                 Intent intent = new Intent(MainActivity.this, ServiceAgreementActivity.class);
@@ -174,10 +257,12 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        // Job assignment and tracking
         if (JobButton != null) {
             JobButton.setOnClickListener(view -> openActivity(JobsActivity.class));
         }
 
+        // Secure logout - clears activity stack and returns to login
         if (logoutButton != null) {
             logoutButton.setOnClickListener(view -> {
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
@@ -188,6 +273,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Generic method to open activities with user information
+     * Passes the current user's name to the target activity
+     * 
+     * @param targetActivity The activity class to open
+     */
     private void openActivity(Class<?> targetActivity) {
         Log.d("MainActivity", "Opening " + targetActivity.getSimpleName() + " with USER_NAME: " + userName);
         Intent intent = new Intent(MainActivity.this, targetActivity);
@@ -195,11 +286,22 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    /**
+     * Opens the company website in the device's default browser
+     * Provides quick access to company information and resources
+     */
     private void openWebsite() {
         Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://grpcstaff.com"));
         startActivity(browserIntent);
     }
 
+    /**
+     * Extracts a user-friendly name from an email address
+     * Converts email format to display name (e.g., "james@grpc.com" -> "James")
+     * 
+     * @param email The email address to extract name from
+     * @return The extracted name with first letter capitalized
+     */
     private String extractNameFromEmail(String email) {
         if (email != null && email.contains("@")) {
             String namePart = email.split("@")[0];
@@ -208,10 +310,17 @@ public class MainActivity extends AppCompatActivity {
         return "User";
     }
 
-    // Optional: Handle result of permission request
+    /**
+     * Handles the result of permission requests
+     * Specifically handles notification permission for push notifications
+     * 
+     * @param requestCode The request code for the permission request
+     * @param permissions Array of requested permissions
+     * @param grantResults Array of permission grant results
+     */
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
+        @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {

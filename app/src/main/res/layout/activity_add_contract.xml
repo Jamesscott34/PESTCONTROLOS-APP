@@ -1,22 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
     android:background="@drawable/bk"
     android:paddingTop="?attr/actionBarSize">
-
-    <!-- Top Spacer to avoid notch -->
-    <View
-        android:id="@+id/statusSpacer"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:background="@android:color/transparent" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,52 +13,72 @@
         android:orientation="vertical"
         android:gravity="center">
 
-        <!-- Input field for Name -->
+        <!-- Moved View inside LinearLayout -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/transparent" />
+
         <EditText
             android:id="@+id/editTextName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Name"
             android:inputType="text"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            android:padding="12dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
-        <!-- Input field for Address -->
         <EditText
             android:id="@+id/editTextAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Address"
             android:inputType="textPostalAddress"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            android:padding="12dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
-        <!-- Input field for Email -->
         <EditText
             android:id="@+id/editTextEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Email"
             android:inputType="textEmailAddress"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            android:padding="12dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
-        <!-- Input field for Contact -->
         <EditText
             android:id="@+id/editTextContact"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Contact"
             android:inputType="phone"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            android:padding="12dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
-        <!-- Input field for Visits -->
         <EditText
             android:id="@+id/editTextVisits"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Visits"
             android:inputType="number"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            android:padding="12dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
-        <!-- Add Button -->
         <Button
             android:id="@+id/buttonAdd"
             android:layout_width="match_parent"
@@ -77,7 +86,6 @@
             android:text="Add to Database"
             android:layout_marginBottom="16dp" />
 
-        <!-- Back Button -->
         <Button
             android:id="@+id/buttonBack"
             android:layout_width="match_parent"

@@ -17,15 +17,20 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:background="@android:color/transparent" />
 
-    <!-- Main Content -->
-    <LinearLayout
+    <!-- Welcome Message -->
+    <TextView
+        android:id="@+id/welcomeTextView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
+        android:layout_height="wrap_content"
+        android:text="Welcome, User!"
+        android:textSize="24sp"
+        android:textStyle="bold"
         android:gravity="center"
-        android:padding="16dp">
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="16dp"
+        android:textColor="?android:attr/textColorPrimary" />
 
-        <!-- Add Contract Button -->
+    <!-- Add Contract Button -->
         <Button
             android:id="@+id/AddContractButton"
             android:layout_width="wrap_content"
@@ -40,6 +45,24 @@
             android:layout_width="wrap_content"
             android:layout_height="58dp"
             android:text="View Contracts"
+            android:textSize="18sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Behinds List Button -->
+        <Button
+            android:id="@+id/BehindsListButton"
+            android:layout_width="wrap_content"
+            android:layout_height="58dp"
+            android:text="Behinds List"
+            android:textSize="18sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- View Behinds Button -->
+        <Button
+            android:id="@+id/ViewBehindsButton"
+            android:layout_width="wrap_content"
+            android:layout_height="58dp"
+            android:text="View Behinds"
             android:textSize="18sp"
             android:layout_marginBottom="16dp" />
     </LinearLayout>

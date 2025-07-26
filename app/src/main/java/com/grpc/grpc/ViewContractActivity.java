@@ -31,57 +31,135 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import android.content.SharedPreferences;
 
-
 /**
- * ViewContractActivity.java
- *
- * This activity allows users to view, search, edit, update, and manage contracts stored in Firebase Firestore.
- * It retrieves contracts based on the logged-in user and provides options to update last visit dates, mark contracts as completed,
- * navigate to contract locations, and generate reports. Admin users (James, Ian, Kristine) can edit or delete contracts.
- *
- * Features:
- * - Loads and displays contracts dynamically from Firebase Firestore
- * - Provides search functionality to filter contracts by name
- * - Categorizes contracts as behind, due, or up-to-date based on visit dates
- * - Allows updating last visit dates and calculates the next visit date
- * - Supports marking contracts as completed with automatic updates
- * - Enables navigation to contract locations using Google Maps
- * - Allows administrators to edit, transfer, or delete contracts
- * - Generates routine, callout, and initial setup reports based on contract status
- *
+ * ============================================================================
+ * GRPest Control Application - Contract Management Activity
+ * ============================================================================
+ * 
+ * BUSINESS OVERVIEW:
+ * This activity serves as the central hub for contract management in the
+ * GRPest Control application. It provides comprehensive functionality for
+ * viewing, managing, and tracking service contracts with customers.
+ * 
+ * CORE FUNCTIONALITIES:
+ * 
+ * 1. CONTRACT DISPLAY & SEARCH
+ *    - Loads contracts from Firebase Firestore based on user permissions
+ *    - Real-time search functionality to filter contracts by name
+ *    - Color-coded contract status (behind, due, up-to-date)
+ *    - Dynamic contract list with detailed information
+ * 
+ * 2. CONTRACT STATUS TRACKING
+ *    - Automatic calculation of next visit dates
+ *    - Overdue contract identification and highlighting
+ *    - Visit date tracking and updates
+ *    - Contract completion status management
+ * 
+ * 3. ADMINISTRATIVE FEATURES
+ *    - Contract editing and deletion (admin users only)
+ *    - Contract transfer between technicians
+ *    - Bulk contract management operations
+ *    - Contract statistics and reporting
+ * 
+ * 4. REPORT GENERATION
+ *    - Routine pest control reports
+ *    - Call-out service reports
+ *    - Initial setup reports
+ *    - Contract-specific report viewing
+ * 
+ * 5. INTEGRATION FEATURES
+ *    - Google Maps integration for location navigation
+ *    - WhatsApp integration for customer communication
+ *    - Firebase Storage for report management
+ *    - Real-time data synchronization
+ * 
+ * 6. BEHINDS LIST MANAGEMENT
+ *    - Automatic overdue contract detection
+ *    - PDF generation for behinds list reports
+ *    - Special handling for Kristine user (dual collection access)
+ *    - Contract-specific report viewing
+ * 
+ * USER ROLES & PERMISSIONS:
+ * - Admin Users (James, Ian, Kristine): Full contract management
+ * - Technicians: View and update their assigned contracts
+ * - Sales Staff: View contract information and generate reports
+ * 
+ * TECHNICAL FEATURES:
+ * - Firebase Firestore for real-time data
+ * - Dynamic UI generation for contract display
+ * - Date calculation and validation
+ * - PDF generation and storage
+ * - External app integration (Maps, WhatsApp)
+ * 
  * Author: James Scott
+ * Company: Good Riddance Pest Control
+ * Version: 1.0
+ * Last Updated: 2024
+ * ============================================================================
  */
-
 
 public class ViewContractActivity extends AppCompatActivity {
 
+    // UI Components for contract management interface
     private EditText searchBar;
     private LinearLayout contractsContainer;
     private Button backButton;
+    
+    // Firebase Firestore instance for data management
     private FirebaseFirestore db;
+    
+    // Current user information for permissions and data filtering
     private String userName;
+    
+    // Date formatting utility for consistent date display
     private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
+    /**
+     * Main entry point of the contract management activity
+     * Initializes the user interface and loads contract data
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_contract);
 
+        // Initialize Firebase Firestore for data operations
         db = FirebaseFirestore.getInstance();
+        
+        // Get user information from intent for permissions and data filtering
         userName = getIntent().getStringExtra("USER_NAME");
 
+        // Validate user information - required for proper functionality
         if (userName == null || userName.isEmpty()) {
             Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
+        // Initialize UI components
+        initializeUIComponents();
+        
+        // Load contracts from Firebase based on user permissions
+        loadContracts();
+        
+        // Set up navigation and search functionality
+        setupNavigationAndSearch();
+    }
+
+    /**
+     * Initialize all UI components by finding them in the layout
+     */
+    private void initializeUIComponents() {
         searchBar = findViewById(R.id.searchBar);
         contractsContainer = findViewById(R.id.contractsContainer);
         backButton = findViewById(R.id.backButton);
+    }
 
-        loadContracts();
-
+    /**
+     * Set up navigation back to contracts overview and search functionality
+     */
+    private void setupNavigationAndSearch() {
+        // Back button navigation to contracts overview
         backButton.setOnClickListener(view -> {
             Intent intent = new Intent(ViewContractActivity.this, ContractsActivity.class);
             intent.putExtra("USER_NAME", userName);
@@ -89,6 +167,7 @@ public class ViewContractActivity extends AppCompatActivity {
             finish();
         });
 
+        // Real-time search functionality for contract filtering
         searchBar.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -412,9 +491,24 @@ public class ViewContractActivity extends AppCompatActivity {
             return true; // Indicate that the long press was handled
         });
 
+        // Add "View Reports" button
+        Button viewReportsButton = new Button(this);
+        viewReportsButton.setText("View Reports");
+        viewReportsButton.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+        viewReportsButton.setOnClickListener(v -> {
+            Intent intent = new Intent(ViewContractActivity.this, ContractReportsActivity.class);
+            intent.putExtra("CONTRACT_NAME", name);
+            intent.putExtra("USER_NAME", userName);
+            startActivity(intent);
+        });
+
         // ✅ Add views to contract box
         contractBox.addView(contractDetails);
         contractBox.addView(markDoneCheckBox);  // ✅ Add checkbox
+        contractBox.addView(viewReportsButton); // Add View Reports button
 
         // ✅ Add the contract box to the container
         contractsContainer.addView(contractBox);

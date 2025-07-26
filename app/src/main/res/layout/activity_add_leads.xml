@@ -8,17 +8,17 @@
     android:padding="16dp"
     android:paddingTop="?attr/actionBarSize">
 
-    <!-- Top Spacer to avoid notch -->
+    <!-- Top Spacer -->
     <View
         android:id="@+id/statusSpacer"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
+        android:background="@android:color/transparent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:background="@android:color/transparent" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Welcome Message -->
+    <!-- Welcome Text -->
     <TextView
         android:id="@+id/welcomeTextView"
         android:layout_width="match_parent"
@@ -27,96 +27,105 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/statusSpacer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="16dp"
+        android:textColor="?android:attr/textColorPrimary" />
 
-    <!-- Group of input fields and buttons -->
-    <LinearLayout
+    <!-- Scrollable Form -->
+    <ScrollView
+        android:id="@+id/scrollForm"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:gravity="center_horizontal"
+        android:layout_height="0dp"
+        android:fillViewport="true"
         app:layout_constraintTop_toBottomOf="@id/welcomeTextView"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Premise Name -->
-        <EditText
-            android:id="@+id/premiseNameEditText"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Premise Name"
-            android:inputType="text"
-            android:layout_marginBottom="12dp" />
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <!-- Premise Address -->
-        <EditText
-            android:id="@+id/premiseAddressEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Premise Address"
-            android:inputType="text"
-            android:layout_marginBottom="12dp" />
+            <!-- Premise Name -->
+            <EditText
+                android:id="@+id/premiseNameEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Premise Name"
+                android:inputType="text"
+                android:layout_marginBottom="12dp" />
 
-        <!-- Reason -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Reason"
-            android:textSize="16sp"
-            android:layout_marginBottom="4dp" />
+            <!-- Premise Address -->
+            <EditText
+                android:id="@+id/premiseAddressEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Premise Address"
+                android:inputType="text"
+                android:layout_marginBottom="12dp" />
 
-        <Spinner
-            android:id="@+id/reasonSpinner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp" />
+            <!-- Reason -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Reason"
+                android:textSize="16sp"
+                android:layout_marginBottom="4dp" />
 
-        <!-- Price Quoted -->
-        <EditText
-            android:id="@+id/priceQuotedEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Price Quoted"
-            android:inputType="numberDecimal"
-            android:layout_marginBottom="12dp" />
+            <Spinner
+                android:id="@+id/reasonSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp" />
 
-        <!-- Commission -->
-        <TextView
-            android:id="@+id/commissionTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Commission: €0.00"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
+            <!-- Price Quoted -->
+            <EditText
+                android:id="@+id/priceQuotedEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Price Quoted"
+                android:inputType="numberDecimal"
+                android:layout_marginBottom="12dp" />
 
-        <!-- Date -->
-        <TextView
-            android:id="@+id/dateTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Date: "
-            android:textSize="16sp"
-            android:layout_marginBottom="16dp" />
+            <!-- Commission -->
+            <TextView
+                android:id="@+id/commissionTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Commission: €0.00"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
 
-        <!-- Add Lead Button -->
-        <Button
-            android:id="@+id/addLeadButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Add Lead"
-            android:layout_marginBottom="8dp" />
+            <!-- Date -->
+            <TextView
+                android:id="@+id/dateTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Date: "
+                android:textSize="16sp"
+                android:layout_marginBottom="16dp" />
 
-        <!-- Back Button -->
-        <Button
-            android:id="@+id/backButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Back" />
-    </LinearLayout>
+            <!-- Add Lead Button -->
+            <Button
+                android:id="@+id/addLeadButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Add Lead"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Back Button -->
+            <Button
+                android:id="@+id/backButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Back" />
+
+        </LinearLayout>
+    </ScrollView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

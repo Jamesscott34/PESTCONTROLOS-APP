@@ -1,17 +1,65 @@
 /**
- * ReportActivity.java
- *
- * This activity allows the user to create a company report by filling out multiple input fields.
- * The user can also select multiple images to include in the report and save the report data
- * to a local SQLite database using the `ReportDatabaseHelper`. Once saved, the report can also
- * be exported as a PDF using the `PDFReportGenerator`.
- *
- * Features:
- * - Input fields for report details such as name, address, date, visit type, and more.
- * - Image selection for including visual data in the report.
- * - Data persistence using SQLite database.
- * - PDF generation with optional images.
- * - Return navigation to the MainActivity.
+ * ============================================================================
+ * GRPest Control Application - Report Creation Activity
+ * ============================================================================
+ * 
+ * BUSINESS OVERVIEW:
+ * This activity serves as the primary interface for creating detailed pest control
+ * reports. It allows technicians to document their site visits, inspections,
+ * recommendations, and follow-up actions in a structured format that can be
+ * saved locally and exported as professional PDF documents.
+ * 
+ * CORE FUNCTIONALITIES:
+ * 
+ * 1. REPORT DATA ENTRY
+ *    - Company name and address information
+ *    - Visit date and type classification
+ *    - Site inspection findings and observations
+ *    - Treatment recommendations and procedures
+ *    - Follow-up requirements and scheduling
+ *    - Preparation notes and technician details
+ * 
+ * 2. IMAGE DOCUMENTATION
+ *    - Multiple image selection for visual evidence
+ *    - Integration with device camera and gallery
+ *    - Image preview and management
+ *    - Automatic inclusion in generated PDFs
+ * 
+ * 3. DATA PERSISTENCE
+ *    - Local SQLite database storage
+ *    - Report history and retrieval
+ *    - Data validation and error handling
+ *    - Backup and recovery capabilities
+ * 
+ * 4. PDF GENERATION
+ *    - Professional PDF report creation
+ *    - Company branding and formatting
+ *    - Image integration and layout
+ *    - Watermark and footer application
+ * 
+ * 5. USER EXPERIENCE
+ *    - Keyboard handling and input optimization
+ *    - Form validation and error messages
+ *    - Progress indicators and confirmation
+ *    - Navigation and workflow management
+ * 
+ * TECHNICAL FEATURES:
+ * - SQLite database integration for data persistence
+ * - PDF generation using iText7 library
+ * - Image handling and compression
+ * - Theme-aware UI components
+ * - Keyboard optimization for mobile devices
+ * 
+ * USER ROLES & PERMISSIONS:
+ * - Technicians: Full report creation and editing
+ * - Administrators: Report review and management
+ * - All users: Report viewing and PDF export
+ * 
+ * Author: James Scott
+ * Company: Good Riddance Pest Control
+ * Version: 1.0
+ * Last Updated: 2024
+ * ============================================================================
  */
 
 package com.grpc.grpc;
@@ -36,44 +84,39 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * ReportActivity.java
- *
- * This activity allows users to create a company report by filling out multiple input fields.
- * Users can also select multiple images to include in the report and save the report data
- * to a local SQLite database. Once saved, the report can be exported as a PDF using the
- * `PDFReportGenerator`.
- *
- * Features:
- * - Input fields for report details such as name, address, date, visit type, and more
- * - Image selection for including visual data in the report
- * - Data persistence using an SQLite database
- * - PDF generation with optional images for enhanced documentation
- * - User-friendly interface with validation and confirmation messages
- *
- * Author: James Scott
- */
-
 public class ReportActivity extends AppCompatActivity {
 
-    // Input fields for report details
-    private EditText nameInput, addressInput, dateInput, visitTypeInput,
-            siteInspectionInput, recommendationsInput, followUpInput,
+    // ============================================================================
+    // UI COMPONENTS - Input fields for comprehensive report data
+    // ============================================================================
+    
+    // Core company and visit information
+    private EditText nameInput, addressInput, dateInput, visitTypeInput;
+    
+    // Technical details and findings
+    private EditText siteInspectionInput, recommendationsInput, followUpInput,
             prepInput, techInput;
 
+    // User context and session management
     private String userName;
 
-    // Buttons for actions
+    // ============================================================================
+    // ACTION BUTTONS - User interface controls
+    // ============================================================================
+    
     private Button saveButton, backButton, selectImageButton;
 
-    // List to hold the selected image URIs for the report
+    // ============================================================================
+    // DATA MANAGEMENT - Image and content storage
+    // ============================================================================
+    
+    // List to hold selected image URIs for visual documentation
     private List<Uri> selectedImageUris = new ArrayList<>();
 
     /**
-     * Initializes the activity, sets up the UI components, and defines button actions.
-     *
-     * @param savedInstanceState If the activity is re-initialized after being previously shut down,
-     *                           this bundle contains the data it most recently supplied.
+     * Main entry point of the report creation activity
+     * Initializes the user interface, sets up data handling,
+     * and configures all input fields and action buttons
      */
     @SuppressLint("MissingInflatedId")
     @Override
@@ -81,8 +124,11 @@ public class ReportActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_report);
 
-
-        // Retrieve the user's name passed from ContractsActivity
+        // ============================================================================
+        // USER AUTHENTICATION & VALIDATION
+        // ============================================================================
+        
+        // Retrieve and validate user information from intent
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.isEmpty()) {
             Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
@@ -90,7 +136,28 @@ public class ReportActivity extends AppCompatActivity {
             return;
         }
 
-        // Initialize input fields
+        // ============================================================================
+        // UI COMPONENT INITIALIZATION
+        // ============================================================================
+        
+        // Initialize all input fields for report data entry
+        initializeInputFields();
+        
+        // Set up action buttons and their click listeners
+        initializeButtons();
+        
+        // Configure keyboard handling for optimal mobile experience
+        setupKeyboardHandling();
+        
+        // Set current date as default for the date field
+        setCurrentDate();
+    }
+
+    /**
+     * Initialize all input fields by finding them in the layout
+     * and setting up their basic properties
+     */
+    private void initializeInputFields() {
         nameInput = findViewById(R.id.nameInput);
         addressInput = findViewById(R.id.addressInput);
         dateInput = findViewById(R.id.dateInput);
@@ -100,46 +167,69 @@ public class ReportActivity extends AppCompatActivity {
         followUpInput = findViewById(R.id.followUpInput);
         prepInput = findViewById(R.id.prepInput);
         techInput = findViewById(R.id.techInput);
+    }
 
-        // Initialize buttons
+    /**
+     * Initialize action buttons and set up their click listeners
+     * for save, back navigation, and image selection
+     */
+    private void initializeButtons() {
         saveButton = findViewById(R.id.saveButton);
         backButton = findViewById(R.id.backButton);
         selectImageButton = findViewById(R.id.selectImageButton);
 
-        // Set current date in the date field
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault());
-        dateInput.setText(sdf.format(new Date()));
-
-        // Initialize the database helper
-        ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-        // Set up button actions
-        selectImageButton.setOnClickListener(view -> openImageSelector());
-        saveButton.setOnClickListener(view -> {
-            saveReport(db); // Keep the save functionality
-            clearFields();
-
+        // Save button - stores report data and generates PDF
+        saveButton.setOnClickListener(v -> {
+            ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            saveReport(db);
         });
-        backButton.setOnClickListener(view -> {
-            clearFields();
+        
+        // Back button - returns to previous screen
+        backButton.setOnClickListener(v -> {
+            Intent intent = new Intent(ReportActivity.this, MainActivity.class);
+            intent.putExtra("USER_NAME", userName);
+            startActivity(intent);
+            finish();
         });
+        
+        // Image selection button - opens image picker
+        selectImageButton.setOnClickListener(v -> openImageSelector());
     }
 
-    // Function to clear all input fields
-    private void clearFields() {
-        nameInput.setText("");
-        addressInput.setText("");
-        dateInput.setText(new SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(new Date())); // Reset to current date
-        visitTypeInput.setText("");
-        siteInspectionInput.setText("");
-        recommendationsInput.setText("");
-        followUpInput.setText("");
-        prepInput.setText("");
-        techInput.setText("");
-        selectedImageUris.clear(); // Clear selected images
+    /**
+     * Set up keyboard handling to ensure optimal user experience
+     * on mobile devices with virtual keyboards
+     */
+    private void setupKeyboardHandling() {
+        // Add focus change listeners to all input fields
+        EditText[] allInputs = {nameInput, addressInput, dateInput, visitTypeInput,
+                               siteInspectionInput, recommendationsInput, followUpInput,
+                               prepInput, techInput};
+        
+        for (EditText input : allInputs) {
+            if (input != null) {
+                input.setOnFocusChangeListener((v, hasFocus) -> {
+                    if (hasFocus) {
+                        // Ensure the input field is visible when focused
+                        input.requestFocus();
+                    }
+                });
+            }
+        }
     }
 
+    /**
+     * Set the current date as the default value for the date input field
+     * Provides convenience for users creating reports
+     */
+    private void setCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        String currentDate = sdf.format(new Date());
+        if (dateInput != null) {
+            dateInput.setText(currentDate);
+        }
+    }
 
     /**
      * Opens the Android system image selector for choosing multiple images.

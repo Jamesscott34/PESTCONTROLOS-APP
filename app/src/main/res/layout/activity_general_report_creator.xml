@@ -5,7 +5,8 @@
     android:layout_height="match_parent"
     android:paddingTop="?attr/actionBarSize"
     android:background="@drawable/bk"
-    android:fillViewport="true"> <!-- important for centering -->
+    android:fillViewport="true"
+    android:scrollbars="vertical"> <!-- important for centering -->
 
     <!-- ✅ Only one direct child: this LinearLayout -->
     <LinearLayout
@@ -13,7 +14,8 @@
         android:padding="16dp"
         android:gravity="center"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"> <!-- must be match_parent -->
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"> <!-- must be match_parent -->
 
         <!-- Top Spacer to avoid notch -->
         <View
@@ -28,7 +30,12 @@
             android:hint="Property Name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text" />
+            android:inputType="text"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
         <!-- Address -->
         <EditText
@@ -36,7 +43,12 @@
             android:hint="Address"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPostalAddress" />
+            android:inputType="textPostalAddress"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
         <!-- Date Field (Read-only) -->
         <EditText
@@ -44,14 +56,20 @@
             android:hint="Date"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="false" />
+            android:enabled="false"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
         <!-- Visit Type Dropdown -->
         <Spinner
             android:id="@+id/visitTypeSpinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:spinnerMode="dropdown" />
+            android:spinnerMode="dropdown"
+            android:layout_marginBottom="8dp" />
 
         <!-- Save Button -->
         <Button

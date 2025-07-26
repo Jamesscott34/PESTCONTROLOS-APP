@@ -1,3 +1,72 @@
+/**
+ * ============================================================================
+ * GRPest Control Application - Job Management & Assignment System
+ * ============================================================================
+ * 
+ * BUSINESS OVERVIEW:
+ * This activity serves as the comprehensive job management system for GRPest Control,
+ * allowing technicians and administrators to view, assign, track, and manage all
+ * pest control jobs. It provides real-time job status tracking, technician assignment,
+ * payment processing, and automated communication features for efficient service delivery.
+ * 
+ * CORE FUNCTIONALITIES:
+ * 
+ * 1. JOB DISPLAY & MANAGEMENT
+ *    - Real-time job loading from Firebase Firestore
+ *    - Job categorization (completed, pending, overdue)
+ *    - Search and filter capabilities across all job data
+ *    - Job status tracking and updates
+ *    - Technician assignment and reassignment
+ * 
+ * 2. JOB ACTIONS & OPERATIONS
+ *    - Job acceptance and completion marking
+ *    - Job deletion and cleanup operations
+ *    - Follow-up date scheduling and management
+ *    - Customer contact information management
+ *    - Payment method and VAT handling
+ * 
+ * 3. COMMUNICATION & NOTIFICATIONS
+ *    - WhatsApp integration for technician notifications
+ *    - Automated reminder system for follow-ups
+ *    - Customer contact management (email, phone)
+ *    - Real-time status updates and alerts
+ *    - Payment confirmation notifications
+ * 
+ * 4. LOCATION & NAVIGATION
+ *    - Google Maps integration for job locations
+ *    - Address validation and formatting
+ *    - Navigation assistance for technicians
+ *    - Location-based job filtering
+ *    - Geographic job distribution tracking
+ * 
+ * 5. REPORTING & DOCUMENTATION
+ *    - Automated report generation for completed jobs
+ *    - Job history and audit trails
+ *    - Payment records and financial tracking
+ *    - Customer service documentation
+ *    - Performance analytics and statistics
+ * 
+ * TECHNICAL FEATURES:
+ * - Firebase Firestore for real-time job data
+ * - WhatsApp Business API integration
+ * - Google Maps API for location services
+ * - Real-time search and filtering
+ * - Notification system for job updates
+ * - Payment processing and VAT calculations
+ * 
+ * USER ROLES & PERMISSIONS:
+ * - Technicians: View assigned jobs, update status, access navigation
+ * - Administrators: Full job management, assignment, and reporting
+ * - Managers: Job oversight, technician assignment, payment processing
+ * - All users: Job viewing and basic status updates
+ * 
+ * Author: James Scott
+ * Company: Good Riddance Pest Control
+ * Version: 1.0
+ * Last Updated: 2024
+ * ============================================================================
+ */
+
 package com.grpc.grpc;
 
 import android.app.NotificationChannel;
@@ -21,64 +90,91 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-/**
- * ViewJobActivity.java
- *
- * This activity allows users to view, search, accept, delete, and manage jobs stored in Firebase Firestore.
- * It dynamically loads jobs assigned to technicians, categorizes them by status, and provides various actions,
- * including marking jobs as completed, changing technicians, adding payment details, and generating reports.
- *
- * Features:
- * - Loads and displays job assignments from Firebase Firestore
- * - Provides a search bar to filter jobs by technician name, customer name, or address
- * - Categorizes jobs as completed or pending
- * - Supports job acceptance, deletion, and technician reassignment
- * - Enables adding customer details such as email and payment method
- * - Integrates Google Maps for job location navigation
- * - Supports WhatsApp notifications for technician job assignment
- * - Generates routine pest control reports based on job details
- * - Provides an intuitive UI with click and long-press options for job management
- *
- * Author: James Scott
- */
-
-
 public class ViewJobActivity extends AppCompatActivity {
 
+    // ============================================================================
+    // UI COMPONENTS - User interface elements
+    // ============================================================================
+    
     private EditText searchBar;
     private LinearLayout jobsContainer;
     private Button backButton;
     private TextView totalJobs, completedJobs, pendingJobs;
+    
+    // ============================================================================
+    // DATA MANAGEMENT - Job data and statistics
+    // ============================================================================
+    
     private List<Map<String, Object>> allJobs = new ArrayList<>();
     private FirebaseFirestore db;
     private String userName;
     private int total = 0, completed = 0, pending = 0;
 
+    /**
+     * Main entry point of the job management system
+     * Initializes the user interface, loads job data,
+     * and sets up search and filtering capabilities
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_jobs);
 
+        // ============================================================================
+        // FIREBASE INITIALIZATION
+        // ============================================================================
+        
+        // Initialize Firebase Firestore for job data management
         db = FirebaseFirestore.getInstance();
+        
+        // ============================================================================
+        // USER AUTHENTICATION & VALIDATION
+        // ============================================================================
+        
+        // Retrieve and validate user information from intent
         userName = getIntent().getStringExtra("USER_NAME");
-
         if (userName == null || userName.isEmpty()) {
             Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
+        // ============================================================================
+        // UI COMPONENT INITIALIZATION
+        // ============================================================================
+        
+        // Initialize all UI components for job display and interaction
+        initializeUIComponents();
+        
+        // Load all jobs from Firebase and display them
+        loadAllJobs();
+        
+        // Set up navigation and search functionality
+        setupNavigationAndSearch();
+    }
+
+    /**
+     * Initialize all UI components by finding them in the layout
+     * and setting up their basic properties
+     */
+    private void initializeUIComponents() {
         searchBar = findViewById(R.id.searchBar);
         jobsContainer = findViewById(R.id.jobsContainer);
         backButton = findViewById(R.id.backButton);
         totalJobs = findViewById(R.id.totalJobs);
         completedJobs = findViewById(R.id.completedJobs);
         pendingJobs = findViewById(R.id.pendingJobs);
+    }
 
-        loadAllJobs();
-
+    /**
+     * Set up navigation button and search functionality
+     * Configures back navigation and real-time job filtering
+     */
+    private void setupNavigationAndSearch() {
+        // Back button - return to previous screen
         backButton.setOnClickListener(view -> finish());
-        // Search Bar Implementation
+        
+        // Search functionality - real-time job filtering
         searchBar.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -87,7 +183,8 @@ public class ViewJobActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filterJobs(s.toString().trim()); // Trim spaces for better search performance
+                // Filter jobs in real-time as user types
+                filterJobs(s.toString().trim());
             }
 
             @Override

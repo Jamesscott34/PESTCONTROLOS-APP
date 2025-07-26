@@ -4,14 +4,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingTop="?attr/actionBarSize"
-    android:background="@drawable/bk">
+    android:background="@drawable/bk"
+    android:fillViewport="true"
+    android:scrollbars="vertical">
 
     <!-- ✅ Only one direct child: outer LinearLayout -->
     <LinearLayout
         android:orientation="vertical"
         android:padding="16dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp">
 
         <!-- Spacer for notch/status bar -->
         <View
@@ -20,13 +23,31 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent" />
 
+        <!-- Welcome Message -->
+        <TextView
+            android:id="@+id/welcomeTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Create Report"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
         <!-- Input field for property name -->
         <EditText
             android:id="@+id/nameInput"
             android:hint="Enter Property Name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPersonName"/>
+            android:inputType="textPersonName"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Input field for address -->
         <EditText
@@ -37,7 +58,12 @@
             android:inputType="textMultiLine"
             android:minLines="3"
             android:gravity="top"
-            android:scrollbars="vertical"/>
+            android:scrollbars="vertical"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Date -->
         <EditText
@@ -45,14 +71,24 @@
             android:hint="Enter Date"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="date"/>
+            android:inputType="date"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Visit type -->
         <EditText
             android:id="@+id/visitTypeInput"
             android:hint="Visit Type"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Site inspection -->
         <EditText
@@ -63,7 +99,12 @@
             android:inputType="textMultiLine"
             android:minLines="3"
             android:gravity="top"
-            android:scrollbars="vertical"/>
+            android:scrollbars="vertical"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Recommendations -->
         <EditText
@@ -74,7 +115,12 @@
             android:inputType="textMultiLine"
             android:minLines="3"
             android:gravity="top"
-            android:scrollbars="vertical"/>
+            android:scrollbars="vertical"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Prep steps -->
         <EditText
@@ -85,14 +131,24 @@
             android:inputType="textMultiLine"
             android:minLines="3"
             android:gravity="top"
-            android:scrollbars="vertical"/>
+            android:scrollbars="vertical"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Follow up -->
         <EditText
             android:id="@+id/followUpInput"
             android:hint="Enter Follow Up Details"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Technician name -->
         <EditText
@@ -100,7 +156,12 @@
             android:hint="Enter Technician Name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPersonName"/>
+            android:inputType="textPersonName"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Image button -->
         <Button

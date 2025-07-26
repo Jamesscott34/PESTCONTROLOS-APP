@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Search Bar -->
+    <EditText
+        android:id="@+id/searchBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Search..."
+        android:padding="12dp"
+        android:textSize="16sp"
+        android:background="?attr/colorSurface"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary"
+        android:layout_marginBottom="8dp"
+        android:inputType="text"
+        android:imeOptions="actionSearch"
+        android:maxLines="1" />
+
+    <!-- Results RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/resultsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:scrollbars="vertical"
+        android:background="?attr/colorSurface" />
+
+</LinearLayout> 

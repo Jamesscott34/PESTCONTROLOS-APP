@@ -1,4 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ============================================================================
+     GRPest Control Application - Main Activity Layout
+     ============================================================================
+     
+     This layout defines the main navigation screen of the application.
+     It provides access to all major features including:
+     - Report creation and management
+     - Contract and customer management
+     - Job assignment and tracking
+     - Quotation generation
+     - Service agreements
+     - Sales and commission tracking
+     - Environmental risk assessments
+     - Internal messaging
+     - Company website access
+     - Secure logout functionality
+     
+     Layout Structure:
+     - Top spacer to avoid camera/notch coverage
+     - Scrollable content area with navigation buttons
+     - Fixed logout button at bottom
+     - Theme-aware styling for dark/light mode support
+     ============================================================================ -->
+
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -7,7 +31,11 @@
     android:padding="16dp"
     android:paddingTop="?attr/actionBarSize">
 
-    <!-- Top Spacer to avoid notch -->
+    <!-- ============================================================================
+         TOP SPACER FOR CAMERA/NOTCH AVOIDANCE
+         ============================================================================
+         Ensures content doesn't get covered by device camera or notch
+         ============================================================================ -->
     <View
         android:id="@+id/statusSpacer"
         android:layout_width="0dp"
@@ -17,6 +45,11 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:background="@android:color/transparent" />
 
+    <!-- ============================================================================
+         SCROLLABLE CONTENT AREA
+         ============================================================================
+         Contains all navigation buttons in a scrollable layout
+         ============================================================================ -->
     <ScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
@@ -25,13 +58,22 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/LogoutButton">
 
+        <!-- ============================================================================
+             MAIN CONTENT CONTAINER
+             ============================================================================
+             Vertical layout containing all navigation buttons
+             ============================================================================ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center">
 
-            <!-- Welcome Message -->
+            <!-- ============================================================================
+                 WELCOME MESSAGE
+                 ============================================================================
+                 Personalized greeting showing user's name
+                 ============================================================================ -->
             <TextView
                 android:id="@+id/welcomeTextView"
                 android:layout_width="match_parent"
@@ -41,10 +83,16 @@
                 android:textStyle="bold"
                 android:gravity="center"
                 android:layout_marginTop="64dp"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="16dp"
+                android:textColor="?android:attr/textColorPrimary" />
 
-
-
+            <!-- ============================================================================
+                 REPORT MANAGEMENT BUTTONS
+                 ============================================================================
+                 Buttons for creating and viewing pest control reports
+                 ============================================================================ -->
+            
+            <!-- Create new pest control reports -->
             <Button
                 android:id="@+id/ReportButton"
                 android:layout_width="match_parent"
@@ -52,6 +100,7 @@
                 android:text="Create Report"
                 android:layout_marginBottom="8dp" />
 
+            <!-- View and manage stored reports -->
             <Button
                 android:id="@+id/ReportViewButton"
                 android:layout_width="match_parent"
@@ -59,8 +108,13 @@
                 android:text="View Reports"
                 android:layout_marginBottom="8dp" />
 
-
-
+            <!-- ============================================================================
+                 CONTRACT & CUSTOMER MANAGEMENT
+                 ============================================================================
+                 Button for managing service contracts and customers
+                 ============================================================================ -->
+            
+            <!-- Manage service contracts and customer relationships -->
             <Button
                 android:id="@+id/ContractsButton"
                 android:layout_width="match_parent"
@@ -68,6 +122,13 @@
                 android:text="Contracts"
                 android:layout_marginBottom="8dp" />
 
+            <!-- ============================================================================
+                 QUOTATION & SERVICE AGREEMENTS
+                 ============================================================================
+                 Buttons for generating quotes and service agreements
+                 ============================================================================ -->
+            
+            <!-- Generate professional quotations for pest control services -->
             <Button
                 android:id="@+id/GeneralQuotesButton"
                 android:layout_width="match_parent"
@@ -75,6 +136,7 @@
                 android:text="General Quotes"
                 android:layout_marginBottom="8dp" />
 
+            <!-- Create and manage service agreements with customers -->
             <Button
                 android:id="@+id/ServiceAgreementButton"
                 android:layout_width="match_parent"
@@ -82,6 +144,13 @@
                 android:text="Service agreement"
                 android:layout_marginBottom="8dp" />
 
+            <!-- ============================================================================
+                 SALES & COMMISSION TRACKING
+                 ============================================================================
+                 Button for managing sales leads and commission tracking
+                 ============================================================================ -->
+            
+            <!-- Manage sales leads and commission calculations -->
             <Button
                 android:id="@+id/CommisionButton"
                 android:layout_width="match_parent"
@@ -89,6 +158,13 @@
                 android:text="Commision"
                 android:layout_marginBottom="8dp" />
 
+            <!-- ============================================================================
+                 JOB MANAGEMENT
+                 ============================================================================
+                 Button for job assignment and tracking
+                 ============================================================================ -->
+            
+            <!-- Assign and track pest control jobs -->
             <Button
                 android:id="@+id/JobsButton"
                 android:layout_width="match_parent"
@@ -96,13 +172,27 @@
                 android:text="Job Work"
                 android:layout_marginBottom="8dp" />
 
-
+            <!-- ============================================================================
+                 ENVIRONMENTAL COMPLIANCE
+                 ============================================================================
+                 Button for Environmental Risk Assessments (ERA)
+                 ============================================================================ -->
+            
+            <!-- Create Environmental Risk Assessment reports -->
             <Button
                 android:id="@+id/EnviromentButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="ERA"
                 android:layout_marginBottom="8dp" />
+
+            <!-- ============================================================================
+                 COMMUNICATION & EXTERNAL LINKS
+                 ============================================================================
+                 Buttons for internal messaging and company website access
+                 ============================================================================ -->
+            
+            <!-- Internal messaging system for staff communication -->
             <Button
                 android:id="@+id/InstantMessage"
                 android:layout_width="match_parent"
@@ -110,6 +200,7 @@
                 android:text="Messaging"
                 android:layout_marginBottom="8dp" />
 
+            <!-- Access company website and resources -->
             <Button
                 android:id="@+id/WebsiteButton"
                 android:layout_width="match_parent"
@@ -118,11 +209,15 @@
                 android:onClick="WorkWebsite"
                 android:layout_marginBottom="8dp" />
 
-
         </LinearLayout>
     </ScrollView>
 
-    <!-- Logout Button -->
+    <!-- ============================================================================
+         LOGOUT BUTTON
+         ============================================================================
+         Fixed positioning above bottom navigation area
+         Provides secure logout functionality
+         ============================================================================ -->
     <Button
         android:id="@+id/LogoutButton"
         android:layout_width="match_parent"
@@ -130,7 +225,8 @@
         android:text="Logout"
         android:background="@android:color/holo_red_dark"
         android:textColor="@android:color/white"
-        android:paddingBottom="32dp"
+        android:layout_marginBottom="16dp"
+        android:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

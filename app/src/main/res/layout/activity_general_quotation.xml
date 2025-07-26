@@ -23,6 +23,39 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent" />
 
+        <TextView
+            android:id="@+id/welcomeTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:text="Welcome!"
+            android:layout_marginBottom="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <!-- Input Fields -->
+        <EditText
+            android:id="@+id/companyNameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter Company Name"
+            android:layout_marginBottom="12dp"
+            android:padding="12dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
+
+        <EditText
+            android:id="@+id/companyAddressInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter Company Address"
+            android:layout_marginBottom="12dp"
+            android:padding="12dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
+
         <EditText
             android:id="@+id/addressInput"
             android:layout_width="match_parent"

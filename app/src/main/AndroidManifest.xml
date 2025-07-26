@@ -2,18 +2,48 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissions -->
+    <!-- ============================================================================
+         GRPest Control Application - Android Manifest
+         ============================================================================
+         
+         This manifest file defines the application's permissions, activities, and services.
+         It configures the app for pest control business operations including:
+         - Report generation and storage
+         - Contract and customer management
+         - Job assignment and tracking
+         - File sharing and external storage access
+         - Push notifications for real-time updates
+         - Calendar integration for scheduling
+         ============================================================================ -->
+
+    <!-- ============================================================================
+         APPLICATION PERMISSIONS
+         ============================================================================
+         These permissions enable the app's core functionalities:
+         ============================================================================ -->
+    
+    <!-- Internet access for Firebase operations and web services -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    
+    <!-- External storage access for saving reports and documents locally -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    
+    <!-- Push notification permissions for job updates and communications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    
+    <!-- Account access for user authentication and profile management -->
     <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+    
+    <!-- Calendar permissions for job scheduling and appointment tracking -->
     <uses-permission android:name="android.permission.READ_CALENDAR"/>
     <uses-permission android:name="android.permission.WRITE_CALENDAR"/>
 
-
-
-
+    <!-- ============================================================================
+         APPLICATION CONFIGURATION
+         ============================================================================
+         Main application settings and theme configuration
+         ============================================================================ -->
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -25,7 +55,13 @@
         android:theme="@style/Theme.Grpc"
         tools:targetApi="31">
 
-        <!-- Main Activity -->
+        <!-- ============================================================================
+             ACTIVITY DECLARATIONS
+             ============================================================================
+             Each activity represents a different screen or functionality in the app
+             ============================================================================ -->
+
+        <!-- Login Activity - Entry point for user authentication -->
         <activity
             android:name=".LoginActivity"
             android:windowSoftInputMode="adjustResize"
@@ -36,166 +72,332 @@
             </intent-filter>
         </activity>
 
-        <!-- Company Report Activity -->
-
-
+        <!-- Main Activity - Central hub with navigation to all features -->
         <activity
             android:name=".MainActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
+        <!-- ============================================================================
+             REPORT MANAGEMENT ACTIVITIES
+             ============================================================================
+             Activities for creating, viewing, and managing pest control reports
+             ============================================================================ -->
+
+        <!-- Core report creation and management -->
         <activity
             android:name=".ReportActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <activity
             android:name=".ReportViewActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
-
 
         <activity
             android:name=".CreateReportActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
+        <!-- Report selection and PDF management -->
         <activity
             android:name=".ReportSelectionActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
         <activity
             android:name=".PDFSelectionActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
+        <!-- Quotation viewing and management -->
         <activity
             android:name=".QuotationViewActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
+        <!-- Follow-up report creation -->
         <activity
             android:name=".FollowUpActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Bird control quotation generation -->
         <activity
             android:name=".BirdQuotationActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- ============================================================================
+             CONTRACT & CUSTOMER MANAGEMENT ACTIVITIES
+             ============================================================================
+             Activities for managing service contracts and customer relationships
+             ============================================================================ -->
+
+        <!-- Contract management and overview -->
         <activity
             android:name=".ContractsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Individual contract viewing and editing -->
         <activity
             android:name=".ViewContractActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- New contract creation -->
         <activity
             android:name=".AddContractActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- ============================================================================
+             QUOTATION & SERVICE AGREEMENT ACTIVITIES
+             ============================================================================
+             Activities for generating quotes and service agreements
+             ============================================================================ -->
+
+        <!-- Quotation management and generation -->
         <activity
             android:name=".QuotesActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Service agreement creation and management -->
+        <activity
+            android:name=".ServiceAgreementActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
+
+        <!-- Service agreement viewing -->
+        <activity android:name=".ServiceAgreementViewActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
+
+        <!-- ============================================================================
+             GENERAL REPORT ACTIVITIES (Different Point Sizes)
+             ============================================================================
+             Activities for creating reports with different formatting options
+             ============================================================================ -->
+
+        <!-- General reports with different point sizes for various document types -->
         <activity
             android:name=".General8ptActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <activity
             android:name=".General6ptActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <activity
             android:name=".General4ptActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <activity
             android:name=".General12ptActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- ============================================================================
+             SALES & LEAD MANAGEMENT ACTIVITIES
+             ============================================================================
+             Activities for managing sales leads and commission tracking
+             ============================================================================ -->
+
+        <!-- Lead management and selection -->
         <activity
             android:name=".LeadsSelectionActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Lead viewing and management -->
         <activity
             android:name=".ViewLeadsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Lead generation and creation -->
         <activity
             android:name=".GenerateLeadsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
-        <activity
-            android:name=".ServiceAgreementActivity"
-            android:exported="true"/>
+        <!-- ============================================================================
+             JOB MANAGEMENT ACTIVITIES
+             ============================================================================
+             Activities for job assignment, tracking, and management
+             ============================================================================ -->
 
+        <!-- Job overview and management -->
         <activity
             android:name=".JobsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- New job creation -->
         <activity
             android:name=".AddJobsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Individual job viewing and editing -->
         <activity
             android:name=".ViewJobActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- ============================================================================
+             RODENT CONTROL ACTIVITIES
+             ============================================================================
+             Specialized activities for rodent control operations
+             ============================================================================ -->
+
+        <!-- Rodent control routine operations -->
         <activity android:name=".RodentRoutineActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
+        <!-- External rodent routine operations -->
         <activity android:name=".RodentActivityExternalRoutine"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
+        <!-- External rodent call-out operations -->
         <activity android:name=".RodentCallOutExternalActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
+        <!-- Rodent call-out operations -->
         <activity android:name=".RodentCallOutActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
+        <!-- Initial rodent control operations -->
         <activity android:name=".RodentInitialActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
+        <!-- Rodent routine activity management -->
         <activity android:name=".RodentActivityRoutine"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
+        <!-- Rodent job activity management -->
         <activity android:name=".RodentJobActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
-        <activity android:name=".ServiceAgreementViewActivity"
-            android:exported="true"/>
+        <!-- ============================================================================
+             FILE MANAGEMENT & STORAGE ACTIVITIES
+             ============================================================================
+             Activities for managing stored files and reports
+             ============================================================================ -->
 
+        <!-- Folder contents viewing -->
         <activity android:name=".FolderContentsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
-        <activity android:name=".MessagingActivity"
-            android:exported="true"/>
-
+        <!-- Stored reports management -->
         <activity android:name=".StoredReportsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- ============================================================================
+             COMMUNICATION & MESSAGING ACTIVITIES
+             ============================================================================
+             Activities for internal communication and messaging
+             ============================================================================ -->
 
+        <!-- Internal messaging system -->
+        <activity android:name=".MessagingActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
+
+        <!-- ============================================================================
+             QUOTATION & GENERAL REPORTS ACTIVITIES
+             ============================================================================
+             Activities for quotation generation and general reporting
+             ============================================================================ -->
+
+        <!-- General quotation creation -->
         <activity android:name=".GeneralQuotationActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- ============================================================================
+             ENVIRONMENTAL RISK ASSESSMENT (ERA) ACTIVITIES
+             ============================================================================
+             Activities for environmental compliance and risk assessments
+             ============================================================================ -->
+
+        <!-- ERA selection and management -->
         <activity android:name=".EnvironmentSelectionActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Non-toxic ERA creation -->
         <activity android:name=".NonToxERAActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Toxic ERA creation -->
         <activity android:name=".ToxicERAActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
-
+        <!-- ERA viewing and management -->
         <activity android:name=".ERAViewActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- ============================================================================
+             GENERAL REPORT & MANAGEMENT ACTIVITIES
+             ============================================================================
+             Activities for general reporting and management tasks
+             ============================================================================ -->
 
-
+        <!-- General report creation -->
         <activity android:name=".GeneralReportActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Management job creation -->
         <activity android:name=".AddManagmentJobsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Management job viewing -->
         <activity android:name=".ViewManagmentJobActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- ============================================================================
+             CONTRACT REPORT & BEHINDS LIST ACTIVITIES
+             ============================================================================
+             Activities for contract-specific reports and overdue contract management
+             ============================================================================ -->
 
+        <!-- Behinds list viewing and management -->
+        <activity android:name=".BehindsListViewActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
 
+        <!-- Contract-specific report viewing -->
+        <activity android:name=".ContractReportsActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
 
-        <!-- FCM Push Notification Service -->
+        <!-- ============================================================================
+             FIREBASE CLOUD MESSAGING SERVICE
+             ============================================================================
+             Service for handling push notifications and real-time messaging
+             ============================================================================ -->
         <service
             android:name="FirebaseMessagingServiceGRPC"
             android:exported="false">
@@ -204,9 +406,11 @@
             </intent-filter>
         </service>
 
-
-
-        <!-- FileProvider Setup -->
+        <!-- ============================================================================
+             FILE PROVIDER CONFIGURATION
+             ============================================================================
+             Enables secure file sharing between app components and external apps
+             ============================================================================ -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -215,8 +419,6 @@
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/filepaths"/>
-
-
         </provider>
 
     </application>

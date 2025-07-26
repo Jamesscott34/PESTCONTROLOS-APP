@@ -33,52 +33,82 @@
             <!-- Welcome Message -->
             <TextView
                 android:id="@+id/welcomeTextView"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Welcome, User!"
                 android:textSize="24sp"
                 android:textStyle="bold"
-                android:gravity="center"
-                android:layout_marginBottom="16dp" />
+                android:text="Welcome!"
+                android:layout_marginBottom="16dp"
+                android:textColor="?android:attr/textColorPrimary" />
 
-            <!-- Customer Information -->
+            <!-- Input Fields -->
             <EditText
                 android:id="@+id/etCustomerName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Customer Name" />
+                android:hint="Customer Name"
+                android:layout_marginBottom="12dp"
+                android:padding="12dp"
+                android:background="?attr/colorSurface"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
 
             <EditText
                 android:id="@+id/etCustomerAddress"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Address" />
+                android:hint="Customer Address"
+                android:layout_marginBottom="12dp"
+                android:padding="12dp"
+                android:background="?attr/colorSurface"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
 
             <EditText
                 android:id="@+id/etCustomerEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Email"
-                android:inputType="textEmailAddress" />
+                android:inputType="textEmailAddress"
+                android:layout_marginBottom="12dp"
+                android:padding="12dp"
+                android:background="?attr/colorSurface"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
 
             <EditText
                 android:id="@+id/etCustomerPhone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Phone Number"
-                android:inputType="phone" />
+                android:inputType="phone"
+                android:layout_marginBottom="12dp"
+                android:padding="12dp"
+                android:background="?attr/colorSurface"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
 
             <EditText
                 android:id="@+id/etVatNumber"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="VAT" />
+                android:hint="VAT"
+                android:layout_marginBottom="12dp"
+                android:padding="12dp"
+                android:background="?attr/colorSurface"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
 
             <EditText
                 android:id="@+id/etGrpcOffice"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint= "Total Cost" />
+                android:hint="Total Cost"
+                android:layout_marginBottom="12dp"
+                android:padding="12dp"
+                android:background="?attr/colorSurface"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
 
             <!-- Service Agreement Selection -->
             <TextView

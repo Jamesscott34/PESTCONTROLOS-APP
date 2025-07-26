@@ -2,12 +2,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
-    android:paddingTop="?attr/actionBarSize"
     android:layout_height="match_parent"
-    android:background="@drawable/bk">
-
+    android:background="@drawable/bk"
+    android:paddingTop="?attr/actionBarSize">
 
     <!-- Top Spacer to avoid notch -->
     <View
@@ -19,25 +17,63 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:background="@android:color/transparent" />
 
-    <EditText
-        android:id="@+id/search_bar"
+    <!-- Search Bar Container -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Search REPORTS..."
-        android:padding="12dp" />
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="@android:color/transparent">
 
-    <!-- Replacing ListView with RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/report_recycler_view"
+        <EditText
+            android:id="@+id/search_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Search BEHINDS LIST..."
+            android:padding="16dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"
+            android:elevation="4dp"
+            android:inputType="text"
+            android:imeOptions="actionSearch"
+            android:maxLines="1" />
+
+    </LinearLayout>
+
+    <!-- RecyclerView Container -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:scrollbars="vertical" />
+        android:padding="8dp">
 
-    <Button
-        android:id="@+id/buttonreturn"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/report_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scrollbars="vertical"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp" />
+
+    </FrameLayout>
+
+    <!-- Return Button Container -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Return"
-        android:layout_marginTop="16dp"/>
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="@android:color/transparent">
+
+        <Button
+            android:id="@+id/buttonreturn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Return"
+            android:layout_marginTop="8dp"/>
+
+    </LinearLayout>
+
 </LinearLayout>
