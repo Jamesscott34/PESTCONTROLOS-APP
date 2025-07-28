@@ -79,7 +79,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Default users for offline mode:\n• james@grpestcontrol.ie / Alison12\n• ian@grpestcontrol.ie / Kristine\n• kristine@grpestcontrol.ie / Winston12"
+        android:text="Offline mode: Same as online\nUse any email/password to login"
         android:textSize="12sp"
         android:gravity="center"
         android:layout_marginTop="32dp"

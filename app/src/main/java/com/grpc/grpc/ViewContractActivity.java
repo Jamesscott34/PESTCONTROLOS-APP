@@ -129,8 +129,13 @@ public class ViewContractActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_contract);
 
-        // Initialize Firebase Firestore for data operations
-        db = FirebaseFirestore.getInstance();
+        // Initialize Firebase with authentication
+        FirebaseHelper.initialize();
+        FirebaseHelper.ensureAuthentication();
+        db = FirebaseHelper.getFirestore();
+        
+        // Test Firebase connection
+        FirebaseHelper.testConnection();
         
         // Get user information from intent for permissions and data filtering
         userName = getIntent().getStringExtra("USER_NAME");
@@ -244,6 +249,8 @@ public class ViewContractActivity extends AppCompatActivity {
     }
 
     private void loadContracts() {
+        Log.d("ViewContractActivity", "Loading contracts for user: " + userName);
+        
         if ("Kristine".equalsIgnoreCase(userName)) {
             // Load both Ian & James contracts in parallel
             String[] contractCollections = {"Ian Contracts", "James Contracts"};
@@ -253,6 +260,8 @@ public class ViewContractActivity extends AppCompatActivity {
             int[] loadedCount = {0}; // To track when all async calls return
 
             for (String collectionName : contractCollections) {
+                Log.d("ViewContractActivity", "Loading collection: " + collectionName);
+                
                 db.collection(collectionName).get().addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         List<Map<String, Object>> techContracts = new ArrayList<>();
@@ -263,13 +272,15 @@ public class ViewContractActivity extends AppCompatActivity {
                             allContracts.add(contract);
                             techContracts.add(contract);
                         }
+                        Log.d("ViewContractActivity", "Successfully loaded " + techContracts.size() + " contracts from " + collectionName);
 
                         // Save for WhatsApp grouping
                         String techName = collectionName.replace(" Contracts", "");
                         groupedContracts.put(techName, techContracts);
 
                     } else {
-                        Toast.makeText(this, "Failed to load " + collectionName, Toast.LENGTH_SHORT).show();
+                        Log.e("ViewContractActivity", "Failed to load " + collectionName + ": " + task.getException().getMessage());
+                        Toast.makeText(this, "Failed to load " + collectionName + ": " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                     }
 
                     // When both collections return, proceed
@@ -288,6 +299,7 @@ public class ViewContractActivity extends AppCompatActivity {
         } else {
             // Default load for Ian or James
             String tableName = userName + " Contracts";
+            Log.d("ViewContractActivity", "Loading collection: " + tableName);
 
             db.collection(tableName).get().addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
@@ -298,10 +310,22 @@ public class ViewContractActivity extends AppCompatActivity {
                         contract.put("owner", userName);
                         contractsList.add(contract);
                     }
+                    Log.d("ViewContractActivity", "Successfully loaded " + contractsList.size() + " contracts");
                     handleContractsData(contractsList);
                     sendDailyBehindSummaryIfNeeded(userName, contractsList);
                 } else {
-                    Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e("ViewContractActivity", "Failed to load contracts: " + task.getException().getMessage());
+                    
+                    // Check if it's a permissions issue
+                    if (task.getException().getMessage().contains("permission") || 
+                        task.getException().getMessage().contains("denied")) {
+                        Toast.makeText(this, "Access denied. Please check Firebase permissions or contact admin.", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                    
+                    // Show empty state
+                    handleContractsData(new ArrayList<>());
                 }
             });
         }

@@ -12,6 +12,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -209,12 +210,12 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MainActivity", "welcomeTextView is NULL! Check XML ID.");
         }
 
-        // Show offline mode indicator if in offline mode
-        if (isOfflineMode && offlineModeIndicator != null) {
-            offlineModeIndicator.setText("🔄 OFFLINE MODE - Limited functionality available");
-            offlineModeIndicator.setVisibility(View.VISIBLE);
-            offlineModeIndicator.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
-        }
+                            // Show offline mode indicator if in offline mode
+                    if (isOfflineMode && offlineModeIndicator != null) {
+                        offlineModeIndicator.setText("🔄 OFFLINE MODE - Firebase features may be limited");
+                        offlineModeIndicator.setVisibility(View.VISIBLE);
+                        offlineModeIndicator.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
+                    }
         
         // Log activity creation for debugging
         Log.d("MainActivity", "MainActivity created with user: " + userName);
@@ -339,22 +340,16 @@ public class MainActivity extends AppCompatActivity {
         // View and manage stored reports
         if (reportViewButton != null) {
             reportViewButton.setOnClickListener(view -> {
-                if (isOfflineMode) {
-                    Toast.makeText(this, "Report viewing requires online connection", Toast.LENGTH_SHORT).show();
-                } else {
-                    openActivity(PDFSelectionActivity.class);
-                }
+                // Allow report viewing even in offline mode since Firebase was working before
+                openActivity(PDFSelectionActivity.class);
             });
         }
 
         // Contract management and customer tracking
         if (contractsButton != null) {
             contractsButton.setOnClickListener(view -> {
-                if (isOfflineMode) {
-                    Toast.makeText(this, "Contract management requires online connection", Toast.LENGTH_SHORT).show();
-                } else {
-                    openActivity(ContractsActivity.class);
-                }
+                // Allow contract access even in offline mode since Firebase was working before
+                openActivity(ContractsActivity.class);
             });
         }
 
@@ -390,11 +385,8 @@ public class MainActivity extends AppCompatActivity {
         // Work View Calendar and scheduling
         if (WorkViewButton != null) {
             WorkViewButton.setOnClickListener(view -> {
-                if (isOfflineMode) {
-                    Toast.makeText(this, "Work schedule requires online connection", Toast.LENGTH_SHORT).show();
-                } else {
-                    openActivity(WorkViewActivity.class);
-                }
+                // Allow work view even in offline mode since Firebase was working before
+                openActivity(WorkViewActivity.class);
             });
         }
 

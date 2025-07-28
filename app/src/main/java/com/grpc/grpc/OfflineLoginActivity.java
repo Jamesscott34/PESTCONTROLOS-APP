@@ -48,9 +48,20 @@ public class OfflineLoginActivity extends AppCompatActivity {
      * Check if device is online
      */
     private boolean isOnline() {
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+        try {
+            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (connectivityManager != null) {
+                NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+                boolean isConnected = activeNetworkInfo != null && activeNetworkInfo.isConnected();
+                Log.d("OfflineLoginActivity", "Network status: " + (isConnected ? "ONLINE" : "OFFLINE"));
+                return isConnected;
+            }
+        } catch (Exception e) {
+            Log.e("OfflineLoginActivity", "Error checking network status: " + e.getMessage());
+        }
+        // Default to online if we can't determine status
+        Log.d("OfflineLoginActivity", "Defaulting to ONLINE mode");
+        return true;
     }
 
     /**
@@ -63,7 +74,7 @@ public class OfflineLoginActivity extends AppCompatActivity {
             loginButton.setEnabled(true);
             offlineModeButton.setEnabled(true);
         } else {
-            statusText.setText("Offline Mode - Only report creation available");
+            statusText.setText("Offline Mode - Same as online");
             statusText.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
             loginButton.setEnabled(true);
             offlineModeButton.setEnabled(true);
@@ -78,24 +89,12 @@ public class OfflineLoginActivity extends AppCompatActivity {
 
         offlineModeButton.setOnClickListener(v -> {
             // Show offline mode info
-            Toast.makeText(this, "Offline mode: Only report creation is available", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Offline mode: Same as online", Toast.LENGTH_LONG).show();
             
-            // Allow login with any valid credentials for offline mode
-            String email = emailInput.getText().toString().trim();
-            String password = passwordInput.getText().toString().trim();
-            
-            if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Please enter email and password", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            
-            // For offline mode, accept any valid format email/password
-            if (isValidEmail(email) && password.length() >= 3) {
-                String userName = extractNameFromEmail(email);
-                proceedToMainActivity(userName, email, true);
-            } else {
-                Toast.makeText(this, "Invalid email format or password too short", Toast.LENGTH_SHORT).show();
-            }
+            // For offline mode, use default credentials
+            String userName = "User";
+            String email = "user@grpc.com";
+            proceedToMainActivity(userName, email, true);
         });
     }
 
@@ -111,23 +110,13 @@ public class OfflineLoginActivity extends AppCompatActivity {
             return;
         }
 
-        if (!isValidEmail(email)) {
-            Toast.makeText(this, "Please enter a valid email address", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Try local authentication first
-        if (userDb.authenticateUser(email, password)) {
-            String userName = userDb.getUserName(email);
-            Log.d("OfflineLoginActivity", "Local authentication successful for: " + email);
+        // Accept any valid email format and password length >= 3
+        if (isValidEmail(email) && password.length() >= 3) {
+            String userName = extractNameFromEmail(email);
+            Log.d("OfflineLoginActivity", "Login successful for: " + email);
             proceedToMainActivity(userName, email, false);
         } else {
-            // If online, could try Firebase authentication here
-            if (isOnline()) {
-                Toast.makeText(this, "Invalid credentials. Try offline mode.", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Invalid credentials. Check your email and password.", Toast.LENGTH_SHORT).show();
-            }
+            Toast.makeText(this, "Please enter a valid email and password (min 3 characters)", Toast.LENGTH_SHORT).show();
         }
     }
 
