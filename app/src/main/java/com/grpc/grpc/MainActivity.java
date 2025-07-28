@@ -7,11 +7,15 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GestureDetectorCompat;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -114,12 +118,17 @@ public class MainActivity extends AppCompatActivity {
     
     // User information extracted from login
     private String userEmail, userName;
+    private boolean isOfflineMode = false;
     
     // Welcome message display
     private TextView welcomeTextView;
+    private TextView offlineModeIndicator;
+    private GestureDetectorCompat gestureDetector;
 
     // Permission request code for notification access
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1;
+    private static final int SWIPE_THRESHOLD = 50;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 50;
 
     /**
      * Main entry point of the application
@@ -132,21 +141,39 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
+
         // Request notification permission for Android 13+ devices
         // This is required for push notifications to work properly
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATION_PERMISSION);
         }
 
-        // Extract user information from login intent
+        // Extract user information from intent
         userEmail = getIntent().getStringExtra("USER_EMAIL");
+        String intentUserName = getIntent().getStringExtra("USER_NAME");
+        isOfflineMode = getIntent().getBooleanExtra("OFFLINE_MODE", false);
 
-        // Set default user name if email is not provided
-        if (userEmail == null || userEmail.isEmpty()) {
-            userName = "User";
-        } else {
+        // Set user name from intent extras or extract from email
+        if (intentUserName != null && !intentUserName.isEmpty()) {
+            // Username passed from swipe navigation
+            userName = intentUserName;
+            Log.d("MainActivity", "Username from intent: " + userName);
+        } else if (userEmail != null && !userEmail.isEmpty()) {
             // Extract name from email address (e.g., "james@grpc.com" -> "James")
             userName = extractNameFromEmail(userEmail);
+            Log.d("MainActivity", "Username extracted from email: " + userName);
+        } else {
+            // Default fallback
+            userName = "User";
+            Log.d("MainActivity", "Using default username: " + userName);
+        }
+
+        // Log offline mode status
+        if (isOfflineMode) {
+            Log.d("MainActivity", "Running in OFFLINE MODE - Limited functionality");
+        } else {
+            Log.d("MainActivity", "Running in ONLINE MODE - Full functionality");
         }
 
         // Subscribe to Firebase Cloud Messaging topics for push notifications
@@ -173,17 +200,88 @@ public class MainActivity extends AppCompatActivity {
 
         // Set up welcome message with user's name
         welcomeTextView = findViewById(R.id.welcomeTextView);
+        offlineModeIndicator = findViewById(R.id.offlineModeIndicator);
+        
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
+            Log.d("MainActivity", "Welcome message set for user: " + userName);
         } else {
             Log.e("MainActivity", "welcomeTextView is NULL! Check XML ID.");
         }
+
+        // Show offline mode indicator if in offline mode
+        if (isOfflineMode && offlineModeIndicator != null) {
+            offlineModeIndicator.setText("🔄 OFFLINE MODE - Limited functionality available");
+            offlineModeIndicator.setVisibility(View.VISIBLE);
+            offlineModeIndicator.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
+        }
+        
+        // Log activity creation for debugging
+        Log.d("MainActivity", "MainActivity created with user: " + userName);
 
         // Initialize all navigation buttons
         initializeButtons();
         
         // Set up click listeners for all buttons
         setupButtonClickListeners();
+        
+        // Initialize gesture detector for swipe navigation
+        initializeGestureDetector();
+    }
+
+    /**
+     * Initialize gesture detector for swipe navigation
+     */
+    private void initializeGestureDetector() {
+        gestureDetector = new GestureDetectorCompat(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getY() - e1.getY();
+                    
+                    Log.d("MainActivity", "Swipe detected - diffX: " + diffX + ", diffY: " + diffY + ", velocityX: " + velocityX);
+                    
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                // Swipe right - open ViewContractActivity
+                                Log.d("MainActivity", "Swipe RIGHT detected - opening ViewContractActivity with user: " + userName);
+                                Intent intent = new Intent(MainActivity.this, ViewContractActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                finish(); // Destroy this activity
+                                return true;
+                            } else {
+                                // Swipe left - open ReportActivity (previous in sequence)
+                                Log.d("MainActivity", "Swipe LEFT detected - opening ReportActivity with user: " + userName);
+                                Intent intent = new Intent(MainActivity.this, ReportActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                finish(); // Destroy this activity
+                                return true;
+                            }
+                        } else {
+                            Log.d("MainActivity", "Swipe threshold not met - diffX: " + Math.abs(diffX) + ", velocityX: " + Math.abs(velocityX));
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("MainActivity", "Error in swipe detection: " + e.getMessage());
+                }
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Handle touch events for swipe gestures
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (gestureDetector.onTouchEvent(event)) {
+            return true;
+        }
+        return super.dispatchTouchEvent(event);
     }
 
     /**
@@ -211,7 +309,13 @@ public class MainActivity extends AppCompatActivity {
     private void setupButtonClickListeners() {
         // Instant messaging system for staff communication
         if (InstantMessage != null) {
-            InstantMessage.setOnClickListener(view -> openActivity(MessagingActivity.class));
+            InstantMessage.setOnClickListener(view -> {
+                if (isOfflineMode) {
+                    Toast.makeText(this, "Messaging requires online connection", Toast.LENGTH_SHORT).show();
+                } else {
+                    openActivity(MessagingActivity.class);
+                }
+            });
         }
 
         // Company website access
@@ -221,17 +325,37 @@ public class MainActivity extends AppCompatActivity {
 
         // Report generation and management
         if (reportButton != null) {
-            reportButton.setOnClickListener(view -> openActivity(ReportSelectionActivity.class));
+            reportButton.setOnClickListener(view -> {
+                if (isOfflineMode) {
+                    // In offline mode, go directly to report creation
+                    openActivity(ReportActivity.class);
+                } else {
+                    // In online mode, go to report selection
+                    openActivity(ReportSelectionActivity.class);
+                }
+            });
         }
 
         // View and manage stored reports
         if (reportViewButton != null) {
-            reportViewButton.setOnClickListener(view -> openActivity(PDFSelectionActivity.class));
+            reportViewButton.setOnClickListener(view -> {
+                if (isOfflineMode) {
+                    Toast.makeText(this, "Report viewing requires online connection", Toast.LENGTH_SHORT).show();
+                } else {
+                    openActivity(PDFSelectionActivity.class);
+                }
+            });
         }
 
         // Contract management and customer tracking
         if (contractsButton != null) {
-            contractsButton.setOnClickListener(view -> openActivity(ContractsActivity.class));
+            contractsButton.setOnClickListener(view -> {
+                if (isOfflineMode) {
+                    Toast.makeText(this, "Contract management requires online connection", Toast.LENGTH_SHORT).show();
+                } else {
+                    openActivity(ContractsActivity.class);
+                }
+            });
         }
 
         // Quotation generation and management
@@ -265,7 +389,13 @@ public class MainActivity extends AppCompatActivity {
 
         // Work View Calendar and scheduling
         if (WorkViewButton != null) {
-            WorkViewButton.setOnClickListener(view -> openActivity(WorkViewActivity.class));
+            WorkViewButton.setOnClickListener(view -> {
+                if (isOfflineMode) {
+                    Toast.makeText(this, "Work schedule requires online connection", Toast.LENGTH_SHORT).show();
+                } else {
+                    openActivity(WorkViewActivity.class);
+                }
+            });
         }
 
         // Secure logout - clears activity stack and returns to login

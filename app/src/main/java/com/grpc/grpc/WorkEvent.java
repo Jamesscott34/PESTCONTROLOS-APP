@@ -29,6 +29,7 @@ public class WorkEvent {
     private String address;
     private String issue;
     private String notes;
+    private String createdBy;
 
     // Default constructor for Firebase
     public WorkEvent() {}
@@ -149,6 +150,14 @@ public class WorkEvent {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 
     /**

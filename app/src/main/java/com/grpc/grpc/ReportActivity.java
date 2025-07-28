@@ -72,12 +72,16 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import android.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
+import androidx.core.view.GestureDetectorCompat;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -104,6 +108,9 @@ public class ReportActivity extends AppCompatActivity {
 
     // User context and session management
     private String userName;
+    private GestureDetectorCompat gestureDetector;
+    private static final int SWIPE_THRESHOLD = 50;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 50;
 
     // ============================================================================
     // ACTION BUTTONS - User interface controls
@@ -139,6 +146,8 @@ public class ReportActivity extends AppCompatActivity {
             finish();
             return;
         }
+        Log.d("ReportActivity", "Username loaded from intent: " + userName);
+        Log.d("ReportActivity", "ReportActivity created with user: " + userName);
 
         // ============================================================================
         // EVENT DATA HANDLING - Pre-fill form if coming from WorkView
@@ -148,6 +157,13 @@ public class ReportActivity extends AppCompatActivity {
         String eventType = getIntent().getStringExtra("EVENT_TYPE");
         String eventAddress = getIntent().getStringExtra("EVENT_ADDRESS");
         String eventIssue = getIntent().getStringExtra("EVENT_ISSUE");
+
+        // ============================================================================
+        // CONTRACT DATA HANDLING - Pre-fill form if coming from ViewContractActivity
+        // ============================================================================
+        
+        String contractCompanyName = getIntent().getStringExtra("COMPANY_NAME");
+        String contractAddress = getIntent().getStringExtra("ADDRESS");
 
         // ============================================================================
         // UI COMPONENT INITIALIZATION
@@ -160,6 +176,9 @@ public class ReportActivity extends AppCompatActivity {
         
         // Set up welcome message with user's name
         setupWelcomeMessage();
+        
+        // Initialize gesture detector for swipe navigation
+        initializeGestureDetector();
 
         // ============================================================================
         // PRE-FILL FORM DATA FROM EVENT
@@ -189,6 +208,18 @@ public class ReportActivity extends AppCompatActivity {
         }
 
         // ============================================================================
+        // PRE-FILL FORM DATA FROM CONTRACT
+        // ============================================================================
+        
+        if (contractCompanyName != null && !contractCompanyName.isEmpty() && !contractCompanyName.equals("N/A")) {
+            nameInput.setText(contractCompanyName);
+        }
+        
+        if (contractAddress != null && !contractAddress.isEmpty() && !contractAddress.equals("N/A")) {
+            addressInput.setText(contractAddress);
+        }
+
+        // ============================================================================
         // SAVE BUTTON FUNCTIONALITY
         // ============================================================================
         
@@ -198,6 +229,57 @@ public class ReportActivity extends AppCompatActivity {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             saveReport(db);
         });
+    }
+
+    /**
+     * Initialize gesture detector for swipe navigation
+     */
+    private void initializeGestureDetector() {
+        gestureDetector = new GestureDetectorCompat(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getY() - e1.getY();
+                    
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                // Swipe right - open MainActivity
+                                Log.d("ReportActivity", "Swipe RIGHT detected - opening MainActivity with user: " + userName);
+                                Intent intent = new Intent(ReportActivity.this, MainActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                finish(); // Destroy this activity
+                                return true;
+                            } else {
+                                // Swipe left - open GeneralReportActivity (previous in sequence)
+                                Log.d("ReportActivity", "Swipe LEFT detected - opening GeneralReportActivity with user: " + userName);
+                                Intent intent = new Intent(ReportActivity.this, GeneralReportActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                finish(); // Destroy this activity
+                                return true;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("ReportActivity", "Error in swipe detection: " + e.getMessage());
+                }
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Handle touch events for swipe gestures
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (gestureDetector.onTouchEvent(event)) {
+            return true;
+        }
+        return super.dispatchTouchEvent(event);
     }
 
     /**
@@ -223,6 +305,9 @@ public class ReportActivity extends AppCompatActivity {
         android.widget.TextView welcomeTextView = findViewById(R.id.welcomeTextView);
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
+            Log.d("ReportActivity", "Welcome message set for user: " + userName);
+        } else {
+            Log.e("ReportActivity", "welcomeTextView is NULL! Check XML ID.");
         }
     }
 
@@ -376,10 +461,87 @@ public class ReportActivity extends AppCompatActivity {
                 );
             }
             
-            // Show Firebase folder selection popup after successful save
-            showFirebaseFolderSelectionPopup();
+            // Clear fields after successful save
+            clearInputFields();
+            
+            // Show options dialog after successful save
+            showReportOptionsDialog();
         } else {
             Toast.makeText(this, "Error Saving Report!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Shows a dialog with options to share report, upload to Firebase, or cancel
+     */
+    private void showReportOptionsDialog() {
+        try {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Report Saved Successfully!")
+                    .setMessage("What would you like to do with your report?")
+                    .setPositiveButton("Share Report", (dialog, which) -> {
+                        shareReport();
+                    })
+                    .setNegativeButton("Upload to Firebase", (dialog, which) -> {
+                        showFirebaseFolderSelectionPopup();
+                    })
+                    .setNeutralButton("Cancel", (dialog, which) -> {
+                        dialog.dismiss();
+                    })
+                    .setCancelable(false);
+            
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Error showing dialog: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Shares the generated report using an Intent
+     */
+    private void shareReport() {
+        try {
+            // Find the generated PDF file
+            File reportsFolder = new File(getExternalFilesDir(null), "GRPEST REPORTS");
+            if (!reportsFolder.exists()) {
+                Toast.makeText(this, "Report folder not found!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Look for the most recent PDF file (the one we just generated)
+            File[] files = reportsFolder.listFiles((dir, name) -> name.endsWith(".pdf"));
+            if (files == null || files.length == 0) {
+                Toast.makeText(this, "No PDF report found to share!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Get the most recent file
+            File latestFile = files[files.length - 1];
+            for (File file : files) {
+                if (file.lastModified() > latestFile.lastModified()) {
+                    latestFile = file;
+                }
+            }
+
+            Uri fileUri = androidx.core.content.FileProvider.getUriForFile(
+                    this,
+                    "com.grpc.grpc.fileprovider",
+                    latestFile
+            );
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("application/pdf");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            startActivity(Intent.createChooser(shareIntent, "Share Report"));
+            
+            // Show the options dialog again after sharing
+            showReportOptionsDialog();
+        } catch (Exception e) {
+            Toast.makeText(this, "No application available to share the report.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -394,15 +556,15 @@ public class ReportActivity extends AppCompatActivity {
             List<String> folderList = new ArrayList<>();
             for (StorageReference prefix : listResult.getPrefixes()) {
                 String folderName = prefix.getName();
-                // Only show Reports folders (Reports25, Reports26, etc.)
-                if (folderName.matches("Reports\\d+")) {
+                if (!folderName.equals("backup")) { // Exclude the backup folder
                     folderList.add(folderName);
                 }
             }
 
             if (folderList.isEmpty()) {
-                Toast.makeText(this, "No Reports folders found.", Toast.LENGTH_SHORT).show();
-                clearInputFields();
+                Toast.makeText(this, "No available folders to select.", Toast.LENGTH_SHORT).show();
+                // Show the options dialog again if no folders found
+                showReportOptionsDialog();
                 return;
             }
 
@@ -410,22 +572,24 @@ public class ReportActivity extends AppCompatActivity {
             String[] foldersArray = folderList.toArray(new String[0]);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Select Reports Folder");
-            builder.setMessage("Choose where to save your report:");
+            builder.setTitle("Select a Parent Folder");
             builder.setItems(foldersArray, (dialog, which) -> {
                 String selectedFolder = foldersArray[which];
                 showSubFolderSelectionDialog(selectedFolder);
             });
 
             builder.setNegativeButton("Cancel", (dialog, which) -> {
-                clearInputFields();
+                // Show the options dialog again if user cancels
+                showReportOptionsDialog();
                 dialog.dismiss();
             });
             builder.show();
 
-        }).addOnFailureListener(e ->
-                Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-        );
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            // Show the options dialog again if loading folders fails
+            showReportOptionsDialog();
+        });
     }
 
     /**
@@ -434,6 +598,8 @@ public class ReportActivity extends AppCompatActivity {
      * @param parentFolder The selected parent folder
      */
     private void showSubFolderSelectionDialog(String parentFolder) {
+        Toast.makeText(this, "Loading subfolders for: " + parentFolder, Toast.LENGTH_SHORT).show();
+        
         FirebaseStorage storage = FirebaseStorage.getInstance();
         StorageReference parentFolderRef = storage.getReference().child(parentFolder);
 
@@ -451,21 +617,24 @@ public class ReportActivity extends AppCompatActivity {
 
             // Show subfolder selection dialog
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Select Subfolder in " + parentFolder);
+            builder.setTitle("Select a Subfolder");
             builder.setItems(subFolderList.toArray(new String[0]), (dialog, which) -> {
                 String selectedSubFolder = subFolderList.get(which);
                 uploadReportToFirebase(parentFolder + "/" + selectedSubFolder);
             });
 
             builder.setNegativeButton("Cancel", (dialog, which) -> {
-                clearInputFields();
+                // Show the options dialog again if user cancels
+                showReportOptionsDialog();
                 dialog.dismiss();
             });
             builder.show();
 
-        }).addOnFailureListener(e ->
-                Toast.makeText(this, "Failed to load subfolders: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-        );
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Failed to load subfolders: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            // Show the options dialog again if loading subfolders fails
+            showReportOptionsDialog();
+        });
     }
 
     /**
@@ -478,7 +647,8 @@ public class ReportActivity extends AppCompatActivity {
         File reportsFolder = new File(getExternalFilesDir(null), "GRPEST REPORTS");
         if (!reportsFolder.exists()) {
             Toast.makeText(this, "Report folder not found!", Toast.LENGTH_SHORT).show();
-            clearInputFields();
+            // Show the options dialog again if report folder not found
+            showReportOptionsDialog();
             return;
         }
 
@@ -486,7 +656,8 @@ public class ReportActivity extends AppCompatActivity {
         File[] files = reportsFolder.listFiles((dir, name) -> name.endsWith(".pdf"));
         if (files == null || files.length == 0) {
             Toast.makeText(this, "No PDF report found to upload!", Toast.LENGTH_SHORT).show();
-            clearInputFields();
+            // Show the options dialog again if no PDF found
+            showReportOptionsDialog();
             return;
         }
 
@@ -506,10 +677,12 @@ public class ReportActivity extends AppCompatActivity {
         UploadTask uploadTask = fileRef.putFile(Uri.fromFile(latestFile));
         uploadTask.addOnSuccessListener(taskSnapshot -> {
             Toast.makeText(this, "Report uploaded successfully to " + folderPath, Toast.LENGTH_SHORT).show();
-            clearInputFields();
+            // Show the options dialog again after successful upload
+            showReportOptionsDialog();
         }).addOnFailureListener(e -> {
             Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            clearInputFields();
+            // Show the options dialog again after failed upload
+            showReportOptionsDialog();
         });
     }
 

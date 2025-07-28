@@ -17,6 +17,9 @@ android {
         versionName = "2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Enable BuildConfig generation
+        buildConfigField("boolean", "DEBUG", "true")
     }
 
     buildTypes {
@@ -26,6 +29,24 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            
+            // Environment variables for release build
+            buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${project.findProperty("FIREBASE_PROJECT_ID") ?: "grpc-app-12345"}\"")
+            buildConfigField("String", "FIREBASE_API_KEY", "\"${project.findProperty("FIREBASE_API_KEY") ?: ""}\"")
+            buildConfigField("String", "APP_ENVIRONMENT", "\"production\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.grpcstaff.com\"")
+            buildConfigField("String", "DEFAULT_USER_EMAIL", "\"admin@grpc.com\"")
+            buildConfigField("String", "DEFAULT_USER_PASSWORD", "\"admin123\"")
+        }
+        
+        debug {
+            // Environment variables for debug build
+            buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${project.findProperty("FIREBASE_PROJECT_ID") ?: "grpc-app-debug"}\"")
+            buildConfigField("String", "FIREBASE_API_KEY", "\"${project.findProperty("FIREBASE_API_KEY") ?: ""}\"")
+            buildConfigField("String", "APP_ENVIRONMENT", "\"development\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://dev-api.grpcstaff.com\"")
+            buildConfigField("String", "DEFAULT_USER_EMAIL", "\"test@grpc.com\"")
+            buildConfigField("String", "DEFAULT_USER_PASSWORD", "\"test123\"")
         }
     }
     compileOptions {
@@ -39,6 +60,10 @@ android {
         includeInApk = true
         includeInBundle = true
     }
+    
+    buildFeatures {
+        buildConfig = true
+    }
 
 }
 
@@ -47,8 +72,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.firebase.database)
-    implementation(libs.firebase.storage)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -59,13 +82,15 @@ dependencies {
     implementation("com.itextpdf:io:7.1.15")
     implementation("com.itextpdf:kernel:7.1.15")
 
-    implementation(platform("com.google.firebase:firebase-bom:33.8.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-messaging:24.1.0")
+    implementation("com.google.firebase:firebase-messaging")
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-database")
+    
+
 
    
 

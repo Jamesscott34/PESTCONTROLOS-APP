@@ -5,7 +5,10 @@
     android:layout_height="match_parent"
     android:padding="16dp"
     android:background="@drawable/bk"
-    android:paddingTop="?attr/actionBarSize">
+    android:paddingTop="?attr/actionBarSize"
+    android:fillViewport="true"
+    android:scrollbars="vertical"
+    android:fadeScrollbars="false">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,7 +30,7 @@
             android:inputType="text"
             android:layout_marginBottom="16dp"
             android:padding="12dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
@@ -39,7 +42,7 @@
             android:inputType="textPostalAddress"
             android:layout_marginBottom="16dp"
             android:padding="12dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
@@ -51,7 +54,7 @@
             android:inputType="textEmailAddress"
             android:layout_marginBottom="16dp"
             android:padding="12dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
@@ -63,7 +66,7 @@
             android:inputType="phone"
             android:layout_marginBottom="16dp"
             android:padding="12dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
@@ -75,7 +78,7 @@
             android:inputType="number"
             android:layout_marginBottom="16dp"
             android:padding="12dp"
-            android:background="?attr/colorSurface"
+            android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 

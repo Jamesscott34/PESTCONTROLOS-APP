@@ -52,6 +52,9 @@ public class AddContractActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_contract);
+        
+        // Handle keyboard properly
+        getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         // Initialize Firestore
         db = FirebaseFirestore.getInstance();
@@ -117,13 +120,7 @@ public class AddContractActivity extends AppCompatActivity {
         });
 
         backButton.setOnClickListener(view -> {
-            // Create an intent to go back to the previous screen
-            Intent intent = new Intent(AddContractActivity.this, ContractsActivity.class);
-            // Pass the username back to the previous screen
-            intent.putExtra("USER_NAME", userName);
-            // Start the previous activity
-            startActivity(intent);
-            // Finish the current activity to prevent going back to it
+            // Simply go back to the previous screen
             finish();
         });
     }
@@ -216,12 +213,9 @@ public class AddContractActivity extends AppCompatActivity {
     }
     /**
      * Returns to the ContractsActivity after successfully adding a contract.
-     * Passes the username back to maintain user session.
+     * Simply finishes the current activity to go back to the previous screen.
      */
     private void returnToContractsActivity() {
-        Intent intent = new Intent(AddContractActivity.this, ContractsActivity.class);
-        intent.putExtra("USER_NAME", userName);
-        startActivity(intent);
         finish();
     }
 

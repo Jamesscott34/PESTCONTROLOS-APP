@@ -59,6 +59,14 @@ public class MessagingActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_messaging);
+        
+        // Handle system UI for Samsung devices with navigation buttons
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setFlags(
+                android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+            );
+        }
 
         messageInput = findViewById(R.id.messageInput);
         sendButton = findViewById(R.id.sendButton);
@@ -89,6 +97,7 @@ public class MessagingActivity extends AppCompatActivity {
     private void sendMessage() {
         String messageText = messageInput.getText().toString().trim();
         if (TextUtils.isEmpty(messageText) || currentUser == null) {
+            Toast.makeText(this, "Please enter a message", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -99,14 +108,24 @@ public class MessagingActivity extends AppCompatActivity {
         message.put("body", messageText);
         message.put("timestamp", Timestamp.now());
 
+        // Show sending indicator
+        sendButton.setEnabled(false);
+        sendButton.setText("Sending...");
+
         firestore.collection("messages").add(message)
                 .addOnSuccessListener(documentReference -> {
-                    Log.d("Firestore", "Message sent");
-                    Toast.makeText(this, "Message sent", Toast.LENGTH_SHORT).show();
+                    Log.d("Firestore", "Message sent successfully");
+                    Toast.makeText(this, "✅ Message sent", Toast.LENGTH_SHORT).show();
+                    messageInput.setText("");
+                    sendButton.setEnabled(true);
+                    sendButton.setText("Send");
                 })
-                .addOnFailureListener(e -> Log.e("Firestore", "Error sending message", e));
-
-        messageInput.setText("");
+                .addOnFailureListener(e -> {
+                    Log.e("Firestore", "Error sending message", e);
+                    Toast.makeText(this, "❌ Failed to send message", Toast.LENGTH_SHORT).show();
+                    sendButton.setEnabled(true);
+                    sendButton.setText("Send");
+                });
     }
 
 
@@ -116,6 +135,7 @@ public class MessagingActivity extends AppCompatActivity {
                 .addSnapshotListener((snapshots, error) -> {
                     if (error != null) {
                         Log.e("Firestore", "Error loading messages", error);
+                        Toast.makeText(this, "❌ Error loading messages", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
@@ -124,6 +144,7 @@ public class MessagingActivity extends AppCompatActivity {
                         return;
                     }
 
+                    int newMessageCount = 0;
                     for (DocumentChange change : snapshots.getDocumentChanges()) {
                         QueryDocumentSnapshot doc = change.getDocument();
                         String sender = doc.getString("sender");
@@ -139,9 +160,33 @@ public class MessagingActivity extends AppCompatActivity {
                             if (!messageIds.contains(doc.getId())) {
                                 messages.add(fullMessage);
                                 messageIds.add(doc.getId());
-                                messageAdapter.notifyDataSetChanged();
+                                newMessageCount++;
                             }
-
+                        }
+                    }
+                    
+                    if (newMessageCount > 0) {
+                        messageAdapter.notifyDataSetChanged();
+                        // Auto-scroll to bottom for new messages
+                        messageListView.post(() -> messageListView.setSelection(messages.size() - 1));
+                        
+                        // Show notification for new messages (if not from current user)
+                        if (newMessageCount > 0 && currentUser != null) {
+                            String currentSender = currentUser.getEmail().split("@")[0];
+                            boolean hasNewMessagesFromOthers = false;
+                            
+                            // Check if any new messages are from other users
+                            for (int i = messages.size() - newMessageCount; i < messages.size(); i++) {
+                                String message = messages.get(i);
+                                if (!message.startsWith(currentSender + " (")) {
+                                    hasNewMessagesFromOthers = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (hasNewMessagesFromOthers) {
+                                Toast.makeText(this, "💬 New messages received", Toast.LENGTH_SHORT).show();
+                            }
                         }
                     }
                 });

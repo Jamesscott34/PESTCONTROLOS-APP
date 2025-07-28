@@ -65,6 +65,15 @@
             android:textSize="18sp"
             android:layout_marginBottom="16dp" />
 
+        <!-- Due List Button -->
+        <Button
+            android:id="@+id/DueListButton"
+            android:layout_width="wrap_content"
+            android:layout_height="58dp"
+            android:text="Due List"
+            android:textSize="18sp"
+            android:layout_marginBottom="16dp" />
+
         <!-- View Behinds Button -->
         <Button
             android:id="@+id/ViewBehindsButton"

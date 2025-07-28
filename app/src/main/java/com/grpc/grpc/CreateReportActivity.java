@@ -50,6 +50,9 @@ public class CreateReportActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quotation_report);
+        
+        // Handle keyboard properly
+        getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         // Retrieve the user's name passed from ContractsActivity
         userName = getIntent().getStringExtra("USER_NAME");
@@ -58,6 +61,10 @@ public class CreateReportActivity extends AppCompatActivity {
             finish();
             return;
         }
+
+        // Auto-fill company name and address if passed from ViewContractActivity
+        String companyName = getIntent().getStringExtra("COMPANY_NAME");
+        String address = getIntent().getStringExtra("ADDRESS");
 
         // Initialize UI components
         dateInput = findViewById(R.id.dateInput);
@@ -74,6 +81,14 @@ public class CreateReportActivity extends AppCompatActivity {
         EditText quoteNumberInput = findViewById(R.id.quoteNumberInput);
         quoteNumberInput.setText(String.valueOf(quoteNumberCounter));
 
+        // Auto-fill company name and address if provided
+        if (companyName != null && !companyName.isEmpty() && !companyName.equals("N/A")) {
+            quoteDescriptionInput.setText(companyName);
+        }
+        if (address != null && !address.isEmpty() && !address.equals("N/A")) {
+            addressInput.setText(address);
+        }
+
         // Button Click Listeners
         addLineItemButton.setOnClickListener(v -> addLineItem());
         generateQuoteButton.setOnClickListener(v -> generatePDFReport());
@@ -83,14 +98,11 @@ public class CreateReportActivity extends AppCompatActivity {
         addLineItem();
     }
     /**
-     * Navigates back to the previous activity, passing the username as a result
-     * to maintain session continuity.
+     * Navigates back to the previous activity.
+     * Simply finishes the current activity to return to the previous screen.
      */
     private void navigateBackToPreviousActivity() {
-        Intent backIntent = new Intent();
-        backIntent.putExtra("USER_NAME", userName); // Pass the username back
-        setResult(RESULT_OK, backIntent); // Set result for the previous activity
-        finish(); // Close the activity
+        finish();
     }
     /**
      * Dynamically adds a new line item input field for description and price.

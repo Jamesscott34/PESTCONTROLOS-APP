@@ -25,6 +25,18 @@ firestore.indexes.json
 firestore.rules
 storage.rules
 
+# Environment Variables and Configuration
+.env
+.env.*
+gradle.properties
+local.gradle.properties
+production.gradle.properties
+development.gradle.properties
+staging.gradle.properties
+*.env
+config.properties
+secrets.properties
+
 # Firebase Functions
 functions/node_modules/
 functions/lib/
@@ -38,13 +50,62 @@ node_modules/
 app/release/
 app/debug/
 
-# Misc
+# Build outputs and APKs
+app/build/
+app/build/outputs/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Keystore and signing files
 *.keystore
 *.jks
 *.pem
 *.p12
 *.key
 *.crt
-*.bak
-*.tmp
+*.pfx
+signing.properties
+keystore.properties
+
+# Logs and temporary files
 *.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Database files (for local development)
+*.db
+*.sqlite
+*.sqlite3
+UserDatabase
+UserDatabase.*
+
+# Backup and cache files
+*.backup
+*.cache
+.cache/
+backup/
+
+# Environment-specific files
+env/
+environments/
+config/
+secrets/
+credentials/
+
+# Documentation with sensitive info
+README.local.md
+SETUP.local.md
+CONFIG.local.md

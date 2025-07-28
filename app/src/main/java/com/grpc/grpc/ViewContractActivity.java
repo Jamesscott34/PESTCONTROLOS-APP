@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -16,6 +18,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GestureDetectorCompat;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -110,6 +113,9 @@ public class ViewContractActivity extends AppCompatActivity {
     
     // Current user information for permissions and data filtering
     private String userName;
+    private GestureDetectorCompat gestureDetector;
+    private static final int SWIPE_THRESHOLD = 50;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 50;
     
     // Date formatting utility for consistent date display
     private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
@@ -135,6 +141,7 @@ public class ViewContractActivity extends AppCompatActivity {
             finish();
             return;
         }
+        Log.d("ViewContractActivity", "ViewContractActivity created with user: " + userName);
 
         // Initialize UI components
         initializeUIComponents();
@@ -144,6 +151,60 @@ public class ViewContractActivity extends AppCompatActivity {
         
         // Set up navigation and search functionality
         setupNavigationAndSearch();
+        
+        // Initialize gesture detector for swipe navigation
+        initializeGestureDetector();
+    }
+
+    /**
+     * Initialize gesture detector for swipe navigation
+     */
+    private void initializeGestureDetector() {
+        gestureDetector = new GestureDetectorCompat(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getY() - e1.getY();
+                    
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                // Swipe right - open WorkViewActivity
+                                Log.d("ViewContractActivity", "Swipe RIGHT detected - opening WorkViewActivity with user: " + userName);
+                                Intent intent = new Intent(ViewContractActivity.this, WorkViewActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                finish(); // Destroy this activity
+                                return true;
+                            } else {
+                                // Swipe left - open MainActivity (previous in sequence)
+                                Log.d("ViewContractActivity", "Swipe LEFT detected - opening MainActivity with user: " + userName);
+                                Intent intent = new Intent(ViewContractActivity.this, MainActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                finish(); // Destroy this activity
+                                return true;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("ViewContractActivity", "Error in swipe detection: " + e.getMessage());
+                }
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Handle touch events for swipe gestures
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (gestureDetector.onTouchEvent(event)) {
+            return true;
+        }
+        return super.dispatchTouchEvent(event);
     }
 
     /**
@@ -710,7 +771,7 @@ public class ViewContractActivity extends AppCompatActivity {
         dialog.setTitle("Contract Options");
 
 
-        dialog.setItems(new CharSequence[]{"Routine", "Callout", "Update Last Visit", "Route", "InitialSetup"}, (dialogInterface, which) -> {
+        dialog.setItems(new CharSequence[]{"Routine", "Callout", "Update Last Visit", "Route", "InitialSetup", "Create Report"}, (dialogInterface, which) -> {
             String companyName = contract.get("name") != null ? contract.get("name").toString() : "N/A";
             String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
 
@@ -739,6 +800,15 @@ public class ViewContractActivity extends AppCompatActivity {
                     initialsetupIntent.putExtra("ADDRESS", address);
                     initialsetupIntent.putExtra("DOCUMENT_ID", documentId);
                     startActivity( initialsetupIntent);
+                    break;
+
+                case 5: // Create Report
+                    Intent createReportIntent = new Intent(ViewContractActivity.this, ReportActivity.class);
+                    createReportIntent.putExtra("USER_NAME", userName);
+                    createReportIntent.putExtra("COMPANY_NAME", companyName);
+                    createReportIntent.putExtra("ADDRESS", address);
+                    startActivity(createReportIntent);
+                    break;
             }
         });
 

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <!-- App Logo/Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="GRPest Control"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginBottom="32dp" />
+
+    <!-- Status Text -->
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Checking network status..."
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_marginBottom="24dp"
+        android:padding="12dp"
+        android:background="@drawable/status_background" />
+
+    <!-- Email Input -->
+    <EditText
+        android:id="@+id/emailInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Email Address"
+        android:inputType="textEmailAddress"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/edit_text_border"
+        android:textSize="16sp" />
+
+    <!-- Password Input -->
+    <EditText
+        android:id="@+id/passwordInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Password"
+        android:inputType="textPassword"
+        android:padding="16dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/edit_text_border"
+        android:textSize="16sp" />
+
+    <!-- Login Button -->
+    <Button
+        android:id="@+id/loginButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Login"
+        android:textSize="18sp"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/black_border"
+        android:textColor="@android:color/white" />
+
+    <!-- Offline Mode Button -->
+    <Button
+        android:id="@+id/offlineModeButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Offline Mode"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:background="@drawable/black_border"
+        android:textColor="@android:color/white" />
+
+    <!-- Help Text -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Default users for offline mode:\n• james@grpestcontrol.ie / Alison12\n• ian@grpestcontrol.ie / Kristine\n• kristine@grpestcontrol.ie / Winston12"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:layout_marginTop="32dp"
+        android:textColor="@android:color/darker_gray" />
+
+</LinearLayout> 

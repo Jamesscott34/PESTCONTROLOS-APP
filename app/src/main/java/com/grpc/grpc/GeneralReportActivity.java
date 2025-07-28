@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -11,6 +13,7 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GestureDetectorCompat;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -23,6 +26,9 @@ public class GeneralReportActivity extends AppCompatActivity {
     private Button saveButton;
 
     private String userName;
+    private GestureDetectorCompat gestureDetector;
+    private static final int SWIPE_THRESHOLD = 50;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 50;
 
     private final String[] visitTypes = {
             "Initial Setup",
@@ -40,6 +46,7 @@ public class GeneralReportActivity extends AppCompatActivity {
         setContentView(R.layout.activity_general_report_creator);
 
         userName = getIntent().getStringExtra("USER_NAME");
+        Log.d("GeneralReportActivity", "GeneralReportActivity created with user: " + userName);
 
         nameInput = findViewById(R.id.nameInput);
         addressInput = findViewById(R.id.addressInput);
@@ -55,6 +62,9 @@ public class GeneralReportActivity extends AppCompatActivity {
         visitTypeSpinner.setAdapter(adapter);
 
         saveButton.setOnClickListener(v -> handleCreateReport());
+        
+        // Initialize gesture detector for swipe navigation
+        initializeGestureDetector();
     }
 
     private void handleCreateReport() {
@@ -101,5 +111,60 @@ public class GeneralReportActivity extends AppCompatActivity {
 
         startActivity(intent);
         finish();
+    }
+
+    /**
+     * Initialize gesture detector for swipe navigation
+     */
+    private void initializeGestureDetector() {
+        gestureDetector = new GestureDetectorCompat(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getY() - e1.getY();
+                    
+                    Log.d("GeneralReportActivity", "Swipe detected - diffX: " + diffX + ", diffY: " + diffY + ", velocityX: " + velocityX);
+                    
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                // Swipe right - open ReportActivity
+                                Log.d("GeneralReportActivity", "Swipe RIGHT detected - opening ReportActivity with user: " + userName);
+                                Intent intent = new Intent(GeneralReportActivity.this, ReportActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                finish(); // Destroy this activity
+                                return true;
+                            } else {
+                                // Swipe left - open WorkViewActivity (previous in sequence)
+                                Log.d("GeneralReportActivity", "Swipe LEFT detected - opening WorkViewActivity with user: " + userName);
+                                Intent intent = new Intent(GeneralReportActivity.this, WorkViewActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                finish(); // Destroy this activity
+                                return true;
+                            }
+                        } else {
+                            Log.d("GeneralReportActivity", "Swipe threshold not met - diffX: " + Math.abs(diffX) + ", velocityX: " + Math.abs(velocityX));
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("GeneralReportActivity", "Error in swipe detection: " + e.getMessage());
+                }
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Handle touch events for swipe gestures
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (gestureDetector.onTouchEvent(event)) {
+            return true;
+        }
+        return super.dispatchTouchEvent(event);
     }
 }

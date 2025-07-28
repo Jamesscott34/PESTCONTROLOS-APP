@@ -83,8 +83,25 @@
                 android:textStyle="bold"
                 android:gravity="center"
                 android:layout_marginTop="64dp"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="8dp"
                 android:textColor="?android:attr/textColorPrimary" />
+
+            <!-- ============================================================================
+                 OFFLINE MODE INDICATOR
+                 ============================================================================
+                 Shows when app is running in offline mode
+                 ============================================================================ -->
+            <TextView
+                android:id="@+id/offlineModeIndicator"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="14sp"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"
+                android:padding="8dp"
+                android:background="@drawable/status_background"
+                android:visibility="gone" />
 
             <!-- ============================================================================
                  REPORT MANAGEMENT BUTTONS
@@ -171,6 +188,12 @@
                 android:layout_height="wrap_content"
                 android:text="Commision"
                 android:layout_marginBottom="8dp" />
+
+            <!-- Spacer for commission section -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
+                android:background="@android:color/transparent" />
 
             <!-- ============================================================================
                  JOB MANAGEMENT

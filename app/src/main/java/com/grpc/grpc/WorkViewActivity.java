@@ -68,6 +68,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CalendarView;
@@ -78,6 +81,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
+import androidx.core.view.GestureDetectorCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -118,6 +122,11 @@ public class WorkViewActivity extends AppCompatActivity {
     private boolean isDailyView = true;
     private WorkEventAdapter eventsAdapter;
     private List<WorkEvent> eventsList = new ArrayList<>();
+    private GestureDetectorCompat gestureDetector;
+
+    // Swipe gesture constants
+    private static final int SWIPE_THRESHOLD = 50;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 50;
 
     // Time slots for daily view
     private static final String[] TIME_SLOTS = {
@@ -152,6 +161,7 @@ public class WorkViewActivity extends AppCompatActivity {
             finish();
             return;
         }
+        Log.d("WorkViewActivity", "WorkViewActivity created with user: " + userName);
 
         // ============================================================================
         // DATE INITIALIZATION
@@ -183,6 +193,93 @@ public class WorkViewActivity extends AppCompatActivity {
         
         // Set up notification channel
         createNotificationChannel();
+        
+        // Schedule notifications for existing events (run in background)
+        new android.os.Handler().postDelayed(() -> {
+            if (!isFinishing() && !isDestroyed()) {
+                try {
+                    scheduleNotificationsForExistingEvents();
+                } catch (Exception e) {
+                    Log.e("WorkViewActivity", "Error scheduling notifications: " + e.getMessage());
+                }
+            }
+        }, 1000); // Delay by 1 second to let activity fully load
+        
+        // Schedule daily missed events popup at 18:00 (run in background)
+        new android.os.Handler().postDelayed(() -> {
+            if (!isFinishing() && !isDestroyed()) {
+                try {
+                    scheduleDailyMissedEventsPopup();
+                } catch (Exception e) {
+                    Log.e("WorkViewActivity", "Error scheduling missed events popup: " + e.getMessage());
+                }
+            }
+        }, 2000); // Delay by 2 seconds
+        
+        // Initialize gesture detector for swipe navigation
+        initializeGestureDetector();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Clean up any pending operations
+        Log.d("WorkViewActivity", "WorkViewActivity destroyed");
+    }
+
+    /**
+     * Initialize gesture detector for swipe navigation
+     */
+    private void initializeGestureDetector() {
+        gestureDetector = new GestureDetectorCompat(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getY() - e1.getY();
+                    
+                    Log.d("WorkViewActivity", "Swipe detected - diffX: " + diffX + ", diffY: " + diffY + ", velocityX: " + velocityX);
+                    
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                // Swipe right - open GeneralReportActivity
+                                Log.d("WorkViewActivity", "Swipe RIGHT detected - opening GeneralReportActivity with user: " + userName);
+                                Intent intent = new Intent(WorkViewActivity.this, GeneralReportActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                finish(); // Destroy this activity
+                                return true;
+                            } else {
+                                // Swipe left - open ViewContractActivity (previous in sequence)
+                                Log.d("WorkViewActivity", "Swipe LEFT detected - opening ViewContractActivity with user: " + userName);
+                                Intent intent = new Intent(WorkViewActivity.this, ViewContractActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                finish(); // Destroy this activity
+                                return true;
+                            }
+                        } else {
+                            Log.d("WorkViewActivity", "Swipe threshold not met - diffX: " + Math.abs(diffX) + ", velocityX: " + Math.abs(velocityX));
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("WorkViewActivity", "Error in swipe detection: " + e.getMessage());
+                }
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Handle touch events for swipe gestures
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (gestureDetector.onTouchEvent(event)) {
+            return true;
+        }
+        return super.dispatchTouchEvent(event);
     }
 
     /**
@@ -689,7 +786,8 @@ public class WorkViewActivity extends AppCompatActivity {
         // Add address information based on event type
         if ("contract".equals(eventType)) {
             // For contracts, get address from contract data
-            db.collection("contracts").document(eventId)
+            String collectionName = targetUser + " Contracts";
+            db.collection(collectionName).document(eventId)
               .get()
               .addOnSuccessListener(documentSnapshot -> {
                   if (documentSnapshot.exists()) {
@@ -715,10 +813,30 @@ public class WorkViewActivity extends AppCompatActivity {
      * Save event to Firebase with user-specific collection
      */
     private void saveEventToFirebase(Map<String, Object> event) {
+        // Add createdBy field for notification system
+        event.put("createdBy", userName);
+        
         db.collection(getUserWorkViewCollection())
           .add(event)
           .addOnSuccessListener(documentReference -> {
               Toast.makeText(this, "Event added successfully!", Toast.LENGTH_SHORT).show();
+              
+              // Create WorkEvent object for notification scheduling
+              WorkEvent workEvent = new WorkEvent();
+              workEvent.setId(documentReference.getId());
+              workEvent.setUserName((String) event.get("userName"));
+              workEvent.setEventType((String) event.get("eventType"));
+              workEvent.setEventId((String) event.get("eventId"));
+              workEvent.setEventName((String) event.get("eventName"));
+              workEvent.setDate((String) event.get("date"));
+              workEvent.setTime((String) event.get("time"));
+              workEvent.setStatus((String) event.get("status"));
+              workEvent.setAddress((String) event.get("address"));
+              workEvent.setCreatedBy((String) event.get("createdBy"));
+              
+              // Schedule notification for the event
+              scheduleEventNotification(workEvent);
+              
               loadEventsForDate(selectedDate);
           })
           .addOnFailureListener(e -> {
@@ -794,6 +912,13 @@ public class WorkViewActivity extends AppCompatActivity {
      * Mark an event as completed
      */
     private void markEventDone(WorkEvent event) {
+        markEventComplete(event);
+    }
+
+    /**
+     * Mark an event as complete with 24-hour deletion timer
+     */
+    private void markEventComplete(WorkEvent event) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", "completed");
         updates.put("completedAt", new Date());
@@ -803,9 +928,31 @@ public class WorkViewActivity extends AppCompatActivity {
           .addOnSuccessListener(aVoid -> {
               // Update contract last visit if it's a contract event
               if ("contract".equals(event.getEventType())) {
-                  updateContractLastVisit(event.getEventId());
+                  updateContractLastVisit(event.getEventId(), event.getUserName());
               }
-              Toast.makeText(this, "Event marked as completed!", Toast.LENGTH_SHORT).show();
+              Toast.makeText(this, "Event marked as completed! Will be deleted in 24 hours.", Toast.LENGTH_SHORT).show();
+              loadEventsForDate(selectedDate);
+              
+              // Schedule deletion after 24 hours
+              scheduleEventDeletion(event.getId(), 24 * 60 * 60 * 1000); // 24 hours in milliseconds
+          })
+          .addOnFailureListener(e -> {
+              Toast.makeText(this, "Error updating event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+          });
+    }
+
+    /**
+     * Mark an event as scheduled (revert from completed)
+     */
+    private void markEventScheduled(WorkEvent event) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", "scheduled");
+        updates.put("completedAt", null);
+        
+        db.collection(getUserWorkViewCollection()).document(event.getId())
+          .update(updates)
+          .addOnSuccessListener(aVoid -> {
+              Toast.makeText(this, "Event marked as scheduled!", Toast.LENGTH_SHORT).show();
               loadEventsForDate(selectedDate);
           })
           .addOnFailureListener(e -> {
@@ -814,24 +961,294 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Update contract last visit date
+     * Schedule event deletion after specified delay
      */
-    private void updateContractLastVisit(String contractId) {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        String today = sdf.format(new Date());
-        
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("lastVisit", today);
-        
-        db.collection("contracts").document(contractId)
-          .update(updates)
-          .addOnSuccessListener(aVoid -> {
-              // Contract updated successfully
-          })
-          .addOnFailureListener(e -> {
-              // Handle error
-          });
+    private void scheduleEventDeletion(String eventId, long delayMillis) {
+        new android.os.Handler().postDelayed(() -> {
+            // Delete the event after the delay
+            db.collection(getUserWorkViewCollection()).document(eventId)
+              .delete()
+              .addOnSuccessListener(aVoid -> {
+                  Toast.makeText(this, "Completed event automatically deleted.", Toast.LENGTH_SHORT).show();
+                  loadEventsForDate(selectedDate);
+              })
+              .addOnFailureListener(e -> {
+                  // Event might have been manually deleted, ignore error
+              });
+        }, delayMillis);
     }
+
+    /**
+     * Schedule notification for upcoming events (30 minutes before)
+     */
+    private void scheduleEventNotification(WorkEvent event) {
+        try {
+            // Parse event time to get notification time (30 minutes before)
+            String eventTime = event.getTime();
+            String eventDate = event.getDate();
+            
+            // Parse the event date and time
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            
+            Date eventDateTime = dateFormat.parse(eventDate);
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(eventDateTime);
+            
+            // Parse time (HH:mm format)
+            String[] timeParts = eventTime.split(":");
+            int hour = Integer.parseInt(timeParts[0]);
+            int minute = Integer.parseInt(timeParts[1]);
+            calendar.set(Calendar.HOUR_OF_DAY, hour);
+            calendar.set(Calendar.MINUTE, minute);
+            
+            // Calculate notification time (30 minutes before)
+            calendar.add(Calendar.MINUTE, -30);
+            Date notificationTime = calendar.getTime();
+            
+            // Check if notification time is in the future
+            if (notificationTime.after(new Date())) {
+                long delayMillis = notificationTime.getTime() - new Date().getTime();
+                
+                new android.os.Handler().postDelayed(() -> {
+                    // Send notification
+                    sendEventNotification(event);
+                }, delayMillis);
+                
+                Toast.makeText(this, "Notification scheduled for " + event.getEventName() + " at " + eventTime, Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Error scheduling notification: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Schedule notifications for all existing events
+     */
+    private void scheduleNotificationsForExistingEvents() {
+        try {
+            // Get today's date and next 7 days
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            String today = sdf.format(new Date());
+            
+            Calendar calendar = Calendar.getInstance();
+            calendar.add(Calendar.DAY_OF_YEAR, 7);
+            String nextWeek = sdf.format(calendar.getTime());
+            
+            db.collection(getUserWorkViewCollection())
+              .whereGreaterThanOrEqualTo("date", today)
+              .whereLessThanOrEqualTo("date", nextWeek)
+              .whereEqualTo("status", "scheduled")
+              .get()
+              .addOnSuccessListener(queryDocumentSnapshots -> {
+                  try {
+                      for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                          WorkEvent event = document.toObject(WorkEvent.class);
+                          if (event != null) {
+                              event.setId(document.getId());
+                              scheduleEventNotification(event);
+                          }
+                      }
+                  } catch (Exception e) {
+                      Log.e("WorkViewActivity", "Error processing events for notifications: " + e.getMessage());
+                  }
+              })
+              .addOnFailureListener(e -> {
+                  Log.e("WorkViewActivity", "Error loading events for notifications: " + e.getMessage());
+              });
+        } catch (Exception e) {
+            Log.e("WorkViewActivity", "Error in scheduleNotificationsForExistingEvents: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Schedule daily missed events popup at 18:00
+     */
+    private void scheduleDailyMissedEventsPopup() {
+        try {
+            // Calculate time until 18:00 today
+            Calendar calendar = Calendar.getInstance();
+            Calendar targetTime = Calendar.getInstance();
+            targetTime.set(Calendar.HOUR_OF_DAY, 18);
+            targetTime.set(Calendar.MINUTE, 0);
+            targetTime.set(Calendar.SECOND, 0);
+            targetTime.set(Calendar.MILLISECOND, 0);
+            
+            // If it's already past 18:00, schedule for tomorrow
+            if (calendar.getTimeInMillis() >= targetTime.getTimeInMillis()) {
+                targetTime.add(Calendar.DAY_OF_YEAR, 1);
+            }
+            
+            long delayMillis = targetTime.getTimeInMillis() - calendar.getTimeInMillis();
+            
+            new android.os.Handler().postDelayed(() -> {
+                try {
+                    showMissedEventsPopup();
+                    // Schedule the next day's popup
+                    scheduleDailyMissedEventsPopup();
+                } catch (Exception e) {
+                    Log.e("WorkViewActivity", "Error in missed events popup: " + e.getMessage());
+                }
+            }, delayMillis);
+            
+        } catch (Exception e) {
+            Log.e("WorkViewActivity", "Error scheduling missed events popup: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Show popup with all missed events for today
+     */
+    private void showMissedEventsPopup() {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            String today = sdf.format(new Date());
+            
+            db.collection(getUserWorkViewCollection())
+              .whereEqualTo("date", today)
+              .whereEqualTo("status", "scheduled")
+              .get()
+              .addOnSuccessListener(queryDocumentSnapshots -> {
+                  try {
+                      List<WorkEvent> missedEvents = new ArrayList<>();
+                      
+                      for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                          WorkEvent event = document.toObject(WorkEvent.class);
+                          if (event != null) {
+                              event.setId(document.getId());
+                              
+                              // Check if event time has passed
+                              try {
+                                  String eventTime = event.getTime();
+                                  String[] timeParts = eventTime.split(":");
+                                  int eventHour = Integer.parseInt(timeParts[0]);
+                                  int eventMinute = Integer.parseInt(timeParts[1]);
+                                  
+                                  Calendar now = Calendar.getInstance();
+                                  Calendar eventTimeCal = Calendar.getInstance();
+                                  eventTimeCal.set(Calendar.HOUR_OF_DAY, eventHour);
+                                  eventTimeCal.set(Calendar.MINUTE, eventMinute);
+                                  eventTimeCal.set(Calendar.SECOND, 0);
+                                  eventTimeCal.set(Calendar.MILLISECOND, 0);
+                                  
+                                  if (now.getTimeInMillis() > eventTimeCal.getTimeInMillis()) {
+                                      missedEvents.add(event);
+                                  }
+                              } catch (Exception e) {
+                                  // Skip events with invalid time format
+                                  Log.d("WorkViewActivity", "Skipping event with invalid time format: " + e.getMessage());
+                              }
+                          }
+                      }
+              
+              if (!missedEvents.isEmpty()) {
+                  showMissedEventsDialog(missedEvents);
+              }
+          } catch (Exception e) {
+              Log.e("WorkViewActivity", "Error processing missed events: " + e.getMessage());
+          }
+      })
+      .addOnFailureListener(e -> {
+          Log.e("WorkViewActivity", "Error loading missed events: " + e.getMessage());
+      });
+    } catch (Exception e) {
+        Log.e("WorkViewActivity", "Error in showMissedEventsPopup: " + e.getMessage());
+    }
+}
+
+    /**
+     * Show dialog with missed events and options
+     */
+    private void showMissedEventsDialog(List<WorkEvent> missedEvents) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Missed Events - " + new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+        
+        // Create message with missed events
+        StringBuilder message = new StringBuilder();
+        message.append("You have ").append(missedEvents.size()).append(" missed event(s) today:\n\n");
+        
+        for (WorkEvent event : missedEvents) {
+            message.append("⏰ ").append(event.getTime()).append(" - ").append(event.getEventName());
+            if (event.getAddress() != null && !event.getAddress().isEmpty() && !event.getAddress().equals("N/A")) {
+                message.append("\n📍 ").append(event.getAddress());
+            }
+            message.append("\n\n");
+        }
+        
+        builder.setMessage(message.toString());
+        
+        // Add action buttons
+        builder.setPositiveButton("Reschedule All", (dialog, which) -> {
+            rescheduleMissedEvents(missedEvents);
+        });
+        
+        builder.setNegativeButton("Mark Complete", (dialog, which) -> {
+            markMissedEventsComplete(missedEvents);
+        });
+        
+        builder.setNeutralButton("Close", (dialog, which) -> {
+            dialog.dismiss();
+        });
+        
+        builder.setCancelable(false);
+        builder.show();
+    }
+
+    /**
+     * Reschedule all missed events for tomorrow
+     */
+    private void rescheduleMissedEvents(List<WorkEvent> missedEvents) {
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String tomorrowDate = sdf.format(tomorrow.getTime());
+        
+        final int[] rescheduledCount = {0};
+        for (WorkEvent event : missedEvents) {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("date", tomorrowDate);
+            
+            db.collection(getUserWorkViewCollection()).document(event.getId())
+              .update(updates)
+              .addOnSuccessListener(aVoid -> {
+                  rescheduledCount[0]++;
+                  if (rescheduledCount[0] == missedEvents.size()) {
+                      Toast.makeText(this, "All missed events rescheduled for tomorrow!", Toast.LENGTH_SHORT).show();
+                      loadEventsForDate(selectedDate);
+                  }
+              })
+              .addOnFailureListener(e -> {
+                  Toast.makeText(this, "Error rescheduling event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+              });
+        }
+    }
+
+    /**
+     * Mark all missed events as complete
+     */
+    private void markMissedEventsComplete(List<WorkEvent> missedEvents) {
+        final int[] completedCount = {0};
+        for (WorkEvent event : missedEvents) {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("status", "completed");
+            updates.put("completedAt", new Date());
+            
+            db.collection(getUserWorkViewCollection()).document(event.getId())
+              .update(updates)
+              .addOnSuccessListener(aVoid -> {
+                  completedCount[0]++;
+                  if (completedCount[0] == missedEvents.size()) {
+                      Toast.makeText(this, "All missed events marked as complete!", Toast.LENGTH_SHORT).show();
+                      loadEventsForDate(selectedDate);
+                  }
+              })
+              .addOnFailureListener(e -> {
+                  Toast.makeText(this, "Error marking event complete: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+              });
+        }
+    }
+
+
 
     /**
      * Add follow-up to an existing event
@@ -1310,21 +1727,44 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Send notification for upcoming events
+     * Send notification for upcoming events with route option
      */
-    private void sendEventNotification(String eventName, String time) {
+    private void sendEventNotification(WorkEvent event) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "work_events")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Upcoming Work Event")
-            .setContentText(eventName + " at " + time)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-        
+            .setContentText(event.getEventName() + " at " + event.getTime())
+            .setStyle(new androidx.core.app.NotificationCompat.BigTextStyle()
+                .bigText(event.getEventName() + " at " + event.getTime() + "\n📍 " + (event.getAddress() != null ? event.getAddress() : "No address")))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true);
+
+        // Create intent for opening the app
+        Intent intent = new Intent(this, WorkViewActivity.class);
+        intent.putExtra("USER_NAME", userName);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent, 
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+
+        // Create intent for opening maps with route
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW);
+        if (event.getAddress() != null && !event.getAddress().isEmpty() && !event.getAddress().equals("N/A")) {
+            Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(event.getAddress()));
+            mapIntent.setData(gmmIntentUri);
+            mapIntent.setPackage("com.google.android.apps.maps");
+        }
+        android.app.PendingIntent mapPendingIntent = android.app.PendingIntent.getActivity(this, 1, mapIntent, 
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+
+        builder.setContentIntent(pendingIntent);
+        builder.addAction(android.R.drawable.ic_dialog_map, "Route", mapPendingIntent);
+
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(1, builder.build());
+        notificationManager.notify(event.getId().hashCode(), builder.build());
     }
 
     /**
-     * Create a clickable event view
+     * Create a clickable event view with checkbox
      */
     private LinearLayout createClickableEventView(WorkEvent event) {
         LinearLayout eventView = new LinearLayout(this);
@@ -1335,6 +1775,26 @@ public class WorkViewActivity extends AppCompatActivity {
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         ));
+
+        // Checkbox for marking complete
+        android.widget.CheckBox completeCheckBox = new android.widget.CheckBox(this);
+        completeCheckBox.setLayoutParams(new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+        
+        // Set checkbox state based on event status
+        completeCheckBox.setChecked("completed".equals(event.getStatus()));
+        
+        // Checkbox click listener
+        completeCheckBox.setOnClickListener(v -> {
+            if (completeCheckBox.isChecked()) {
+                markEventComplete(event);
+            } else {
+                // Uncheck - revert to scheduled
+                markEventScheduled(event);
+            }
+        });
 
         // Event icon/type indicator
         TextView eventTypeView = new TextView(this);
@@ -1374,11 +1834,12 @@ public class WorkViewActivity extends AppCompatActivity {
         eventDetails.addView(eventNameView);
         eventDetails.addView(eventTypeLabel);
 
-        // Add click listener
+        // Add click listener for options dialog
         eventView.setOnClickListener(v -> {
             showEventOptionsDialog(event);
         });
 
+        eventView.addView(completeCheckBox);
         eventView.addView(eventTypeView);
         eventView.addView(eventDetails);
         return eventView;
@@ -1440,11 +1901,38 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Update event
+     * Update event - for contracts, updates last visit date
      */
     private void updateEvent(WorkEvent event) {
-        // TODO: Implement event update functionality
-        Toast.makeText(this, "Update event: " + event.getEventName(), Toast.LENGTH_SHORT).show();
+        if ("contract".equals(event.getEventType())) {
+            // Update contract last visit date
+            updateContractLastVisit(event.getEventId(), event.getUserName());
+            Toast.makeText(this, "Contract last visit updated!", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Update event: " + event.getEventName(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Update contract last visit date with proper format
+     */
+    private void updateContractLastVisit(String contractId, String userName) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+        String today = sdf.format(new Date());
+        
+        String collectionName = userName + " Contracts";
+        
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("lastVisit", today);
+        
+        db.collection(collectionName).document(contractId)
+          .update(updates)
+          .addOnSuccessListener(aVoid -> {
+              Toast.makeText(this, "Contract last visit updated to " + today, Toast.LENGTH_SHORT).show();
+          })
+          .addOnFailureListener(e -> {
+              Toast.makeText(this, "Error updating contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+          });
     }
 
     /**

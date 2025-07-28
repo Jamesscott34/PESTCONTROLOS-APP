@@ -65,13 +65,18 @@ package com.grpc.grpc;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
+import androidx.core.view.GestureDetectorCompat;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -93,7 +98,7 @@ public class ContractsActivity extends AppCompatActivity {
     // UI COMPONENTS - Navigation and action buttons
     // ============================================================================
     
-    private Button addContractButton, viewContractButton, behindsListButton, viewBehindsButton;
+    private Button addContractButton, viewContractButton, behindsListButton, dueListButton, viewBehindsButton;
     
     // ============================================================================
     // DATA MANAGEMENT - User context and database operations
@@ -102,6 +107,9 @@ public class ContractsActivity extends AppCompatActivity {
     private String userName;
     private FirebaseFirestore db;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+    private GestureDetectorCompat gestureDetector;
+    private static final int SWIPE_THRESHOLD = 100;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 100;
 
     /**
      * Main entry point of the contract management hub
@@ -145,6 +153,50 @@ public class ContractsActivity extends AppCompatActivity {
         
         // Set up click listeners for all button actions
         setupButtonClickListeners();
+        
+        // Initialize gesture detector for swipe navigation
+        initializeGestureDetector();
+    }
+
+    /**
+     * Initialize gesture detector for swipe navigation
+     */
+    private void initializeGestureDetector() {
+        gestureDetector = new GestureDetectorCompat(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getY() - e1.getY();
+                    
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                // Swipe right - open MainActivity
+                                Intent intent = new Intent(ContractsActivity.this, MainActivity.class);
+                                intent.putExtra("USER_NAME", userName);
+                                startActivity(intent);
+                                return true;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("ContractsActivity", "Error in swipe detection: " + e.getMessage());
+                }
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Handle touch events for swipe gestures
+     */
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (gestureDetector.onTouchEvent(event)) {
+            return true;
+        }
+        return super.onTouchEvent(event);
     }
 
     /**
@@ -155,6 +207,7 @@ public class ContractsActivity extends AppCompatActivity {
         addContractButton = findViewById(R.id.AddContractButton);
         viewContractButton = findViewById(R.id.ViewContractButton);
         behindsListButton = findViewById(R.id.BehindsListButton);
+        dueListButton = findViewById(R.id.DueListButton);
         viewBehindsButton = findViewById(R.id.ViewBehindsButton);
     }
 
@@ -192,6 +245,11 @@ public class ContractsActivity extends AppCompatActivity {
             generateBehindsListPDF();
         });
 
+        // Due List Button - Generate due contracts report
+        dueListButton.setOnClickListener(v -> {
+            generateDueListPDF();
+        });
+
         // View Behinds Button - Navigate to behinds list management
         viewBehindsButton.setOnClickListener(v -> {
             Intent intent = new Intent(ContractsActivity.this, BehindsListViewActivity.class);
@@ -224,7 +282,8 @@ public class ContractsActivity extends AppCompatActivity {
                         contract.put("owner", userName);
                         contractsList.add(contract);
                     }
-                    processContractsForBehindsList(contractsList, userName);
+                    // Move heavy processing to background thread
+                    new ProcessContractsAsyncTask().execute(contractsList, userName);
                 } else {
                     Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                 }
@@ -259,10 +318,80 @@ public class ContractsActivity extends AppCompatActivity {
 
                 loadedCount[0]++;
                 if (loadedCount[0] == contractCollections.length) {
-                    // Generate PDFs for each technician
+                    // Generate PDFs for each technician using AsyncTask
                     for (String tech : technicianContracts.keySet()) {
                         List<Map<String, Object>> contracts = technicianContracts.get(tech);
-                        processContractsForBehindsList(contracts, tech);
+                        new ProcessContractsAsyncTask().execute(contracts, tech);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Generates a due list PDF containing all contracts due within 7 days.
+     * Loads contracts from Firebase, filters due ones, generates PDF, and shows options.
+     */
+    private void generateDueListPDF() {
+        // Show loading message
+        Toast.makeText(this, "Generating due list...", Toast.LENGTH_SHORT).show();
+
+        if ("Kristine".equalsIgnoreCase(userName)) {
+            // For Kristine, generate separate PDFs for Ian and James
+            generateDueListForKristine();
+        } else {
+            // Default load for Ian or James
+            String tableName = userName + " Contracts";
+
+            db.collection(tableName).get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    List<Map<String, Object>> contractsList = new ArrayList<>();
+                    for (QueryDocumentSnapshot document : task.getResult()) {
+                        Map<String, Object> contract = document.getData();
+                        contract.put("documentId", document.getId());
+                        contract.put("owner", userName);
+                        contractsList.add(contract);
+                    }
+                    // Move heavy processing to background thread
+                    new ProcessDueContractsAsyncTask().execute(contractsList, userName);
+                } else {
+                    Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
+    /**
+     * Generates separate due list PDFs for Ian and James when Kristine is the user.
+     */
+    private void generateDueListForKristine() {
+        String[] contractCollections = {"Ian Contracts", "James Contracts"};
+        Map<String, List<Map<String, Object>>> technicianContracts = new HashMap<>();
+        int[] loadedCount = {0};
+
+        for (String collectionName : contractCollections) {
+            db.collection(collectionName).get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    List<Map<String, Object>> techContracts = new ArrayList<>();
+                    for (QueryDocumentSnapshot document : task.getResult()) {
+                        Map<String, Object> contract = document.getData();
+                        contract.put("documentId", document.getId());
+                        contract.put("owner", collectionName.replace(" Contracts", ""));
+                        techContracts.add(contract);
+                    }
+
+                    String technician = collectionName.replace(" Contracts", "");
+                    technicianContracts.put(technician, techContracts);
+                } else {
+                    Toast.makeText(this, "Failed to load " + collectionName, Toast.LENGTH_SHORT).show();
+                }
+
+                loadedCount[0]++;
+                if (loadedCount[0] == contractCollections.length) {
+                    // Generate PDFs for each technician using AsyncTask
+                    for (String tech : technicianContracts.keySet()) {
+                        List<Map<String, Object>> contracts = technicianContracts.get(tech);
+                        new ProcessDueContractsAsyncTask().execute(contracts, tech);
                     }
                 }
             });
@@ -313,6 +442,26 @@ public class ContractsActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Behinds List PDF Generated")
                 .setMessage("PDF has been created successfully for " + technician + ". What would you like to do?")
+                .setPositiveButton("View PDF", (dialog, which) -> {
+                    viewPDF(pdfFile);
+                })
+                .setNegativeButton("Share PDF", (dialog, which) -> {
+                    sharePDF(pdfFile);
+                })
+                .setNeutralButton("Close", null)
+                .show();
+    }
+
+    /**
+     * Shows options to view or share the generated due list PDF.
+     *
+     * @param pdfFile The generated PDF file
+     * @param technician The technician name
+     */
+    private void showDuePdfOptions(File pdfFile, String technician) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Due List PDF Generated")
+                .setMessage("Due list PDF has been created successfully for " + technician + ". What would you like to do?")
                 .setPositiveButton("View PDF", (dialog, which) -> {
                     viewPDF(pdfFile);
                 })
@@ -434,6 +583,151 @@ public class ContractsActivity extends AppCompatActivity {
             return nextVisitDate.before(currentDate); // True if next visit date has passed
         } catch (Exception e) {
             return true; // Assume past due if parsing fails
+        }
+    }
+
+    /**
+     * Checks if a contract is due within 7 days.
+     *
+     * @param nextVisit The next visit date string
+     * @return True if the contract is due within 7 days, false otherwise
+     */
+    private boolean isDueSoon(String nextVisit) {
+        if (nextVisit == null || nextVisit.trim().isEmpty() || "N/A".equalsIgnoreCase(nextVisit)) {
+            return false; // Not due soon if no date
+        }
+
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+            Date nextVisitDate = dateFormat.parse(nextVisit);
+            Date currentDate = new Date();
+            
+            // Calculate 7 days from now
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(currentDate);
+            calendar.add(Calendar.DAY_OF_YEAR, 7);
+            Date sevenDaysFromNow = calendar.getTime();
+
+            // Check if next visit is within the next 7 days but not past due
+            return !nextVisitDate.before(currentDate) && !nextVisitDate.after(sevenDaysFromNow);
+        } catch (Exception e) {
+            return false; // Not due soon if parsing fails
+        }
+    }
+
+    /**
+     * AsyncTask to handle heavy contract processing and PDF generation on background thread
+     */
+    private class ProcessContractsAsyncTask extends AsyncTask<Object, Void, File> {
+        private String technician;
+        private List<Map<String, Object>> overdueContracts;
+
+        @Override
+        protected void onPreExecute() {
+            // Show progress dialog or loading indicator
+            Toast.makeText(ContractsActivity.this, "Processing contracts for " + technician + "...", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        protected File doInBackground(Object... params) {
+            try {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> contractsList = (List<Map<String, Object>>) params[0];
+                technician = (String) params[1];
+
+                // Process contracts on background thread
+                overdueContracts = new ArrayList<>();
+                for (Map<String, Object> contract : contractsList) {
+                    String nextVisit = calculateNextVisit(contract);
+                    if (isPastDue(nextVisit)) {
+                        overdueContracts.add(contract);
+                    }
+                }
+
+                if (overdueContracts.isEmpty()) {
+                    return null;
+                }
+
+                // Generate PDF on background thread
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    return BehindsListPDFGenerator.generateBehindsListPDF(technician, overdueContracts, ContractsActivity.this);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(File pdfFile) {
+            if (overdueContracts.isEmpty()) {
+                Toast.makeText(ContractsActivity.this, "No overdue contracts found for " + technician + "!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (pdfFile != null) {
+                showPdfOptions(pdfFile, technician);
+            } else {
+                Toast.makeText(ContractsActivity.this, "Failed to generate PDF for " + technician + "!", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    /**
+     * AsyncTask to handle heavy due contract processing and PDF generation on background thread
+     */
+    private class ProcessDueContractsAsyncTask extends AsyncTask<Object, Void, File> {
+        private String technician;
+        private List<Map<String, Object>> dueContracts;
+
+        @Override
+        protected void onPreExecute() {
+            // Show progress dialog or loading indicator
+            Toast.makeText(ContractsActivity.this, "Processing due contracts for " + technician + "...", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        protected File doInBackground(Object... params) {
+            try {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> contractsList = (List<Map<String, Object>>) params[0];
+                technician = (String) params[1];
+
+                // Process contracts on background thread
+                dueContracts = new ArrayList<>();
+                for (Map<String, Object> contract : contractsList) {
+                    String nextVisit = calculateNextVisit(contract);
+                    if (isDueSoon(nextVisit)) {
+                        dueContracts.add(contract);
+                    }
+                }
+
+                if (dueContracts.isEmpty()) {
+                    return null;
+                }
+
+                // Generate PDF on background thread
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    return DueListPDFGenerator.generateDueListPDF(technician, dueContracts, ContractsActivity.this);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(File pdfFile) {
+            if (dueContracts.isEmpty()) {
+                Toast.makeText(ContractsActivity.this, "No due contracts found for " + technician + "!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (pdfFile != null) {
+                showDuePdfOptions(pdfFile, technician);
+            } else {
+                Toast.makeText(ContractsActivity.this, "Failed to generate due PDF for " + technician + "!", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }
