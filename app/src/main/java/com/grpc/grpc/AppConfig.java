@@ -88,19 +88,7 @@ public class AppConfig {
         return "development".equals(APP_ENVIRONMENT);
     }
     
-    // ============================================================================
-    // DEFAULT USER CREDENTIALS (FOR OFFLINE MODE)
-    // ============================================================================
-    
-    /**
-     * Default admin email for offline mode
-     */
-    public static final String DEFAULT_USER_EMAIL = BuildConfig.DEFAULT_USER_EMAIL;
-    
-    /**
-     * Default admin password for offline mode
-     */
-    public static final String DEFAULT_USER_PASSWORD = BuildConfig.DEFAULT_USER_PASSWORD;
+
     
     // ============================================================================
     // DATABASE CONFIGURATION

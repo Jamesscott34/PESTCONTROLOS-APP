@@ -119,11 +119,9 @@ public class MainActivity extends AppCompatActivity {
     
     // User information extracted from login
     private String userEmail, userName;
-    private boolean isOfflineMode = false;
     
     // Welcome message display
     private TextView welcomeTextView;
-    private TextView offlineModeIndicator;
     private GestureDetectorCompat gestureDetector;
 
     // Permission request code for notification access
@@ -153,7 +151,6 @@ public class MainActivity extends AppCompatActivity {
         // Extract user information from intent
         userEmail = getIntent().getStringExtra("USER_EMAIL");
         String intentUserName = getIntent().getStringExtra("USER_NAME");
-        isOfflineMode = getIntent().getBooleanExtra("OFFLINE_MODE", false);
 
         // Set user name from intent extras or extract from email
         if (intentUserName != null && !intentUserName.isEmpty()) {
@@ -170,12 +167,8 @@ public class MainActivity extends AppCompatActivity {
             Log.d("MainActivity", "Using default username: " + userName);
         }
 
-        // Log offline mode status
-        if (isOfflineMode) {
-            Log.d("MainActivity", "Running in OFFLINE MODE - Limited functionality");
-        } else {
-            Log.d("MainActivity", "Running in ONLINE MODE - Full functionality");
-        }
+        // Log online mode status
+        Log.d("MainActivity", "Running in ONLINE MODE - Full functionality");
 
         // Subscribe to Firebase Cloud Messaging topics for push notifications
         // "all" topic receives general notifications
@@ -201,7 +194,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Set up welcome message with user's name
         welcomeTextView = findViewById(R.id.welcomeTextView);
-        offlineModeIndicator = findViewById(R.id.offlineModeIndicator);
         
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
@@ -209,13 +201,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Log.e("MainActivity", "welcomeTextView is NULL! Check XML ID.");
         }
-
-                            // Show offline mode indicator if in offline mode
-                    if (isOfflineMode && offlineModeIndicator != null) {
-                        offlineModeIndicator.setText("🔄 OFFLINE MODE - Firebase features may be limited");
-                        offlineModeIndicator.setVisibility(View.VISIBLE);
-                        offlineModeIndicator.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
-                    }
         
         // Log activity creation for debugging
         Log.d("MainActivity", "MainActivity created with user: " + userName);
@@ -311,11 +296,7 @@ public class MainActivity extends AppCompatActivity {
         // Instant messaging system for staff communication
         if (InstantMessage != null) {
             InstantMessage.setOnClickListener(view -> {
-                if (isOfflineMode) {
-                    Toast.makeText(this, "Messaging requires online connection", Toast.LENGTH_SHORT).show();
-                } else {
-                    openActivity(MessagingActivity.class);
-                }
+                openActivity(MessagingActivity.class);
             });
         }
 
@@ -327,20 +308,13 @@ public class MainActivity extends AppCompatActivity {
         // Report generation and management
         if (reportButton != null) {
             reportButton.setOnClickListener(view -> {
-                if (isOfflineMode) {
-                    // In offline mode, go directly to report creation
-                    openActivity(ReportActivity.class);
-                } else {
-                    // In online mode, go to report selection
-                    openActivity(ReportSelectionActivity.class);
-                }
+                openActivity(ReportSelectionActivity.class);
             });
         }
 
         // View and manage stored reports
         if (reportViewButton != null) {
             reportViewButton.setOnClickListener(view -> {
-                // Allow report viewing even in offline mode since Firebase was working before
                 openActivity(PDFSelectionActivity.class);
             });
         }
@@ -348,7 +322,6 @@ public class MainActivity extends AppCompatActivity {
         // Contract management and customer tracking
         if (contractsButton != null) {
             contractsButton.setOnClickListener(view -> {
-                // Allow contract access even in offline mode since Firebase was working before
                 openActivity(ContractsActivity.class);
             });
         }
@@ -385,7 +358,6 @@ public class MainActivity extends AppCompatActivity {
         // Work View Calendar and scheduling
         if (WorkViewButton != null) {
             WorkViewButton.setOnClickListener(view -> {
-                // Allow work view even in offline mode since Firebase was working before
                 openActivity(WorkViewActivity.class);
             });
         }

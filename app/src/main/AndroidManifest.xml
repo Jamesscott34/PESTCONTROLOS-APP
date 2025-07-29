@@ -66,9 +66,9 @@
              Each activity represents a different screen or functionality in the app
              ============================================================================ -->
 
-        <!-- Offline Login Activity - Entry point for user authentication with offline support -->
+        <!-- Login Activity - Entry point for user authentication -->
         <activity
-            android:name=".OfflineLoginActivity"
+            android:name=".LoginActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>
@@ -76,12 +76,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
-        <!-- Login Activity - Legacy login (kept for compatibility) -->
-        <activity
-            android:name=".LoginActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:exported="true"/>
 
         <!-- Main Activity - Central hub with navigation to all features -->
         <activity
