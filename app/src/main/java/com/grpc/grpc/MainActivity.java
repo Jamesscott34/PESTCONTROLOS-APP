@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
     // UI Components - Navigation buttons for all major features
     private Button reportButton, reportViewButton, contractsButton, quotesButton, logoutButton, 
                    CommisionButton, ServiceAgreementButton, JobButton, EnviromentButton, 
-                   InstantMessage, WebsiteButton, WorkViewButton;
+                   InstantMessage, WebsiteButton, WorkViewButton, ChatButton;
     
     // User information extracted from login
     private String userEmail, userName;
@@ -286,6 +286,7 @@ public class MainActivity extends AppCompatActivity {
         logoutButton = findViewById(R.id.LogoutButton);
         WebsiteButton = findViewById(R.id.WebsiteButton);
         WorkViewButton = findViewById(R.id.WorkViewButton);
+        ChatButton = findViewById(R.id.ChatButton);
     }
 
     /**
@@ -359,6 +360,15 @@ public class MainActivity extends AppCompatActivity {
         if (WorkViewButton != null) {
             WorkViewButton.setOnClickListener(view -> {
                 openActivity(WorkViewActivity.class);
+            });
+        }
+
+        // AI Chat Assistant
+        if (ChatButton != null) {
+            ChatButton.setOnClickListener(view -> {
+                Intent intent = new Intent(MainActivity.this, ChatActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
             });
         }
 

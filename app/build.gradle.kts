@@ -102,5 +102,7 @@ dependencies {
     // recyclerview
     implementation("androidx.recyclerview:recyclerview:1.2.1")
 
+    // ✅ OkHttp for AI API calls
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
 
 }

@@ -5,7 +5,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/bk"
-    android:paddingTop="?attr/actionBarSize">
+    android:paddingTop="?attr/actionBarSize"
+    android:fitsSystemWindows="true">
 
     <!-- Top Spacer to avoid notch -->
     <View

@@ -6,7 +6,8 @@
     android:paddingTop="?attr/actionBarSize"
     android:fillViewport="true"
     android:padding="16dp"
-    android:background="@drawable/bk">
+    android:background="@drawable/bk"
+    android:fitsSystemWindows="true">
 
     <!-- ✅ Only one child inside ScrollView -->
     <LinearLayout

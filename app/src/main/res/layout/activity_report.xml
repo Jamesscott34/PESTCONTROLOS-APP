@@ -6,7 +6,8 @@
     android:paddingTop="?attr/actionBarSize"
     android:background="@drawable/bk"
     android:fillViewport="true"
-    android:scrollbars="vertical">
+    android:scrollbars="vertical"
+    android:fitsSystemWindows="true">
 
     <!-- ✅ Only one direct child: outer LinearLayout -->
     <LinearLayout
@@ -37,41 +38,22 @@
             android:textColor="?android:attr/textColorPrimary" />
 
         <!-- Input field for property name -->
-        <EditText
+        <com.grpc.grpc.DictateEditText
             android:id="@+id/nameInput"
-            android:hint="Enter Property Name"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textPersonName"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:layout_height="wrap_content"/>
 
         <!-- Input field for address -->
-        <EditText
+        <com.grpc.grpc.DictateEditText
             android:id="@+id/addressInput"
-            android:hint="Enter Address"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textMultiLine"
-            android:minLines="3"
-            android:gravity="top"
-            android:scrollbars="vertical"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:layout_height="wrap_content"/>
 
         <!-- Date and Time -->
         <EditText
             android:id="@+id/dateInput"
-            android:hint="Enter Date and Time (e.g., 26/07/25 16:25)"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="datetime"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
             android:background="@drawable/edit_text_border"
@@ -79,89 +61,40 @@
             android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Visit type -->
-        <EditText
+        <com.grpc.grpc.DictateEditText
             android:id="@+id/visitTypeInput"
-            android:hint="Visit Type"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:layout_height="wrap_content"/>
 
         <!-- Site inspection -->
-        <EditText
+        <com.grpc.grpc.DictateEditText
             android:id="@+id/siteInspectionInput"
-            android:hint="Enter Site Inspection"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textMultiLine"
-            android:minLines="3"
-            android:gravity="top"
-            android:scrollbars="vertical"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:layout_height="wrap_content"/>
 
         <!-- Recommendations -->
-        <EditText
+        <com.grpc.grpc.DictateEditText
             android:id="@+id/recommendationsInput"
-            android:hint="Enter Recommendations"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textMultiLine"
-            android:minLines="3"
-            android:gravity="top"
-            android:scrollbars="vertical"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:layout_height="wrap_content"/>
 
         <!-- Prep steps -->
-        <EditText
+        <com.grpc.grpc.DictateEditText
             android:id="@+id/prepInput"
-            android:hint="Enter Prep Steps"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textMultiLine"
-            android:minLines="3"
-            android:gravity="top"
-            android:scrollbars="vertical"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:layout_height="wrap_content"/>
 
         <!-- Follow up -->
-        <EditText
+        <com.grpc.grpc.DictateEditText
             android:id="@+id/followUpInput"
-            android:hint="Enter Follow Up Details"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:layout_height="wrap_content"/>
 
         <!-- Technician name -->
-        <EditText
+        <com.grpc.grpc.DictateEditText
             android:id="@+id/techInput"
-            android:hint="Enter Technician Name"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textPersonName"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:layout_height="wrap_content"/>
 
         <!-- Image button -->
         <Button
@@ -170,6 +103,26 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"/>
+
+        <!-- AI Polish button -->
+        <Button
+            android:id="@+id/aiPolishButton"
+            android:text="🤖 AI Polish Report"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@android:color/holo_blue_dark"/>
+
+
+
+        <!-- Read Back button -->
+        <Button
+            android:id="@+id/readBackButton"
+            android:text="📖 Read Report Back"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@android:color/holo_purple"/>
 
         <!-- Save button -->
         <Button

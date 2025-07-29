@@ -231,6 +231,15 @@
                 android:onClick="WorkWebsite"
                 android:layout_marginBottom="8dp" />
 
+            <!-- AI Chat Assistant -->
+            <Button
+                android:id="@+id/ChatButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🤖 AI Chat Assistant"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="@android:color/holo_blue_dark" />
+
         </LinearLayout>
     </ScrollView>
 
