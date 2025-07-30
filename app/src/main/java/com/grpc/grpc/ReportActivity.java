@@ -210,6 +210,7 @@ public class ReportActivity extends AppCompatActivity {
         
         String contractCompanyName = getIntent().getStringExtra("COMPANY_NAME");
         String contractAddress = getIntent().getStringExtra("ADDRESS");
+        String reportDate = getIntent().getStringExtra("REPORT_DATE"); // Get date from intent
 
         // ============================================================================
         // UI COMPONENT INITIALIZATION
@@ -480,15 +481,26 @@ public class ReportActivity extends AppCompatActivity {
      * Provides convenience for users creating reports
      */
     private void setCurrentDate() {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        String currentDate = sdf.format(new Date());
-        if (dateInput != null) {
-            dateInput.setText(currentDate);
-        }
-        SimpleDateFormat timeSdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
-        String currentTime = timeSdf.format(new Date());
-        if (dateInput != null) { // Assuming dateInput is used for both date and time
-            dateInput.setText(currentDate + " " + currentTime);
+        // Check if a date was passed from intent (from GeneralReportActivity)
+        String reportDate = getIntent().getStringExtra("REPORT_DATE");
+        
+        if (reportDate != null && !reportDate.isEmpty()) {
+            // Use the passed date
+            if (dateInput != null) {
+                dateInput.setText(reportDate);
+            }
+        } else {
+            // Use current date and time
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            String currentDate = sdf.format(new Date());
+            if (dateInput != null) {
+                dateInput.setText(currentDate);
+            }
+            SimpleDateFormat timeSdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            String currentTime = timeSdf.format(new Date());
+            if (dateInput != null) { // Assuming dateInput is used for both date and time
+                dateInput.setText(currentDate + " " + currentTime);
+            }
         }
     }
 
@@ -571,7 +583,8 @@ public class ReportActivity extends AppCompatActivity {
                         reportName,
                         content,
                         this,
-                        !selectedImageUris.isEmpty() ? selectedImageUris : null
+                        !selectedImageUris.isEmpty() ? selectedImageUris : null,
+                        dateInput.getText().toString() // Pass the date from the input field
                 );
             }
             
@@ -910,17 +923,24 @@ public class ReportActivity extends AppCompatActivity {
         aiPolishButton.setText("🤖 Polishing...");
         
         // Create the prompt for AI
-        String prompt = "Improve the following pest control report sections to make them more professional and grammatically correct. " +
-                "Make the language formal and professional. " +
-                "Expand each section slightly (about 10 lines more) with better grammar and professional terminology. " +
-                "Make it sound like it was written by a senior pest control professional with extensive experience. " +
-                "Use formal, professional language and return plain text only (no formatting, no ** or : symbols).\n\n";
+        String prompt = "Rewrite the following text to make it sound more professional, slightly longer, and more fluid. " +
+                "Ensure the grammar is correct throughout. Keep the original meaning and all key information intact, " +
+                "but improve the sentence structure, vocabulary, and tone to reflect the voice of a confident, experienced professional. " +
+                "Expand naturally where appropriate without adding unrelated content. " +
+                "Return the result as plain text only — do not include quotation marks, asterisks, or colons in the output formatting.\n\n";
+        
         if (!siteInspection.isEmpty()) {
             prompt += "Site Inspection: " + siteInspection + "\n\n";
+        } else {
+            prompt += "Site Inspection: No site inspection details noted\n\n";
         }
+        
         if (!recommendations.isEmpty()) {
             prompt += "Recommendations: " + recommendations + "\n\n";
+        } else {
+            prompt += "Recommendations: No recommendations noted\n\n";
         }
+        
         prompt += "Please provide the enhanced content in this exact format:\n\n" +
                 "Site Inspection: [professional content with improved grammar]\n\n" +
                 "Recommendations: [professional recommendations with improved grammar]\n\n" +

@@ -73,7 +73,7 @@
                 android:inputType="textEmailAddress"
                 android:layout_marginBottom="12dp"
                 android:padding="12dp"
-                android:background="?attr/colorSurface"
+                android:background="@drawable/edit_text_border"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textColorHint="?android:attr/textColorSecondary" />
 
@@ -85,7 +85,7 @@
                 android:inputType="phone"
                 android:layout_marginBottom="12dp"
                 android:padding="12dp"
-                android:background="?attr/colorSurface"
+                android:background="@drawable/edit_text_border"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textColorHint="?android:attr/textColorSecondary" />
 
@@ -96,7 +96,7 @@
                 android:hint="VAT"
                 android:layout_marginBottom="12dp"
                 android:padding="12dp"
-                android:background="?attr/colorSurface"
+                android:background="@drawable/edit_text_border"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textColorHint="?android:attr/textColorSecondary" />
 
@@ -107,7 +107,7 @@
                 android:hint="Total Cost"
                 android:layout_marginBottom="12dp"
                 android:padding="12dp"
-                android:background="?attr/colorSurface"
+                android:background="@drawable/edit_text_border"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textColorHint="?android:attr/textColorSecondary" />
 

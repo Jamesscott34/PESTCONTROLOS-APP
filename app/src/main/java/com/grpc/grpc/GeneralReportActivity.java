@@ -2,6 +2,7 @@ package com.grpc.grpc;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -23,7 +24,8 @@ public class GeneralReportActivity extends AppCompatActivity {
 
     private EditText nameInput, addressInput, dateInput;
     private Spinner visitTypeSpinner;
-    private Button saveButton;
+    private Button saveButton, selectImageButton;
+    private java.util.List<Uri> selectedImageUris = new java.util.ArrayList<>();
 
     private String userName;
     private GestureDetectorCompat gestureDetector;
@@ -53,15 +55,31 @@ public class GeneralReportActivity extends AppCompatActivity {
         dateInput = findViewById(R.id.dateInput);
         visitTypeSpinner = findViewById(R.id.visitTypeSpinner);
         saveButton = findViewById(R.id.saveButton);
+        selectImageButton = findViewById(R.id.selectImageButton);
 
         // Auto-fill date only
         dateInput.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+
+        // Auto-fill name and address if provided
+        String companyName = getIntent().getStringExtra("COMPANY_NAME");
+        String address = getIntent().getStringExtra("ADDRESS");
+        
+        if (companyName != null && !companyName.isEmpty()) {
+            nameInput.setText(companyName);
+        }
+        
+        if (address != null && !address.isEmpty()) {
+            addressInput.setText(address);
+        }
 
         // Dropdown setup
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, visitTypes);
         visitTypeSpinner.setAdapter(adapter);
 
         saveButton.setOnClickListener(v -> handleCreateReport());
+        
+        // Image selection button - opens image picker
+        selectImageButton.setOnClickListener(v -> openImageSelector());
         
         // Initialize gesture detector for swipe navigation
         initializeGestureDetector();
@@ -108,6 +126,12 @@ public class GeneralReportActivity extends AppCompatActivity {
         intent.putExtra("COMPANY_NAME", companyName);
         intent.putExtra("ADDRESS", address);
         intent.putExtra("ROUTINE_TYPE", visitType);
+        intent.putExtra("REPORT_DATE", date); // Pass the date to target activities
+
+        // Pass selected images if any
+        if (!selectedImageUris.isEmpty()) {
+            intent.putParcelableArrayListExtra("SELECTED_IMAGES", new java.util.ArrayList<>(selectedImageUris));
+        }
 
         startActivity(intent);
         finish();
@@ -166,5 +190,39 @@ public class GeneralReportActivity extends AppCompatActivity {
             return true;
         }
         return super.dispatchTouchEvent(event);
+    }
+
+    /**
+     * Opens the image selector to choose images for the report
+     */
+    private void openImageSelector() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        startActivityForResult(Intent.createChooser(intent, "Select Images"), 1001);
+    }
+
+    /**
+     * Handles the result from image selection
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        if (requestCode == 1001 && resultCode == RESULT_OK && data != null) {
+            if (data.getClipData() != null) {
+                // Multiple images selected
+                for (int i = 0; i < data.getClipData().getItemCount(); i++) {
+                    Uri imageUri = data.getClipData().getItemAt(i).getUri();
+                    selectedImageUris.add(imageUri);
+                }
+            } else if (data.getData() != null) {
+                // Single image selected
+                Uri imageUri = data.getData();
+                selectedImageUris.add(imageUri);
+            }
+            
+            Toast.makeText(this, "Selected " + selectedImageUris.size() + " image(s)", Toast.LENGTH_SHORT).show();
+        }
     }
 }

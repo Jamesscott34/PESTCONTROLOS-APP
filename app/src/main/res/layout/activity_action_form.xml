@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#f5f5f5">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Logo at the top -->
+        <ImageView
+            android:id="@+id/logoImageView"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center"
+            android:src="@drawable/logo"
+            android:scaleType="fitCenter"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Action Form Title -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Action Form"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#2196F3"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
+
+        <!-- First Row: Date, Service Type, Service Number -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <!-- Date -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="8dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Date"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/dateTimeInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:textSize="14sp"
+                    android:hint="Enter Date" />
+            </LinearLayout>
+
+            <!-- Service Type -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="8dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Service Type"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp" />
+
+                <com.grpc.grpc.DictateEditText
+                    android:id="@+id/serviceTypeInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:textSize="14sp"
+                    android:hint="Enter Service Type" />
+            </LinearLayout>
+
+            <!-- Service Number -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Service Number"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp" />
+
+                <com.grpc.grpc.DictateEditText
+                    android:id="@+id/serviceNumberInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:textSize="14sp"
+                    android:hint="Enter Service Number" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Second Row: Premises Name/Address and Prep -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <!-- Premises Name and Address -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:orientation="vertical"
+                android:layout_marginEnd="8dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Premises Name and Address"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp" />
+
+                <com.grpc.grpc.DictateEditText
+                    android:id="@+id/premisesNameInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:textSize="14sp"
+                    android:hint="Enter Premises Name"
+                    android:layout_marginBottom="8dp" />
+
+                <com.grpc.grpc.DictateEditText
+                    android:id="@+id/premisesAddressInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:textSize="14sp"
+                    android:hint="Enter Premises Address"
+                    android:minLines="3"
+                    android:gravity="top" />
+            </LinearLayout>
+
+            <!-- Prep -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Prep"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp" />
+
+                <com.grpc.grpc.DictateEditText
+                    android:id="@+id/prepInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:textSize="14sp"
+                    android:hint="Enter Prep Details"
+                    android:minLines="3"
+                    android:gravity="top" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Service Report -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="4dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Service Report"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="1dp" />
+
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/serviceReportInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edit_text_background"
+                android:padding="12dp"
+                android:textSize="14sp"
+                android:hint="Enter Service Report"
+                android:minLines="4"
+                android:gravity="top" />
+        </LinearLayout>
+
+        <!-- Recommendations -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="4dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Recommendations"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="1dp" />
+
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/recommendationsInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edit_text_background"
+                android:padding="12dp"
+                android:textSize="14sp"
+                android:hint="Enter Recommendations"
+                android:minLines="4"
+                android:gravity="top" />
+        </LinearLayout>
+
+        <!-- Follow Up Toggle -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Follow Up Required:"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="16dp" />
+
+            <ToggleButton
+                android:id="@+id/followUpToggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOff="No"
+                android:textOn="Yes" />
+        </LinearLayout>
+
+        <!-- Follow Up Fields (initially hidden) -->
+        <LinearLayout
+            android:id="@+id/followUpContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Follow Up Details"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/followUp1Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edit_text_background"
+                android:padding="12dp"
+                android:textSize="14sp"
+                android:hint="Enter Follow-Up Details"
+                android:minLines="3"
+                android:gravity="top" />
+        </LinearLayout>
+
+        <!-- Role -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Role"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/roleInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edit_text_background"
+                android:padding="12dp"
+                android:textSize="14sp"
+                android:hint="Enter Role" />
+        </LinearLayout>
+
+        <!-- Signature Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/technicianSignatureButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Technician Signature"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/button_background"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/customerSignatureButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Customer Signature"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/button_background"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/selectImageButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="📷 Add Images"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/button_background"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/aiPolishButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🤖 AI Polish"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/button_background"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/readBackButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="📖 Read Back"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/button_background"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/saveButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="💾 Save Form"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/button_background"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <!-- Back Button -->
+        <Button
+            android:id="@+id/backButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="← Back"
+            android:background="@drawable/button_background"
+            android:textColor="#FFFFFF" />
+
+    </LinearLayout>
+</ScrollView> 

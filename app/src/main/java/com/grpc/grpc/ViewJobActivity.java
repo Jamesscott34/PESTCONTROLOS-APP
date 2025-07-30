@@ -520,14 +520,12 @@ public class ViewJobActivity extends AppCompatActivity {
                 if (customerName == null) customerName = "N/A";
                 if (address == null) address = "N/A";
 
-                // ✅ Start RodentRoutineActivity with "InitialSetup" (same as case 4)
-                Intent RodentRiddanceIntent = new Intent(ViewJobActivity.this, RodentJobActivity.class);
-                RodentRiddanceIntent.putExtra("ROUTINE_TYPE", "Rodent Riddance");
-                RodentRiddanceIntent.putExtra("USER_NAME", userName);
-                RodentRiddanceIntent.putExtra("COMPANY_NAME", customerName); // Passing CustomerName as CompanyName
-                RodentRiddanceIntent.putExtra("ADDRESS", address);
-                RodentRiddanceIntent.putExtra("DOCUMENT_ID", documentId);
-                startActivity(RodentRiddanceIntent);
+                // ✅ Start ReportActivity with auto-populated name and address (same as ViewContractActivity)
+                Intent createReportIntent = new Intent(ViewJobActivity.this, ReportActivity.class);
+                createReportIntent.putExtra("USER_NAME", userName);
+                createReportIntent.putExtra("COMPANY_NAME", customerName); // Passing CustomerName as CompanyName
+                createReportIntent.putExtra("ADDRESS", address);
+                startActivity(createReportIntent);
 
             } else {
                 Toast.makeText(this, "Job details not found!", Toast.LENGTH_SHORT).show();

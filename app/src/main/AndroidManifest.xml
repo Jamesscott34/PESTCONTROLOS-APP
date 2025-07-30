@@ -143,6 +143,18 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Action Form creation -->
+        <activity
+            android:name=".ActionFormActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
+
+        <!-- Signature Capture -->
+        <activity
+            android:name=".SignatureCaptureActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
         <!-- Quotation viewing and management -->
         <activity
             android:name=".QuotationViewActivity"

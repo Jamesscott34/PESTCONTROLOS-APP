@@ -647,31 +647,43 @@ public class ViewContractActivity extends AppCompatActivity {
             EditText nameInput = new EditText(this);
             nameInput.setHint("Name");
             nameInput.setText(contract.get("name") != null ? contract.get("name").toString() : "N/A");
+            nameInput.setBackground(getResources().getDrawable(R.drawable.edit_text_border));
+            nameInput.setPadding(16, 16, 16, 16);
             layout.addView(nameInput);
 
             EditText addressInput = new EditText(this);
             addressInput.setHint("Address");
             addressInput.setText(contract.get("address") != null ? contract.get("address").toString() : "N/A");
+            addressInput.setBackground(getResources().getDrawable(R.drawable.edit_text_border));
+            addressInput.setPadding(16, 16, 16, 16);
             layout.addView(addressInput);
 
             EditText emailInput = new EditText(this);
             emailInput.setHint("Email");
             emailInput.setText(contract.get("email") != null ? contract.get("email").toString() : "N/A");
+            emailInput.setBackground(getResources().getDrawable(R.drawable.edit_text_border));
+            emailInput.setPadding(16, 16, 16, 16);
             layout.addView(emailInput);
 
             EditText contactInput = new EditText(this);
             contactInput.setHint("Contact");
             contactInput.setText(contract.get("contact") != null ? contract.get("contact").toString() : "N/A");
+            contactInput.setBackground(getResources().getDrawable(R.drawable.edit_text_border));
+            contactInput.setPadding(16, 16, 16, 16);
             layout.addView(contactInput);
 
             EditText visitsInput = new EditText(this);
             visitsInput.setHint("Visits");
             visitsInput.setText(contract.get("visits") != null ? contract.get("visits").toString() : "N/A");
+            visitsInput.setBackground(getResources().getDrawable(R.drawable.edit_text_border));
+            visitsInput.setPadding(16, 16, 16, 16);
             layout.addView(visitsInput);
 
             EditText ownerInput = new EditText(this);
             ownerInput.setHint("Owner");
             ownerInput.setText(contract.get("owner") != null ? contract.get("owner").toString() : "N/A");
+            ownerInput.setBackground(getResources().getDrawable(R.drawable.edit_text_border));
+            ownerInput.setPadding(16, 16, 16, 16);
             layout.addView(ownerInput);
 
             new AlertDialog.Builder(this)
@@ -795,43 +807,36 @@ public class ViewContractActivity extends AppCompatActivity {
         dialog.setTitle("Contract Options");
 
 
-        dialog.setItems(new CharSequence[]{"Routine", "Callout", "Update Last Visit", "Route", "InitialSetup", "Create Report"}, (dialogInterface, which) -> {
+        dialog.setItems(new CharSequence[]{"Update Last Visit", "Create Report", "Generic Report", "Action Form"}, (dialogInterface, which) -> {
             String companyName = contract.get("name") != null ? contract.get("name").toString() : "N/A";
             String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
 
             switch (which) {
-                case 0: // Routine
-                    showRoutineDialog(documentId, contract); // Open No Activity / Activity options
-                    break;
-
-                case 1: // Callout
-                   showCallOutDialog(documentId, contract);
-                    break;
-
-                case 2: // Update Last Visit
+                case 0: // Update Last Visit
                     showUpdateVisitDialog(documentId);
                     break;
 
-                case 3: // Route
-                    openInMaps(address);
-                    break;
-
-                case 4: // Initial Setup
-                    Intent initialsetupIntent = new Intent(ViewContractActivity.this, RodentInitialActivity.class);
-                    initialsetupIntent.putExtra("ROUTINE_TYPE", "InitialSetup");
-                    initialsetupIntent.putExtra("USER_NAME", userName);
-                    initialsetupIntent.putExtra("COMPANY_NAME", companyName);
-                    initialsetupIntent.putExtra("ADDRESS", address);
-                    initialsetupIntent.putExtra("DOCUMENT_ID", documentId);
-                    startActivity( initialsetupIntent);
-                    break;
-
-                case 5: // Create Report
+                case 1: // Create Report
                     Intent createReportIntent = new Intent(ViewContractActivity.this, ReportActivity.class);
                     createReportIntent.putExtra("USER_NAME", userName);
                     createReportIntent.putExtra("COMPANY_NAME", companyName);
                     createReportIntent.putExtra("ADDRESS", address);
                     startActivity(createReportIntent);
+                    break;
+
+                case 2: // Generic Report
+                    Intent genericReportIntent = new Intent(ViewContractActivity.this, GeneralReportActivity.class);
+                    genericReportIntent.putExtra("USER_NAME", userName);
+                    genericReportIntent.putExtra("COMPANY_NAME", companyName);
+                    genericReportIntent.putExtra("ADDRESS", address);
+                    startActivity(genericReportIntent);
+                    break;
+                case 3: // Action Form
+                    Intent actionFormIntent = new Intent(ViewContractActivity.this, ActionFormActivity.class);
+                    actionFormIntent.putExtra("USER_NAME", userName);
+                    actionFormIntent.putExtra("COMPANY_NAME", companyName);
+                    actionFormIntent.putExtra("ADDRESS", address);
+                    startActivity(actionFormIntent);
                     break;
             }
         });

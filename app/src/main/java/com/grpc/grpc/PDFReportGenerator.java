@@ -77,10 +77,11 @@ public class PDFReportGenerator {
      * @param content    The content details of the report, formatted as key-value pairs.
      * @param context    The Android application context.
      * @param imageUris  A list of image URIs to be added to the report.
+     * @param reportDate The date for the report (optional, uses current date if null).
      * @return The generated PDF file or null if an error occurred.
      */
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
-    public static File generatePDFReport(String reportType, String reportName, String content, Context context, List<Uri> imageUris) {
+    public static File generatePDFReport(String reportType, String reportName, String content, Context context, List<Uri> imageUris, String reportDate) {
         // Define the folder for storing reports
         File pdfFolder = new File(context.getExternalFilesDir(null), "GRPEST REPORTS");
         if (!pdfFolder.exists()) {
@@ -88,9 +89,31 @@ public class PDFReportGenerator {
         }
 
         // Generate a timestamped file name for the PDF report
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
-        String currentDate = sdf.format(new Date());
-        String sanitizedReportName = reportName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + currentDate + ".pdf";
+        String dateToUse;
+        if (reportDate != null && !reportDate.isEmpty()) {
+            // Use the passed date, but format it properly
+            try {
+                // Parse the date if it's in dd/MM/yyyy format and convert to dd-MM-yyyy
+                if (reportDate.contains("/")) {
+                    SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                    SimpleDateFormat outputFormat = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+                    Date parsedDate = inputFormat.parse(reportDate);
+                    dateToUse = outputFormat.format(parsedDate);
+                } else {
+                    dateToUse = reportDate;
+                }
+            } catch (Exception e) {
+                // If parsing fails, use current date
+                SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+                dateToUse = sdf.format(new Date());
+            }
+        } else {
+            // Use current date
+            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+            dateToUse = sdf.format(new Date());
+        }
+        
+        String sanitizedReportName = reportName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + dateToUse + ".pdf";
         File pdfFile = new File(pdfFolder, sanitizedReportName);
 
         try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
