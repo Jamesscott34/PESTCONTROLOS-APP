@@ -106,6 +106,15 @@ public class ActionFormActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_action_form);
+        
+        // Performance optimizations
+        getWindow().setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+            android.view.WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+        );
+        
+        // Handle keyboard properly
+        getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         // User authentication
         userName = getIntent().getStringExtra("USER_NAME");
@@ -115,12 +124,19 @@ public class ActionFormActivity extends AppCompatActivity {
             return;
         }
 
-        // Initialize UI components
+        // Initialize UI components on main thread (light operations)
         initializeInputFields();
         initializeButtons();
         setCurrentDateTime();
         setupWelcomeMessage();
-        initializeAIAndVoiceFeatures();
+        
+        // Initialize SpeechRecognizer on main thread (required)
+        initializeSpeechRecognizer();
+        
+        // Initialize TextToSpeech on background thread
+        new Thread(() -> {
+            initializeTextToSpeech();
+        }).start();
     }
 
     private void initializeInputFields() {
@@ -227,16 +243,22 @@ public class ActionFormActivity extends AppCompatActivity {
         }
     }
 
-    private void initializeAIAndVoiceFeatures() {
+    private void initializeSpeechRecognizer() {
+        // Initialize SpeechRecognizer on main thread (required)
         if (SpeechRecognizer.isRecognitionAvailable(this)) {
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
             setupSpeechRecognizer();
         }
-        
+    }
+    
+    private void initializeTextToSpeech() {
+        // Initialize TextToSpeech on background thread
         textToSpeech = new TextToSpeech(this, status -> {
-            if (status != TextToSpeech.SUCCESS) {
-                Toast.makeText(this, "Text-to-Speech not available", Toast.LENGTH_SHORT).show();
-            }
+            runOnUiThread(() -> {
+                if (status != TextToSpeech.SUCCESS) {
+                    Toast.makeText(this, "Text-to-Speech not available", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
     }
 

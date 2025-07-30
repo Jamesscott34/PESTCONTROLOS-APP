@@ -139,6 +139,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // Performance optimizations
+        getWindow().setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+            android.view.WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+        );
 
 
 
@@ -170,28 +176,6 @@ public class MainActivity extends AppCompatActivity {
         // Log online mode status
         Log.d("MainActivity", "Running in ONLINE MODE - Full functionality");
 
-        // Subscribe to Firebase Cloud Messaging topics for push notifications
-        // "all" topic receives general notifications
-        FirebaseMessaging.getInstance().subscribeToTopic("all")
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        Log.d("FCM", "✅ Subscribed to topic: all");
-                    } else {
-                        Log.e("FCM", "❌ Failed to subscribe", task.getException());
-                    }
-                });
-
-        // Subscribe to personal topic to allow exclusion from their own push notifications
-        // This prevents users from receiving notifications they sent themselves
-        FirebaseMessaging.getInstance().subscribeToTopic(userName.toLowerCase())
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        Log.d("FCM", "✅ Subscribed to personal topic: " + userName.toLowerCase());
-                    } else {
-                        Log.e("FCM", "❌ Failed to subscribe to personal topic", task.getException());
-                    }
-                });
-
         // Set up welcome message with user's name
         welcomeTextView = findViewById(R.id.welcomeTextView);
         
@@ -213,6 +197,31 @@ public class MainActivity extends AppCompatActivity {
         
         // Initialize gesture detector for swipe navigation
         initializeGestureDetector();
+        
+        // Initialize Firebase operations on background thread
+        new Thread(() -> {
+            // Subscribe to Firebase Cloud Messaging topics for push notifications
+            // "all" topic receives general notifications
+            FirebaseMessaging.getInstance().subscribeToTopic("all")
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Log.d("FCM", "✅ Subscribed to topic: all");
+                        } else {
+                            Log.e("FCM", "❌ Failed to subscribe", task.getException());
+                        }
+                    });
+
+            // Subscribe to personal topic to allow exclusion from their own push notifications
+            // This prevents users from receiving notifications they sent themselves
+            FirebaseMessaging.getInstance().subscribeToTopic(userName.toLowerCase())
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Log.d("FCM", "✅ Subscribed to personal topic: " + userName.toLowerCase());
+                        } else {
+                            Log.e("FCM", "❌ Failed to subscribe to personal topic", task.getException());
+                        }
+                    });
+        }).start();
     }
 
     /**

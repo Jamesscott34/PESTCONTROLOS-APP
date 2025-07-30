@@ -17,6 +17,7 @@ import android.content.Intent;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.speech.tts.TextToSpeech;
 import android.Manifest;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -45,13 +46,15 @@ public class ChatActivity extends AppCompatActivity {
     private ScrollView messagesScrollView;
     private LinearLayout messagesContainer;
     private EditText messageInput;
-    private Button sendButton, deleteButton, pestControlModeButton, generalModeButton;
+    private Button sendButton, deleteButton, pestControlModeButton, generalModeButton, readBackButton;
     private ImageButton micButton;
     private SpeechRecognizer speechRecognizer;
+    private TextToSpeech textToSpeech;
     private boolean isListening = false;
     private boolean isWaitingForAI = false;
     private static final int PERMISSION_REQUEST_CODE = 123;
     private boolean isPestControlMode = false; // false = General AI, true = Pest Control Expert
+    private String lastAIResponse = ""; // Store the last AI response for read-back functionality
     
     // AI Configuration
     private static final String OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -65,6 +68,9 @@ public class ChatActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
+        
+        // Handle keyboard properly
+        getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         
         // Get user name from intent
         userName = getIntent().getStringExtra("USER_NAME");
@@ -94,6 +100,7 @@ public class ChatActivity extends AppCompatActivity {
         deleteButton = findViewById(R.id.deleteButton);
         pestControlModeButton = findViewById(R.id.pestControlModeButton);
         generalModeButton = findViewById(R.id.generalModeButton);
+        readBackButton = findViewById(R.id.readBackButton);
     }
     
     private void setupClickListeners() {
@@ -125,6 +132,9 @@ public class ChatActivity extends AppCompatActivity {
             sendMessage();
             return true;
         });
+        
+        // Read back last AI response
+        readBackButton.setOnClickListener(v -> readLastAIResponse());
     }
     
     private void updateModeButtons() {
@@ -232,7 +242,8 @@ public class ChatActivity extends AppCompatActivity {
                             }
                         }
                     }
-                    addMessage(aiResponse, false);
+                                         lastAIResponse = aiResponse; // Store the AI response for read-back
+                     addMessage(aiResponse, false);
                 });
             } catch (Exception e) {
                 mainHandler.post(() -> {
@@ -502,11 +513,50 @@ public class ChatActivity extends AppCompatActivity {
         scrollToBottom();
     }
     
+    /**
+     * Read back the last AI response using Text-to-Speech
+     */
+    private void readLastAIResponse() {
+        if (lastAIResponse.isEmpty()) {
+            Toast.makeText(this, "No AI response to read back", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Initialize Text-to-Speech if not already done
+        if (textToSpeech == null) {
+            textToSpeech = new TextToSpeech(this, status -> {
+                if (status == TextToSpeech.SUCCESS) {
+                    // Call the actual reading logic after initialization
+                    readAIResponseContent();
+                } else {
+                    Toast.makeText(this, "Text-to-Speech not available", Toast.LENGTH_SHORT).show();
+                }
+            });
+            return;
+        }
+        
+        // If TextToSpeech is already initialized, read the content directly
+        readAIResponseContent();
+    }
+    
+    /**
+     * Actually read the AI response content using Text-to-Speech
+     */
+    private void readAIResponseContent() {
+        if (textToSpeech != null && !lastAIResponse.isEmpty()) {
+            textToSpeech.speak(lastAIResponse, TextToSpeech.QUEUE_FLUSH, null, "AI_RESPONSE_READBACK");
+            Toast.makeText(this, "📖 Reading AI response...", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (speechRecognizer != null) {
             speechRecognizer.destroy();
+        }
+        if (textToSpeech != null) {
+            textToSpeech.shutdown();
         }
     }
 } 
