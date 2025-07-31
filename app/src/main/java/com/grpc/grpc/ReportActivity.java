@@ -408,7 +408,7 @@ public class ReportActivity extends AppCompatActivity {
         saveButton = findViewById(R.id.saveButton);
         backButton = findViewById(R.id.backButton);
         selectImageButton = findViewById(R.id.selectImageButton);
-        aiPolishButton = findViewById(R.id.aiPolishButton);
+        aiPolishButton = null; // AI button removed from UI
         readBackButton = findViewById(R.id.readBackButton);
 
         // Save button - stores report data and generates PDF
@@ -430,13 +430,15 @@ public class ReportActivity extends AppCompatActivity {
         selectImageButton.setOnClickListener(v -> openImageSelector());
         
         // AI Polish button - enhances report content using AI
-        aiPolishButton.setOnClickListener(v -> {
-            if (openRouterApiKey.isEmpty()) {
-                requestOpenRouterApiKey();
-            } else {
-                polishWithAI();
-            }
-        });
+        if (aiPolishButton != null) {
+            aiPolishButton.setOnClickListener(v -> {
+                if (openRouterApiKey.isEmpty()) {
+                    requestOpenRouterApiKey();
+                } else {
+                    polishWithAI();
+                }
+            });
+        }
         
 
         
@@ -919,8 +921,10 @@ public class ReportActivity extends AppCompatActivity {
         
         // Show loading indicator
         Toast.makeText(this, "🤖 AI is polishing your report...", Toast.LENGTH_SHORT).show();
-        aiPolishButton.setEnabled(false);
-        aiPolishButton.setText("🤖 Polishing...");
+        if (aiPolishButton != null) {
+            aiPolishButton.setEnabled(false);
+            aiPolishButton.setText("🤖 Polishing...");
+        }
         
         // Create the prompt for AI
         String prompt = "Rewrite the following text to make it sound more professional, slightly longer, and more fluid. " +
@@ -955,8 +959,10 @@ public class ReportActivity extends AppCompatActivity {
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     Toast.makeText(this, "AI polishing failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    aiPolishButton.setEnabled(true);
-                    aiPolishButton.setText("🤖 AI Polish Report");
+                        if (aiPolishButton != null) {
+                            aiPolishButton.setEnabled(true);
+                            aiPolishButton.setText("🤖 AI Polish Report");
+                        }
                 });
             }
         }).start();
@@ -1094,8 +1100,10 @@ public class ReportActivity extends AppCompatActivity {
             } catch (Exception e) {
                 Toast.makeText(this, "Error parsing AI response: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             } finally {
-                aiPolishButton.setEnabled(true);
-                aiPolishButton.setText("🤖 AI Polish Report");
+                if (aiPolishButton != null) {
+                    aiPolishButton.setEnabled(true);
+                    aiPolishButton.setText("🤖 AI Polish Report");
+                }
             }
         });
     }

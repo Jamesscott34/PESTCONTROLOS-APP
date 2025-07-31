@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:paddingTop="?attr/actionBarSize"
     android:padding="16dp"
-    android:background="@drawable/bk"
+    android:background="?android:attr/colorBackground"
     android:fillViewport="true"
     android:scrollbars="vertical"
     android:fadeScrollbars="false"

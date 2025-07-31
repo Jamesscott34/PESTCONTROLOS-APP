@@ -7,7 +7,7 @@
     android:paddingTop="?attr/actionBarSize"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="@android:color/white">
+    android:background="?android:attr/colorBackground">
 
 
     <!-- Top Spacer to avoid notch -->
@@ -26,7 +26,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="8dp"
-        android:background="@android:color/darker_gray"
+        android:background="?attr/colorSurface"
         android:layout_marginBottom="10dp">
 
         <LinearLayout
@@ -43,7 +43,7 @@
                 android:text="Total: 0"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black"
+                android:textColor="?android:attr/textColorPrimary"
                 android:gravity="start" />
 
             <!-- Behind Contracts -->
@@ -55,7 +55,7 @@
                 android:text="Behind: 0"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/holo_red_dark"
+                android:textColor="?attr/colorError"
                 android:gravity="center" />
 
             <!-- Due Contracts (NEW) -->
@@ -67,7 +67,7 @@
                 android:text="Due: 0"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/holo_orange_dark"
+                android:textColor="?attr/colorSecondary"
                 android:gravity="center" />
 
             <!-- Up-to-Date Contracts -->
@@ -79,9 +79,35 @@
                 android:text="Up-to-Date: 0"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/holo_green_dark"
+                android:textColor="?attr/colorSecondary"
                 android:gravity="end" />
         </LinearLayout>
+    </LinearLayout>
+
+    <!-- Technician selector (James, Ian, Kristine can choose whose contracts to view) -->
+    <LinearLayout
+        android:id="@+id/technicianSelectorLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="View contracts for: "
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="8dp" />
+
+        <Spinner
+            android:id="@+id/technicianSpinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="48dp" />
     </LinearLayout>
 
     <!-- Search Bar -->
@@ -92,8 +118,23 @@
         android:hint="Search by name"
         android:padding="12dp"
         android:textSize="16sp"
-        android:background="@android:drawable/edit_text"
-        android:layout_marginBottom="12dp" />
+        android:background="@drawable/edit_text_border"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Export Contracts to PDF Button -->
+    <Button
+        android:id="@+id/exportPdfButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Export Contracts to PDF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:background="@drawable/button_background"
+        android:textColor="?attr/colorOnPrimary"
+        android:layout_marginBottom="12dp"
+        android:padding="8dp" />
 
     <!-- Scroll View for Contracts -->
     <ScrollView
@@ -102,7 +143,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:fillViewport="true"
-        android:background="@android:color/white">
+        android:background="?attr/colorSurface">
 
         <LinearLayout
             android:id="@+id/contractsContainer"
@@ -120,8 +161,8 @@
         android:text="Back"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:background="@android:color/holo_blue_dark"
-        android:textColor="@android:color/white"
+        android:background="@drawable/button_background"
+        android:textColor="?attr/colorOnPrimary"
         android:layout_marginTop="12dp"
         android:padding="10dp"/>
 </LinearLayout>

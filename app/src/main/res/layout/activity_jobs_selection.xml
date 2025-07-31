@@ -8,7 +8,7 @@
     android:gravity="center"
     android:paddingTop="?attr/actionBarSize"
     android:padding="16dp"
-    android:background="@drawable/bk">
+    android:background="?android:attr/colorBackground">
 
     <!-- Top Spacer to avoid notch -->
     <View

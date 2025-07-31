@@ -23,6 +23,9 @@ public class WorkEvent {
     private String eventName;
     private String date;
     private String time;
+    // Optional end time for variable-length jobs/contracts (e.g. 08:30 - 15:00).
+    // Existing code continues to use 'time' (start time) for scheduling.
+    private String endTime;
     private String status; // "scheduled", "completed", "cancelled"
     private Date createdAt;
     private Date completedAt;
@@ -102,6 +105,14 @@ public class WorkEvent {
 
     public void setTime(String time) {
         this.time = time;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
     }
 
     public String getStatus() {

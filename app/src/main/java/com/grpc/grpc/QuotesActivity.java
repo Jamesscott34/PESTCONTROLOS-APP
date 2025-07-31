@@ -34,6 +34,9 @@ public class QuotesActivity extends AppCompatActivity {
 
         // Retrieve the username from the intent
         userName = getIntent().getStringExtra("USER_NAME");
+        if (userName == null || userName.trim().isEmpty()) {
+            userName = getSharedPreferences("GRPC", MODE_PRIVATE).getString("USER_NAME", "User");
+        }
 
         // Set the welcome message
         TextView welcomeTextView = findViewById(R.id.welcomeTextView);

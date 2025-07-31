@@ -30,10 +30,12 @@ import java.util.Map;
  */
 
 public class AddManagmentJobsActivity extends AppCompatActivity {
-    private EditText techName,  customerName,  customerContact, issueDetails;
+    private Spinner techNameSpinner;
+    private EditText customerName,  customerContact, issueDetails;
     private Button submitButton;
     private FirebaseFirestore db;
     private String userName,  custName,  custContact, issueDetailsText; // Stores values for WhatsApp
+    private static final String[] TECHNICIANS = {"James", "Dean", "Ian", "Kristine"};
 
     /**
      * Initializes the activity, retrieves user information, and sets up UI elements.
@@ -50,7 +52,7 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_managment_jobs);
 
-        techName = findViewById(R.id.techName);
+        techNameSpinner = findViewById(R.id.techNameSpinner);
 
         customerName = findViewById(R.id.customerName);
 
@@ -68,6 +70,21 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
             return;
         }
 
+        if (techNameSpinner != null) {
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, TECHNICIANS);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            techNameSpinner.setAdapter(adapter);
+            // Default selection = current user if present
+            int sel = 0;
+            for (int i = 0; i < TECHNICIANS.length; i++) {
+                if (TECHNICIANS[i].equalsIgnoreCase(userName)) {
+                    sel = i;
+                    break;
+                }
+            }
+            techNameSpinner.setSelection(sel);
+        }
+
         submitButton.setOnClickListener(v -> validateAndSubmitJob());
     }
     /**
@@ -76,7 +93,10 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
      * If valid, the job is submitted to Firestore.
      */
     private void validateAndSubmitJob() {
-        String name = techName.getText().toString().trim();
+        String name = "";
+        if (techNameSpinner != null && techNameSpinner.getSelectedItem() != null) {
+            name = String.valueOf(techNameSpinner.getSelectedItem()).trim();
+        }
         custName = customerName.getText().toString().trim();
         custContact = formatIrishMobile(customerContact.getText().toString().trim());
         issueDetailsText = issueDetails.getText().toString().trim();
@@ -108,14 +128,49 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
         job.put("CustomerName", custName);
         job.put("CustomerContact", custContact);
         job.put("IssueDetails", issue);
+        job.put("CreatedBy", userName);
+        job.put("CreatedAt", new java.util.Date());
 
         db.collection("ManagmentJobs").add(job)
                 .addOnSuccessListener(documentReference -> {
+                    writeInAppManagementJobNotifications(documentReference.getId(), custName, techName, userName);
                     Toast.makeText(this, "Job Added Successfully", Toast.LENGTH_SHORT).show();
                     clearInputFields();
                     returnToJobsActivity(); // Return to jobs first, then open WhatsApp
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to add job", Toast.LENGTH_SHORT).show());
+    }
+
+    /**
+     * In-app notifications for Management jobs:
+     * - Always notify the assigned technician (if different from creator)
+     */
+    private void writeInAppManagementJobNotifications(String jobId, String customerName, String assignedTech, String createdBy) {
+        try {
+            String creator = (createdBy != null && !createdBy.trim().isEmpty()) ? createdBy.trim() : "";
+            String creatorLower = creator.toLowerCase(java.util.Locale.getDefault());
+            String tech = assignedTech != null ? assignedTech.trim() : "";
+            String techLower = tech.toLowerCase(java.util.Locale.getDefault());
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("managementJobId", jobId);
+            data.put("assignedTech", tech);
+            data.put("customerName", customerName);
+            data.put("createdBy", creator);
+            data.put("type", "management");
+
+            if (!techLower.isEmpty() && (creatorLower.isEmpty() || !techLower.equals(creatorLower))) {
+                NotificationUtils.writeInAppNotification(
+                        tech,
+                        "management_assign_" + jobId,
+                        "🗂️ New Management Job",
+                        "Management job for " + customerName + " assigned to you",
+                        "management",
+                        data
+                );
+            }
+        } catch (Exception ignored) {
+        }
     }
     /**
      * Returns to the JobsActivity after successfully adding a job.
@@ -150,7 +205,7 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
      * Resets technician details, customer details, and issue description fields.
      */
     private void clearInputFields() {
-        techName.setText("");
+        if (techNameSpinner != null) techNameSpinner.setSelection(0);
         customerName.setText("");
         customerContact.setText("");
         issueDetails.setText("");

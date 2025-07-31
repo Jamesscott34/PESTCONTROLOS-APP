@@ -14,6 +14,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -107,14 +108,12 @@ public class SignatureCaptureActivity extends AppCompatActivity {
         private void init() {
             path = new Path();
             paint = new Paint();
-            paint.setColor(Color.BLACK);
+            paint.setColor(ContextCompat.getColor(getContext(), R.color.signature_ink));
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(8f); // Thicker stroke for signature look
             paint.setAntiAlias(true);
             paint.setStrokeJoin(Paint.Join.ROUND);
             paint.setStrokeCap(Paint.Cap.ROUND);
-            
-            setBackgroundColor(Color.WHITE);
         }
         
         @Override
@@ -166,7 +165,7 @@ public class SignatureCaptureActivity extends AppCompatActivity {
             
             Bitmap bitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
             Canvas canvas = new Canvas(bitmap);
-            canvas.drawColor(Color.WHITE);
+            canvas.drawColor(ContextCompat.getColor(getContext(), R.color.signature_bg));
             canvas.drawPath(path, paint);
             return bitmap;
         }

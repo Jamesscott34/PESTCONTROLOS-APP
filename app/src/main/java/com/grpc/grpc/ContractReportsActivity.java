@@ -38,6 +38,8 @@ public class ContractReportsActivity extends AppCompatActivity {
 
     private String contractName;
     private String userName;
+    private String reportsFolder; // e.g. Reports26
+    private int reportYear; // e.g. 2026
     private List<String> foundReports = new ArrayList<>();
 
     @Override
@@ -48,6 +50,15 @@ public class ContractReportsActivity extends AppCompatActivity {
         // Get contract name and username from intent
         contractName = getIntent().getStringExtra("CONTRACT_NAME");
         userName = getIntent().getStringExtra("USER_NAME");
+        reportsFolder = getIntent().getStringExtra("REPORTS_FOLDER");
+        reportYear = getIntent().getIntExtra("REPORT_YEAR", 0);
+
+        if (reportsFolder == null || reportsFolder.trim().isEmpty()) {
+            // Fallback to current year folder if not provided
+            int y = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+            reportsFolder = "Reports" + String.format(java.util.Locale.getDefault(), "%02d", y % 100);
+            reportYear = y;
+        }
 
         if (contractName == null || contractName.isEmpty()) {
             Toast.makeText(this, "Error: Contract name not found!", Toast.LENGTH_SHORT).show();
@@ -66,68 +77,58 @@ public class ContractReportsActivity extends AppCompatActivity {
     private void searchContractReports() {
         FirebaseStorage storage = FirebaseStorage.getInstance();
         StorageReference storageRef = storage.getReference();
+        StorageReference reportsRoot = storageRef.child(reportsFolder);
 
         // Show loading dialog
         AlertDialog loadingDialog = new AlertDialog.Builder(this)
                 .setTitle("Searching Reports")
-                .setMessage("Searching for reports related to: " + contractName)
+                .setMessage("Searching " + reportsFolder + " for reports related to: " + contractName)
                 .setCancelable(false)
                 .show();
 
         foundReports.clear();
         String normalizedContractName = normalizeName(contractName);
 
-        // List all root folders and filter for ReportsXX
-        storageRef.listAll().addOnSuccessListener(listResult -> {
-            List<StorageReference> reportRoots = new ArrayList<>();
-            for (StorageReference folder : listResult.getPrefixes()) {
-                String folderName = folder.getName();
-                if (folderName.matches("Reports\\d+")) {
-                    reportRoots.add(folder);
+        // Search only inside the selected year folder (ReportsYY)
+        reportsRoot.listAll().addOnSuccessListener(listResult -> {
+            // Search files directly in ReportsYY folder
+            for (StorageReference file : listResult.getItems()) {
+                String fileName = file.getName();
+                int dot = fileName.lastIndexOf(".");
+                String base = (dot > 0) ? fileName.substring(0, dot) : fileName;
+                String normalizedFileName = normalizeName(base);
+                if (normalizedFileName.contains(normalizedContractName)) {
+                    foundReports.add(reportsFolder + "/" + fileName);
                 }
             }
-            if (reportRoots.isEmpty()) {
+
+            List<StorageReference> monthFolders = listResult.getPrefixes();
+            if (monthFolders == null || monthFolders.isEmpty()) {
                 loadingDialog.dismiss();
                 showSearchResults();
                 return;
             }
-            int[] completedRoots = {0};
-            int totalRoots = reportRoots.size();
-            for (StorageReference reportsFolder : reportRoots) {
-                reportsFolder.listAll().addOnSuccessListener(listResult2 -> {
-                    // Search in monthly subfolders (January, February, etc.)
-                    for (StorageReference monthFolder : listResult2.getPrefixes()) {
-                        monthFolder.listAll().addOnSuccessListener(monthResult -> {
-                            for (StorageReference file : monthResult.getItems()) {
-                                String fileName = file.getName();
-                                String normalizedFileName = normalizeName(fileName.substring(0, fileName.lastIndexOf(".")));
-                                if (normalizedFileName.contains(normalizedContractName)) {
-                                    foundReports.add(reportsFolder.getName() + "/" + monthFolder.getName() + "/" + fileName);
-                                }
-                            }
-                            completedRoots[0]++;
-                            if (completedRoots[0] >= totalRoots * listResult2.getPrefixes().size()) {
-                                loadingDialog.dismiss();
-                                showSearchResults();
-                            }
-                        });
-                    }
-                    // Search in files directly in ReportsXX folder
-                    for (StorageReference file : listResult2.getItems()) {
+
+            final int[] pending = {monthFolders.size()};
+            for (StorageReference monthFolder : monthFolders) {
+                monthFolder.listAll().addOnSuccessListener(monthResult -> {
+                    for (StorageReference file : monthResult.getItems()) {
                         String fileName = file.getName();
-                        String normalizedFileName = normalizeName(fileName.substring(0, fileName.lastIndexOf(".")));
+                        int dot = fileName.lastIndexOf(".");
+                        String base = (dot > 0) ? fileName.substring(0, dot) : fileName;
+                        String normalizedFileName = normalizeName(base);
                         if (normalizedFileName.contains(normalizedContractName)) {
-                            foundReports.add(reportsFolder.getName() + "/" + fileName);
+                            foundReports.add(reportsFolder + "/" + monthFolder.getName() + "/" + fileName);
                         }
                     }
-                    completedRoots[0]++;
-                    if (completedRoots[0] >= totalRoots * listResult2.getPrefixes().size()) {
+                    pending[0]--;
+                    if (pending[0] <= 0) {
                         loadingDialog.dismiss();
                         showSearchResults();
                     }
                 }).addOnFailureListener(e -> {
-                    completedRoots[0]++;
-                    if (completedRoots[0] >= totalRoots) {
+                    pending[0]--;
+                    if (pending[0] <= 0) {
                         loadingDialog.dismiss();
                         showSearchResults();
                     }
@@ -151,13 +152,14 @@ public class ContractReportsActivity extends AppCompatActivity {
      */
     private void showSearchResults() {
         if (foundReports.isEmpty()) {
-            Toast.makeText(this, "No reports found for: " + contractName, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No reports found for: " + contractName + " in " + reportsFolder, Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Reports for: " + contractName + " (" + foundReports.size() + " found)");
+        String yearLabel = (reportYear > 0) ? String.valueOf(reportYear) : reportsFolder;
+        builder.setTitle("Reports (" + yearLabel + ") for: " + contractName + " (" + foundReports.size() + " found)");
 
         // Create custom layout for search and results
         android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_search_with_list, null);

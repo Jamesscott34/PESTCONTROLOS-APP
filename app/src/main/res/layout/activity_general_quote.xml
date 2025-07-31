@@ -6,78 +6,62 @@
     android:layout_height="match_parent"
     android:padding="16dp"
     android:paddingTop="?attr/actionBarSize"
-    android:background="@drawable/bk">
+    android:background="?android:attr/colorBackground">
 
-    <!-- Top Spacer to avoid notch -->
-    <View
-        android:id="@+id/statusSpacer"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
+    <!-- Centered content -->
+    <LinearLayout
+        android:id="@+id/quotesMenuContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:background="@android:color/transparent" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- Welcome Message -->
-    <TextView
-        android:id="@+id/welcomeTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Welcome, User!"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
-        android:textColor="?android:attr/textColorPrimary" />
+        <TextView
+            android:id="@+id/welcomeTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Welcome, User!"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
 
-    <!-- 8pt Contact Button -->
-    <Button
-        android:id="@+id/button8ptContact"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="8pt Contact"
-        android:textSize="16sp"
-        app:layout_constraintTop_toBottomOf="@id/welcomeTextView"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp" />
+        <Button
+            android:id="@+id/button8ptContact"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="8pt Contact"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp" />
 
-    <!-- 6pt Contract Button -->
-    <Button
-        android:id="@+id/button6ptContract"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="6pt Contract"
-        android:textSize="16sp"
-        app:layout_constraintTop_toBottomOf="@id/button8ptContact"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp" />
+        <Button
+            android:id="@+id/button6ptContract"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="6pt Contract"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp" />
 
-    <!-- 4pt Contract Button -->
-    <Button
-        android:id="@+id/button4ptContract"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="4pt Contract"
-        android:textSize="16sp"
-        app:layout_constraintTop_toBottomOf="@id/button6ptContract"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp" />
+        <Button
+            android:id="@+id/button4ptContract"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="4pt Contract"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp" />
 
-    <!-- 12pt Contract Button -->
-    <Button
-        android:id="@+id/button12ptContract"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="12pt Contract"
-        android:textSize="16sp"
-        app:layout_constraintTop_toBottomOf="@id/button4ptContract"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp" />
+        <Button
+            android:id="@+id/button12ptContract"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="12pt Contract"
+            android:textSize="16sp" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

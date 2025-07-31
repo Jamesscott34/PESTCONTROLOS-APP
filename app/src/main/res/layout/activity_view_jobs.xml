@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:fillViewport="true"
     android:paddingTop="?attr/actionBarSize"
-    android:background="@drawable/bk"
+    android:background="?android:attr/colorBackground"
     android:padding="16dp">
 
     <LinearLayout
@@ -27,8 +27,10 @@
             android:hint="Search by Technician Name"
             android:padding="12dp"
             android:drawableLeft="@android:drawable/ic_menu_search"
-            android:background="@android:drawable/editbox_background"
-            android:textSize="16sp"/>
+            android:background="@drawable/edit_text_border"
+            android:textSize="16sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Job Statistics -->
         <TextView
@@ -38,7 +40,8 @@
             android:text="Total Jobs: 0"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:paddingTop="8dp"/>
+            android:paddingTop="8dp"
+            android:textColor="?android:attr/textColorPrimary"/>
 
         <TextView
             android:id="@+id/completedJobs"
@@ -47,7 +50,8 @@
             android:text="Completed: 0"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:paddingTop="4dp"/>
+            android:paddingTop="4dp"
+            android:textColor="?android:attr/textColorPrimary"/>
 
         <TextView
             android:id="@+id/pendingJobs"
@@ -56,7 +60,8 @@
             android:text="Pending: 0"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:paddingTop="4dp"/>
+            android:paddingTop="4dp"
+            android:textColor="?android:attr/textColorPrimary"/>
 
         <!-- Jobs Container (Dynamically Added Views) -->
         <LinearLayout
@@ -72,8 +77,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Back"
-            android:backgroundTint="@android:color/holo_red_dark"
-            android:textColor="@android:color/white"
+            android:backgroundTint="?attr/colorError"
+            android:textColor="?attr/colorOnError"
             android:layout_marginTop="12dp"/>
 
     </LinearLayout>

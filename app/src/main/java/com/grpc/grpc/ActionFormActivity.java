@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -42,7 +43,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -75,6 +75,7 @@ public class ActionFormActivity extends AppCompatActivity {
     private Button technicianSignatureButton, customerSignatureButton;
     private ToggleButton followUpToggle;
     private LinearLayout followUpContainer;
+    private CheckBox passwordProtectCheckbox;
 
     // Data Management
     private List<Uri> selectedImageUris = new ArrayList<>();
@@ -187,12 +188,13 @@ public class ActionFormActivity extends AppCompatActivity {
         saveButton = findViewById(R.id.saveButton);
         backButton = findViewById(R.id.backButton);
         selectImageButton = findViewById(R.id.selectImageButton);
-        aiPolishButton = findViewById(R.id.aiPolishButton);
+        aiPolishButton = null; // AI button removed from UI
         readBackButton = findViewById(R.id.readBackButton);
         technicianSignatureButton = findViewById(R.id.technicianSignatureButton);
         customerSignatureButton = findViewById(R.id.customerSignatureButton);
         followUpToggle = findViewById(R.id.followUpToggle);
         followUpContainer = findViewById(R.id.followUpContainer);
+        passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
 
         saveButton.setOnClickListener(v -> saveActionForm());
         backButton.setOnClickListener(v -> {
@@ -202,16 +204,18 @@ public class ActionFormActivity extends AppCompatActivity {
             finish();
         });
         selectImageButton.setOnClickListener(v -> openImageSelector());
-        aiPolishButton.setOnClickListener(v -> {
-            // Check if there's a stored AI response to read back
-            if (!lastAIResponse.isEmpty()) {
-                readAIResponseBack();
-            } else if (openRouterApiKey.isEmpty()) {
-                requestOpenRouterApiKey();
-            } else {
-                polishWithAI();
-            }
-        });
+        if (aiPolishButton != null) {
+            aiPolishButton.setOnClickListener(v -> {
+                // Check if there's a stored AI response to read back
+                if (!lastAIResponse.isEmpty()) {
+                    readAIResponseBack();
+                } else if (openRouterApiKey.isEmpty()) {
+                    requestOpenRouterApiKey();
+                } else {
+                    polishWithAI();
+                }
+            });
+        }
         readBackButton.setOnClickListener(v -> readFormBack());
         
         // Signature capture buttons
@@ -631,14 +635,14 @@ public class ActionFormActivity extends AppCompatActivity {
         private void init() {
             path = new Path();
             paint = new Paint();
-            paint.setColor(Color.BLACK);
+            paint.setColor(ContextCompat.getColor(getContext(), R.color.signature_ink));
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(8f);
             paint.setAntiAlias(true);
             paint.setStrokeJoin(Paint.Join.ROUND);
             paint.setStrokeCap(Paint.Cap.ROUND);
             
-            setBackgroundColor(Color.WHITE);
+            setBackgroundColor(ContextCompat.getColor(getContext(), R.color.signature_bg));
         }
         
         @Override
@@ -716,118 +720,127 @@ public class ActionFormActivity extends AppCompatActivity {
             return;
         }
 
-        // Ask user to create password
-        requestPasswordCreation();
-    }
-    
-    private void requestPasswordCreation() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("🔒 Create Password for Action Form")
-                .setMessage("Please create a password for your Action Form PDF.\n\n" +
-                        "This password will be required to edit the PDF.");
-        
-        View passwordInputView = createPasswordInputView();
-        builder.setView(passwordInputView);
-        
-        builder.setPositiveButton("Create PDF", (dialog, which) -> {
-            // Find the EditText fields by casting the LinearLayout children
-            LinearLayout layout = (LinearLayout) passwordInputView;
-            EditText passwordInput = (EditText) layout.getChildAt(0);
-            EditText confirmPasswordInput = (EditText) layout.getChildAt(1);
-            
-            String password = passwordInput.getText().toString();
-            String confirmPassword = confirmPasswordInput.getText().toString();
-            
-            if (password.trim().isEmpty()) {
-                Toast.makeText(this, "Please enter a password", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            
-            if (password.length() < 6) {
-                Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            
-            if (!password.equals(confirmPassword)) {
-                Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            
-            // Create the password-protected PDF
-            createPasswordProtectedPDF(password);
-        });
-        
-        builder.setNegativeButton("Cancel", (dialog, which) -> {
-            dialog.dismiss();
-        });
-        
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-    
-    private android.view.View createPasswordInputView() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 20, 50, 20);
-        
-        EditText passwordInput = new EditText(this);
-        passwordInput.setHint("Enter password (min 6 characters)");
-        passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        passwordInput.setPadding(20, 20, 20, 20);
-        
-        EditText confirmPasswordInput = new EditText(this);
-        confirmPasswordInput.setHint("Confirm password");
-        confirmPasswordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        confirmPasswordInput.setPadding(20, 20, 20, 20);
-        
-        layout.addView(passwordInput);
-        layout.addView(confirmPasswordInput);
-        
-        return layout;
-    }
-    
-    private void createPasswordProtectedPDF(String password) {
-        // Generate password-protected PDF
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Get follow-up content
-            String followUp1 = followUp1Input.getEditText().getText().toString();
-            
-            ActionFormPdfGenerator.generatePasswordProtectedPDF(
-                premisesNameInput.getEditText().getText().toString(),
-                dateTimeInput.getText().toString(),
-                serviceTypeInput.getEditText().getText().toString(),
-                serviceNumberInput.getEditText().getText().toString(),
-                premisesAddressInput.getEditText().getText().toString(),
-                prepInput.getEditText().getText().toString(),
-                serviceReportInput.getEditText().getText().toString(),
-                recommendationsInput.getEditText().getText().toString(),
-                followUp1,
-                "", // followUp2 - not used in new design
-                "", // followUp3 - not used in new design
-                roleInput.getEditText().getText().toString(),
-                password,
-                this,
-                !selectedImageUris.isEmpty() ? selectedImageUris : null,
-                technicianSignatureUri,
-                customerSignatureUri,
-                followUpToggle.isChecked() // Pass toggle state to PDF generator
-            );
-
-            // Show success dialog
-            showSuccessDialog(password);
-            
-            // Delete signature images after successful PDF creation
-            deleteSignatureImages();
-            
-            // Clear fields after successful save
-            clearInputFields();
+            if (passwordProtectCheckbox.isChecked()) {
+                requestPasswordCreation();
+            } else {
+                createUnprotectedPDF();
+            }
         } else {
             Toast.makeText(this, "PDF generation requires Android 13 or higher", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private String generateSecurePassword() {
-        return UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    private void createUnprotectedPDF() {
+        String followUp1 = followUp1Input.getEditText().getText().toString();
+        ActionFormPdfGenerator.generatePDF(
+            premisesNameInput.getEditText().getText().toString(),
+            dateTimeInput.getText().toString(),
+            serviceTypeInput.getEditText().getText().toString(),
+            serviceNumberInput.getEditText().getText().toString(),
+            premisesAddressInput.getEditText().getText().toString(),
+            prepInput.getEditText().getText().toString(),
+            serviceReportInput.getEditText().getText().toString(),
+            recommendationsInput.getEditText().getText().toString(),
+            followUp1,
+            "",
+            "",
+            roleInput.getEditText().getText().toString(),
+            this,
+            !selectedImageUris.isEmpty() ? selectedImageUris : null,
+            technicianSignatureUri,
+            customerSignatureUri,
+            followUpToggle.isChecked()
+        );
+        showSuccessDialog();
+        deleteSignatureImages();
+        clearInputFields();
+    }
+
+    private void requestPasswordCreation() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🔒 Create Password for Action Form")
+                .setMessage("Please create a password for your Action Form PDF.\n\n" +
+                        "This password will be required to edit the PDF.");
+        View passwordInputView = createPasswordInputView();
+        builder.setView(passwordInputView);
+        builder.setPositiveButton("Create PDF", (dialog, which) -> {
+            LinearLayout layout = (LinearLayout) passwordInputView;
+            EditText passwordInput = (EditText) layout.getChildAt(0);
+            EditText confirmPasswordInput = (EditText) layout.getChildAt(1);
+            String password = passwordInput.getText().toString();
+            String confirmPassword = confirmPasswordInput.getText().toString();
+            if (password.trim().isEmpty()) {
+                Toast.makeText(this, "Please enter a password", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (password.length() < 6) {
+                Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (!password.equals(confirmPassword)) {
+                Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            createPasswordProtectedPDF(password);
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        builder.create().show();
+    }
+
+    private View createPasswordInputView() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 20, 50, 20);
+        EditText passwordInput = new EditText(this);
+        passwordInput.setHint("Enter password (min 6 characters)");
+        passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        passwordInput.setPadding(20, 20, 20, 20);
+        EditText confirmPasswordInput = new EditText(this);
+        confirmPasswordInput.setHint("Confirm password");
+        confirmPasswordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        confirmPasswordInput.setPadding(20, 20, 20, 20);
+        layout.addView(passwordInput);
+        layout.addView(confirmPasswordInput);
+        return layout;
+    }
+
+    private void createPasswordProtectedPDF(String password) {
+        String followUp1 = followUp1Input.getEditText().getText().toString();
+        ActionFormPdfGenerator.generatePasswordProtectedPDF(
+            premisesNameInput.getEditText().getText().toString(),
+            dateTimeInput.getText().toString(),
+            serviceTypeInput.getEditText().getText().toString(),
+            serviceNumberInput.getEditText().getText().toString(),
+            premisesAddressInput.getEditText().getText().toString(),
+            prepInput.getEditText().getText().toString(),
+            serviceReportInput.getEditText().getText().toString(),
+            recommendationsInput.getEditText().getText().toString(),
+            followUp1,
+            "",
+            "",
+            roleInput.getEditText().getText().toString(),
+            password,
+            this,
+            !selectedImageUris.isEmpty() ? selectedImageUris : null,
+            technicianSignatureUri,
+            customerSignatureUri,
+            followUpToggle.isChecked()
+        );
+        showSuccessDialog(password);
+        deleteSignatureImages();
+        clearInputFields();
+    }
+
+    private void showSuccessDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Action Form PDF Created Successfully!")
+                .setMessage("Your Action Form PDF has been created.")
+                .setPositiveButton("Share PDF", (dialog, which) -> shareActionForm())
+                .setNegativeButton("Upload to Firebase", (dialog, which) -> showFirebaseFolderSelectionPopup())
+                .setNeutralButton("OK", (dialog, which) -> dialog.dismiss())
+                .setCancelable(false);
+        builder.create().show();
     }
 
     private void showSuccessDialog(String password) {
@@ -838,19 +851,11 @@ public class ActionFormActivity extends AppCompatActivity {
                         "✏️ Editing: Requires password\n\n" +
                         "🔑 Owner Password: " + password + "\n\n" +
                         "⚠️ Please save this password securely!")
-                .setPositiveButton("Share PDF", (dialog, which) -> {
-                    shareActionForm();
-                })
-                .setNegativeButton("Upload to Firebase", (dialog, which) -> {
-                    showFirebaseFolderSelectionPopup();
-                })
-                .setNeutralButton("OK", (dialog, which) -> {
-                    dialog.dismiss();
-                })
+                .setPositiveButton("Share PDF", (dialog, which) -> shareActionForm())
+                .setNegativeButton("Upload to Firebase", (dialog, which) -> showFirebaseFolderSelectionPopup())
+                .setNeutralButton("OK", (dialog, which) -> dialog.dismiss())
                 .setCancelable(false);
-        
-        AlertDialog dialog = builder.create();
-        dialog.show();
+        builder.create().show();
     }
 
     private void shareActionForm() {
@@ -915,7 +920,7 @@ public class ActionFormActivity extends AppCompatActivity {
             builder.setTitle("Select a Parent Folder");
             builder.setItems(foldersArray, (dialog, which) -> {
                 String selectedFolder = foldersArray[which];
-                uploadActionFormToFirebase(selectedFolder);
+                showSubFolderSelectionDialog(selectedFolder);
             });
 
             builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
@@ -923,6 +928,47 @@ public class ActionFormActivity extends AppCompatActivity {
 
         }).addOnFailureListener(e -> {
             Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    /**
+     * Shows subfolder selection dialog after selecting a parent folder
+     *
+     * @param parentFolder The selected parent folder
+     */
+    private void showSubFolderSelectionDialog(String parentFolder) {
+        Toast.makeText(this, "Loading subfolders for: " + parentFolder, Toast.LENGTH_SHORT).show();
+        
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference parentFolderRef = storage.getReference().child(parentFolder);
+
+        parentFolderRef.listAll().addOnSuccessListener(listResult -> {
+            List<String> subFolderList = new ArrayList<>();
+            for (StorageReference prefix : listResult.getPrefixes()) {
+                subFolderList.add(prefix.getName());
+            }
+
+            if (subFolderList.isEmpty()) {
+                Toast.makeText(this, "No subfolders found. Uploading directly to " + parentFolder, Toast.LENGTH_SHORT).show();
+                uploadActionFormToFirebase(parentFolder);
+                return;
+            }
+
+            // Show subfolder selection dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Select a Subfolder");
+            builder.setItems(subFolderList.toArray(new String[0]), (dialog, which) -> {
+                String selectedSubFolder = subFolderList.get(which);
+                uploadActionFormToFirebase(parentFolder + "/" + selectedSubFolder);
+            });
+
+            builder.setNegativeButton("Cancel", (dialog, which) -> {
+                dialog.dismiss();
+            });
+            builder.show();
+
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Failed to load subfolders: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -1026,8 +1072,10 @@ public class ActionFormActivity extends AppCompatActivity {
         }
         
         Toast.makeText(this, "🤖 AI is polishing your Action Form...", Toast.LENGTH_SHORT).show();
-        aiPolishButton.setEnabled(false);
-        aiPolishButton.setText("🤖 Polishing...");
+        if (aiPolishButton != null) {
+            aiPolishButton.setEnabled(false);
+            aiPolishButton.setText("🤖 Polishing...");
+        }
         
         String prompt = "Rewrite the following text to make it sound more professional, slightly longer, and more fluid. " +
                 "Ensure the grammar is correct throughout. Keep the original meaning and all key information intact, " +
@@ -1060,8 +1108,10 @@ public class ActionFormActivity extends AppCompatActivity {
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     Toast.makeText(this, "AI polishing failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    aiPolishButton.setEnabled(true);
-                    aiPolishButton.setText("🤖 AI Polish Form");
+                    if (aiPolishButton != null) {
+                        aiPolishButton.setEnabled(true);
+                        aiPolishButton.setText("🤖 AI Polish Form");
+                    }
                 });
             }
         }).start();
@@ -1170,8 +1220,10 @@ public class ActionFormActivity extends AppCompatActivity {
             } catch (Exception e) {
                 Toast.makeText(this, "Error parsing AI response: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             } finally {
-                aiPolishButton.setEnabled(true);
-                aiPolishButton.setText("🤖 AI Polish Form");
+                if (aiPolishButton != null) {
+                    aiPolishButton.setEnabled(true);
+                    aiPolishButton.setText("🤖 AI Polish Form");
+                }
             }
         });
     }
@@ -1216,7 +1268,9 @@ public class ActionFormActivity extends AppCompatActivity {
         
         // Reset the AI response after reading it back
         lastAIResponse = "";
-        aiPolishButton.setText("🤖 AI Polish Form");
+        if (aiPolishButton != null) {
+            aiPolishButton.setText("🤖 AI Polish Form");
+        }
     }
 
     private void readFormBack() {

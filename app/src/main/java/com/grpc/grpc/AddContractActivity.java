@@ -3,17 +3,19 @@ package com.grpc.grpc;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -46,6 +48,15 @@ public class AddContractActivity extends AppCompatActivity {
     private Button addButton, backButton;
     private FirebaseFirestore db;
     private String userName;
+    private Spinner assignedTechSpinner;
+
+    private static final String[] TECHNICIANS = {"James", "Dean", "Ian"};
+
+    private boolean canAssignContracts() {
+        return "james".equalsIgnoreCase(userName)
+                || "ian".equalsIgnoreCase(userName)
+                || "kristine".equalsIgnoreCase(userName);
+    }
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -75,6 +86,33 @@ public class AddContractActivity extends AppCompatActivity {
         visitsEditText = findViewById(R.id.editTextVisits);
         addButton = findViewById(R.id.buttonAdd);
         backButton = findViewById(R.id.buttonBack);
+        assignedTechSpinner = findViewById(R.id.assignedTechSpinner);
+
+        // Assign-to dropdown for admins (prevents typos and ensures notifications go to correct inbox)
+        if (assignedTechSpinner != null) {
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(
+                    this,
+                    android.R.layout.simple_spinner_item,
+                    TECHNICIANS
+            );
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            assignedTechSpinner.setAdapter(adapter);
+
+            // Default selection = current user when possible
+            int sel = 0;
+            for (int i = 0; i < TECHNICIANS.length; i++) {
+                if (TECHNICIANS[i].equalsIgnoreCase(userName)) {
+                    sel = i;
+                    break;
+                }
+            }
+            assignedTechSpinner.setSelection(sel);
+
+            boolean show = canAssignContracts();
+            assignedTechSpinner.setVisibility(show ? View.VISIBLE : View.GONE);
+            android.view.View label = findViewById(R.id.assignTechLabel);
+            if (label != null) label.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
 
         addButton.setOnClickListener(view -> {
             String name = nameEditText.getText().toString().trim();
@@ -109,48 +147,21 @@ public class AddContractActivity extends AppCompatActivity {
             if (email.isEmpty()) email = "N/A";
             if (contact.isEmpty()) contact = "N/A";
 
-            if ("Kristine".equalsIgnoreCase(userName)) {
-                // Show dialog to select which user's contract to add
-                showUserSelectionDialog(name, address, email, contact, visits);
-            } else {
-                // Use the extracted user name to create the collection
-                String tableName = userName + " Contracts"; // e.g., "James Contracts"
-                addContractToFirestore(tableName, name, address, email, contact, visits, userName);
+            String owner = userName;
+            if (assignedTechSpinner != null && assignedTechSpinner.getVisibility() == View.VISIBLE) {
+                Object sel = assignedTechSpinner.getSelectedItem();
+                if (sel != null) owner = String.valueOf(sel).trim();
             }
+            if (owner == null || owner.trim().isEmpty()) owner = userName;
+
+            String tableName = owner + " Contracts";
+            addContractToFirestore(tableName, name, address, email, contact, visits, owner);
         });
 
         backButton.setOnClickListener(view -> {
             // Simply go back to the previous screen
             finish();
         });
-    }
-    /**
-     * Displays a dialog for user selection when "Kristine" is adding a contract.
-     * Allows selection between different users for contract assignment.
-     *
-     * @param name     The name of the contract holder.
-     * @param address  The address of the contract holder.
-     * @param email    The email associated with the contract.
-     * @param contact  The contact number associated with the contract.
-     * @param visits   The number of visits assigned in the contract.
-     */
-
-    private void showUserSelectionDialog(String name, String address, String email, String contact, String visits) {
-        // List of usernames (replace with your actual list)
-        String[] userNames = {"James", "Ian"};
-
-        // Create a dialog
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Select User")
-                .setItems(userNames, (dialog, which) -> {
-                    String selectedUser = userNames[which];
-                    String tableName = selectedUser + " Contracts"; // e.g., "James Contracts"
-
-                    // Add contract with the selected user as the owner
-                    addContractToFirestore(tableName, name, address, email, contact, visits, selectedUser);
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
     }
     /**
      * Adds the contract to Firestore under the specified user's contract collection.
@@ -166,10 +177,12 @@ public class AddContractActivity extends AppCompatActivity {
      */
     private void addContractToFirestore(String tableName, String name, String address, String email, String contact, String visits, String owner) {
         CollectionReference contractsCollection = db.collection(tableName);
-        Map<String, Object> contract = createContractObject(name, address, email, contact, visits, owner);
+        Map<String, Object> contract = createContractObject(name, address, email, contact, visits, owner, userName);
 
         contractsCollection.add(contract)
                 .addOnSuccessListener(documentReference -> {
+                    writeInAppContractAssignmentIfNeeded(documentReference.getId(), name, owner, userName);
+                    writeInAppContractOversightIfNeeded(documentReference.getId(), name, owner, userName);
                     Toast.makeText(AddContractActivity.this, "Contract added successfully to " + tableName, Toast.LENGTH_SHORT).show();
                     clearFields();
                     returnToContractsActivity();
@@ -177,6 +190,72 @@ public class AddContractActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     Toast.makeText(AddContractActivity.this, "Failed to add contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    /**
+     * In-app notification history (NOT system push).
+     * If anyone assigns a contract to another technician's contracts, notify that technician.
+     */
+    private void writeInAppContractAssignmentIfNeeded(String contractId, String contractName, String owner, String createdBy) {
+        try {
+            if (contractId == null || contractId.trim().isEmpty()) return;
+            String creatorLower = createdBy != null ? createdBy.trim().toLowerCase(Locale.getDefault()) : "";
+
+            String ownerName = owner != null ? owner.trim() : "";
+            String ownerLower = ownerName.toLowerCase(Locale.getDefault());
+            if (ownerLower.isEmpty()) return;
+            if (ownerLower.equals(creatorLower)) return;
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("contractId", contractId);
+            data.put("contractName", contractName);
+            data.put("userName", ownerName);
+            data.put("createdBy", createdBy);
+            data.put("type", "contract_update");
+
+            NotificationUtils.writeInAppNotification(
+                    ownerName,
+                    "contract_assigned_" + contractId,
+                    "📋 New Contract Assigned",
+                    (contractName != null ? contractName : "A contract") + " has been assigned to you"
+                            + (createdBy != null && !createdBy.trim().isEmpty() ? ("\nAssigned by " + createdBy) : ""),
+                    "contract_update",
+                    data
+            );
+        } catch (Exception ignored) {
+        }
+    }
+
+    /**
+     * Oversight notification: when Dean adds a contract, notify Ian/James/Kristine.
+     */
+    private void writeInAppContractOversightIfNeeded(String contractId, String contractName, String owner, String createdBy) {
+        try {
+            if (contractId == null || contractId.trim().isEmpty()) return;
+            String creator = createdBy != null ? createdBy.trim() : "";
+            String creatorLower = creator.toLowerCase(Locale.getDefault());
+            if (!"dean".equals(creatorLower)) return;
+
+            String ownerName = owner != null ? owner.trim() : "";
+            if (ownerName.isEmpty()) ownerName = "Dean";
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("contractId", contractId);
+            data.put("contractName", contractName);
+            data.put("userName", ownerName); // open Dean's contracts
+            data.put("createdBy", creator);
+            data.put("type", "contract_update");
+
+            String title = "📋 Contract added";
+            String body = "Dean added a contract"
+                    + (contractName != null && !contractName.trim().isEmpty() ? (": " + contractName.trim()) : "")
+                    + " (assigned to " + ownerName + ")";
+
+            NotificationUtils.writeInAppNotification("ian", "contract_added_by_dean_" + contractId + "_ian", title, body, "contract_update", data);
+            NotificationUtils.writeInAppNotification("james", "contract_added_by_dean_" + contractId + "_james", title, body, "contract_update", data);
+            NotificationUtils.writeInAppNotification("kristine", "contract_added_by_dean_" + contractId + "_kristine", title, body, "contract_update", data);
+        } catch (Exception ignored) {
+        }
     }
     /**
      * Creates a contract object formatted as a HashMap.
@@ -190,14 +269,15 @@ public class AddContractActivity extends AppCompatActivity {
      * @param owner    The owner of the contract entry.
      * @return A Map containing the contract details.
      */
-    private Map<String, Object> createContractObject(String name, String address, String email, String contact, String visits, String owner) {
+    private Map<String, Object> createContractObject(String name, String address, String email, String contact, String visits, String owner, String createdBy) {
         Map<String, Object> contract = new HashMap<>();
         contract.put("name", name);
         contract.put("address", address);
         contract.put("email", email);
         contract.put("contact", contact);
         contract.put("visits", visits);
-        contract.put("addedBy", owner); // Keep track of who added the contract
+        contract.put("addedBy", owner);
+        contract.put("createdBy", createdBy != null ? createdBy : owner);
         return contract;
     }
     /**

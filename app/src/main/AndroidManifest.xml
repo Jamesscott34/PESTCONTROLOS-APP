@@ -27,6 +27,10 @@
     
     <!-- Network state access for offline/online mode detection -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!-- Location (for James-only location finder; tech devices publish last known location) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     
     <!-- External storage access for saving reports and documents locally -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
@@ -56,9 +60,9 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/bk"
         android:label="Good Riddance Pest Control"
-        android:roundIcon="@mipmap/ic_launcher"
+        android:roundIcon="@drawable/bk"
         android:supportsRtl="true"
         android:theme="@style/Theme.Grpc"
         tools:targetApi="31">
@@ -86,23 +90,53 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- James-only (for now): Global search entry point -->
+        <activity
+            android:name=".SearchActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <!-- James-only: view last known technician locations -->
+        <activity
+            android:name=".LocationFinderActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <!-- Help / README Activity - In-app instructions for using the app -->
+        <activity
+            android:name=".HelpReadmeActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
+
         <!-- Work View Activity - Calendar and work scheduling -->
         <activity
             android:name=".WorkViewActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- WorkView home screen widget: shows next 3 jobs from local cache, tap opens WorkViewActivity -->
+        <receiver
+            android:name=".WorkViewWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/workview_widget_info"/>
+        </receiver>
+
         <!-- Add Job From Calendar Activity -->
         <activity
             android:name=".AddJobFromCalendarActivity"
-            android:windowSoftInputMode="adjustResize"
+            android:windowSoftInputMode="adjustResize|stateHidden"
             android:exported="true"/>
 
-        <!-- Chat Activity - AI Chat Assistant -->
+        <!-- Chat Activity - AI Chat Assistant
         <activity
             android:name=".ChatActivity"
             android:windowSoftInputMode="adjustResize"
-            android:exported="false"/>
+            android:exported="false"/> -->
 
         <!-- Add Follow-up Activity -->
         <activity
@@ -358,7 +392,15 @@
              Activities for internal communication and messaging
              ============================================================================ -->
 
-        <!-- Internal messaging system -->
+        <!-- Messaging - conversation list -->
+        <activity android:name=".NotificationsActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+        <activity android:name=".MessagingConversationsActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
+
+        <!-- Internal messaging - per-conversation chat -->
         <activity android:name=".MessagingActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>

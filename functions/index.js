@@ -3,38 +3,56 @@ const admin = require('firebase-admin');
 
 admin.initializeApp();
 
-// ✅ 1. ENHANCED MESSAGE PUSH with better content and reliability
-exports.onMessageCreated = functions.firestore
-  .document('messages/{docId}')
+/** Save notification to Firestore for in-app notification history */
+async function saveNotificationHistory(recipientTopic, title, body, type, data) {
+  try {
+    await admin.firestore()
+      .collection('notifications')
+      .doc(recipientTopic.toLowerCase())
+      .collection('items')
+      .add({
+        title: title || 'Notification',
+        body: body || '',
+        type: type || 'general',
+        data: data || {},
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        read: false
+      });
+  } catch (e) {
+    console.warn('Could not save notification history:', e.message);
+  }
+}
+
+// ✅ 1a. CONVERSATION MESSAGES → Push only to recipients (1:1 = other person only, group = everyone except sender)
+exports.onConversationMessageCreated = functions.firestore
+  .document('conversations/{convId}/messages/{docId}')
   .onCreate(async (snap, context) => {
     const data = snap.data();
-    const sender = data?.sender || 'Unknown';
-    const messageBody = data?.body || '';
-    const timestamp = data?.timestamp?.toDate?.() || context.timestamp?.toDate?.();
+    const sender = (data?.sender || 'Unknown').trim();
+    const body = data?.body || '';
+    const convId = context.params.convId;
+    const timestamp = data?.createdAt?.toDate?.() || data?.timestamp?.toDate?.();
     const now = new Date();
     const ageInSeconds = timestamp ? (now - timestamp) / 1000 : 9999;
 
-    // Skip old messages to prevent spam
-    if (!sender || ageInSeconds > 10) {
-      console.log("⏩ Skipping old or invalid message:", context.params.docId, "age:", ageInSeconds);
-      return null;
-    }
+    if (!sender || ageInSeconds > 15) return null;
 
-    // Create rich notification content
-    const notificationTitle = `💬 New Message from ${sender}`;
-    const notificationBody = messageBody.length > 100 ? 
-      messageBody.substring(0, 100) + '...' : messageBody;
+    const isUrgent = data?.isUrgent === true;
+    const urgentPrefix = isUrgent ? '🔴 ' : '';
+    const notificationTitle = `${urgentPrefix}💬 ${sender}`;
+    const notificationBody = body.length > 80 ? body.substring(0, 80) + '...' : body;
 
-    const message = {
-      notification: {
-        title: notificationTitle,
-        body: notificationBody
-      },
+    const participants = getConversationParticipants(convId);
+    const senderLower = sender.toLowerCase();
+    const recipients = participants.filter(p => p.toLowerCase() !== senderLower);
+
+    if (recipients.length === 0) return null;
+
+    const payload = {
+      notification: { title: notificationTitle, body: notificationBody },
       data: {
-        sender: sender,
-        messageId: context.params.docId,
-        timestamp: timestamp ? timestamp.toISOString() : new Date().toISOString(),
-        type: 'message'
+        sender, convId, messageId: context.params.docId,
+        type: 'conversation_message'
       },
       android: {
         priority: "high",
@@ -45,37 +63,56 @@ exports.onMessageCreated = functions.firestore
           defaultVibrateTimings: true,
           icon: "ic_notification"
         }
-      },
-      condition: `'all' in topics && !('${sender.toLowerCase()}' in topics)`
+      }
     };
 
     try {
-      const response = await admin.messaging().send(message);
-      console.log("✅ Message notification sent successfully:", {
-        messageId: context.params.docId,
-        sender: sender,
-        response: response
-      });
-      return response;
+      // In-app only notifications: save to in-app notification history, do not send push.
+      for (const recipient of recipients) {
+        await saveNotificationHistory(recipient.toLowerCase(), notificationTitle, notificationBody,
+          'conversation_message', payload.data);
+      }
+      console.log("✅ Conversation in-app notification saved:", convId, sender, "->", recipients);
+      return null;
     } catch (error) {
-      console.error("❌ Error sending message notification:", {
-        error: error.message,
-        messageId: context.params.docId,
-        sender: sender
-      });
+      console.error("❌ Conversation message push error:", error);
       throw error;
     }
   });
 
-// ✅ 2. ENHANCED JOBWORK → Standard Field Technician Jobs
+function getConversationParticipants(convId) {
+  if (convId === 'group') {
+    return ['james', 'ian', 'kristine', 'dean'];
+  }
+  const parts = (convId || '').split('_');
+  return parts.length >= 2 ? [parts[0].toLowerCase(), parts[1].toLowerCase()] : [];
+}
+
+// ✅ 1b. LEGACY: Top-level messages (kept for backward compat)
+exports.onMessageCreated = functions.firestore
+  .document('messages/{docId}')
+  .onCreate(async (snap, context) => {
+    // Disabled: legacy collection used `'all' in topics` broadcasts.
+    // We now send chat notifications via `onConversationMessageCreated` to recipients only.
+    return null;
+  });
+
+// ✅ 2. JOBWORK (in-app only)
+// Rules:
+// - If Ian or Kristine adds/assigns a job: assigned technician is notified (not the sender)
+// - If James or Dean adds a job: Ian and Kristine are notified
 exports.onJobWorkAdded = functions.firestore
   .document('JobWork/{docId}')
   .onCreate(async (snap, context) => {
+    // Disabled: JobWork in-app notifications are now written by the Android client
+    // (so they work without Cloud Functions, and to avoid duplicate notification records).
+    return null;
+
     const data = snap.data();
     const tech = data?.AssignedTech || 'Technician';
     const customer = data?.CustomerName || 'Customer';
     const jobType = data?.JobType || 'Service';
-    const createdBy = data?.CreatedBy || '';
+    const createdBy = (data?.CreatedBy || '').trim();
     const createdAt = data?.CreatedAt?.toDate?.();
     const now = new Date();
     const ageInSeconds = createdAt ? (now - createdAt) / 1000 : 9999;
@@ -85,14 +122,7 @@ exports.onJobWorkAdded = functions.firestore
       return null;
     }
 
-    const notificationTitle = `🚐 New Job Assignment`;
-    const notificationBody = `${jobType} job for ${customer} assigned to ${tech}`;
-
-    const message = {
-      notification: {
-        title: notificationTitle,
-        body: notificationBody
-      },
+    const baseMessage = {
       data: {
         jobId: context.params.docId,
         assignedTech: tech,
@@ -110,24 +140,38 @@ exports.onJobWorkAdded = functions.firestore
           defaultVibrateTimings: true,
           icon: "ic_notification"
         }
-      },
-      condition: `'all' in topics && !('${createdBy.toLowerCase()}' in topics)`
+      }
     };
 
     try {
-      const response = await admin.messaging().send(message);
-      console.log("✅ JobWork notification sent successfully:", {
-        jobId: context.params.docId,
-        tech: tech,
-        customer: customer,
-        response: response
-      });
-      return response;
+      const createdLower = createdBy.toLowerCase();
+      const techLower = (tech || '').toLowerCase();
+
+      if (createdLower === 'ian' || createdLower === 'kristine') {
+        // Ian/Kristine assigns: notify assigned technician (not the sender)
+        if (!techLower || techLower === createdLower) return null;
+        await saveNotificationHistory(tech.toLowerCase(), '🚐 New Job Assignment',
+          `${jobType} job for ${customer} assigned to you`, 'jobwork', baseMessage.data);
+        console.log("✅ JobWork in-app notification saved for", tech, "(", createdBy, "added)");
+        return null;
+      } else if (createdLower === 'james' || createdLower === 'dean') {
+        // James/Dean adds: notify Ian and Kristine, AND the assigned technician
+        const nTitle = '🚐 New Job Added';
+        const nBody = `${createdBy} added a ${jobType} job for ${customer} (assigned to ${tech})`;
+        await saveNotificationHistory('ian', nTitle, nBody, 'jobwork', baseMessage.data);
+        await saveNotificationHistory('kristine', nTitle, nBody, 'jobwork', baseMessage.data);
+        if (techLower && techLower !== createdLower) {
+          await saveNotificationHistory(techLower, '🚐 New Job Assignment',
+            `${jobType} job for ${customer} assigned to you`, 'jobwork', baseMessage.data);
+          console.log("✅ JobWork in-app notification saved for Ian + Kristine +", tech, "(", createdBy, "added)");
+        } else {
+          console.log("✅ JobWork in-app notification saved for Ian + Kristine (", createdBy, "added)");
+        }
+        return null;
+      }
+      return null;
     } catch (error) {
-      console.error("❌ Error sending JobWork notification:", {
-        error: error.message,
-        jobId: context.params.docId
-      });
+      console.error("❌ Error sending JobWork notification:", error);
       throw error;
     }
   });
@@ -154,42 +198,25 @@ exports.onManagmentJobAdded = functions.firestore
     const notificationTitle = `${priorityEmoji} New Management Task`;
     const notificationBody = `Task assigned to ${manager}: ${task}`;
 
-    const message = {
-      notification: {
-        title: notificationTitle,
-        body: notificationBody
-      },
-      data: {
-        jobId: context.params.docId,
-        assignedManager: manager,
-        task: task,
-        priority: priority,
-        createdBy: createdBy,
-        type: 'management'
-      },
-      android: {
-        priority: "high",
-        notification: {
-          channelId: "management",
-          priority: "high",
-          defaultSound: true,
-          defaultVibrateTimings: true,
-          icon: "ic_notification"
-        }
-      },
-      condition: `'all' in topics && !('${createdBy.toLowerCase()}' in topics)`
-    };
-
     try {
-      const response = await admin.messaging().send(message);
-      console.log("✅ ManagmentJob notification sent successfully:", {
+      // In-app only notifications
+      if (!manager || manager.toLowerCase() === createdBy.toLowerCase()) return null;
+      await saveNotificationHistory(manager.toLowerCase(), notificationTitle, notificationBody,
+        'management', {
+          jobId: context.params.docId,
+          assignedManager: manager,
+          task: task,
+          priority: priority,
+          createdBy: createdBy,
+          type: 'management'
+        });
+      console.log("✅ ManagmentJob in-app notification saved:", {
         jobId: context.params.docId,
         manager: manager,
         task: task,
-        priority: priority,
-        response: response
+        priority: priority
       });
-      return response;
+      return null;
     } catch (error) {
       console.error("❌ Error sending ManagmentJob notification:", {
         error: error.message,
@@ -199,65 +226,181 @@ exports.onManagmentJobAdded = functions.firestore
     }
   });
 
-// ✅ 4. NEW: CONTRACT UPDATES → Notify when contracts are modified
-exports.onContractUpdated = functions.firestore
-  .document('{userName} Contracts/{docId}')
-  .onUpdate(async (change, context) => {
-    const beforeData = change.before.data();
-    const afterData = change.after.data();
-    const userName = context.params.userName;
-    
-    // Check if lastVisit was updated
-    if (beforeData?.lastVisit !== afterData?.lastVisit) {
-      const contractName = afterData?.name || 'Contract';
-      const lastVisit = afterData?.lastVisit || 'N/A';
-      
-      const notificationTitle = `📅 Contract Updated`;
-      const notificationBody = `${contractName} - Last visit: ${lastVisit}`;
+// ✅ 4. CONTRACT UPDATES → Notify when contracts are modified (explicit triggers for collections with spaces)
+function createContractUpdateFunction(collectionName) {
+  return functions.firestore
+    .document(collectionName + '/{docId}')
+    .onUpdate(async (change, context) => {
+      const beforeData = change.before.data();
+      const afterData = change.after.data();
 
-      const message = {
-        notification: {
-          title: notificationTitle,
-          body: notificationBody
-        },
-        data: {
-          contractId: context.params.docId,
-          contractName: contractName,
-          lastVisit: lastVisit,
-          userName: userName,
-          type: 'contract_update'
-        },
-        android: {
-          priority: "normal",
-          notification: {
-            channelId: "contracts",
-            priority: "normal",
-            defaultSound: true,
-            icon: "ic_notification"
-          }
-        },
-        condition: `'all' in topics`
-      };
+      if (beforeData?.lastVisit !== afterData?.lastVisit) {
+        const contractName = afterData?.name || 'Contract';
+        const lastVisit = afterData?.lastVisit || 'N/A';
+
+        try {
+          // In-app only notifications
+          const recipient = collectionName.replace(' Contracts', '').toLowerCase();
+          await saveNotificationHistory(recipient, '📅 Contract Updated',
+            `${contractName} - Last visit: ${lastVisit}`, 'contract_update', {
+              contractId: context.params.docId,
+              contractName: contractName,
+              lastVisit: lastVisit,
+              userName: collectionName.replace(' Contracts', ''),
+              type: 'contract_update'
+            });
+          console.log("✅ Contract update in-app notification saved:", context.params.docId);
+          return null;
+        } catch (error) {
+          console.error("❌ Error sending contract update notification:", error);
+          throw error;
+        }
+      }
+      return null;
+    });
+}
+
+exports.onJamesContractUpdated = createContractUpdateFunction('James Contracts');
+exports.onIanContractUpdated = createContractUpdateFunction('Ian Contracts');
+exports.onDeanContractUpdated = createContractUpdateFunction('Dean Contracts');
+exports.onKristineContractUpdated = createContractUpdateFunction('Kristine Contracts');
+
+// ✅ 4b. CONTRACT CREATED (in-app only)
+// Rules:
+// - If Ian or Kristine adds a contract to another tech's list: that tech is notified
+// - If James adds to James' own list: Ian and Kristine are notified
+// - If Dean adds to Dean's own list: Ian and Kristine are notified
+function createContractCreatedFunction(collectionName) {
+  return functions.firestore
+    .document(collectionName + '/{docId}')
+    .onCreate(async (snap, context) => {
+      // Disabled: Contract assignment in-app notifications are now written by the Android client
+      // (so they work without Cloud Functions, and to avoid duplicate notification records).
+      return null;
+
+      const data = snap.data();
+      const createdBy = (data?.createdBy || '').trim();
+      const contractName = data?.name || 'Contract';
+      const assignedTech = collectionName.replace(' Contracts', '');
 
       try {
-        const response = await admin.messaging().send(message);
-        console.log("✅ Contract update notification sent:", {
-          contractId: context.params.docId,
-          contractName: contractName,
-          lastVisit: lastVisit,
-          response: response
-        });
-        return response;
+        const createdLower = createdBy.toLowerCase();
+        const ownerLower = assignedTech.toLowerCase();
+
+        // Own-list adds: James/Dean -> notify Ian + Kristine
+        if ((createdLower === 'james' && ownerLower === 'james') || (createdLower === 'dean' && ownerLower === 'dean')) {
+          const msg = {
+            notification: {
+              title: '📋 New Contract Added',
+              body: `${createdBy} added ${contractName} to their contracts`
+            },
+            data: {
+              contractId: context.params.docId,
+              contractName: contractName,
+              userName: assignedTech,
+              createdBy: createdBy,
+              type: 'contract_update'
+            },
+            android: {
+              priority: "normal",
+              notification: {
+                channelId: "contracts",
+                priority: "normal",
+                defaultSound: true,
+                icon: "ic_notification"
+              }
+            }
+          };
+          const nTitle = '📋 New Contract Added';
+          const nBody = `${createdBy} added ${contractName} to their contracts`;
+          await saveNotificationHistory('ian', nTitle, nBody, 'contract_update', msg.data);
+          await saveNotificationHistory('kristine', nTitle, nBody, 'contract_update', msg.data);
+          console.log("✅ Contract own-list in-app notifications saved (ian/kristine):", context.params.docId);
+          return null;
+        }
+
+        // Cross-assign: Ian/Kristine -> notify owner tech (not sender)
+        if (createdLower !== 'kristine' && createdLower !== 'ian') return null;
+        if (!ownerLower || ownerLower === createdLower) return null;
+
+        await saveNotificationHistory(assignedTech.toLowerCase(), '📋 New Contract Assigned',
+          `${contractName} has been assigned to you`, 'contract_update', {
+            contractId: context.params.docId,
+            contractName: contractName,
+            userName: assignedTech,
+            createdBy: createdBy,
+            type: 'contract_update'
+          });
+        console.log("✅ New contract in-app notification saved for", assignedTech, ":", context.params.docId);
+        return null;
       } catch (error) {
-        console.error("❌ Error sending contract update notification:", error);
+        console.error("❌ Error sending new contract notification:", error);
         throw error;
       }
-    }
-    
-    return null;
-  });
+    });
+}
 
-// ✅ 5. WORK EVENT REMINDERS → Send reminders only to the specific user 30 minutes before events
+exports.onJamesContractCreated = createContractCreatedFunction('James Contracts');
+exports.onIanContractCreated = createContractCreatedFunction('Ian Contracts');
+exports.onDeanContractCreated = createContractCreatedFunction('Dean Contracts');
+
+// ✅ 5. WORKVIEW UPDATES (in-app only)
+// Rules:
+// - If Ian or Kristine adds to someone else’s workview: the owner receives a notification (not the sender)
+function createWorkViewNotifyFunction(collectionName) {
+  return functions.firestore
+    .document(collectionName + '/{docId}')
+    .onCreate(async (snap, context) => {
+      // Disabled: WorkView update in-app notifications are now written by the Android client
+      // (so they work without Cloud Functions, and to avoid duplicate notification records).
+      return null;
+
+      const data = snap.data();
+      const owner = data?.userName || '';
+      const createdBy = (data?.createdBy || '').trim();
+      const eventName = data?.eventName || 'Event';
+      const eventType = data?.eventType || 'event';
+      const eventDate = data?.date || '';
+      const eventTime = data?.time || '';
+
+      if (!owner || owner.toLowerCase() === createdBy.toLowerCase()) {
+        return null;
+      }
+      // Only notify when Ian or Kristine updates the work view
+      if (createdBy.toLowerCase() !== 'kristine' && createdBy.toLowerCase() !== 'ian') {
+        return null;
+      }
+
+      const notificationTitle = `📅 Work View Updated`;
+      const notificationBody = `${eventName} (${eventType}) added for ${eventDate} at ${eventTime}`;
+
+      try {
+        // In-app only notifications
+        await saveNotificationHistory(owner.toLowerCase(), notificationTitle, notificationBody,
+          'workview_update', {
+            eventId: context.params.docId,
+            eventName: eventName,
+            eventType: eventType,
+            eventDate: eventDate,
+            eventTime: eventTime,
+            createdBy: createdBy,
+            targetUser: owner,
+            type: 'workview_update'
+          });
+        console.log("✅ WorkView in-app notification saved for", owner);
+        return null;
+      } catch (error) {
+        console.error("❌ Error sending WorkView notification:", error);
+        throw error;
+      }
+    });
+}
+
+exports.onJamesWorkViewUpdate = createWorkViewNotifyFunction('james_workview');
+exports.onIanWorkViewUpdate = createWorkViewNotifyFunction('ian_workview');
+exports.onDeanWorkViewUpdate = createWorkViewNotifyFunction('dean_workview');
+
+// ✅ 6. WORK EVENT REMINDERS → Send reminders only to the specific user 30 minutes before events
 exports.sendWorkEventReminders = functions.pubsub
   .schedule('every 5 minutes')
   .onRun(async (context) => {
@@ -269,8 +412,6 @@ exports.sendWorkEventReminders = functions.pubsub
         .collectionGroup('Events')
         .where('status', '==', 'scheduled')
         .get();
-
-      const reminderPromises = [];
 
       eventsSnapshot.forEach(doc => {
         const data = doc.data();
@@ -290,46 +431,10 @@ exports.sendWorkEventReminders = functions.pubsub
           
           // Send reminder if event is within 30 minutes (and not past)
           if (timeDiff > 0 && timeDiff <= 30 * 60 * 1000) {
-            const notificationTitle = `⏰ Work Event Reminder`;
-            const notificationBody = `${eventName} starts in 30 minutes at ${eventTime}`;
-
-            const message = {
-              notification: {
-                title: notificationTitle,
-                body: notificationBody
-              },
-              data: {
-                eventId: doc.id,
-                eventName: eventName,
-                eventTime: eventTime,
-                eventDate: eventDate,
-                eventAddress: eventAddress || '',
-                eventType: eventType,
-                type: 'work_event_reminder'
-              },
-              android: {
-                priority: "high",
-                notification: {
-                  channelId: "work_reminders",
-                  priority: "high",
-                  defaultSound: true,
-                  defaultVibrateTimings: true,
-                  icon: "ic_notification"
-                }
-              },
-              // Send only to the specific user's topic
-              topic: doc.ref.parent.parent.id.toLowerCase()
-            };
-
-            reminderPromises.push(admin.messaging().send(message));
+            // In-app only: no push reminders
           }
         }
       });
-
-      if (reminderPromises.length > 0) {
-        await Promise.all(reminderPromises);
-        console.log(`✅ Sent ${reminderPromises.length} work event reminders`);
-      }
 
       return null;
     } catch (error) {
@@ -338,4 +443,104 @@ exports.sendWorkEventReminders = functions.pubsub
     }
   });
 
+// ✅ 7. DELETE EXPIRED MESSAGES → Remove non-urgent messages after 30 minutes
+exports.deleteExpiredMessages = functions.pubsub
+  .schedule('every 5 minutes')
+  .onRun(async (context) => {
+    const now = new Date();
+    const expiryCutoff = new Date(now.getTime() - 30 * 60 * 1000);
+
+    try {
+      const snapshot = await admin.firestore()
+        .collectionGroup('messages')
+        .where('createdAt', '<', expiryCutoff)
+        .get();
+
+      const deletePromises = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data?.isUrgent === true) return;
+        deletePromises.push(doc.ref.delete());
+      });
+
+      if (deletePromises.length > 0) {
+        await Promise.all(deletePromises);
+        console.log(`✅ Deleted ${deletePromises.length} expired messages`);
+      }
+      return null;
+    } catch (error) {
+      console.error("❌ Error deleting expired messages:", error);
+      throw error;
+    }
+  });
+
+// ✅ 8. COMMISSION (Leads) NOTIFICATIONS (in-app only)
+// Rules:
+// - If James or Dean adds commission (new Lead): Ian and Kristine receive a notification
+// - If Ian or Kristine edits commission: the affected technician (Added By) receives a notification (include old -> new)
+exports.onLeadCreatedNotifyCommission = functions.firestore
+  .document('Leads/{docId}')
+  .onCreate(async (snap, context) => {
+    const data = snap.data() || {};
+    const createdBy = (data['Created By'] || data['Added By'] || '').toString().trim();
+    const commission = Number(data['Commission'] ?? 0);
+
+    const createdLower = createdBy.toLowerCase();
+    if (createdLower !== 'james' && createdLower !== 'dean') return null;
+
+    const premise = (data['Premise Name'] || data['Premise'] || 'Lead').toString();
+    const title = '💰 Commission Added';
+    const body = `${createdBy} added commission €${commission.toFixed(2)} for ${premise}`;
+
+    const payload = {
+      leadId: context.params.docId,
+      premiseName: premise,
+      commission: String(commission),
+      createdBy: createdBy,
+      addedBy: (data['Added By'] || '').toString().trim(),
+      type: 'commission'
+    };
+
+    await saveNotificationHistory('ian', title, body, 'commission', payload);
+    await saveNotificationHistory('kristine', title, body, 'commission', payload);
+    console.log('✅ Commission add in-app notification saved for Ian + Kristine');
+    return null;
+  });
+
+exports.onLeadUpdatedNotifyCommission = functions.firestore
+  .document('Leads/{docId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data() || {};
+    const after = change.after.data() || {};
+
+    const beforeCommission = Number(before['Commission'] ?? 0);
+    const afterCommission = Number(after['Commission'] ?? 0);
+    if (beforeCommission === afterCommission) return null;
+
+    const editor = (after['Last Edited By'] || after['Edited By'] || after['Updated By'] || '').toString().trim();
+    const editorLower = editor.toLowerCase();
+    if (editorLower !== 'ian' && editorLower !== 'kristine') return null;
+
+    const affectedTech = (after['Added By'] || '').toString().trim();
+    if (!affectedTech) return null;
+    if (affectedTech.toLowerCase() === editorLower) return null;
+
+    const premise = (after['Premise Name'] || after['Premise'] || 'Lead').toString();
+    const title = '💰 Commission Updated';
+    const body = `${editor} updated commission for ${premise}: €${beforeCommission.toFixed(2)} → €${afterCommission.toFixed(2)}`;
+
+    const payload = {
+      leadId: context.params.docId,
+      premiseName: premise,
+      oldCommission: String(beforeCommission),
+      newCommission: String(afterCommission),
+      editor: editor,
+      affectedTech: affectedTech,
+      type: 'commission'
+    };
+
+    await saveNotificationHistory(affectedTech.toLowerCase(), title, body, 'commission', payload);
+    console.log('✅ Commission update in-app notification saved for', affectedTech);
+    return null;
+  });
 

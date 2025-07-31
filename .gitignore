@@ -16,14 +16,13 @@
 local.properties
 
 # Firebase and sensitive files
-app/google-services.json
+**/google-services.json
 app/service_account.json
 service_account.json
+**/*service_account*.json
 firebase-debug.log
-firebase.json
-firestore.indexes.json
-firestore.rules
-storage.rules
+functions/.runtimeconfig.json
+.firebase/
 
 # Environment Variables and Configuration
 .env
@@ -59,6 +58,8 @@ app/build/outputs/
 *.dex
 *.class
 
+
+
 # Keystore and signing files
 *.keystore
 *.jks
@@ -69,6 +70,21 @@ app/build/outputs/
 *.pfx
 signing.properties
 keystore.properties
+
+# Android Studio / Gradle user-specific
+**/.idea/
+**/*.iml
+**/local.properties
+**/.gradle/
+
+# macOS / Windows junk
+.DS_Store
+Thumbs.db
+
+# Firebase emulator/cache logs
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
 
 # Logs and temporary files
 *.log

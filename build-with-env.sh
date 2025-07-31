@@ -143,8 +143,8 @@ APP_VERSION=$VERSION
 APP_NAME=GRPest Control
 
 # Default User Credentials (for offline mode)
-DEFAULT_USER_EMAIL=admin@grpc.com
-DEFAULT_USER_PASSWORD=admin123
+DEFAULT_USER_EMAIL=
+DEFAULT_USER_PASSWORD=
 
 # Database Configuration
 DATABASE_NAME=UserDatabase

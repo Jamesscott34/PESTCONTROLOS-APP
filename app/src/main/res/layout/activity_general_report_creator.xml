@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingTop="?attr/actionBarSize"
-    android:background="@drawable/bk"
+    android:background="?android:attr/colorBackground"
     android:fillViewport="true"
     android:scrollbars="vertical"> <!-- important for centering -->
 
@@ -86,7 +86,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:backgroundTint="@android:color/holo_green_dark" />
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
     </LinearLayout>
 </ScrollView>

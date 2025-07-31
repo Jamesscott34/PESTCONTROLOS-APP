@@ -23,6 +23,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.color.MaterialColors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -139,11 +140,15 @@ public class ChatActivity extends AppCompatActivity {
     
     private void updateModeButtons() {
         if (isPestControlMode) {
-            pestControlModeButton.setBackgroundTintList(getResources().getColorStateList(android.R.color.holo_orange_dark));
-            generalModeButton.setBackgroundTintList(getResources().getColorStateList(android.R.color.holo_blue_light));
+            pestControlModeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    MaterialColors.getColor(pestControlModeButton, com.google.android.material.R.attr.colorSecondary)));
+            generalModeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    MaterialColors.getColor(generalModeButton, com.google.android.material.R.attr.colorSurface)));
         } else {
-            pestControlModeButton.setBackgroundTintList(getResources().getColorStateList(android.R.color.holo_orange_light));
-            generalModeButton.setBackgroundTintList(getResources().getColorStateList(android.R.color.holo_blue_dark));
+            pestControlModeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    MaterialColors.getColor(pestControlModeButton, com.google.android.material.R.attr.colorSurface)));
+            generalModeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    MaterialColors.getColor(generalModeButton, com.google.android.material.R.attr.colorSecondary)));
         }
     }
     
@@ -182,7 +187,7 @@ public class ChatActivity extends AppCompatActivity {
             messageView.setTextSize(16);
             messageView.setPadding(16, 12, 16, 12);
             messageView.setBackgroundResource(android.R.drawable.btn_default);
-            messageView.setTextColor(getResources().getColor(android.R.color.black));
+            messageView.setTextColor(MaterialColors.getColor(messageView, com.google.android.material.R.attr.colorOnSurface));
             messageView.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -196,7 +201,7 @@ public class ChatActivity extends AppCompatActivity {
             messageView.setTextSize(16);
             messageView.setPadding(16, 12, 16, 12);
             messageView.setBackgroundResource(R.drawable.message_bubble);
-            messageView.setTextColor(getResources().getColor(android.R.color.black));
+            messageView.setTextColor(MaterialColors.getColor(messageView, com.google.android.material.R.attr.colorOnSurface));
             messageView.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT

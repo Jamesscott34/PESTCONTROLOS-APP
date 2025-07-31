@@ -1,79 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bk"
-    android:paddingTop="?attr/actionBarSize">
+    android:orientation="vertical"
+    android:paddingTop="?attr/actionBarSize"
+    android:padding="16dp"
+    android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true">
 
-    <!-- Top Spacer to avoid notch -->
-    <View
-        android:id="@+id/statusSpacer"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:background="@android:color/transparent" />
+        <!-- Top Spacer to avoid notch -->
+        <View
+            android:id="@+id/statusSpacer"
+            android:layout_width="0dp"
+            android:layout_height="?attr/actionBarSize"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:background="@android:color/transparent" />
 
-    <!-- Search Bar Container -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:background="@android:color/transparent">
-
-        <EditText
-            android:id="@+id/search_bar"
+        <!-- Search Bar Container -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Search BEHINDS LIST..."
+            android:orientation="vertical"
             android:padding="16dp"
-            android:layout_marginBottom="8dp"
-            android:background="?attr/colorSurface"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"
-            android:elevation="4dp"
-            android:inputType="text"
-            android:imeOptions="actionSearch"
-            android:maxLines="1" />
+            android:background="@android:color/transparent">
 
-    </LinearLayout>
+            <EditText
+                android:id="@+id/search_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Search BEHINDS LIST..."
+                android:padding="16dp"
+                android:layout_marginBottom="8dp"
+                android:background="?attr/colorSurface"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary"
+                android:elevation="4dp"
+                android:inputType="text"
+                android:imeOptions="actionSearch"
+                android:maxLines="1" />
 
-    <!-- RecyclerView Container -->
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp">
+        </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/report_recycler_view"
+        <!-- RecyclerView Container -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scrollbars="vertical"
-            android:clipToPadding="false"
-            android:paddingBottom="8dp" />
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="8dp">
 
-    </FrameLayout>
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/report_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical"
+                android:clipToPadding="false"
+                android:paddingBottom="8dp" />
 
-    <!-- Return Button Container -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:background="@android:color/transparent">
+        </FrameLayout>
 
-        <Button
-            android:id="@+id/buttonreturn"
+        <!-- Return Button Container -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Return"
-            android:layout_marginTop="8dp"/>
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="@android:color/transparent">
 
-    </LinearLayout>
+            <Button
+                android:id="@+id/buttonreturn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Return"
+                android:layout_marginTop="8dp"
+                android:paddingBottom="32dp"/>
+
+        </LinearLayout>
+
 
 </LinearLayout>

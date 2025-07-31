@@ -69,7 +69,7 @@
             android:textStyle="bold"
             android:padding="4dp"
             android:background="@drawable/status_background"
-            android:textColor="@android:color/white" />
+            android:textColor="?attr/colorOnPrimary" />
 
     </LinearLayout>
 

@@ -80,7 +80,7 @@ public class WorkEventAdapter extends RecyclerView.Adapter<WorkEventAdapter.Work
         }
 
         public void bind(WorkEvent event) {
-            eventTimeText.setText(event.getTime());
+            eventTimeText.setText(formatTimeRange(event.getTime(), event.getEndTime()));
             eventNameText.setText(event.getEventName());
             eventTypeText.setText(event.getEventTypeDisplay());
             
@@ -105,6 +105,37 @@ public class WorkEventAdapter extends RecyclerView.Adapter<WorkEventAdapter.Work
             
             eventStatusText.setText(statusText);
             eventStatusText.setTextColor(statusColor);
+        }
+    }
+
+    /**
+     * Formats the time range for display.
+     * If an explicit endTime is provided (e.g. 08:30 and 15:00), shows \"08:30 - 15:00\".
+     * Otherwise, preserves the previous behaviour of showing a 1-hour range from startTime.
+     */
+    private static String formatTimeRange(String startTime, String endTime) {
+        if (startTime == null) return "";
+        String s = startTime.trim();
+        // If an explicit endTime is stored, use it directly.
+        if (endTime != null && !endTime.trim().isEmpty()) {
+            return s + " - " + endTime.trim();
+        }
+
+        // Backwards-compatible: one-hour slot from start time.
+        if (startTime == null) return "";
+        String t = startTime.trim();
+        try {
+            String[] p = t.split(":");
+            if (p.length != 2) return t;
+            int h = Integer.parseInt(p[0]);
+            int m = Integer.parseInt(p[1]);
+            if (h < 0 || h > 23 || m < 0 || m > 59) return t;
+            int endMin = (h * 60 + m) + 60;
+            int endH = (endMin / 60) % 24;
+            int endM = endMin % 60;
+            return String.format(java.util.Locale.getDefault(), "%s - %02d:%02d", t, endH, endM);
+        } catch (Exception ignored) {
+            return t;
         }
     }
 } 

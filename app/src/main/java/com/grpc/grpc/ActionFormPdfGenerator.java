@@ -89,6 +89,30 @@ public class ActionFormPdfGenerator {
             String serviceReport, String recommendations, String followUp1, String followUp2, 
             String followUp3, String role, String ownerPassword, Context context, List<Uri> imageUris, 
             Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn) {
+        return generateActionFormPDF(premisesName, dateTime, serviceType, serviceNumber, premisesAddress,
+                prep, serviceReport, recommendations, followUp1, followUp2, followUp3, role,
+                ownerPassword, context, imageUris, technicianSignatureUri, customerSignatureUri, followUpToggleOn);
+    }
+
+    /**
+     * Generates an Action Form PDF (no password protection). Use this for standard Action Forms.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePDF(String premisesName, String dateTime, 
+            String serviceType, String serviceNumber, String premisesAddress, String prep, 
+            String serviceReport, String recommendations, String followUp1, String followUp2, 
+            String followUp3, String role, Context context, List<Uri> imageUris, 
+            Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn) {
+        return generateActionFormPDF(premisesName, dateTime, serviceType, serviceNumber, premisesAddress,
+                prep, serviceReport, recommendations, followUp1, followUp2, followUp3, role,
+                null, context, imageUris, technicianSignatureUri, customerSignatureUri, followUpToggleOn);
+    }
+
+    private static File generateActionFormPDF(String premisesName, String dateTime, 
+            String serviceType, String serviceNumber, String premisesAddress, String prep, 
+            String serviceReport, String recommendations, String followUp1, String followUp2, 
+            String followUp3, String role, String ownerPassword, Context context, List<Uri> imageUris, 
+            Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn) {
         
         // Define the folder for storing reports
         File pdfFolder = new File(context.getExternalFilesDir(null), "GRPEST REPORTS");
@@ -103,22 +127,26 @@ public class ActionFormPdfGenerator {
         File pdfFile = new File(pdfFolder, sanitizedPremisesName);
 
         try {
-            // Create PDF with encryption
-            WriterProperties writerProperties = new WriterProperties();
-            writerProperties.setStandardEncryption(
-                null, // No user password (anyone can view)
-                ownerPassword.getBytes(), // Owner password required for editing
-                EncryptionConstants.ALLOW_PRINTING | EncryptionConstants.ALLOW_COPY,
-                EncryptionConstants.ENCRYPTION_AES_128
-            );
-
-            PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile), writerProperties);
+            PdfWriter writer;
+            if (ownerPassword != null && !ownerPassword.isEmpty()) {
+                WriterProperties writerProperties = new WriterProperties();
+                writerProperties.setStandardEncryption(
+                    null,
+                    ownerPassword.getBytes(),
+                    EncryptionConstants.ALLOW_PRINTING | EncryptionConstants.ALLOW_COPY,
+                    EncryptionConstants.ENCRYPTION_AES_128
+                );
+                writer = new PdfWriter(new FileOutputStream(pdfFile), writerProperties);
+            } else {
+                writer = new PdfWriter(new FileOutputStream(pdfFile));
+            }
             PdfDocument pdfDocument = new PdfDocument(writer);
             Document document = new Document(pdfDocument, com.itextpdf.kernel.geom.PageSize.A4, false);
             document.setMargins(20, 20, 20, 20); // Tight margins for single page
 
             // Apply watermark and footer event handler
-            pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new ActionFormWatermarkAndFooterHandler(context));
+            boolean passwordProtected = (ownerPassword != null && !ownerPassword.isEmpty());
+            pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new ActionFormWatermarkAndFooterHandler(context, passwordProtected));
 
             // Adding a logo image at the top of the report (smaller for single page)
             int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
@@ -174,13 +202,13 @@ public class ActionFormPdfGenerator {
             }
 
             document.close();
-            Toast.makeText(context, "Password-Protected Action Form PDF Created Successfully!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Action Form PDF Created Successfully!", Toast.LENGTH_SHORT).show();
 
             return pdfFile;
 
         } catch (IOException e) {
             e.printStackTrace();
-            Toast.makeText(context, "Error Creating Password-Protected PDF!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Error Creating PDF!", Toast.LENGTH_SHORT).show();
             return null;
         }
     }
@@ -409,13 +437,20 @@ public class ActionFormPdfGenerator {
      */
     static class ActionFormWatermarkAndFooterHandler implements IEventHandler {
         private final Context context;
+        private final boolean passwordProtected;
+
+        public ActionFormWatermarkAndFooterHandler(Context context) {
+            this(context, false);
+        }
 
         /**
          * Constructor initializes the event handler with the application context.
          * @param context The Android application context for resource access.
+         * @param passwordProtected Whether the PDF is password protected (affects footer text).
          */
-        public ActionFormWatermarkAndFooterHandler(Context context) {
+        public ActionFormWatermarkAndFooterHandler(Context context, boolean passwordProtected) {
             this.context = context;
+            this.passwordProtected = passwordProtected;
         }
 
         /**
@@ -447,7 +482,8 @@ public class ActionFormPdfGenerator {
                 doc.add(watermark);
 
                 // Adding footer text
-                Paragraph footer = new Paragraph("This Action Form was generated by GRPC Reporting System - Password Protected")
+                String footerText = "This Action Form was generated by GRPC Reporting System" + (passwordProtected ? " - Password Protected" : "");
+                Paragraph footer = new Paragraph(footerText)
                         .setFontSize(12)
                         .setTextAlignment(TextAlignment.CENTER)
                         .setFixedPosition(pageWidth / 2 - 200, 20, 400);

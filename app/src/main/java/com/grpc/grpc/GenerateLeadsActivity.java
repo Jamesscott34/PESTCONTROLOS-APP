@@ -20,6 +20,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.HashMap;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -172,10 +173,16 @@ public class GenerateLeadsActivity extends AppCompatActivity {
     }
 
     // Method to save the lead to Firestore
-    private void saveLeadToFirestore(String premiseName, String premiseAddress, double priceQuoted, double commission, String date, String reason, String addedBy) {
+    // NOTE: "Added By" = owner/assignee of the lead (used for filtering),
+    //       "Created By" = the user who actually created the lead (used for notifications/audit).
+    private void saveLeadToFirestore(String premiseName, String premiseAddress, double priceQuoted, double commission, String date, String reason, String addedBy, String createdBy) {
         CollectionReference leadsCollection = db.collection("Leads");
-        leadsCollection.add(createLeadObject(premiseName, premiseAddress, priceQuoted, commission, date, reason, addedBy))
+        leadsCollection.add(createLeadObject(premiseName, premiseAddress, priceQuoted, commission, date, reason, addedBy, createdBy))
                 .addOnSuccessListener(documentReference -> {
+                    // When James or Dean adds a lead (with commission), notify Ian in-app
+                    if ("James".equalsIgnoreCase(createdBy) || "Dean".equalsIgnoreCase(createdBy)) {
+                        notifyIanLeadAddedByJamesOrDean(createdBy, premiseName, documentReference.getId(), commission);
+                    }
                     Toast.makeText(this, "Lead added successfully", Toast.LENGTH_SHORT).show();
                     // Redirect to ViewLeadsActivity
                     Intent intent = new Intent(GenerateLeadsActivity.this, ViewLeadsActivity.class);
@@ -212,7 +219,7 @@ public class GenerateLeadsActivity extends AppCompatActivity {
         if ("Kristine".equalsIgnoreCase(userName)) {
             showAssignToDialog(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason);
         } else {
-            saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason, userName);
+            saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason, userName, userName);
         }
     }
 
@@ -241,7 +248,7 @@ public class GenerateLeadsActivity extends AppCompatActivity {
                     Toast.makeText(this, "You must provide a name to assign the lead.", Toast.LENGTH_SHORT).show();
                 } else {
                     // Save the lead with the assigned name
-                    saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, date, reason, assignedTo);
+                    saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, date, reason, assignedTo, userName);
                     dialog.dismiss();
                 }
             });
@@ -251,7 +258,7 @@ public class GenerateLeadsActivity extends AppCompatActivity {
     }
 
 
-    private Map<String, Object> createLeadObject(String premiseName, String premiseAddress, double priceQuoted, double commission, String date, String reason, String userName) {
+    private Map<String, Object> createLeadObject(String premiseName, String premiseAddress, double priceQuoted, double commission, String date, String reason, String userName, String createdBy) {
         Map<String, Object> lead = new HashMap<>();
         lead.put("Premise Name", premiseName);
         lead.put("Premise Address", premiseAddress);
@@ -260,7 +267,24 @@ public class GenerateLeadsActivity extends AppCompatActivity {
         lead.put("Date", date);
         lead.put("Reason", reason); // Add reason to the database object
         lead.put("Added By", userName); // Add username to the database object
+        lead.put("Created By", createdBy);
         return lead;
+    }
+
+    /** Notify Ian in-app when James or Dean adds a lead (with commission) so Ian can oversee. */
+    private void notifyIanLeadAddedByJamesOrDean(String createdBy, String premiseName, String leadId, double commission) {
+        try {
+            String title = "Lead added with commission";
+            String body = createdBy + " added a lead: " + (premiseName != null ? premiseName : "Unknown")
+                    + (commission > 0 ? " (Commission: €" + String.format(Locale.getDefault(), "%.2f", commission) + ")" : "");
+            Map<String, Object> data = new HashMap<>();
+            data.put("leadId", leadId);
+            data.put("premiseName", premiseName);
+            data.put("createdBy", createdBy);
+            String docId = "lead_added_" + leadId + "_" + System.currentTimeMillis();
+            NotificationUtils.writeInAppNotification("Ian", docId, title, body, "lead_update", data);
+        } catch (Exception ignored) {
+        }
     }
 
     private void openQuotationViewActivity() {

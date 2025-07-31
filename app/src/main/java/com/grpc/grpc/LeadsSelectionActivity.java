@@ -38,9 +38,10 @@ public class LeadsSelectionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_leads_selection);
 
-
-
         userName = getIntent().getStringExtra("USER_NAME");
+        if (userName == null || userName.trim().isEmpty()) {
+            userName = getSharedPreferences("GRPC", MODE_PRIVATE).getString("USER_NAME", "User");
+        }
 
         // Initialize the welcome TextView
         welcomeTextView = findViewById(R.id.welcomeTextView);

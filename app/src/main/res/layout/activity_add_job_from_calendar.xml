@@ -2,16 +2,17 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bk"
+    android:background="?android:attr/colorBackground"
     android:fillViewport="true"
-    android:scrollbars="vertical">
+    android:scrollbars="vertical"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
-        android:layout_marginBottom="32dp">
+        android:layout_marginBottom="320dp">
 
         <!-- Top Spacer to avoid notch -->
         <View
@@ -32,29 +33,83 @@
             android:layout_marginBottom="24dp"
             android:textColor="?android:attr/textColorPrimary" />
 
-        <!-- Job Name Input -->
+        <!-- Assigned To (read-only) -->
+        <TextView
+            android:id="@+id/assignedToLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <!-- Customer Name -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Job Name:"
+            android:text="Customer Name:"
             android:textSize="16sp"
             android:textStyle="bold"
             android:layout_marginBottom="8dp"
             android:textColor="?android:attr/textColorPrimary" />
 
         <EditText
-            android:id="@+id/jobNameInput"
+            android:id="@+id/customerNameInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Enter job name"
-            android:inputType="text"
+            android:hint="Enter customer name"
+            android:inputType="textPersonName"
             android:padding="12dp"
             android:layout_marginBottom="16dp"
             android:background="?attr/colorSurface"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
-        <!-- Job Address Input -->
+        <!-- Customer Email (Optional) -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Customer Email (Optional):"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <EditText
+            android:id="@+id/customerEmailInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter email"
+            android:inputType="textEmailAddress"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
+
+        <!-- Customer Contact -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Customer Contact:"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <EditText
+            android:id="@+id/customerContactInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter contact number"
+            android:inputType="phone"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
+
+        <!-- Address -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -65,7 +120,7 @@
             android:textColor="?android:attr/textColorPrimary" />
 
         <EditText
-            android:id="@+id/jobAddressInput"
+            android:id="@+id/addressInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter address"
@@ -76,7 +131,7 @@
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
-        <!-- Job Issue Input -->
+        <!-- Issue Details -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -87,7 +142,7 @@
             android:textColor="?android:attr/textColorPrimary" />
 
         <EditText
-            android:id="@+id/jobIssueInput"
+            android:id="@+id/issueDetailsInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter issue or description"
@@ -129,4 +184,4 @@
 
     </LinearLayout>
 
-</ScrollView> 
+</ScrollView>

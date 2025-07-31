@@ -11,6 +11,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +19,9 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GestureDetectorCompat;
 
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 /**
@@ -113,9 +117,10 @@ import com.google.firebase.messaging.FirebaseMessaging;
 public class MainActivity extends AppCompatActivity {
 
     // UI Components - Navigation buttons for all major features
-    private Button reportButton, reportViewButton, contractsButton, quotesButton, logoutButton, 
-                   CommisionButton, ServiceAgreementButton, JobButton, EnviromentButton, 
-                   InstantMessage, WebsiteButton, WorkViewButton, ChatButton;
+    private Button reportButton, reportViewButton, contractsButton, quotesButton, logoutButton,
+                   CommisionButton, ServiceAgreementButton, JobButton, EnviromentButton,
+                   InstantMessage, WebsiteButton, WorkViewButton, ChatButton, HelpButton,
+                   NotificationsButton, LocationFinderButton, SearchButton;
     
     // User information extracted from login
     private String userEmail, userName;
@@ -124,8 +129,12 @@ public class MainActivity extends AppCompatActivity {
     private TextView welcomeTextView;
     private GestureDetectorCompat gestureDetector;
 
+    // Firestore (for in-app unread indicators)
+    private FirebaseFirestore db;
+
     // Permission request code for notification access
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1;
+    private static final int REQUEST_LOCATION_PERMISSION = 2;
     private static final int SWIPE_THRESHOLD = 50;
     private static final int SWIPE_VELOCITY_THRESHOLD = 50;
 
@@ -164,20 +173,39 @@ public class MainActivity extends AppCompatActivity {
             userName = intentUserName;
             Log.d("MainActivity", "Username from intent: " + userName);
         } else if (userEmail != null && !userEmail.isEmpty()) {
-            // Extract name from email address (e.g., "james@grpc.com" -> "James")
+            // Extract name from email address (e.g., "james" from "james@domain")
             userName = extractNameFromEmail(userEmail);
             Log.d("MainActivity", "Username extracted from email: " + userName);
         } else {
-            // Default fallback
-            userName = "User";
-            Log.d("MainActivity", "Using default username: " + userName);
+            // Default fallback - try saved preference (single source of truth; swipe never loses context)
+            userName = ActiveUserContext.getActiveUserName(this, "User");
+            Log.d("MainActivity", "Using saved/default username: " + userName);
         }
+        // Persist logged-in identity for other screens
+        ActiveUserContext.setActiveUser(this, userName, userEmail != null ? userEmail : "");
+
+        // Location sharing: schedule background workers (best effort)
+        LocationSharing.ensureScheduled(this, userName);
+
+        // WorkView popup reminders (local only): schedule for this user
+        WorkViewPopupReminderScheduler.scheduleUpcomingForUser(this, userName);
+
+        // First login every 24h: auto-generate behinds + due PDFs for this user, then in-app notify
+        DailyContractPdfHelper.scheduleDailyPdfIfNeeded(this, userName);
+
+        // Request location permission once so technicians can publish their last location.
+        // If denied, the location system will simply have no data.
+        maybeRequestLocationPermission();
 
         // Log online mode status
         Log.d("MainActivity", "Running in ONLINE MODE - Full functionality");
 
         // Set up welcome message with user's name
         welcomeTextView = findViewById(R.id.welcomeTextView);
+
+        // Logo next to welcome text (prefer assets/logo.png, fallback to drawable)
+        ImageView welcomeLogo = findViewById(R.id.welcomeLogo);
+        BrandingAssets.trySetLogoFromAssets(welcomeLogo);
         
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
@@ -197,31 +225,141 @@ public class MainActivity extends AppCompatActivity {
         
         // Initialize gesture detector for swipe navigation
         initializeGestureDetector();
+
+        db = FirebaseFirestore.getInstance();
         
         // Initialize Firebase operations on background thread
         new Thread(() -> {
-            // Subscribe to Firebase Cloud Messaging topics for push notifications
-            // "all" topic receives general notifications
-            FirebaseMessaging.getInstance().subscribeToTopic("all")
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Log.d("FCM", "✅ Subscribed to topic: all");
-                        } else {
-                            Log.e("FCM", "❌ Failed to subscribe", task.getException());
-                        }
-                    });
-
-            // Subscribe to personal topic to allow exclusion from their own push notifications
-            // This prevents users from receiving notifications they sent themselves
-            FirebaseMessaging.getInstance().subscribeToTopic(userName.toLowerCase())
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Log.d("FCM", "✅ Subscribed to personal topic: " + userName.toLowerCase());
-                        } else {
-                            Log.e("FCM", "❌ Failed to subscribe to personal topic", task.getException());
-                        }
-                    });
+            // IMPORTANT: Do NOT use the "all" topic (it causes everyone to receive broadcasts).
+            // Unsubscribe to clean up older installs that previously subscribed.
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("all");
+            // In-app only notifications: unsubscribe from personal topic too (no push notifications)
+            if (userName != null && !userName.trim().isEmpty()) {
+                FirebaseMessaging.getInstance().unsubscribeFromTopic(userName.toLowerCase());
+            }
         }).start();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Re-check whenever user returns to home screen
+        checkHomeUnreadIndicators();
+    }
+
+    /**
+     * In-app indicator: highlight where to go for new Notifications / Messaging.
+     * - Notifications: checks Firestore notification history (read=false)
+     * - Messaging: checks latest chat messages vs per-conversation last-seen timestamp
+     */
+    private void checkHomeUnreadIndicators() {
+        if (userName == null || userName.trim().isEmpty() || db == null) return;
+        checkUnreadNotifications();
+        checkUnreadMessages();
+    }
+
+    private void checkUnreadNotifications() {
+        final String userKey = userName.trim().toLowerCase();
+        db.collection("notifications")
+                .document(userKey)
+                .collection("items")
+                .whereEqualTo("read", false)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    boolean hasUnread = snapshot != null && !snapshot.isEmpty();
+                    updateHomeButtonBadge(NotificationsButton, "Notifications", hasUnread,
+                            "HAS_UNREAD_NOTIF", "You have new notifications — tap Notifications");
+                })
+                .addOnFailureListener(e -> {
+                    // Fail silently; don't block home screen
+                });
+    }
+
+    private void checkUnreadMessages() {
+        // IMPORTANT: Don't reset unread state on every resume, otherwise the prompt repeats.
+        // We only clear the unread badge after we've confirmed there are NO unread conversations.
+        if (InstantMessage != null) {
+            InstantMessage.setText("Messaging");
+        }
+
+        java.util.ArrayList<String> convIds = new java.util.ArrayList<>();
+        String[] allUsers = {"James", "Ian", "Kristine", "Dean"};
+        for (String other : allUsers) {
+            if (other.equalsIgnoreCase(userName)) continue;
+            convIds.add(MessagingConversationsActivity.getConversationId(userName, other));
+        }
+        convIds.add("group");
+
+        final boolean[] anyUnread = {false};
+        final int[] pending = {convIds.size()};
+
+        for (String convId : convIds) {
+            checkConversationHasUnread(convId, hasUnread -> {
+                if (hasUnread) {
+                    anyUnread[0] = true;
+                    updateHomeButtonBadge(InstantMessage, "Messaging", true,
+                            "HAS_UNREAD_MSG", "You have new messages — tap Messaging");
+                }
+
+                pending[0]--;
+                if (pending[0] <= 0 && !anyUnread[0]) {
+                    // No unread anywhere: clear badge + stored state so next NEW triggers prompt once.
+                    updateHomeButtonBadge(InstantMessage, "Messaging", false, "HAS_UNREAD_MSG", null);
+                }
+            });
+        }
+    }
+
+    private interface UnreadResultCallback {
+        void onResult(boolean hasUnread);
+    }
+
+    private void checkConversationHasUnread(String conversationId, UnreadResultCallback callback) {
+        final String prefKey = "CHAT_LAST_SEEN_" + conversationId;
+        final long lastSeen = getSharedPreferences("GRPC", MODE_PRIVATE).getLong(prefKey, 0L);
+
+        db.collection("conversations")
+                .document(conversationId)
+                .collection("messages")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot == null || snapshot.isEmpty()) {
+                        if (callback != null) callback.onResult(false);
+                        return;
+                    }
+
+                    DocumentSnapshot doc = snapshot.getDocuments().get(0);
+                    java.util.Date ts = doc.getDate("timestamp");
+                    String sender = doc.getString("sender");
+                    long latest = ts != null ? ts.getTime() : 0L;
+                    boolean fromOtherPerson = sender != null && !sender.equalsIgnoreCase(userName);
+                    boolean hasUnread = fromOtherPerson && latest > lastSeen;
+
+                    if (callback != null) callback.onResult(hasUnread);
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onResult(false);
+                });
+    }
+
+    /**
+     * Adds "(NEW)" to button text, and optionally shows a one-time toast prompt.
+     * We store the last unread state in SharedPreferences to avoid spamming prompts.
+     */
+    private void updateHomeButtonBadge(Button button, String baseText, boolean hasUnread,
+                                       String statePrefKey, String promptIfNew) {
+        if (button == null) return;
+
+        button.setText(hasUnread ? (baseText + " (NEW)") : baseText);
+
+        boolean prev = getSharedPreferences("GRPC", MODE_PRIVATE).getBoolean(statePrefKey, false);
+        if (!prev && hasUnread && promptIfNew != null) {
+            Toast.makeText(this, promptIfNew, Toast.LENGTH_LONG).show();
+        }
+        getSharedPreferences("GRPC", MODE_PRIVATE).edit().putBoolean(statePrefKey, hasUnread).apply();
     }
 
     /**
@@ -295,7 +433,11 @@ public class MainActivity extends AppCompatActivity {
         logoutButton = findViewById(R.id.LogoutButton);
         WebsiteButton = findViewById(R.id.WebsiteButton);
         WorkViewButton = findViewById(R.id.WorkViewButton);
-        ChatButton = findViewById(R.id.ChatButton);
+        HelpButton = findViewById(R.id.HelpButton);
+        NotificationsButton = findViewById(R.id.NotificationsButton);
+        LocationFinderButton = findViewById(R.id.LocationFinderButton);
+        SearchButton = findViewById(R.id.SearchButton);
+       // ChatButton = findViewById(R.id.ChatButton);
     }
 
     /**
@@ -303,11 +445,29 @@ public class MainActivity extends AppCompatActivity {
      * Each button opens a specific activity with user information passed along
      */
     private void setupButtonClickListeners() {
-        // Instant messaging system for staff communication
+        // Instant messaging - conversation list (Ian, Kristine, Dean, Group)
         if (InstantMessage != null) {
             InstantMessage.setOnClickListener(view -> {
-                openActivity(MessagingActivity.class);
+                openActivity(MessagingConversationsActivity.class);
             });
+        }
+
+        // Notification history - see what notifications were received
+        if (NotificationsButton != null) {
+            NotificationsButton.setOnClickListener(view -> openActivity(NotificationsActivity.class));
+        }
+
+        // Global search entry point
+        if (SearchButton != null) {
+            boolean isJames = userName != null && "james".equalsIgnoreCase(userName.trim());
+            SearchButton.setVisibility(isJames ? View.VISIBLE : View.GONE);
+            if (isJames) {
+                SearchButton.setOnClickListener(v -> {
+                    Intent intent = new Intent(MainActivity.this, SearchActivity.class);
+                    intent.putExtra("USER_NAME", userName);
+                    startActivity(intent);
+                });
+            }
         }
 
         // Company website access
@@ -372,6 +532,24 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        // James-only Location Finder
+        if (LocationFinderButton != null) {
+            boolean isJames = userName != null && "james".equalsIgnoreCase(userName.trim());
+            LocationFinderButton.setVisibility(isJames ? View.VISIBLE : View.GONE);
+            if (isJames) {
+                LocationFinderButton.setOnClickListener(v -> {
+                    Intent intent = new Intent(MainActivity.this, LocationFinderActivity.class);
+                    intent.putExtra("USER_NAME", userName);
+                    startActivity(intent);
+                });
+            }
+        }
+
+        // Help / README screen
+        if (HelpButton != null) {
+            HelpButton.setOnClickListener(view -> openActivity(HelpReadmeActivity.class));
+        }
+
         // AI Chat Assistant
         if (ChatButton != null) {
             ChatButton.setOnClickListener(view -> {
@@ -381,14 +559,42 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Secure logout - clears activity stack and returns to login
+        // Secure logout - clears activity stack, clears saved user, and returns to login
         if (logoutButton != null) {
             logoutButton.setOnClickListener(view -> {
+                // Clean up push topic subscriptions to prevent cross-user notifications on shared devices
+                try {
+                    FirebaseMessaging.getInstance().unsubscribeFromTopic("all");
+                    if (userName != null && !userName.trim().isEmpty()) {
+                        FirebaseMessaging.getInstance().unsubscribeFromTopic(userName.toLowerCase());
+                    }
+                } catch (Exception ignored) {}
+
+                // Stop per-user background workers
+                LocationSharing.cancelScheduled(MainActivity.this, userName);
+
+                getSharedPreferences("GRPC", MODE_PRIVATE).edit().remove("USER_NAME").apply();
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             });
+        }
+    }
+
+    private void maybeRequestLocationPermission() {
+        try {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED
+                    || androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+            requestPermissions(new String[]{
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+            }, REQUEST_LOCATION_PERMISSION);
+        } catch (Exception ignored) {
         }
     }
 
@@ -416,7 +622,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Extracts a user-friendly name from an email address
-     * Converts email format to display name (e.g., "james@grpc.com" -> "James")
+     * Converts email format to display name (e.g., "james@domain" -> "James")
      * 
      * @param email The email address to extract name from
      * @return The extracted name with first letter capitalized
@@ -447,6 +653,9 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 Log.w("Permissions", "❌ Notification permission denied.");
             }
+        }
+        if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            // No-op: location sharing is best-effort; workers will check permission.
         }
     }
 }

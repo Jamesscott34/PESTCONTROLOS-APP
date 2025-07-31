@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingTop="?attr/actionBarSize"
-    android:background="@drawable/bk"
+    android:background="?android:attr/colorBackground"
     android:padding="16dp"
     android:fitsSystemWindows="true">
 
@@ -51,8 +51,8 @@
                 android:layout_marginBottom="12dp"
                 android:padding="12dp"
                 android:background="@drawable/edit_text_border"
-                android:textColor="@android:color/black"
-                android:textColorHint="@android:color/darker_gray" />
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
 
             <EditText
                 android:id="@+id/etCustomerAddress"
@@ -62,8 +62,8 @@
                 android:layout_marginBottom="12dp"
                 android:padding="12dp"
                 android:background="@drawable/edit_text_border"
-                android:textColor="@android:color/black"
-                android:textColorHint="@android:color/darker_gray" />
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
 
             <EditText
                 android:id="@+id/etCustomerEmail"

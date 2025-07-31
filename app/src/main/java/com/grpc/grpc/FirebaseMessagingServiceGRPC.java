@@ -3,6 +3,7 @@ package com.grpc.grpc;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.util.Log;
 
@@ -13,39 +14,38 @@ import com.google.firebase.messaging.RemoteMessage;
 
 public class FirebaseMessagingServiceGRPC extends FirebaseMessagingService {
 
+    private static final String PREFS_NAME = "GRPC";
+
+    /** Returns the logged-in user name, or null if not logged in. */
+    private String getLoggedInUser() {
+        String user = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString("USER_NAME", null);
+        if (user == null || user.trim().isEmpty() || "User".equalsIgnoreCase(user.trim())) {
+            return null;
+        }
+        return user.trim();
+    }
+
+    /** Creates intent for target activity with USER_NAME, or LoginActivity if not logged in. */
+    private Intent createNotificationIntent(Class<?> targetActivity, String userNameFromData) {
+        String user = getLoggedInUser();
+        if (user == null) {
+            Intent login = new Intent(this, LoginActivity.class);
+            login.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            return login;
+        }
+        Intent intent = new Intent(this, targetActivity);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.putExtra("USER_NAME", userNameFromData != null ? userNameFromData : user);
+        return intent;
+    }
+
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
-        String title = remoteMessage.getNotification() != null
-                ? remoteMessage.getNotification().getTitle()
-                : "GRPC";
-
-        String body = remoteMessage.getNotification() != null
-                ? remoteMessage.getNotification().getBody()
-                : "You have a new message.";
-
-        Log.d("GRPC-FCM", "Push received: " + title + " - " + body);
-
-        // Check notification type and handle accordingly
-        String notificationType = remoteMessage.getData().get("type");
-        if ("work_event_reminder".equals(notificationType)) {
-            showWorkEventNotification(remoteMessage);
-        } else if ("message".equals(notificationType)) {
-            // Check if this message is from the current user
-            String sender = remoteMessage.getData().get("sender");
-            if (sender != null && !isCurrentUser(sender)) {
-                showMessageNotification(remoteMessage);
-            }
-        } else if ("jobwork".equals(notificationType)) {
-            showJobWorkNotification(remoteMessage);
-        } else if ("management".equals(notificationType)) {
-            showManagementJobNotification(remoteMessage);
-        } else if ("contract_update".equals(notificationType)) {
-            showContractUpdateNotification(remoteMessage);
-        } else {
-            showNotification(title, body);
-        }
+        // In-app only notifications: ignore all push notifications (no status-bar / system notifications).
+        // Keeping this service avoids manifest/class reference issues while ensuring no outside-app alerts.
+        Log.d("GRPC-FCM", "Push received but ignored (in-app only). type=" + remoteMessage.getData().get("type"));
     }
 
     private void showNotification(String title, String message) {
@@ -107,10 +107,10 @@ public class FirebaseMessagingServiceGRPC extends FirebaseMessagingService {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
 
-        // Create intent for opening the app
-        android.content.Intent intent = new android.content.Intent(this, WorkViewActivity.class);
-        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent, 
+        // Create intent - LoginActivity if not signed in, WorkViewActivity with user if signed in
+        String eventUser = remoteMessage.getData().get("targetUser");
+        Intent intent = createNotificationIntent(WorkViewActivity.class, eventUser);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
 
         // Create intent for opening maps with route
@@ -166,10 +166,9 @@ public class FirebaseMessagingServiceGRPC extends FirebaseMessagingService {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
 
-        // Create intent for opening the messaging activity
-        android.content.Intent intent = new android.content.Intent(this, MessagingActivity.class);
-        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent, 
+        // Create intent - LoginActivity if not signed in, MessagingActivity with user if signed in
+        Intent intent = createNotificationIntent(MessagingActivity.class, null);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
 
         builder.setContentIntent(pendingIntent);
@@ -208,10 +207,10 @@ public class FirebaseMessagingServiceGRPC extends FirebaseMessagingService {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
 
-        // Create intent for opening the jobs activity
-        android.content.Intent intent = new android.content.Intent(this, JobsActivity.class);
-        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent, 
+        // Create intent - LoginActivity if not signed in, JobsActivity with user if signed in
+        String assignedTech = remoteMessage.getData().get("assignedTech");
+        Intent intent = createNotificationIntent(JobsActivity.class, assignedTech);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
 
         builder.setContentIntent(pendingIntent);
@@ -250,14 +249,108 @@ public class FirebaseMessagingServiceGRPC extends FirebaseMessagingService {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
 
-        // Create intent for opening the main activity
-        android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
-        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent, 
+        // Create intent - LoginActivity if not signed in, MainActivity with user if signed in
+        String assignedManager = remoteMessage.getData().get("assignedManager");
+        Intent intent = createNotificationIntent(MainActivity.class, assignedManager);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
 
         builder.setContentIntent(pendingIntent);
 
+        manager.notify((int) System.currentTimeMillis(), builder.build());
+    }
+
+    private void showWorkViewUpdateNotification(RemoteMessage remoteMessage) {
+        String channelId = "work_reminders";
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    channelId,
+                    "Work View Updates",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Notifications when your work view is updated");
+            manager.createNotificationChannel(channel);
+        }
+
+        String title = remoteMessage.getNotification() != null
+                ? remoteMessage.getNotification().getTitle()
+                : "Work View Updated";
+
+        String body = remoteMessage.getNotification() != null
+                ? remoteMessage.getNotification().getBody()
+                : "Your work schedule has been updated";
+
+        String eventAddress = remoteMessage.getData().get("eventAddress");
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(new androidx.core.app.NotificationCompat.BigTextStyle()
+                    .bigText(body + (eventAddress != null && !eventAddress.isEmpty() ? "\n📍 " + eventAddress : "")))
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH);
+
+        // Create intent - LoginActivity if not signed in, WorkViewActivity with user if signed in
+        String targetUser = remoteMessage.getData().get("targetUser");
+        Intent intent = createNotificationIntent(WorkViewActivity.class, targetUser);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+
+        builder.setContentIntent(pendingIntent);
+
+        manager.notify((int) System.currentTimeMillis(), builder.build());
+    }
+
+    private void showConversationMessageNotification(RemoteMessage remoteMessage) {
+        String channelId = "messages";
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    channelId,
+                    "Messages",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Chat messages");
+            manager.createNotificationChannel(channel);
+        }
+
+        String title = remoteMessage.getNotification() != null
+                ? remoteMessage.getNotification().getTitle()
+                : "New Message";
+
+        String body = remoteMessage.getNotification() != null
+                ? remoteMessage.getNotification().getBody()
+                : "You have a new message";
+
+        String convId = remoteMessage.getData().get("convId");
+        String displayName = "group".equals(convId) ? "Group" : convId;
+        if (convId != null && convId.contains("_") && !"group".equals(convId)) {
+            String[] parts = convId.split("_");
+            displayName = parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1) + " / "
+                    + parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(new androidx.core.app.NotificationCompat.BigTextStyle().bigText(body))
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH);
+
+        // Create intent - LoginActivity if not signed in, MessagingActivity with conv if signed in
+        Intent intent = createNotificationIntent(MessagingActivity.class, null);
+        intent.putExtra("CONVERSATION_ID", convId);
+        intent.putExtra("CONVERSATION_NAME", displayName);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+
+        builder.setContentIntent(pendingIntent);
         manager.notify((int) System.currentTimeMillis(), builder.build());
     }
 
@@ -292,10 +385,10 @@ public class FirebaseMessagingServiceGRPC extends FirebaseMessagingService {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-        // Create intent for opening the contracts activity
-        android.content.Intent intent = new android.content.Intent(this, ContractsActivity.class);
-        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent, 
+        // Create intent - LoginActivity if not signed in, ContractsActivity with user if signed in
+        String contractUser = remoteMessage.getData().get("userName");
+        Intent intent = createNotificationIntent(ContractsActivity.class, contractUser);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
 
         builder.setContentIntent(pendingIntent);

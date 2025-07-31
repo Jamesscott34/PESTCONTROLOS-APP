@@ -85,6 +85,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
 
+import com.google.android.material.color.MaterialColors;
 import com.google.firebase.firestore.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -108,6 +109,7 @@ public class ViewJobActivity extends AppCompatActivity {
     private List<Map<String, Object>> allJobs = new ArrayList<>();
     private FirebaseFirestore db;
     private String userName;
+    private String initialSearchQuery;
     private int total = 0, completed = 0, pending = 0;
 
     /**
@@ -145,6 +147,13 @@ public class ViewJobActivity extends AppCompatActivity {
         
         // Initialize all UI components for job display and interaction
         initializeUIComponents();
+
+        // Optional: pre-fill search from global Search screen
+        initialSearchQuery = getIntent().getStringExtra(SearchActivity.EXTRA_SEARCH_QUERY);
+        if (initialSearchQuery != null && !initialSearchQuery.trim().isEmpty() && searchBar != null) {
+            searchBar.setText(initialSearchQuery.trim());
+            searchBar.setSelection(searchBar.getText().length());
+        }
         
         // Load all jobs from Firebase and display them
         loadAllJobs();
@@ -195,7 +204,12 @@ public class ViewJobActivity extends AppCompatActivity {
     }
 
     private void loadAllJobs() {
-        db.collection("JobWork").addSnapshotListener((snapshots, error) -> {
+        com.google.firebase.firestore.Query baseQuery = db.collection("JobWork");
+        // Kristine and Ian see all jobs; Dean and James see only their assigned jobs
+        if (!"kristine".equalsIgnoreCase(userName) && !"ian".equalsIgnoreCase(userName)) {
+            baseQuery = baseQuery.whereEqualTo("AssignedTech", userName);
+        }
+        baseQuery.addSnapshotListener((snapshots, error) -> {
             if (error != null) {
                 Toast.makeText(this, "Error loading jobs: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                 return;
@@ -236,7 +250,14 @@ public class ViewJobActivity extends AppCompatActivity {
                 }
             }
 
-            displayJobs(allJobs);
+            // If user has a search query (e.g., from global Search), apply it after loading.
+            String q = (searchBar != null && searchBar.getText() != null) ? searchBar.getText().toString().trim() : "";
+            if (q.isEmpty()) q = (initialSearchQuery != null) ? initialSearchQuery.trim() : "";
+            if (!q.isEmpty()) {
+                filterJobs(q);
+            } else {
+                displayJobs(allJobs);
+            }
             updateStatistics(total, completed, pending);
         });
 
@@ -328,7 +349,7 @@ public class ViewJobActivity extends AppCompatActivity {
         LinearLayout jobBox = new LinearLayout(this);
         jobBox.setOrientation(LinearLayout.VERTICAL);
         jobBox.setPadding(16, 16, 16, 16);
-        jobBox.setBackgroundResource(android.R.drawable.dialog_holo_light_frame);
+        jobBox.setBackgroundResource(R.drawable.surface_frame);
 
         String techName = getOrDefault(job, "AssignedTech");
         String customerName = getOrDefault(job, "CustomerName");
@@ -380,8 +401,12 @@ public class ViewJobActivity extends AppCompatActivity {
 
 
     private int getJobBackgroundColor(String followUpDateStr) {
-        if (followUpDateStr.equalsIgnoreCase("N/A")) return Color.WHITE;
-        if (followUpDateStr.trim().isEmpty()) return Color.RED;
+        if (followUpDateStr.equalsIgnoreCase("N/A")) {
+            return MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurface, 0);
+        }
+        if (followUpDateStr.trim().isEmpty()) {
+            return MaterialColors.getColor(this, com.google.android.material.R.attr.colorError, 0);
+        }
 
         followUpDateStr = followUpDateStr.trim();
 
@@ -405,17 +430,17 @@ public class ViewJobActivity extends AppCompatActivity {
 
                 Log.d("FollowUpCheck", "Parsed with format " + format + ": " + followUpDateStr + " → " + diffHours + "h");
 
-                if (followUpDate.before(now)) return Color.RED;
-                if (diffHours < 72) return Color.YELLOW;
+                if (followUpDate.before(now)) return MaterialColors.getColor(this, com.google.android.material.R.attr.colorError, 0);
+                if (diffHours < 72) return MaterialColors.getColor(this, com.google.android.material.R.attr.colorSecondary, 0);
 
-                return Color.WHITE;
+                return MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurface, 0);
 
             } catch (Exception e) {
                 Log.e("FollowUpParse", "Failed to parse " + followUpDateStr + " with format " + format);
             }
         }
 
-        return Color.RED; // default if all formats fail
+        return MaterialColors.getColor(this, com.google.android.material.R.attr.colorError, 0); // default if all formats fail
     }
 
 
@@ -444,11 +469,19 @@ public class ViewJobActivity extends AppCompatActivity {
             }
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Job Action")
-                    .setMessage("Do you want to accept this job or delete it?")
-                    .setPositiveButton("Accept", (dialog, which) -> showAddressDialog(documentId))
-                    .setNegativeButton("Delete", (dialog, which) -> deleteJob(documentId))
-                    .show();
+            if (canDeleteJobs()) {
+                builder.setTitle("Job Action")
+                        .setMessage("Do you want to accept this job or delete it?")
+                        .setPositiveButton("Accept", (dialog, which) -> showAddressDialog(documentId))
+                        .setNegativeButton("Delete", (dialog, which) -> deleteJob(documentId))
+                        .show();
+            } else {
+                builder.setTitle("Job Action")
+                        .setMessage("Do you want to accept this job?")
+                        .setPositiveButton("Accept", (dialog, which) -> showAddressDialog(documentId))
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
         });
     }
 
@@ -496,6 +529,20 @@ public class ViewJobActivity extends AppCompatActivity {
             if (document.exists() && document.contains("Address")) {
                 String address = document.getString("Address");
                 if (address != null && !address.isEmpty()) {
+                    // Record this as the user's last "map opened" location
+                    try {
+                        FirebaseFirestore.getInstance()
+                                .collection(LocationSharing.COLLECTION_LAST_LOCATIONS)
+                                .document(LocationSharing.userKey(userName))
+                                .set(new java.util.HashMap<String, Object>() {{
+                                    put("userName", userName);
+                                    put("lastMapQuery", address);
+                                    put("lastMapClientTimestampMs", System.currentTimeMillis());
+                                    put("lastMapAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+                                    put("source", "map_open");
+                                }}, com.google.firebase.firestore.SetOptions.merge());
+                    } catch (Exception ignored) {}
+
                     Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(address));
                     Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
                     mapIntent.setPackage("com.google.android.apps.maps");
@@ -546,7 +593,7 @@ public class ViewJobActivity extends AppCompatActivity {
             if (!paymentDone) options.add("Payment");
             options.add("Change Technician");
             options.add("Add/Change Email"); // ✅ Always show this option
-            options.add("Delete");
+            if (canDeleteJobs()) options.add("Delete");
             options.add("Add Follow-Up");
 
             String[] jobOptions = options.toArray(new String[0]);
@@ -576,7 +623,7 @@ public class ViewJobActivity extends AppCompatActivity {
     }
     private void showFollowUpDialog(String documentId) {
         EditText input = new EditText(this);
-        input.setHint("dd/MM/yyyy [HH:mm or 930] or N/A");
+        input.setHint("dd/MM/yyyy or dd/MM/yy [HH:mm or 930] or N/A");
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Add Follow-Up Date & Time")
@@ -591,7 +638,7 @@ public class ViewJobActivity extends AppCompatActivity {
 
                     String normalized = normalizeDateTimeInput(rawInput);
                     if (normalized == null) {
-                        Toast.makeText(this, "Invalid format. Try dd/MM/yyyy or dd/MM/yyyy HHmm", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Invalid format. Use dd/MM/yyyy or 09/02/26 or dd/MM/yy HH:mm", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
@@ -601,35 +648,74 @@ public class ViewJobActivity extends AppCompatActivity {
                 .show();
     }
 
+    /** Normalizes date/time input. Accepts dd/MM/yyyy, dd/MM/yy (e.g. 09/02/26), and optional time. Returns dd/MM/yyyy [HH:mm] or null. */
     private String normalizeDateTimeInput(String input) {
         input = input.trim();
 
+        // Date only: dd/MM/yyyy
         if (input.matches("^\\d{2}/\\d{2}/\\d{4}$")) {
-            return input; // Date only
+            return input;
         }
 
+        // Date only: dd/MM/yy (e.g. 09/02/26) -> convert to dd/MM/yyyy
+        if (input.matches("^\\d{2}/\\d{2}/\\d{2}$")) {
+            String expanded = expandTwoDigitYear(input);
+            if (expanded != null) return expanded;
+        }
+
+        // Date + standard time: dd/MM/yyyy HH:mm or dd/MM/yy HH:mm
         if (input.matches("^\\d{2}/\\d{2}/\\d{4}\\s\\d{1,2}:\\d{2}$")) {
-            return input; // Date + standard time
+            return input;
+        }
+        if (input.matches("^\\d{2}/\\d{2}/\\d{2}\\s\\d{1,2}:\\d{2}$")) {
+            String[] parts = input.split("\\s");
+            String dateExpanded = expandTwoDigitYear(parts[0]);
+            if (dateExpanded != null) return dateExpanded + " " + parts[1];
         }
 
+        // Date + time as 930 or 0930: dd/MM/yyyy 930 or dd/MM/yy 930
         if (input.matches("^\\d{2}/\\d{2}/\\d{4}\\s\\d{3,4}$")) {
-            // Example: 26/03/2025 930 or 0930
             try {
                 String[] parts = input.split("\\s");
                 String datePart = parts[0];
                 String timeRaw = parts[1];
-
                 if (timeRaw.length() == 3) timeRaw = "0" + timeRaw;
                 String hour = timeRaw.substring(0, 2);
                 String min = timeRaw.substring(2, 4);
-
                 return datePart + " " + hour + ":" + min;
             } catch (Exception e) {
                 return null;
             }
         }
+        if (input.matches("^\\d{2}/\\d{2}/\\d{2}\\s\\d{3,4}$")) {
+            try {
+                String[] parts = input.split("\\s");
+                String dateExpanded = expandTwoDigitYear(parts[0]);
+                if (dateExpanded == null) return null;
+                String timeRaw = parts[1];
+                if (timeRaw.length() == 3) timeRaw = "0" + timeRaw;
+                String hour = timeRaw.substring(0, 2);
+                String min = timeRaw.substring(2, 4);
+                return dateExpanded + " " + hour + ":" + min;
+            } catch (Exception e) {
+                return null;
+            }
+        }
 
-        return null; // Invalid format
+        return null;
+    }
+
+    /** Converts dd/MM/yy to dd/MM/yyyy (yy 00-99 -> 2000-2099). */
+    private String expandTwoDigitYear(String ddMMyy) {
+        if (ddMMyy == null || !ddMMyy.matches("^\\d{2}/\\d{2}/\\d{2}$")) return null;
+        try {
+            String[] parts = ddMMyy.split("/");
+            int yy = Integer.parseInt(parts[2]);
+            int fullYear = yy >= 0 && yy <= 99 ? (2000 + yy) : yy;
+            return parts[0] + "/" + parts[1] + "/" + fullYear;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
 
@@ -872,8 +958,26 @@ public class ViewJobActivity extends AppCompatActivity {
 
 
     private void deleteJob(String documentId) {
+        if (!canDeleteJobs()) {
+            if ("Dean".equalsIgnoreCase(userName)) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Permission required")
+                        .setMessage("To delete a job get in touch with Ian or Kristine.")
+                        .setPositiveButton("OK", null)
+                        .show();
+            } else {
+                Toast.makeText(this, "You do not have permission to delete jobs.", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
         db.collection("JobWork").document(documentId).delete();
         loadAllJobs();
+    }
+
+    private boolean canDeleteJobs() {
+        return "James".equalsIgnoreCase(userName)
+                || "Ian".equalsIgnoreCase(userName)
+                || "Kristine".equalsIgnoreCase(userName);
     }
 
     private void updateStatistics(int total, int completed, int pending) {

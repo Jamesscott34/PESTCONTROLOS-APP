@@ -117,13 +117,24 @@ public class DictateEditText extends FrameLayout {
                 ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (matches != null && !matches.isEmpty()) {
                     String spokenText = matches.get(0);
-                    // Append to existing text
-                    String currentText = editText.getText().toString();
-                    if (!currentText.isEmpty() && !currentText.endsWith(" ")) {
-                        currentText += " ";
+                    // Insert at current cursor position (does not lock typing/editing)
+                    int start = Math.max(0, editText.getSelectionStart());
+                    int end = Math.max(0, editText.getSelectionEnd());
+                    int insertPos = Math.min(start, end);
+
+                    String prefixSpace = "";
+                    if (insertPos > 0) {
+                        CharSequence text = editText.getText();
+                        if (text != null && insertPos <= text.length()) {
+                            char before = text.charAt(insertPos - 1);
+                            if (!Character.isWhitespace(before)) {
+                                prefixSpace = " ";
+                            }
+                        }
                     }
-                    editText.setText(currentText + spokenText);
-                    editText.setSelection(editText.getText().length());
+
+                    editText.getText().replace(Math.min(start, end), Math.max(start, end), prefixSpace + spokenText);
+                    editText.setSelection(Math.min(editText.getText().length(), insertPos + prefixSpace.length() + spokenText.length()));
                 }
                 
                 // Continue listening for more input
@@ -142,8 +153,6 @@ public class DictateEditText extends FrameLayout {
 
     private void startDictation() {
         isDictating = true;
-        // Clear the field before starting dictation
-        editText.setText("");
         updateDictateButton();
         startListening();
     }

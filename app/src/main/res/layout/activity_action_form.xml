@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingTop="?attr/actionBarSize"
-    android:background="#f5f5f5"
+    android:background="?android:attr/colorBackground"
     android:fillViewport="true"
     android:scrollbars="vertical"
     android:fitsSystemWindows="true">
@@ -40,7 +40,7 @@
             android:text="Action Form"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:textColor="#2196F3"
+            android:textColor="?attr/colorPrimary"
             android:gravity="center"
             android:layout_marginBottom="24dp" />
 
@@ -330,6 +330,16 @@
                 android:hint="Enter Role" />
         </LinearLayout>
 
+        <!-- Password protect PDF -->
+        <CheckBox
+            android:id="@+id/passwordProtectCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Password protect PDF (require password to edit)"
+            android:textSize="14sp"
+            android:checked="false"
+            android:layout_marginBottom="16dp" />
+
         <!-- Signature Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -345,7 +355,7 @@
                 android:text="Technician Signature"
                 android:layout_marginEnd="8dp"
                 android:background="@drawable/button_background"
-                android:textColor="#FFFFFF" />
+                android:textColor="?attr/colorOnPrimary" />
 
             <Button
                 android:id="@+id/customerSignatureButton"
@@ -355,7 +365,7 @@
                 android:text="Customer Signature"
                 android:layout_marginStart="8dp"
                 android:background="@drawable/button_background"
-                android:textColor="#FFFFFF" />
+                android:textColor="?attr/colorOnPrimary" />
         </LinearLayout>
 
         <!-- Action Buttons -->
@@ -367,23 +377,11 @@
 
             <Button
                 android:id="@+id/selectImageButton"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="📷 Add Images"
-                android:layout_marginEnd="4dp"
                 android:background="@drawable/button_background"
-                android:textColor="#FFFFFF" />
-
-            <Button
-                android:id="@+id/aiPolishButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="🤖 AI Polish"
-                android:layout_marginStart="4dp"
-                android:background="@drawable/button_background"
-                android:textColor="#FFFFFF" />
+                android:textColor="?attr/colorOnPrimary" />
         </LinearLayout>
 
         <LinearLayout
@@ -400,7 +398,7 @@
                 android:text="📖 Read Back"
                 android:layout_marginEnd="4dp"
                 android:background="@drawable/button_background"
-                android:textColor="#FFFFFF" />
+                android:textColor="?attr/colorOnPrimary" />
 
             <Button
                 android:id="@+id/saveButton"
@@ -410,7 +408,7 @@
                 android:text="💾 Save Form"
                 android:layout_marginStart="4dp"
                 android:background="@drawable/button_background"
-                android:textColor="#FFFFFF" />
+                android:textColor="?attr/colorOnPrimary" />
         </LinearLayout>
 
         <!-- Back Button -->
@@ -420,7 +418,7 @@
             android:layout_height="wrap_content"
             android:text="← Back"
             android:background="@drawable/button_background"
-            android:textColor="#FFFFFF" />
+            android:textColor="?attr/colorOnPrimary" />
 
     </LinearLayout>
 </ScrollView> 

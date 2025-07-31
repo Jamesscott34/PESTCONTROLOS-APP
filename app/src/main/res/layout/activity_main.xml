@@ -27,7 +27,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@drawable/bk"
+    android:background="?android:attr/colorBackground"
     android:padding="16dp"
     android:paddingTop="?attr/actionBarSize">
 
@@ -74,17 +74,53 @@
                  ============================================================================
                  Personalized greeting showing user's name
                  ============================================================================ -->
-            <TextView
-                android:id="@+id/welcomeTextView"
+            <LinearLayout
                 android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="64dp"
+                android:layout_marginBottom="8dp">
+
+                <ImageView
+                    android:id="@+id/welcomeLogo"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_marginEnd="8dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/logo"
+                    android:contentDescription="GRPC Logo" />
+
+                <TextView
+                    android:id="@+id/welcomeTextView"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Welcome, User!"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:layout_marginTop="64dp"
-                android:layout_marginBottom="8dp"
                 android:textColor="?android:attr/textColorPrimary" />
+            </LinearLayout>
+
+            <!-- Notification history - see what notifications were received -->
+            <Button
+                android:id="@+id/NotificationsButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Notifications"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="?attr/colorSecondary"
+                android:textColor="?attr/colorOnSecondary" />
+
+            <!-- Global search across Jobs/Contracts/Leads/Reports -->
+            <Button
+                android:id="@+id/SearchButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Search"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone" />
 
 
 
@@ -123,6 +159,15 @@
                 android:layout_height="wrap_content"
                 android:text="Work View"
                 android:layout_marginBottom="8dp" />
+
+            <!-- James-only: technician last location finder -->
+            <Button
+                android:id="@+id/LocationFinderButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Location Finder"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone" />
 
             <!-- ============================================================================
                  CONTRACT MANAGEMENT BUTTONS
@@ -173,12 +218,6 @@
                 android:layout_height="wrap_content"
                 android:text="Commision"
                 android:layout_marginBottom="8dp" />
-
-            <!-- Spacer for commission section -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="16dp"
-                android:background="@android:color/transparent" />
 
             <!-- ============================================================================
                  JOB MANAGEMENT
@@ -231,14 +270,23 @@
                 android:onClick="WorkWebsite"
                 android:layout_marginBottom="8dp" />
 
-            <!-- AI Chat Assistant -->
+            <!-- In-app help / README -->
+            <Button
+                android:id="@+id/HelpButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="How to Use App"
+                android:layout_marginBottom="8dp" />
+
+            <!-- AI Chat Assistant
             <Button
                 android:id="@+id/ChatButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="🤖 AI Chat Assistant"
                 android:layout_marginBottom="8dp"
-                android:backgroundTint="@android:color/holo_blue_dark" />
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary" /> -->
 
         </LinearLayout>
     </ScrollView>
@@ -254,8 +302,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Logout"
-        android:background="@android:color/holo_red_dark"
-        android:textColor="@android:color/white"
+        android:backgroundTint="?attr/colorError"
+        android:textColor="?attr/colorOnError"
         android:layout_marginBottom="16dp"
         android:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"

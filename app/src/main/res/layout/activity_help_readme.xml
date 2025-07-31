@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingTop="?attr/actionBarSize"
+    android:padding="16dp"
+    android:background="?android:attr/colorBackground">
+
+    <TextView
+        android:id="@+id/helpTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="How to Use the GRPest Control App"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="12dp"
+        android:textColor="?android:attr/textColorPrimary" />
+
+    <!-- James-only: preview help text for other users -->
+    <LinearLayout
+        android:id="@+id/helpRoleRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="View help for:"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginEnd="8dp" />
+
+        <Spinner
+            android:id="@+id/helpRoleSpinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/edit_text_border"
+            android:padding="8dp"
+            android:spinnerMode="dropdown" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/helpSectionsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Section 1: Logging In and Navigation -->
+            <LinearLayout
+                android:id="@+id/section1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/section1Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="1. Getting Started"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:padding="10dp"
+                    android:background="?attr/colorSurface"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:id="@+id/section1Content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:padding="8dp"
+                    android:textSize="14sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:text="@string/help_section1" />
+            </LinearLayout>
+
+            <!-- Section 2: Contracts Overview -->
+            <LinearLayout
+                android:id="@+id/section2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/section2Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="2. Reports (Create &amp; Upload)"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:padding="10dp"
+                    android:background="?attr/colorSurface"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:id="@+id/section2Content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:padding="8dp"
+                    android:textSize="14sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:text="@string/help_section2" />
+            </LinearLayout>
+
+            <!-- Section 3: Editing / Transferring Contracts -->
+            <LinearLayout
+                android:id="@+id/section3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/section3Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="3. Contracts"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:padding="10dp"
+                    android:background="?attr/colorSurface"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:id="@+id/section3Content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:padding="8dp"
+                    android:textSize="14sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:text="@string/help_section3" />
+            </LinearLayout>
+
+            <!-- Section 4: Marking Contracts as Done and Options -->
+            <LinearLayout
+                android:id="@+id/section4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/section4Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="4. Jobs &amp; Work View"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:padding="10dp"
+                    android:background="?attr/colorSurface"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:id="@+id/section4Content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:padding="8dp"
+                    android:textSize="14sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:text="@string/help_section4" />
+            </LinearLayout>
+
+            <!-- Section 5: Exporting Contracts to PDF -->
+            <LinearLayout
+                android:id="@+id/section5"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/section5Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="5. Commission"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:padding="10dp"
+                    android:background="?attr/colorSurface"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:id="@+id/section5Content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:padding="8dp"
+                    android:textSize="14sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:text="@string/help_section5" />
+            </LinearLayout>
+
+            <!-- Section 6: Work View and Notifications -->
+            <LinearLayout
+                android:id="@+id/section6"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/section6Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="6. Notifications &amp; Messaging"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:padding="10dp"
+                    android:background="?attr/colorSurface"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:id="@+id/section6Content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:padding="8dp"
+                    android:textSize="14sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:text="@string/help_section6" />
+            </LinearLayout>
+
+            <!-- Section 7: Tips -->
+            <LinearLayout
+                android:id="@+id/section7"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/section7Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="7. Support"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:padding="10dp"
+                    android:background="?attr/colorSurface"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:id="@+id/section7Content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:padding="8dp"
+                    android:textSize="14sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:text="@string/help_section7" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <Button
+        android:id="@+id/helpBackButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Back"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:background="@drawable/button_background"
+        android:textColor="?attr/colorOnPrimary"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>

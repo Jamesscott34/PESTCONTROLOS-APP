@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="@drawable/bk"
+    android:background="?android:attr/colorBackground"
     android:paddingTop="?attr/actionBarSize"
     android:fillViewport="true"
     android:scrollbars="vertical"
@@ -82,6 +82,24 @@
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
+
+        <TextView
+            android:id="@+id/assignTechLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Assign to"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="6dp" />
+
+        <Spinner
+            android:id="@+id/assignedTechSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/edit_text_border"
+            android:padding="10dp"
+            android:spinnerMode="dropdown" />
 
         <Button
             android:id="@+id/buttonAdd"

@@ -5,7 +5,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:paddingTop="?attr/actionBarSize"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="?android:attr/colorBackground">
 
     <!-- Top Spacer to avoid notch -->
     <View
@@ -28,7 +29,8 @@
             android:layout_weight="1"
             android:text="Total Leads: 0"
             android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary" />
 
         <TextView
             android:id="@+id/paidLeads"
@@ -37,7 +39,7 @@
             android:layout_weight="1"
             android:text="Paid: 0"
             android:textSize="16sp"
-            android:textColor="@android:color/holo_green_dark"
+            android:textColor="?attr/colorSecondary"
             android:textStyle="bold" />
 
         <TextView
@@ -47,7 +49,7 @@
             android:layout_weight="1"
             android:text="Unpaid: 0"
             android:textSize="16sp"
-            android:textColor="@android:color/holo_red_dark"
+            android:textColor="?attr/colorError"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -58,7 +60,9 @@
         android:layout_height="wrap_content"
         android:hint="Search by Premise Name"
         android:padding="12dp"
-        android:background="@android:drawable/edit_text"
+        android:background="@drawable/edit_text_border"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary"
         android:layout_marginBottom="16dp" />
 
     <!-- Scroll View for Leads -->
@@ -81,8 +85,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Back"
-        android:backgroundTint="@android:color/holo_blue_light"
-        android:textColor="@android:color/white"
+        android:background="@drawable/button_background"
+        android:textColor="?attr/colorOnPrimary"
         android:layout_marginTop="16dp"
         android:padding="12dp" />
 </LinearLayout>

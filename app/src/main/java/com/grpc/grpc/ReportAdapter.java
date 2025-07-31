@@ -17,11 +17,15 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * ReportAdapter.java
@@ -49,6 +53,10 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
 
     // Listener for handling click and long-click actions on report items
     private final OnReportClickListener onReportClickListener;
+
+    // Multi-select state (driven by Activities)
+    private boolean selectionMode = false;
+    private final Set<String> selectedPaths = new LinkedHashSet<>();
 
     /**
      * Interface definition for click actions on the report items.
@@ -81,6 +89,50 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
         this.onReportClickListener = listener;
     }
 
+    public void setSelectionMode(boolean enabled) {
+        if (this.selectionMode == enabled) return;
+        this.selectionMode = enabled;
+        if (!enabled) selectedPaths.clear();
+        notifyDataSetChanged();
+    }
+
+    public boolean isSelectionMode() {
+        return selectionMode;
+    }
+
+    public int getSelectedCount() {
+        return selectedPaths.size();
+    }
+
+    public List<File> getSelectedFiles() {
+        List<File> out = new ArrayList<>();
+        for (File f : reportFiles) {
+            if (f != null && selectedPaths.contains(f.getAbsolutePath())) out.add(f);
+        }
+        return out;
+    }
+
+    public void toggleSelected(File file) {
+        if (file == null) return;
+        String path = file.getAbsolutePath();
+        if (selectedPaths.contains(path)) selectedPaths.remove(path);
+        else selectedPaths.add(path);
+        notifyDataSetChanged();
+    }
+
+    public void selectAllVisible() {
+        for (File f : reportFiles) {
+            if (f != null) selectedPaths.add(f.getAbsolutePath());
+        }
+        notifyDataSetChanged();
+    }
+
+    public void clearSelection() {
+        if (selectedPaths.isEmpty()) return;
+        selectedPaths.clear();
+        notifyDataSetChanged();
+    }
+
     /**
      * Inflates the view for each report item in the RecyclerView.
      *
@@ -91,8 +143,7 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
     @NonNull
     @Override
     public ReportViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Inflate a simple list item layout for displaying the report name
-        View view = LayoutInflater.from(context).inflate(android.R.layout.simple_list_item_1, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_report_file, parent, false);
         return new ReportViewHolder(view);
     }
 
@@ -110,6 +161,11 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
 
         // Display the report name in the TextView
         holder.reportName.setText(reportFile.getName());
+
+        boolean isSelected = reportFile != null && selectedPaths.contains(reportFile.getAbsolutePath());
+        holder.selectCheckbox.setVisibility(selectionMode ? View.VISIBLE : View.GONE);
+        holder.selectCheckbox.setChecked(isSelected);
+        holder.itemView.setActivated(isSelected);
 
         // Set click listener for opening the report
         holder.itemView.setOnClickListener(v -> onReportClickListener.onReportClick(reportFile));
@@ -137,6 +193,7 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
     public static class ReportViewHolder extends RecyclerView.ViewHolder {
         // TextView for displaying the report name
         TextView reportName;
+        CheckBox selectCheckbox;
 
         /**
          * Constructs the ViewHolder and initializes the view elements.
@@ -145,8 +202,8 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
          */
         public ReportViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Reference the default TextView in the simple list item layout
-            reportName = itemView.findViewById(android.R.id.text1);
+            reportName = itemView.findViewById(R.id.reportName);
+            selectCheckbox = itemView.findViewById(R.id.selectCheckbox);
         }
     }
 }

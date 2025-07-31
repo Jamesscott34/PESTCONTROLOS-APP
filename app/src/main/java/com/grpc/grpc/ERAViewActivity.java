@@ -40,9 +40,12 @@ import java.util.List;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
 
+import androidx.appcompat.view.ActionMode;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
@@ -85,6 +88,7 @@ public class ERAViewActivity extends AppCompatActivity {
     private List<File> allReportFiles;
 
     private String userName;
+    private ActionMode actionMode;
 
     /**
      * Initializes the activity, sets up the RecyclerView, search bar, and return button,
@@ -164,16 +168,28 @@ public class ERAViewActivity extends AppCompatActivity {
             }
         }
 
-        // Initialize the adapter with click listeners
+        // Initialize the adapter with click listeners (multi-select + single actions)
         adapter = new ReportAdapter(this, reportFiles, new ReportAdapter.OnReportClickListener() {
             @Override
             public void onReportClick(File file) {
-                showSinglePressOptions(file);
+                if (adapter.isSelectionMode()) {
+                    adapter.toggleSelected(file);
+                    syncActionMode();
+                } else {
+                    showSinglePressOptions(file);
+                }
             }
 
             @Override
             public void onReportLongClick(File file) {
-                showLongPressOptions(file);
+                if (!adapter.isSelectionMode()) {
+                    adapter.setSelectionMode(true);
+                    adapter.toggleSelected(file);
+                    startSelectionActionMode();
+                } else {
+                    adapter.toggleSelected(file);
+                }
+                syncActionMode();
             }
         });
 
@@ -181,38 +197,117 @@ public class ERAViewActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
     }
 
-    /**
-     * Displays options when a report is single-clicked (View).
-     *
-     * @param file The selected report file.
-     */
-    private void showSinglePressOptions(File file) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select an Option")
-                .setItems(new CharSequence[]{"View"}, (dialog, which) -> {
-                    if (which == 0) {
-                        viewPDF(file);
-                    }
-                })
+    private void startSelectionActionMode() {
+        if (actionMode != null) return;
+        actionMode = startSupportActionMode(new ActionMode.Callback() {
+            @Override
+            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                mode.getMenuInflater().inflate(R.menu.menu_report_multiselect, menu);
+                return true;
+            }
+
+            @Override
+            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                return false;
+            }
+
+            @Override
+            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                int id = item.getItemId();
+                if (id == R.id.action_select_all) {
+                    adapter.selectAllVisible();
+                    syncActionMode();
+                    return true;
+                }
+                if (id == R.id.action_share) {
+                    shareReports(adapter.getSelectedFiles());
+                    mode.finish();
+                    return true;
+                }
+                if (id == R.id.action_delete) {
+                    confirmDeleteMultiple(adapter.getSelectedFiles());
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public void onDestroyActionMode(ActionMode mode) {
+                actionMode = null;
+                adapter.setSelectionMode(false);
+                adapter.clearSelection();
+            }
+        });
+        syncActionMode();
+    }
+
+    private void syncActionMode() {
+        if (actionMode == null) return;
+        int count = adapter.getSelectedCount();
+        if (count <= 0) {
+            actionMode.finish();
+            return;
+        }
+        actionMode.setTitle(count + " selected");
+    }
+
+    private void shareReports(List<File> files) {
+        if (files == null || files.isEmpty()) return;
+        try {
+            ArrayList<Uri> uris = new ArrayList<>();
+            for (File f : files) {
+                if (f == null) continue;
+                Uri fileUri = FileProvider.getUriForFile(this, "com.grpc.grpc.fileprovider", f);
+                uris.add(fileUri);
+            }
+            if (uris.isEmpty()) return;
+            Intent shareIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
+            shareIntent.setType("application/pdf");
+            shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            android.content.ClipData clipData = null;
+            for (Uri u : uris) {
+                if (u == null) continue;
+                if (clipData == null) clipData = android.content.ClipData.newRawUri("era", u);
+                else clipData.addItem(new android.content.ClipData.Item(u));
+            }
+            if (clipData != null) shareIntent.setClipData(clipData);
+            startActivity(Intent.createChooser(shareIntent, "Share ERA Reports"));
+        } catch (Exception e) {
+            Toast.makeText(this, "No application available to share the selected reports.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void confirmDeleteMultiple(List<File> files) {
+        if (files == null || files.isEmpty()) return;
+        new AlertDialog.Builder(this)
+                .setTitle("Delete")
+                .setMessage("Delete " + files.size() + " selected report(s)?")
+                .setPositiveButton("Delete", (d, w) -> deleteMultiple(files))
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    /**
-     * Displays options when a report is long-clicked (Share, Delete, or Rename).
-     *
-     * @param file The selected report file.
-     */
-    private void showLongPressOptions(File file) {
+    private void deleteMultiple(List<File> files) {
+        int deleted = 0;
+        int failed = 0;
+        for (File f : files) {
+            if (f != null && f.delete()) deleted++;
+            else failed++;
+        }
+        Toast.makeText(this, "Deleted: " + deleted + (failed > 0 ? " (failed: " + failed + ")" : ""), Toast.LENGTH_SHORT).show();
+        loadReports();
+        if (actionMode != null) actionMode.finish();
+    }
+
+    private void showSinglePressOptions(File file) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select an Option")
-                .setItems(new CharSequence[]{"Share", "Delete", "Rename"}, (dialog, which) -> {
-                    if (which == 0) {
-                        shareReport(file);
-                    } else if (which == 1) {
-                        deleteReport(file);
-                    } else if (which == 2) {
-                        renameReport(file);
-                    }
+                .setItems(new CharSequence[]{"View", "Share", "Delete", "Rename"}, (dialog, which) -> {
+                    if (which == 0) viewPDF(file);
+                    else if (which == 1) shareReport(file);
+                    else if (which == 2) deleteReport(file);
+                    else if (which == 3) renameReport(file);
                 })
                 .show();
     }

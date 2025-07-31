@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true"
+    android:padding="16dp"
+    android:paddingTop="?attr/actionBarSize">
+
+    <LinearLayout
+        android:id="@+id/locationFinderRoot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Location Finder"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/locationFinderSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Shows the last known location reported by each technician. Locations expire after 15 minutes."
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:id="@+id/techniciansContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <Button
+            android:id="@+id/locationFinderBackButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Back"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
+
+    </LinearLayout>
+</ScrollView>
+

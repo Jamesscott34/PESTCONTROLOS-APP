@@ -8,7 +8,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingTop="?attr/actionBarSize"
-    android:background="@drawable/bk">
+    android:background="?android:attr/colorBackground">
 
 
     <!-- Top Spacer to avoid notch -->
@@ -29,7 +29,10 @@
         android:hint="GRPC Quotes..."
         android:padding="12dp"
         android:inputType="text"
-        android:drawableStart="@android:drawable/ic_menu_search"/>
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:background="@drawable/edit_text_border"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary"/>
 
     <!-- RecyclerView for displaying the list of reports in a scrollable format -->
     <!-- Replaces the traditional ListView for better performance and flexibility -->
@@ -48,6 +51,7 @@
         android:layout_height="wrap_content"
         android:text="Return"
         android:layout_marginTop="16dp"
-        android:backgroundTint="@android:color/holo_red_light"
+        android:backgroundTint="?attr/colorError"
+        android:textColor="?attr/colorOnError"
         android:textSize="18sp"/>
 </LinearLayout>

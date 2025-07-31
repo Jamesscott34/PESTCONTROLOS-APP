@@ -54,6 +54,8 @@ public class General8ptActivity extends AppCompatActivity {
     private String userName;
     private String userEmail;
     private String userMobile;
+    private String staffDisplayName;
+    private String staffTitle;
 
     private EditText companyNameInput;
     private EditText companyAddressInput;
@@ -67,14 +69,20 @@ public class General8ptActivity extends AppCompatActivity {
         // Retrieve the username
         userName = getIntent().getStringExtra("USER_NAME");
 
-        // Set user-specific details
-        if ("Ian".equalsIgnoreCase(userName)) {
-            userEmail = "ian@grpestcontrol.ie";
-            userMobile = "0879134971";
-        } else if ("James".equalsIgnoreCase(userName)) {
-            userEmail = "james@grpestcontrol.ie";
-            userMobile = "0879000271";
-        }
+        // Default from saved login (no hardcoded emails)
+        userEmail = getSharedPreferences("GRPC", MODE_PRIVATE).getString("USER_EMAIL", "");
+        userMobile = "";
+        staffDisplayName = userName;
+        staffTitle = "";
+
+        // Fetch Email/Name/Title from Firebase by username -> ID (James=001, Ian=002, Dean=003, Kristine=004)
+        StaffDirectory.fetchByUserName(this, userName, profile -> {
+            if (profile == null) return;
+            if (profile.email != null && !profile.email.isEmpty()) userEmail = profile.email;
+            if (profile.mobile != null && !profile.mobile.isEmpty()) userMobile = profile.mobile;
+            if (profile.name != null && !profile.name.isEmpty()) staffDisplayName = profile.name;
+            if (profile.title != null && !profile.title.isEmpty()) staffTitle = profile.title;
+        });
 
         // Display welcome message
         TextView welcomeTextView = findViewById(R.id.welcomeTextView);
@@ -101,6 +109,10 @@ public class General8ptActivity extends AppCompatActivity {
     }
 
     private void generateQuote() {
+        if (userEmail == null || userEmail.trim().isEmpty()) {
+            Toast.makeText(this, "Loading your profile email from Firebase. Please try again in a moment.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         String companyName = companyNameInput.getText().toString().trim();
         String companyAddress = companyAddressInput.getText().toString().trim();
         String companyContact = companyContactInput.getText().toString().trim();
@@ -177,6 +189,8 @@ public class General8ptActivity extends AppCompatActivity {
                 lineTotals,                      // Line totals
                 userEmail,                       // User email
                 userMobile,                      // User mobile
+                staffDisplayName,                // Staff name (from Firebase)
+                staffTitle,                      // Staff title (from Firebase)
                 companyName,                     // Company name
                 companyContact,                  // Company contact
                 General8ptActivity.this          // Explicitly pass the activity as Context
@@ -208,6 +222,7 @@ public class General8ptActivity extends AppCompatActivity {
             String fileName, String address, String quoteDescription,
             List<String> descriptions, List<Double> lineTotals,
             String userEmail, String mobileNumber,
+            String staffName, String staffTitle,
             String companyName, String companyContact, Context context) {
 
         File quotesFolder = new File(context.getExternalFilesDir(null), "GRPEST_QUOTES");
@@ -238,7 +253,10 @@ public class General8ptActivity extends AppCompatActivity {
             Cell leftCell = new Cell().setBorder(Border.NO_BORDER);
             leftCell.add(logo);
             leftCell.add(new Paragraph("\nGood Riddance Pest Control").setBold().setFontSize(16));
-            leftCell.add(new Paragraph("Name: " + (userEmail.contains("ian") ? "Ian Winston" : "James Scott")).setFontSize(12));
+            leftCell.add(new Paragraph("Name: " + (staffName != null && !staffName.isEmpty() ? staffName : "")).setFontSize(12));
+            if (staffTitle != null && !staffTitle.isEmpty()) {
+                leftCell.add(new Paragraph("Title: " + staffTitle).setFontSize(12));
+            }
             leftCell.add(new Paragraph("Mobile: " + mobileNumber).setFontSize(12));
             leftCell.add(new Paragraph("Email: " + userEmail).setFontSize(12));
             leftCell.add(new Paragraph("Website: grpestcontrol.ie").setFontSize(12));

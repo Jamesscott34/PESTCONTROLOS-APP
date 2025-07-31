@@ -82,6 +82,13 @@ public class ViewLeadsActivity extends AppCompatActivity {
         // Load all leads
         loadAllLeads();
 
+        // Optional: pre-fill search from global Search screen
+        String initialQuery = getIntent().getStringExtra(SearchActivity.EXTRA_SEARCH_QUERY);
+        if (initialQuery != null && !initialQuery.trim().isEmpty() && searchBar != null) {
+            searchBar.setText(initialQuery.trim());
+            searchBar.setSelection(searchBar.getText().length());
+        }
+
         // Back button action
         backButton.setOnClickListener(view -> finish());
 
@@ -101,7 +108,7 @@ public class ViewLeadsActivity extends AppCompatActivity {
     }
 
     private void filterLeads(String query) {
-        query = query.toLowerCase(); // Convert query to lowercase for case-insensitive search
+        query = query != null ? query.toLowerCase().trim() : "";
         leadsContainer.removeAllViews(); // Clear the current view
 
         // Create a list to hold filtered leads
@@ -109,16 +116,45 @@ public class ViewLeadsActivity extends AppCompatActivity {
 
         // Iterate over all loaded leads and filter based on the "Added By" field
         for (Map<String, Object> lead : allLeads) {
-            String addedBy = (String) lead.get("Added By");
-
-            // Check if the query matches the "Added By" field
-            if (addedBy != null && addedBy.toLowerCase().contains(query)) {
-                filteredLeads.add(lead); // Add to filtered leads if it matches the query
+            if (query.isEmpty() || leadMatchesQuery(lead, query)) {
+                filteredLeads.add(lead);
             }
         }
 
         // Display the filtered leads
         displayLeads(filteredLeads);
+    }
+
+    private boolean leadMatchesQuery(Map<String, Object> lead, String query) {
+        if (lead == null || query == null) return false;
+
+        // Prefer common fields (faster + more relevant ordering)
+        String[] keys = new String[] {
+                "Premise Name",
+                "Premise Address",
+                "Added By",
+                "Number",
+                "Mobile",
+                "Email",
+                "Reason",
+                "Date"
+        };
+        for (String k : keys) {
+            Object v = lead.get(k);
+            if (v != null && String.valueOf(v).toLowerCase().contains(query)) return true;
+        }
+
+        // Fallback: search across any string-like fields
+        for (Map.Entry<String, Object> e : lead.entrySet()) {
+            Object v = e.getValue();
+            if (v == null) continue;
+            if (v instanceof String) {
+                if (((String) v).toLowerCase().contains(query)) return true;
+            } else if (v instanceof Number) {
+                if (String.valueOf(v).toLowerCase().contains(query)) return true;
+            }
+        }
+        return false;
     }
 
 
@@ -187,7 +223,7 @@ public class ViewLeadsActivity extends AppCompatActivity {
         LinearLayout leadBox = new LinearLayout(this);
         leadBox.setOrientation(LinearLayout.VERTICAL);
         leadBox.setPadding(16, 16, 16, 16);
-        leadBox.setBackgroundResource(android.R.drawable.dialog_holo_light_frame);
+        leadBox.setBackgroundResource(R.drawable.surface_frame);
 
         String addedBy = (String) lead.get("Added By");
         String premiseName = (String) lead.get("Premise Name");
@@ -234,7 +270,7 @@ public class ViewLeadsActivity extends AppCompatActivity {
                 optionsDialog.setItems(new String[]{"Mark as Paid"}, (dialog, which) -> {
                     if (which == 0) {
                         // Mark as Paid
-                        markAsPaid(documentId);
+                        markAsPaid(documentId, lead);
                     }
                 });
             } else if ("Job".equalsIgnoreCase(reason)) {
@@ -242,7 +278,7 @@ public class ViewLeadsActivity extends AppCompatActivity {
                 optionsDialog.setItems(new String[]{"Mark as Paid", "Add/Edit Materials"}, (dialog, which) -> {
                     if (which == 0) {
                         // Mark as Paid
-                        markAsPaid(documentId);
+                        markAsPaid(documentId, lead);
                     } else if (which == 1) {
                         // Edit Materials
                         showEditMaterialsDialog(lead, documentId);
@@ -280,12 +316,13 @@ public class ViewLeadsActivity extends AppCompatActivity {
         leadsContainer.addView(leadBox);
     }
 
-    private void markAsPaid(String documentId) {
+    private void markAsPaid(String documentId, Map<String, Object> lead) {
         String currentDate = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date());
         db.collection("Leads").document(documentId)
                 .update("Invoice Status", "Paid", "Payment Date", currentDate)
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Invoice marked as paid!", Toast.LENGTH_SHORT).show();
+                    notifyAssigneeLeadUpdated(lead, documentId, "marked the invoice as paid");
                     loadAllLeads(); // Reload leads to reflect changes
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to update invoice: " + e.getMessage(), Toast.LENGTH_SHORT).show());
@@ -325,10 +362,12 @@ public class ViewLeadsActivity extends AppCompatActivity {
             Map<String, Object> updates = new HashMap<>();
             updates.put("Materials Cost", materialsCost);
             updates.put("Commission", newCommission);
+            updates.put("Last Edited By", userName);
 
             db.collection("Leads").document(documentId).update(updates)
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(this, "Materials cost updated successfully!", Toast.LENGTH_SHORT).show();
+                        notifyAssigneeLeadUpdated(lead, documentId, "updated materials/commission");
                         loadAllLeads(); // Reload leads
                     })
                     .addOnFailureListener(e -> Toast.makeText(this, "Failed to update materials cost: " + e.getMessage(), Toast.LENGTH_SHORT).show());
@@ -336,6 +375,33 @@ public class ViewLeadsActivity extends AppCompatActivity {
 
         dialog.setNegativeButton("Cancel", null);
         dialog.show();
+    }
+
+    private void notifyAssigneeLeadUpdated(Map<String, Object> lead, String documentId, String action) {
+        try {
+            if (lead == null) return;
+            String assignedTo = asString(lead.get("Added By"));
+            if (assignedTo.isEmpty()) return;
+            if (userName != null && assignedTo.equalsIgnoreCase(userName)) return; // don't notify self
+
+            String premiseName = asString(lead.get("Premise Name"));
+            String title = "Lead updated";
+            String body = (premiseName.isEmpty() ? "A lead assigned to you was updated." : ("Lead: " + premiseName + " was updated."))
+                    + (action == null || action.trim().isEmpty() ? "" : ("\n" + userName + " " + action + "."));
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("leadId", documentId);
+            data.put("premiseName", premiseName);
+            data.put("targetUser", assignedTo);
+
+            String notifDocId = "lead_update_" + documentId + "_" + System.currentTimeMillis();
+            NotificationUtils.writeInAppNotification(assignedTo, notifDocId, title, body, "lead_update", data);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static String asString(Object o) {
+        return o == null ? "" : String.valueOf(o).trim();
     }
 
 

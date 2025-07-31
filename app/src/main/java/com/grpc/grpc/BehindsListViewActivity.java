@@ -133,13 +133,45 @@ public class BehindsListViewActivity extends AppCompatActivity {
     }
 
     /**
+     * Extracts technician name from a behinds/due list PDF filename.
+     * Examples:
+     *  - BehindsList_Ian_01-01-2025.pdf   -> Ian
+     *  - James_Due_list_01-01-2025.pdf    -> James
+     */
+    private String extractTechnicianName(File file) {
+        if (file == null) return "Unknown";
+        String name = file.getName();
+
+        try {
+            if (name.startsWith("BehindsList_")) {
+                // BehindsList_<TECH>_<DATE>.pdf
+                String remaining = name.substring("BehindsList_".length());
+                int underscoreIndex = remaining.indexOf('_');
+                if (underscoreIndex > 0) {
+                    return remaining.substring(0, underscoreIndex).replace('_', ' ');
+                }
+            } else if (name.contains("_Due_list_")) {
+                // <TECH>_Due_list_<DATE>.pdf
+                int idx = name.indexOf("_Due_list_");
+                if (idx > 0) {
+                    return name.substring(0, idx).replace('_', ' ');
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        return "Unknown";
+    }
+
+    /**
      * Displays options when a file is single-clicked (View).
      *
      * @param file The selected file
      */
     private void showSinglePressOptions(File file) {
+        String techName = extractTechnicianName(file);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select an Option")
+        builder.setTitle("View PDF - " + techName)
                 .setItems(new CharSequence[]{"View"}, (dialog, which) -> {
                     if (which == 0) {
                         viewPDF(file);
@@ -154,8 +186,9 @@ public class BehindsListViewActivity extends AppCompatActivity {
      * @param file The selected file
      */
     private void showLongPressOptions(File file) {
+        String techName = extractTechnicianName(file);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select an Option")
+        builder.setTitle("Options for " + techName)
                 .setItems(new CharSequence[]{"Share", "Delete", "Rename"}, (dialog, which) -> {
                     if (which == 0) {
                         shareBehindsListFile(file);

@@ -13,4 +13,5 @@
     <item name="leadsContainer" type="id" />
     <item name="totalLeads" type="id" />
     <item name="dueContracts" type="id" />
+    <item name="section1Header" type="id" />
 </resources>

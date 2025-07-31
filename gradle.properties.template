@@ -19,8 +19,9 @@ APP_VERSION=1.0.0
 APP_NAME=GRPest Control
 
 # Default User Credentials (for offline mode)
-DEFAULT_USER_EMAIL=admin@grpc.com
-DEFAULT_USER_PASSWORD=admin123
+# Leave blank - staff email/name/title are loaded from Firestore users (001-004).
+DEFAULT_USER_EMAIL=
+DEFAULT_USER_PASSWORD=
 
 # Database Configuration
 DATABASE_NAME=UserDatabase

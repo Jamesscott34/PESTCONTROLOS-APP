@@ -1,9 +1,70 @@
 <resources>
     <string name="app_name">grpc</string>
+    <string name="widget_workview_description">WorkView: next 3 upcoming jobs</string>
 
     <string-array name="reason_options">
         <item>Job</item>
         <item>Contract</item>
     </string-array>
 
+    <!-- Help README section content -->
+    <!-- Generic (unknown user) -->
+    <string name="help_section1_generic">Getting started\n\n- Log in and you land on the Home menu.\n- Key areas:\n  - Work View\n  - Contracts\n  - Jobs\n  - Reports\n  - Quotes\n  - ERA\n  - Messaging\n  - Notifications\n\nTip\n- Use Notifications to review assigned work and updates.</string>
+    <string name="help_section2_generic">Reports\n\n- Create reports from Home, Jobs, or Contracts.\n- Upload PDFs to Firebase Storage under ReportsYY/Month/.\n- Use View Reports to browse and share PDFs.</string>
+    <string name="help_section3_generic">Contracts\n\n- Add and service customer contracts.\n- Mark visits done to keep Last/Next Visit correct.</string>
+    <string name="help_section4_generic">Work View + Jobs\n\n- Use Work View to schedule your day and mark work complete.\n- Use Jobs to manage assigned work items.\n\nCustom times and drag-and-drop\n- Create with custom duration: Add Job/Contract/Follow-up → when the time dialog appears choose “Custom time…”, enter start (e.g. 08:30) and end (e.g. 15:00).\n- Change event time: Tap event → Edit Time → set start/end and save.\n- Move event: In daily view, long-press an event, drag to another time slot and release; start moves to that slot, duration is kept.</string>
+    <string name="help_section5_generic">Commission (Leads)\n\n- Use Leads to track invoices/commission where enabled.</string>
+    <string name="help_section6_generic">Notifications + Messaging\n\n- Notifications are in-app only.\n- Use Messaging for 1:1 and group chat.</string>
+    <string name="help_section7_generic">Support\n\n- If something looks wrong, log out/in and retry.\n- Contact James for support.</string>
+
+    <!-- James -->
+    <string name="help_section1_james">Getting started (James)\n\n- You have full access to all areas.\n- James-only features:\n  - Global Search (search across Jobs/Contracts/Leads/Reports)\n  - Location Finder (last known technician locations)\n\nDaily use\n- Check Notifications first.\n- Use Work View to plan the day.\n- Use Contracts/Jobs to manage assignment + completion.\n\nTip\n- Use the dropdown at the top of this help screen to preview Ian/Dean help text.</string>
+    <string name="help_section2_james">Reports (James)\n\nCreate\n- Create reports from Home, Contracts, or Jobs.\n- Capture signatures/photos when needed.\n\nUpload\n- Upload to Firebase Storage using:\n  - ReportsYY/Month/&lt;PDF&gt;\n\nManage\n- View, share, rename, delete local reports.\n- If deleting local reports, confirm upload status first (best practice).</string>
+    <string name="help_section3_james">Contracts (James)\n\nAssign\n- Contracts → Add Contract.\n- Use Assign-to dropdown (James / Dean / Ian).\n- The assigned technician receives an in-app notification.\n\nService\n- Mark as Done updates last/next visit.\n\nAdmin\n- You can edit/delete contracts.</string>
+    <string name="help_section4_james">Work View + Jobs (James)\n\nWork View\n- Schedule jobs/contracts and mark complete.\n- Reminders are scheduled ~30 minutes before scheduled events.\n- Custom duration: Add Job/Contract/Follow-up → “Custom time…” → enter start and end (e.g. 08:30 and 15:00).\n- Edit time: Tap event → Edit Time → change start/end and save.\n- Move event: Long-press in daily view, drag to another slot, release; duration is kept.\n\nJob Work\n- Use technician dropdown when creating jobs to avoid typos.\n- Assigned tech gets an in-app notification.\n\nAdmin\n- You can delete Job Work and Management Jobs.</string>
+    <string name="help_section5_james">Commission (Leads) (James)\n\n- Generate Lead / View Leads.\n- Track invoice status and commission.\n- Lead updates can notify the assigned technician.</string>
+    <string name="help_section6_james">Notifications + Messaging (James)\n\n- Notifications are in-app only.\n- Use Notifications to audit assignments/updates.\n- Messaging supports 1:1 + group chat.</string>
+    <string name="help_section7_james">Support (James)\n\n- If staff report missing items, confirm assignment/owner is correct.\n- Confirm correct Storage year folder was used when uploading reports.\n- If a user can’t delete something, that is expected for Dean.</string>
+
+    <!-- Ian -->
+    <string name="help_section1_ian">Getting started (Ian)\n\n- You have admin/oversight access.\n\nDaily use\n- Check Notifications.\n- Use Work View to schedule and manage upcoming work.\n- Use Contracts/Jobs to assign work and keep schedules accurate.</string>
+    <string name="help_section2_ian">Reports (Ian)\n\n- Create reports from Contracts/Jobs.\n- Upload PDFs to Firebase Storage:\n  - ReportsYY/Month/&lt;PDF&gt;\n- Use View Reports to share with customers/office.</string>
+    <string name="help_section3_ian">Contracts (Ian)\n\nAssign\n- Contracts → Add Contract.\n- Use Assign-to dropdown (James / Dean / Ian).\n- Assigned technician receives an in-app notification.\n\nAdmin\n- You can edit/delete contracts.\n\nTip\n- If a contract isn’t showing for someone, confirm it was added to the correct technician’s Contracts list.</string>
+    <string name="help_section4_ian">Work View + Jobs (Ian)\n\nWork View\n- Schedule events and mark complete.\n- Reminders are scheduled ~30 minutes before jobs/contracts.\n- Custom duration: Add Job/Contract/Follow-up → “Custom time…” → enter start and end (e.g. 08:30 and 15:00).\n- Edit time: Tap event → Edit Time → change start/end and save.\n- Move event: Long-press in daily view, drag to another slot, release; duration is kept.\n\nJob Work\n- Create jobs and choose technician from dropdown.\n- Assigned tech receives an in-app notification.\n\nAdmin\n- You can delete jobs and management jobs.</string>
+    <string name="help_section5_ian">Commission (Leads) (Ian)\n\n- Use View Leads for oversight.\n- Updating materials/commission can notify the assigned technician.</string>
+    <string name="help_section6_ian">Notifications + Messaging (Ian)\n\n- Notifications are in-app only.\n- Use Notifications to review what was assigned/updated.\n- Messaging supports 1:1 and group chat.</string>
+    <string name="help_section7_ian">Support (Ian)\n\n- If Dean needs a delete, they must contact admin.\n- For report issues: confirm correct year folder + upload occurred.</string>
+
+    <!-- Dean -->
+    <string name="help_section1_dean">Getting started (Dean)\n\n- Your main tools are Work View, Jobs, Contracts, and Reports.\n\nImportant restrictions\n- You cannot delete contracts or jobs.\n- If you try, you’ll see:\n  - “To delete a contract get in touch with Ian or Kristine.”\n  - “To delete a job get in touch with Ian or Kristine.”</string>
+    <string name="help_section2_dean">Reports (Dean)\n\nCreate\n- Create reports from Jobs or Contracts.\n\nUpload first\n- Upload PDFs to Firebase Storage before deleting local copies:\n  - ReportsYY/Month/&lt;PDF&gt;\n\nDelete (local)\n- You can delete local reports, but you will be asked:\n  - “Have you added/uploaded these report(s) to Firebase before deleting?”</string>
+    <string name="help_section3_dean">Contracts (Dean)\n\n- You can add contracts to your own list.\n- Use Mark as Done to keep last/next visit accurate.\n\nDelete\n- You cannot delete contracts. Contact Ian or Kristine if something needs removing.</string>
+    <string name="help_section4_dean">Work View + Jobs (Dean)\n\nWork View\n- Check your daily schedule and upcoming events.\n- Mark events complete when finished.\n- Custom duration: Add Job/Contract/Follow-up → “Custom time…” → enter start and end (e.g. 08:30 and 15:00).\n- Edit time: Tap event → Edit Time → change start/end and save.\n- Move event: Long-press in daily view, drag to another slot, release; duration is kept.\n\nJobs\n- Complete assigned jobs, add address if needed, and create a report.\n\nDelete\n- You cannot delete jobs. Contact Ian or Kristine if something needs removing.</string>
+    <string name="help_section5_dean">Commission (Leads) (Dean)\n\n- Use Leads to view items assigned to you (where enabled).\n- If a lead is updated (materials/commission/paid), you may receive a notification.</string>
+    <string name="help_section6_dean">Notifications + Messaging (Dean)\n\n- Notifications are in-app only.\n- Use Notifications to see new assignments/updates.\n- Use Messaging for 1:1 and group chat.</string>
+    <string name="help_section7_dean">Support (Dean)\n\n- If something needs deleting or correcting in jobs/contracts, contact Ian or Kristine.\n- If reports are missing, confirm you uploaded to the correct year folder.</string>
+
+    <!-- Kristine -->
+    <string name="help_section1_kristine">Getting started (Kristine)\n\n- You have admin/office access for oversight and assignments.\n\nDaily use\n- Check Notifications.\n- Use Jobs/Contracts/Leads to keep office tracking up to date.</string>
+    <string name="help_section2_kristine">Reports (Kristine)\n\n- Reports are uploaded to Firebase Storage under ReportsYY/Month/.\n- Use View Reports to review/share PDFs.\n- If a report isn’t visible, verify the year/month folder.</string>
+    <string name="help_section3_kristine">Contracts (Kristine)\n\nAssign\n- Contracts → Add Contract.\n- Use Assign-to dropdown (James / Dean / Ian).\n- Assigned technician receives an in-app notification.\n\nAdmin\n- You can edit/delete contracts.</string>
+    <string name="help_section4_kristine">Work View + Jobs (Kristine)\n\nWork View\n- Use Work View for oversight of scheduling.\n- Custom duration: Add Job/Contract/Follow-up → “Custom time…” → enter start and end (e.g. 08:30 and 15:00).\n- Edit time: Tap event → Edit Time → change start/end and save.\n- Move event: Long-press in daily view, drag to another slot, release; duration is kept.\n\nJobs\n- Create jobs and assign technician via dropdown.\n- You can delete jobs if needed.</string>
+    <string name="help_section5_kristine">Commission (Leads) (Kristine)\n\n- Use Leads for invoice/commission tracking.\n- Updating a lead can notify the assigned technician.</string>
+    <string name="help_section6_kristine">Notifications + Messaging (Kristine)\n\n- Notifications are in-app only.\n- Use Notifications for oversight.\n- Use Messaging for staff communication.</string>
+    <string name="help_section7_kristine">Support (Kristine)\n\n- If Dean needs deletes/major corrections, handle as admin.\n- For missing reports, confirm the correct Storage folder (ReportsYY/Month).</string>
+
+    <!-- Backward compatible IDs used by layout defaults (will be overridden in HelpReadmeActivity) -->
+    <string name="help_section1">Getting started\n\n- Log in and you land on the Home menu.\n- Key areas:\n  - Work View\n  - Contracts\n  - Jobs\n  - Reports\n  - Quotes\n  - ERA\n  - Messaging\n  - Notifications\n\nTip\n- Use Notifications to review assigned work and updates.</string>
+
+    <string name="help_section2">Reports\n\n- Create reports from Home, Jobs, or Contracts.\n- Upload PDFs to Firebase Storage under ReportsYY/Month/.\n- Use View Reports to browse and share PDFs.</string>
+
+    <string name="help_section3">Contracts\n\n- Add and service customer contracts.\n- Mark visits done to keep Last/Next Visit correct.</string>
+
+    <string name="help_section4">Work View + Jobs\n\n- Use Work View to schedule your day and mark work complete.\n- Use Jobs to manage assigned work items.\n\nCustom times and drag-and-drop\n- Create with custom duration: Add Job/Contract/Follow-up → when the time dialog appears choose “Custom time…”, enter start (e.g. 08:30) and end (e.g. 15:00).\n- Change event time: Tap event → Edit Time → set start/end and save.\n- Move event: In daily view, long-press an event, drag to another time slot and release; start moves to that slot, duration is kept.</string>
+
+    <string name="help_section5">Commission (Leads)\n\n- Use Leads to track invoices/commission where enabled.</string>
+
+    <string name="help_section6">Notifications + Messaging\n\n- Notifications are in-app only.\n- Use Messaging for 1:1 and group chat.</string>
+
+    <string name="help_section7">Support\n\n- If something looks wrong, log out/in and retry.\n- Contact James for support.</string>
 </resources>

@@ -29,10 +29,12 @@ import java.util.Map;
  */
 
 public class AddJobsActivity extends AppCompatActivity {
-    private EditText techName,  customerName, customerEmail, customerContact, issueDetails;
+    private Spinner techNameSpinner;
+    private EditText customerName, customerEmail, customerContact, issueDetails;
     private Button submitButton;
     private FirebaseFirestore db;
     private String userName,  custName, custEmail, custContact, issueDetailsText; // Stores values for WhatsApp
+    private static final String[] TECHNICIANS = {"James", "Dean", "Ian", "Kristine"};
 
     /**
      * Initializes the activity, retrieves user information, and sets up UI elements.
@@ -48,7 +50,7 @@ public class AddJobsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_jobs);
 
-        techName = findViewById(R.id.techName);
+        techNameSpinner = findViewById(R.id.techNameSpinner);
         customerName = findViewById(R.id.customerName);
         customerEmail = findViewById(R.id.customerEmail);
         customerContact = findViewById(R.id.customerContact);
@@ -65,6 +67,21 @@ public class AddJobsActivity extends AppCompatActivity {
             return;
         }
 
+        if (techNameSpinner != null) {
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, TECHNICIANS);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            techNameSpinner.setAdapter(adapter);
+            // Default selection = current user if present
+            int sel = 0;
+            for (int i = 0; i < TECHNICIANS.length; i++) {
+                if (TECHNICIANS[i].equalsIgnoreCase(userName)) {
+                    sel = i;
+                    break;
+                }
+            }
+            techNameSpinner.setSelection(sel);
+        }
+
         submitButton.setOnClickListener(v -> validateAndSubmitJob());
     }
     /**
@@ -73,7 +90,10 @@ public class AddJobsActivity extends AppCompatActivity {
      * If valid, the job is submitted to Firestore.
      */
     private void validateAndSubmitJob() {
-        String name = techName.getText().toString().trim();
+        String name = "";
+        if (techNameSpinner != null && techNameSpinner.getSelectedItem() != null) {
+            name = String.valueOf(techNameSpinner.getSelectedItem()).trim();
+        }
         custName = customerName.getText().toString().trim();
         custEmail = customerEmail.getText().toString().trim();
         custContact = formatIrishMobile(customerContact.getText().toString().trim());
@@ -109,14 +129,59 @@ public class AddJobsActivity extends AppCompatActivity {
         job.put("CustomerEmail", custEmail);
         job.put("CustomerContact", custContact);
         job.put("IssueDetails", issue);
+        job.put("CreatedBy", userName);
+        job.put("CreatedAt", new java.util.Date());
+        job.put("JobType", "Service");
 
         db.collection("JobWork").add(job)
                 .addOnSuccessListener(documentReference -> {
+                    writeInAppJobNotifications(documentReference.getId(), custName, techName, userName);
                     Toast.makeText(this, "Job Added Successfully", Toast.LENGTH_SHORT).show();
                     clearInputFields();
                     returnToJobsActivity(); // Return to jobs first, then open WhatsApp
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to add job", Toast.LENGTH_SHORT).show());
+    }
+
+    /**
+     * In-app notification history (NOT system push):
+     * - Always notify the assigned technician (if different from creator)
+     * - If creator is James/Dean, also notify Ian + Kristine (oversight)
+     */
+    private void writeInAppJobNotifications(String jobId, String customerName, String assignedTech, String createdBy) {
+        try {
+            String creator = (createdBy != null && !createdBy.trim().isEmpty()) ? createdBy.trim() : "";
+            String creatorLower = creator.toLowerCase(java.util.Locale.getDefault());
+            String tech = assignedTech != null ? assignedTech.trim() : "";
+            String techLower = tech.toLowerCase(java.util.Locale.getDefault());
+
+            java.util.Map<String, Object> data = new java.util.HashMap<>();
+            data.put("jobId", jobId);
+            data.put("assignedTech", tech);
+            data.put("customerName", customerName);
+            data.put("jobType", "Service");
+            data.put("createdBy", creator);
+            data.put("type", "jobwork");
+
+            if (!techLower.isEmpty() && (creatorLower.isEmpty() || !techLower.equals(creatorLower))) {
+                NotificationUtils.writeInAppNotification(
+                        tech,
+                        "jobwork_assign_" + jobId,
+                        "🚐 New Job Assignment",
+                        "Service job for " + customerName + " assigned to you",
+                        "jobwork",
+                        data
+                );
+            }
+
+            if ("james".equals(creatorLower) || "dean".equals(creatorLower)) {
+                String title = "🚐 New Job Added";
+                String body = creator + " added a Service job for " + customerName + " (assigned to " + tech + ")";
+                NotificationUtils.writeInAppNotification("ian", "jobwork_added_ian_" + jobId, title, body, "jobwork", data);
+                NotificationUtils.writeInAppNotification("kristine", "jobwork_added_kristine_" + jobId, title, body, "jobwork", data);
+            }
+        } catch (Exception ignored) {
+        }
     }
     /**
      * Returns to the JobsActivity after successfully adding a job.
@@ -143,7 +208,7 @@ public class AddJobsActivity extends AppCompatActivity {
      * Resets technician details, customer details, and issue description fields.
      */
     private void clearInputFields() {
-        techName.setText("");
+        if (techNameSpinner != null) techNameSpinner.setSelection(0);
         customerName.setText("");
         customerEmail.setText("");
         customerContact.setText("");

@@ -241,12 +241,12 @@ public class StoredReportsActivity extends AppCompatActivity {
     }
 
     /**
-     * Shows file options dialog (View/Delete for James)
+     * Shows file options dialog (View/Delete/Rename for James)
      */
     private void showFileOptions(String folderPath, String fileName) {
         if ("james".equalsIgnoreCase(userName)) {
-            // James can view or delete files
-            String[] options = {"View", "Delete"};
+            // James can view, delete, or rename files
+            String[] options = {"View", "Delete", "Rename"};
             new AlertDialog.Builder(this)
                 .setTitle("File Options")
                 .setItems(options, (dialog, which) -> {
@@ -256,6 +256,9 @@ public class StoredReportsActivity extends AppCompatActivity {
                             break;
                         case 1:
                             deleteFile(folderPath, fileName);
+                            break;
+                        case 2:
+                            renameFile(folderPath, fileName);
                             break;
                     }
                 })
@@ -287,6 +290,72 @@ public class StoredReportsActivity extends AppCompatActivity {
             })
             .setNegativeButton("Cancel", null)
             .show();
+    }
+
+    /**
+     * Renames a file in Firebase Storage
+     */
+    private void renameFile(String folderPath, String fileName) {
+        // Create dialog with input field for new name
+        EditText input = new EditText(this);
+        input.setText(fileName);
+        input.setSelectAllOnFocus(true);
+
+        new AlertDialog.Builder(this)
+            .setTitle("Rename File")
+            .setMessage("Enter new name for '" + fileName + "':")
+            .setView(input)
+            .setPositiveButton("Rename", (dialog, which) -> {
+                String newFileName = input.getText().toString().trim();
+                
+                if (newFileName.isEmpty()) {
+                    Toast.makeText(this, "File name cannot be empty!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                if (newFileName.equals(fileName)) {
+                    Toast.makeText(this, "New name is the same as current name!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Add .pdf extension if not present
+                if (!newFileName.toLowerCase().endsWith(".pdf")) {
+                    newFileName += ".pdf";
+                }
+
+                // Perform the rename operation
+                performFileRename(folderPath, fileName, newFileName);
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
+    /**
+     * Performs the actual file rename operation in Firebase Storage
+     */
+    private void performFileRename(String folderPath, String oldFileName, String newFileName) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference oldFileRef = storage.getReference().child(folderPath + "/" + oldFileName);
+        StorageReference newFileRef = storage.getReference().child(folderPath + "/" + newFileName);
+
+        // First, download the file to get its content
+        oldFileRef.getBytes(Long.MAX_VALUE).addOnSuccessListener(bytes -> {
+            // Upload the file with the new name
+            newFileRef.putBytes(bytes).addOnSuccessListener(taskSnapshot -> {
+                // Delete the old file
+                oldFileRef.delete().addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "File renamed successfully!", Toast.LENGTH_SHORT).show();
+                    // Refresh the file list
+                    loadFilesFromFolder(folderPath);
+                }).addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to delete old file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }).addOnFailureListener(e -> {
+                Toast.makeText(this, "Failed to upload renamed file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Failed to download file for renaming: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
     }
 
     /**

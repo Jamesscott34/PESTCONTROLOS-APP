@@ -3,71 +3,46 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bk"
+    android:background="?android:attr/colorBackground"
     android:padding="16dp"
     android:paddingTop="?attr/actionBarSize">
 
-    <!-- Top Spacer to avoid notch -->
-    <View
-        android:id="@+id/statusSpacer"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:background="@android:color/transparent" />
-
-    <!-- ScrollView for Buttons -->
-    <ScrollView
-        android:id="@+id/scrollView"
+    <!-- Centered content (matches General Quotes style) -->
+    <LinearLayout
+        android:id="@+id/eraContainer"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginBottom="16dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Wrapper LinearLayout inside ScrollView -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/welcomeTextView"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center_horizontal">
+            android:text="Welcome, User!"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
 
-            <!-- Top Spacer -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:background="@android:color/transparent" />
+        <Button
+            android:id="@+id/NonToxButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Non Tox ERA"
+            android:layout_marginBottom="12dp" />
 
-            <!-- Welcome Message -->
-            <TextView
-                android:id="@+id/welcomeTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Welcome, User!"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:layout_marginBottom="16dp"
-                android:textColor="?android:attr/textColorPrimary" />
+        <Button
+            android:id="@+id/ToxicButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Toxic ERA" />
 
-            <!-- Non-Toxic ERA Button -->
-            <Button
-                android:id="@+id/NonToxButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Non Tox ERA"
-                android:layout_marginBottom="8dp" />
-
-            <!-- Toxic ERA Button -->
-            <Button
-                android:id="@+id/ToxicButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Toxic ERA"
-                android:layout_marginBottom="8dp" />
-
-        </LinearLayout>
-    </ScrollView>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

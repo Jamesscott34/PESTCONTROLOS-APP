@@ -13,7 +13,7 @@
  * 
  * 1. CALENDAR VIEW
  *    - Daily and weekly calendar views
- *    - Time slots from 08:00 to 17:30
+ *    - Time slots from 08:30 to 17:30 (1-hour slots)
  *    - Multiple events per time slot support
  *    - Visual event indicators and status
  * 
@@ -85,23 +85,35 @@ import androidx.core.view.GestureDetectorCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.color.MaterialColors;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
 import android.app.DatePickerDialog;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.ArrayAdapter;
+
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.Data;
+
+import java.util.concurrent.TimeUnit;
 
 public class WorkViewActivity extends AppCompatActivity {
 
@@ -128,12 +140,33 @@ public class WorkViewActivity extends AppCompatActivity {
     private static final int SWIPE_THRESHOLD = 50;
     private static final int SWIPE_VELOCITY_THRESHOLD = 50;
 
-    // Time slots for daily view
-    private static final String[] TIME_SLOTS = {
-        "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-        "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-        "16:00", "16:30", "17:00", "17:30"
+    // Time slots for daily view (1-hour slots, 08:30 -> 16:30 (ends 17:30))
+    private static final String[] SLOT_START_TIMES = {
+            "08:30", "09:30", "10:30", "11:30", "12:30", "13:30", "14:30", "15:30", "16:30"
     };
+
+    private static final String[] SLOT_DISPLAY_RANGES = {
+            "08:30 - 09:30",
+            "09:30 - 10:30",
+            "10:30 - 11:30",
+            "11:30 - 12:30",
+            "12:30 - 13:30",
+            "13:30 - 14:30",
+            "14:30 - 15:30",
+            "15:30 - 16:30",
+            "16:30 - 17:30"
+    };
+
+    // Known technicians for shared calendar views
+    private static final String[] TECHNICIANS = {"Ian", "James", "Dean", "Kristine"};
+
+    /** Prevents double-tap on Mark as Done (idempotent save). */
+    private final Set<String> markDoneInProgress = new HashSet<>();
+
+    /** Kristine and Ian can add to other users' work views (same permissions). */
+    private boolean canManageOtherWorkViews() {
+        return "kristine".equalsIgnoreCase(userName) || "ian".equalsIgnoreCase(userName);
+    }
 
     /**
      * Main entry point of the work view activity
@@ -152,15 +185,19 @@ public class WorkViewActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
 
         // ============================================================================
-        // USER AUTHENTICATION & VALIDATION
+        // USER AUTHENTICATION & VALIDATION (single source of truth; persist so swipe never loses context)
         // ============================================================================
         
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.isEmpty()) {
-            Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
+            userName = ActiveUserContext.getActiveUserName(this);
+        }
+        if (userName == null || userName.isEmpty()) {
+            Toast.makeText(this, "User not set. Please log in again.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
+        ActiveUserContext.setActiveUserName(this, userName);
         Log.d("WorkViewActivity", "WorkViewActivity created with user: " + userName);
 
         // ============================================================================
@@ -184,7 +221,8 @@ public class WorkViewActivity extends AppCompatActivity {
         isDailyView = true;
         dailyViewButton.setEnabled(false);
         calendarViewButton.setEnabled(true);
-        dailyViewButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
+        dailyViewButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                MaterialColors.getColor(dailyViewButton, com.google.android.material.R.attr.colorPrimary)));
         calendarViewButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
         viewTypeText.setText("Daily View");
         
@@ -310,7 +348,18 @@ public class WorkViewActivity extends AppCompatActivity {
      * Creates separate collections for each user (e.g., "james_workview", "ian_workview")
      */
     private String getUserWorkViewCollection() {
-        return userName.toLowerCase() + "_workview";
+        return getCollectionForUser(userName);
+    }
+
+    private String getCollectionForUser(String user) {
+        return user.toLowerCase(Locale.getDefault()) + "_workview";
+    }
+
+    private String getCollectionForEvent(WorkEvent event) {
+        if (event == null || event.getUserName() == null || event.getUserName().trim().isEmpty()) {
+            return getUserWorkViewCollection();
+        }
+        return getCollectionForUser(event.getUserName());
     }
 
     /**
@@ -368,7 +417,8 @@ public class WorkViewActivity extends AppCompatActivity {
         dailyViewButton.setEnabled(false);
         calendarViewButton.setEnabled(true);
         // Update button appearance
-        dailyViewButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
+        dailyViewButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                MaterialColors.getColor(dailyViewButton, com.google.android.material.R.attr.colorPrimary)));
         calendarViewButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
         
         // Show time slots container, hide calendar and events recycler
@@ -421,7 +471,13 @@ public class WorkViewActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         String dateString = sdf.format(date);
 
-        String userCollection = userName.toLowerCase() + "_workview";
+        // Kristine and Ian see a combined calendar for all technicians
+        if (canManageOtherWorkViews()) {
+            loadEventsForDateAllUsers(dateString);
+            return;
+        }
+
+        String userCollection = getUserWorkViewCollection();
         
         db.collection(userCollection)
           .whereEqualTo("date", dateString)
@@ -452,6 +508,59 @@ public class WorkViewActivity extends AppCompatActivity {
           .addOnFailureListener(e -> {
               Toast.makeText(this, "Error loading events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
           });
+    }
+
+    /**
+     * Load events for a specific date across all technicians (Kristine view)
+     */
+    private void loadEventsForDateAllUsers(String dateString) {
+        List<WorkEvent> allEvents = new ArrayList<>();
+        final int[] completed = {0};
+
+        for (String tech : TECHNICIANS) {
+            String collection = getCollectionForUser(tech);
+            db.collection(collection)
+              .whereEqualTo("date", dateString)
+              .get()
+              .addOnSuccessListener(queryDocumentSnapshots -> {
+                  for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                      WorkEvent event = document.toObject(WorkEvent.class);
+                      if (event != null) {
+                          event.setId(document.getId());
+                          // Ensure the event knows which technician it belongs to
+                          if (event.getUserName() == null || event.getUserName().trim().isEmpty()) {
+                              event.setUserName(tech);
+                          }
+                          allEvents.add(event);
+                      }
+                  }
+
+                  completed[0]++;
+                  if (completed[0] == TECHNICIANS.length) {
+                      // Sort events by time
+                      allEvents.sort((e1, e2) -> e1.getTime().compareTo(e2.getTime()));
+
+                      if (isDailyView) {
+                          createTimeSlotViews();
+                          updateTimeSlotsWithEvents(allEvents);
+                      } else {
+                          eventsAdapter.updateEvents(allEvents);
+                      }
+                  }
+              })
+              .addOnFailureListener(e -> {
+                  Log.e("WorkViewActivity", "Error loading events for " + tech + ": " + e.getMessage());
+                  completed[0]++;
+                  if (completed[0] == TECHNICIANS.length) {
+                      if (isDailyView) {
+                          createTimeSlotViews();
+                          updateTimeSlotsWithEvents(allEvents);
+                      } else {
+                          eventsAdapter.updateEvents(allEvents);
+                      }
+                  }
+              });
+        }
     }
 
     /**
@@ -517,8 +626,8 @@ public class WorkViewActivity extends AppCompatActivity {
      * Show dialog for adding contract events
      */
     private void showAddContractDialog() {
-        if ("kristine".equalsIgnoreCase(userName)) {
-            // Kristine can access all users' contracts
+        if (canManageOtherWorkViews()) {
+            // Kristine and Ian can access all users' contracts (James, Ian, Dean)
             showKristineContractSelectionDialog();
         } else {
             // Regular users can only access their own contracts
@@ -595,7 +704,12 @@ public class WorkViewActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Handle item click with better error handling
+        builder.setView(dialogView);
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        
+        // Create and show the dialog - must create before setting click listener so we can dismiss it
+        AlertDialog dialog = builder.create();
+        
         listView.setOnItemClickListener((parent, view, position, id) -> {
             try {
                 String selectedContract = adapter.getItem(position);
@@ -605,20 +719,15 @@ public class WorkViewActivity extends AppCompatActivity {
                     if (originalIndex >= 0 && originalIndex < contractIds.size()) {
                         String selectedContractId = contractIds.get(originalIndex);
                         String contractName = adapter.getContractName(position);
+                        dialog.dismiss();
                         showTimeSelectionDialog("contract", selectedContractId, contractName);
-                        builder.create().dismiss();
                     }
                 }
             } catch (Exception e) {
                 Toast.makeText(this, "Error selecting contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
-
-        builder.setView(dialogView);
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
         
-        // Show the dialog
-        AlertDialog dialog = builder.create();
         dialog.show();
         
         // Focus on search bar for immediate typing
@@ -626,11 +735,10 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show contract selection dialog for Kristine (can access all users' contracts)
+     * Show contract selection dialog for Kristine (can add to James, Ian, or Dean)
      */
     private void showKristineContractSelectionDialog() {
-        // First, let Kristine select which user's contracts to view
-        String[] users = {"Ian", "James", "Kristine"};
+        String[] users = {"James", "Ian", "Dean"};
         
         new AlertDialog.Builder(this)
             .setTitle("Select User's Contracts")
@@ -645,8 +753,8 @@ public class WorkViewActivity extends AppCompatActivity {
      * Show time selection dialog with user selection for Kristine
      */
     private void showTimeSelectionDialog(String eventType, String eventId, String eventName) {
-        if ("kristine".equalsIgnoreCase(userName)) {
-            // Kristine can select which user's work view to add the event to
+        if (canManageOtherWorkViews()) {
+            // Kristine and Ian can select which user's work view to add the event to
             showKristineUserSelectionDialog(eventType, eventId, eventName);
         } else {
             // Regular users add to their own work view
@@ -658,7 +766,7 @@ public class WorkViewActivity extends AppCompatActivity {
      * Show user selection dialog for Kristine
      */
     private void showKristineUserSelectionDialog(String eventType, String eventId, String eventName) {
-        String[] users = {"Ian", "James", "Kristine"};
+        String[] users = {"James", "Ian", "Dean", "Kristine"};
         
         new AlertDialog.Builder(this)
             .setTitle("Select User's Work View")
@@ -670,45 +778,174 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show time slots dialog
+     * Show time slots dialog (with optional \"Custom time...\" entry).
      */
     private void showTimeSlotsDialog(String eventType, String eventId, String eventName, String targetUser) {
+        CharSequence[] options = new CharSequence[SLOT_DISPLAY_RANGES.length + 1];
+        System.arraycopy(SLOT_DISPLAY_RANGES, 0, options, 0, SLOT_DISPLAY_RANGES.length);
+        options[SLOT_DISPLAY_RANGES.length] = "Custom time...";
+
         new AlertDialog.Builder(this)
             .setTitle("Select Time for " + targetUser + "'s Work View")
-            .setItems(TIME_SLOTS, (dialog, which) -> {
-                String selectedTime = TIME_SLOTS[which];
-                createWorkEvent(eventType, eventId, eventName, selectedTime, targetUser);
+            .setItems(options, (dialog, which) -> {
+                if (which >= 0 && which < SLOT_DISPLAY_RANGES.length) {
+                    String selectedTime = SLOT_START_TIMES[which];
+                    createWorkEvent(eventType, eventId, eventName, selectedTime, targetUser);
+                } else {
+                    showCustomTimeDialog(eventType, eventId, eventName, targetUser);
+                }
             })
             .show();
     }
 
     /**
-     * Show dialog for adding job events
+     * Show dialog for adding job events.
+     * First asks New or Old. New = create new job. Old = pick from existing View Jobs list.
      */
     private void showAddJobDialog() {
-        if ("kristine".equalsIgnoreCase(userName)) {
-            // Kristine can select which user's work view to add the job to
-            String[] users = {"Ian", "James", "Kristine"};
-            
+        new AlertDialog.Builder(this)
+            .setTitle("Add Job")
+            .setItems(new String[]{"New", "Old"}, (dialog, which) -> {
+                if (which == 0) {
+                    showAddNewJobDialog();
+                } else {
+                    showAddExistingJobDialog(null);
+                }
+            })
+            .show();
+    }
+
+    /** Show user selection then open AddJobFromCalendarActivity (New job). */
+    private void showAddNewJobDialog() {
+        if (canManageOtherWorkViews()) {
+            String[] users = {"James", "Ian", "Dean"};
             new AlertDialog.Builder(this)
-                .setTitle("Select User's Work View for Job")
-                .setItems(users, (dialog, which) -> {
-                    String selectedUser = users[which];
-                    openAddJobActivity(selectedUser);
-                })
+                .setTitle("Assign Job To")
+                .setItems(users, (d, which) -> openAddJobActivity(users[which]))
                 .show();
         } else {
-            // Regular users add jobs to their own work view
             openAddJobActivity(userName);
         }
     }
 
+    /** Load jobs from JobWork and show selection. Kristine/Ian: all jobs. Dean: only his. */
+    private void showAddExistingJobDialog(String timeSlot) {
+        String targetUser = userName;
+        if (canManageOtherWorkViews()) {
+            String[] users = {"James", "Ian", "Dean"};
+            new AlertDialog.Builder(this)
+                .setTitle("Whose jobs to add?")
+                .setItems(users, (d, which) -> loadJobsAndShowSelection(users[which], timeSlot))
+                .show();
+        } else {
+            loadJobsAndShowSelection(targetUser, timeSlot);
+        }
+    }
+
+    private void loadJobsAndShowSelection(String forUser, String timeSlot) {
+        com.google.firebase.firestore.Query query = db.collection("JobWork");
+        query = query.whereEqualTo("AssignedTech", forUser);
+        query.get().addOnCompleteListener(task -> {
+            if (!task.isSuccessful()) {
+                Toast.makeText(this, "Error loading jobs: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            List<Map<String, Object>> jobs = new ArrayList<>();
+            List<String> displayNames = new ArrayList<>();
+            List<String> jobIds = new ArrayList<>();
+            for (QueryDocumentSnapshot doc : task.getResult()) {
+                Map<String, Object> job = doc.getData();
+                job.put("documentId", doc.getId());
+                jobs.add(job);
+                String customer = job.get("CustomerName") != null ? job.get("CustomerName").toString() : "N/A";
+                String address = job.get("Address") != null ? job.get("Address").toString() : "";
+                displayNames.add(customer + "\n📍 " + address);
+                jobIds.add(doc.getId());
+            }
+            if (jobs.isEmpty()) {
+                Toast.makeText(this, "No jobs found for " + forUser + ". Add jobs via View Jobs first.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showJobSelectionDialogWithSearch(displayNames, jobIds, jobs, forUser, timeSlot);
+        });
+    }
+
+    private void showJobSelectionDialogWithSearch(List<String> displayNames, List<String> jobIds,
+            List<Map<String, Object>> jobs, String targetUser, String timeSlot) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Job from View Jobs");
+
+        android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_contract_selection, null);
+        EditText searchBar = dialogView.findViewById(R.id.searchBar);
+        ListView listView = dialogView.findViewById(R.id.contractsListView);
+        searchBar.setHint("Type to search jobs...");
+
+        ContractSelectionAdapter adapter = new ContractSelectionAdapter(this, displayNames);
+        listView.setAdapter(adapter);
+
+        searchBar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                adapter.filter(s.toString());
+            }
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        builder.setView(dialogView);
+        builder.setNegativeButton("Cancel", (d, w) -> d.dismiss());
+        
+        AlertDialog dialog = builder.create();
+        
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            String selected = adapter.getItem(position);
+            if (selected != null) {
+                int idx = displayNames.indexOf(selected);
+                if (idx >= 0 && idx < jobIds.size()) {
+                    String jobId = jobIds.get(idx);
+                    Map<String, Object> job = jobs.get(idx);
+                    String jobName = job.get("CustomerName") != null ? job.get("CustomerName").toString() : "Job";
+                    dialog.dismiss();
+                    if (timeSlot != null) {
+                        createWorkEvent("job", jobId, jobName, timeSlot, targetUser);
+                    } else {
+                        showTimeSlotsForJob(jobId, jobName, targetUser);
+                    }
+                }
+            }
+        });
+        
+        dialog.show();
+        searchBar.requestFocus();
+    }
+
+    private void showTimeSlotsForJob(String jobId, String jobName, String targetUser) {
+        CharSequence[] options = new CharSequence[SLOT_DISPLAY_RANGES.length + 1];
+        System.arraycopy(SLOT_DISPLAY_RANGES, 0, options, 0, SLOT_DISPLAY_RANGES.length);
+        options[SLOT_DISPLAY_RANGES.length] = "Custom time...";
+
+        new AlertDialog.Builder(this)
+            .setTitle("Select Time for " + targetUser + "'s Work View")
+            .setItems(options, (dialog, which) -> {
+                if (which >= 0 && which < SLOT_DISPLAY_RANGES.length) {
+                    String time = SLOT_START_TIMES[which];
+                    createWorkEvent("job", jobId, jobName, time, targetUser);
+                } else {
+                    showCustomTimeDialog("job", jobId, jobName, targetUser);
+                }
+            })
+            .show();
+    }
+
     /**
-     * Open AddJobFromCalendarActivity with target user
+     * Open AddJobFromCalendarActivity with target user (AssignedTech) and creator for push notifications
      */
     private void openAddJobActivity(String targetUser) {
         Intent intent = new Intent(this, AddJobFromCalendarActivity.class);
         intent.putExtra("USER_NAME", targetUser);
+        intent.putExtra("CREATED_BY", userName);
         intent.putExtra("SELECTED_DATE", selectedDate.getTime());
         startActivity(intent);
     }
@@ -767,7 +1004,7 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Create a new work event with address information and target user
+     * Create a new work event with address information and target user (1-hour slot).
      */
     private void createWorkEvent(String eventType, String eventId, String eventName, String time, String targetUser) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -810,13 +1047,57 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
+     * Create a new work event with explicit start/end time for target user.
+     * Adds endTime field but keeps all other behaviour identical.
+     */
+    private void createWorkEventWithEndTime(String eventType, String eventId, String eventName,
+                                            String startTime, String endTime, String targetUser) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String dateString = sdf.format(selectedDate);
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("userName", targetUser);
+        event.put("eventType", eventType);
+        event.put("eventId", eventId);
+        event.put("eventName", eventName);
+        event.put("date", dateString);
+        event.put("time", startTime);
+        event.put("endTime", endTime != null ? endTime : "");
+        event.put("status", "scheduled");
+        event.put("createdAt", new Date());
+
+        if ("contract".equals(eventType)) {
+            String collectionName = targetUser + " Contracts";
+            db.collection(collectionName).document(eventId)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            String address = documentSnapshot.getString("address");
+                            if (address != null) {
+                                event.put("address", address);
+                            }
+                        }
+                        saveEventToFirebase(event);
+                    })
+                    .addOnFailureListener(e -> saveEventToFirebase(event));
+        } else {
+            saveEventToFirebase(event);
+        }
+    }
+
+    /**
      * Save event to Firebase with user-specific collection
      */
     private void saveEventToFirebase(Map<String, Object> event) {
         // Add createdBy field for notification system
         event.put("createdBy", userName);
-        
-        db.collection(getUserWorkViewCollection())
+
+        String targetUser = (String) event.get("userName");
+        String collectionName = (targetUser != null && !targetUser.trim().isEmpty())
+                ? getCollectionForUser(targetUser)
+                : getUserWorkViewCollection();
+
+        db.collection(collectionName)
           .add(event)
           .addOnSuccessListener(documentReference -> {
               Toast.makeText(this, "Event added successfully!", Toast.LENGTH_SHORT).show();
@@ -830,12 +1111,16 @@ public class WorkViewActivity extends AppCompatActivity {
               workEvent.setEventName((String) event.get("eventName"));
               workEvent.setDate((String) event.get("date"));
               workEvent.setTime((String) event.get("time"));
+              workEvent.setEndTime((String) event.get("endTime"));
               workEvent.setStatus((String) event.get("status"));
               workEvent.setAddress((String) event.get("address"));
               workEvent.setCreatedBy((String) event.get("createdBy"));
               
               // Schedule notification for the event
               scheduleEventNotification(workEvent);
+
+              // In-app notification history when Ian/Kristine add to someone else's work view
+              writeInAppWorkViewUpdateIfNeeded(documentReference.getId(), event);
               
               loadEventsForDate(selectedDate);
           })
@@ -845,12 +1130,64 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
+     * In-app notification history (NOT system push).
+     * When Ian/Kristine add an event to another user's work view, notify that user.
+     */
+    private void writeInAppWorkViewUpdateIfNeeded(String workViewDocId, Map<String, Object> event) {
+        try {
+            if (!canManageOtherWorkViews()) return; // only Ian/Kristine
+            if (event == null) return;
+
+            String targetUser = asString(event.get("userName"));
+            if (targetUser == null || targetUser.trim().isEmpty()) return;
+            if (targetUser.equalsIgnoreCase(userName)) return;
+
+            String eventName = asString(event.get("eventName"));
+            String eventType = asString(event.get("eventType"));
+            String eventDate = asString(event.get("date"));
+            String eventTime = asString(event.get("time"));
+            String address = asString(event.get("address"));
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("eventId", workViewDocId);
+            data.put("targetUser", targetUser);
+            data.put("eventName", eventName);
+            data.put("eventType", eventType);
+            data.put("eventDate", eventDate);
+            data.put("eventTime", eventTime);
+            data.put("eventAddress", address);
+            data.put("createdBy", userName);
+            data.put("type", "workview_update");
+
+            String title = "📅 Work View Updated";
+            String body = (eventName != null ? eventName : "Event")
+                    + " (" + (eventType != null ? eventType : "event") + ") added for "
+                    + (eventDate != null ? eventDate : "")
+                    + " at " + (eventTime != null ? eventTime : "");
+
+            NotificationUtils.writeInAppNotification(
+                    targetUser,
+                    "workview_update_" + workViewDocId,
+                    title,
+                    body,
+                    "workview_update",
+                    data
+            );
+        } catch (Exception ignored) {
+        }
+    }
+
+    private String asString(Object o) {
+        return o != null ? String.valueOf(o) : null;
+    }
+
+    /**
      * Handle event click for actions like mark done, add follow-up, create report
      */
     private void onEventClicked(WorkEvent event) {
         if ("job".equals(event.getEventType())) {
-            // Job actions: Follow-up, Create Report, Finished
-            String[] jobOptions = {"Follow-up", "Create Report", "Finished"};
+            // Job actions: Follow-up, Create Report, Edit Time, Finished
+            String[] jobOptions = {"Follow-up", "Create Report", "Edit Time", "Finished"};
             
             new AlertDialog.Builder(this)
                 .setTitle("Job Actions")
@@ -863,14 +1200,17 @@ public class WorkViewActivity extends AppCompatActivity {
                             createReportFromJob(event);
                             break;
                         case 2:
+                            showEditTimeDialog(event);
+                            break;
+                        case 3:
                             finishJob(event);
                             break;
                     }
                 })
                 .show();
         } else if ("contract".equals(event.getEventType())) {
-            // Contract actions: Follow-up, Complete, Create Report
-            String[] contractOptions = {"Follow-up", "Complete", "Create Report"};
+            // Contract actions: Follow-up, Complete, Create Report, Edit Time
+            String[] contractOptions = {"Follow-up", "Complete", "Create Report", "Edit Time"};
             
             new AlertDialog.Builder(this)
                 .setTitle("Contract Actions")
@@ -885,12 +1225,15 @@ public class WorkViewActivity extends AppCompatActivity {
                         case 2:
                             createReportFromContract(event);
                             break;
+                        case 3:
+                            showEditTimeDialog(event);
+                            break;
                     }
                 })
                 .show();
         } else {
-            // Follow-up actions: Create Report, Mark Done
-            String[] followUpOptions = {"Create Report", "Mark Done"};
+            // Follow-up actions: Create Report, Edit Time, Mark Done
+            String[] followUpOptions = {"Create Report", "Edit Time", "Mark Done"};
             
             new AlertDialog.Builder(this)
                 .setTitle("Follow-up Actions")
@@ -900,6 +1243,9 @@ public class WorkViewActivity extends AppCompatActivity {
                             createReportFromEvent(event);
                             break;
                         case 1:
+                            showEditTimeDialog(event);
+                            break;
+                        case 2:
                             markEventDone(event);
                             break;
                     }
@@ -909,36 +1255,249 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Mark an event as completed
+     * Mark an event as completed - shows confirmation dialog first
      */
     private void markEventDone(WorkEvent event) {
-        markEventComplete(event);
+        showMarkDoneConfirmationDialog(event, null, null);
     }
 
     /**
-     * Mark an event as complete with 24-hour deletion timer
+     * Allow editing of an event's time (and optional end time) for jobs, contracts, and follow-ups.
+     * Keeps underlying scheduling based on the start time only.
+     */
+    private void showEditTimeDialog(WorkEvent event) {
+        if (event == null || event.getId() == null || event.getId().trim().isEmpty()) return;
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        layout.setPadding(pad, pad, pad, pad);
+
+        EditText startInput = new EditText(this);
+        startInput.setHint("Start time (e.g. 08:30 or 0830)");
+        startInput.setText(event.getTime() != null ? event.getTime() : "");
+        layout.addView(startInput);
+
+        EditText endInput = new EditText(this);
+        endInput.setHint("End time (optional, e.g. 15:00 or 1500)");
+        // Default end time: use existing endTime if set, otherwise +60 minutes from start.
+        String currentEnd = event.getEndTime();
+        if (currentEnd == null || currentEnd.trim().isEmpty()) {
+            int startMin = parseMinutes(event.getTime());
+            if (startMin >= 0) {
+                int endMin = startMin + 60;
+                int endH = (endMin / 60) % 24;
+                int endM = endMin % 60;
+                currentEnd = String.format(Locale.getDefault(), "%02d:%02d", endH, endM);
+            }
+        }
+        if (currentEnd != null && !currentEnd.trim().isEmpty()) {
+            endInput.setText(currentEnd);
+        }
+        layout.addView(endInput);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Edit Time")
+                .setView(layout)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String rawStart = startInput.getText().toString().trim();
+                    String rawEnd = endInput.getText().toString().trim();
+
+                    String normStart = normalizeTimeInput(rawStart);
+                    if (normStart == null) {
+                        Toast.makeText(this, "Invalid start time. Use 08:30 or 0830.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    final String finalNormStart = normStart;
+                    final String finalNormEnd;
+                    if (!rawEnd.isEmpty()) {
+                        String normEnd = normalizeTimeInput(rawEnd);
+                        if (normEnd == null) {
+                            Toast.makeText(this, "Invalid end time. Use 15:00 or 1500.", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        int startMin = parseMinutes(normStart);
+                        int endMin = parseMinutes(normEnd);
+                        if (startMin < 0 || endMin < 0 || endMin <= startMin) {
+                            Toast.makeText(this, "End time must be after start time.", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        finalNormEnd = normEnd;
+                    } else {
+                        finalNormEnd = "";
+                    }
+
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("time", finalNormStart);
+                    updates.put("endTime", finalNormEnd);
+
+                    db.collection(getCollectionForEvent(event)).document(event.getId())
+                            .update(updates)
+                            .addOnSuccessListener(aVoid -> {
+                                event.setTime(finalNormStart);
+                                event.setEndTime(finalNormEnd);
+                                scheduleEventNotification(event);
+                                Toast.makeText(this, "Time updated.", Toast.LENGTH_SHORT).show();
+                                loadEventsForDate(selectedDate);
+                            })
+                            .addOnFailureListener(e -> Toast.makeText(this, "Error updating time: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /**
+     * Show confirmation dialog before marking event as done.
+     * onStartSave is called when user taps Yes (e.g. disable checkbox to prevent double tap).
+     */
+    private void showMarkDoneConfirmationDialog(WorkEvent event, Runnable onCancel, Runnable onStartSave) {
+        new AlertDialog.Builder(this)
+            .setTitle("Confirm")
+            .setMessage("Are you sure a routine or visit was done?")
+            .setPositiveButton("Yes", (dialog, which) -> {
+                if (onStartSave != null) onStartSave.run();
+                markEventComplete(event);
+            })
+            .setNegativeButton("No", (d, which) -> {
+                if (onCancel != null) onCancel.run();
+            })
+            .show();
+    }
+
+    /**
+     * Calculate next visit date from lastVisit (dd/MM/yy) and visits count.
+     * Same logic as ViewContractActivity: 4/6/8/12 visits -> add 12/8/6/4 weeks.
+     */
+    private String calculateNextVisitFromLastVisit(String lastVisit, String visitsStr) {
+        if (lastVisit == null || lastVisit.trim().isEmpty() || "N/A".equalsIgnoreCase(lastVisit)) return "N/A";
+        int visits;
+        try {
+            visits = Integer.parseInt(visitsStr != null ? visitsStr.trim() : "0");
+        } catch (NumberFormatException e) {
+            return "N/A";
+        }
+        if (visits == 0) return "N/A";
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+        Calendar cal = Calendar.getInstance();
+        try {
+            cal.setTime(sdf.parse(lastVisit));
+        } catch (Exception e) {
+            return "N/A";
+        }
+        switch (visits) {
+            case 8: cal.add(Calendar.WEEK_OF_YEAR, 6); break;
+            case 12: cal.add(Calendar.WEEK_OF_YEAR, 4); break;
+            case 6: cal.add(Calendar.WEEK_OF_YEAR, 8); break;
+            case 4: cal.add(Calendar.WEEK_OF_YEAR, 12); break;
+            default: return "N/A";
+        }
+        return sdf.format(cal.getTime());
+    }
+
+    /**
+     * Mark an event as complete: update work view, update contract by ID if contract,
+     * then open Create Report with pre-filled details. Prevents double-tap; on failure do not open report.
      */
     private void markEventComplete(WorkEvent event) {
+        if (event == null || event.getId() == null) return;
+        if (markDoneInProgress.contains(event.getId())) return;
+        markDoneInProgress.add(event.getId());
+
+        cancelInAppReminder(event);
+        String collectionName = getCollectionForEvent(event);
+        boolean isContract = "contract".equals(event.getEventType());
+
+        if (isContract) {
+            // Update contract in assigned user's collection by contract ID; use batch with work view update.
+            String contractOwner = event.getUserName() != null ? event.getUserName() : userName;
+            String contractCollection = contractOwner + " Contracts";
+            db.collection(contractCollection).document(event.getEventId()).get()
+                .addOnSuccessListener(contractSnap -> {
+                    if (!contractSnap.exists()) {
+                        markDoneInProgress.remove(event.getId());
+                        Toast.makeText(this, "Contract not found.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String visits = contractSnap.get("visits") != null ? contractSnap.get("visits").toString() : "0";
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+                    sdf.setTimeZone(TimeZone.getTimeZone("Europe/Dublin"));
+                    String today = sdf.format(new Date());
+                    String nextVisit = calculateNextVisitFromLastVisit(today, visits);
+
+                    WriteBatch batch = db.batch();
+                    Map<String, Object> workUpdates = new HashMap<>();
+                    workUpdates.put("status", "completed");
+                    workUpdates.put("completedAt", new Date());
+                    batch.update(db.collection(collectionName).document(event.getId()), workUpdates);
+
+                    Map<String, Object> contractUpdates = new HashMap<>();
+                    contractUpdates.put("lastVisit", today);
+                    contractUpdates.put("nextVisit", nextVisit);
+                    batch.update(db.collection(contractCollection).document(event.getEventId()), contractUpdates);
+
+                    batch.commit()
+                        .addOnSuccessListener(aVoid -> {
+                            markDoneInProgress.remove(event.getId());
+                            Toast.makeText(this, "Event marked as completed! Will be deleted in 24 hours.", Toast.LENGTH_SHORT).show();
+                            loadEventsForDate(selectedDate);
+                            scheduleEventDeletion(event, 24 * 60 * 60 * 1000);
+                            openCreateReportFromEvent(event, today);
+                        })
+                        .addOnFailureListener(e -> {
+                            markDoneInProgress.remove(event.getId());
+                            Toast.makeText(this, "Error updating: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
+                })
+                .addOnFailureListener(e -> {
+                    markDoneInProgress.remove(event.getId());
+                    Toast.makeText(this, "Error loading contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            return;
+        }
+
+        // Job or follow-up: update work view only, then open Create Report on success.
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", "completed");
         updates.put("completedAt", new Date());
-        
-        db.collection(getUserWorkViewCollection()).document(event.getId())
-          .update(updates)
-          .addOnSuccessListener(aVoid -> {
-              // Update contract last visit if it's a contract event
-              if ("contract".equals(event.getEventType())) {
-                  updateContractLastVisit(event.getEventId(), event.getUserName());
-              }
-              Toast.makeText(this, "Event marked as completed! Will be deleted in 24 hours.", Toast.LENGTH_SHORT).show();
-              loadEventsForDate(selectedDate);
-              
-              // Schedule deletion after 24 hours
-              scheduleEventDeletion(event.getId(), 24 * 60 * 60 * 1000); // 24 hours in milliseconds
-          })
-          .addOnFailureListener(e -> {
-              Toast.makeText(this, "Error updating event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-          });
+        db.collection(collectionName).document(event.getId())
+            .update(updates)
+            .addOnSuccessListener(aVoid -> {
+                markDoneInProgress.remove(event.getId());
+                Toast.makeText(this, "Event marked as completed! Will be deleted in 24 hours.", Toast.LENGTH_SHORT).show();
+                loadEventsForDate(selectedDate);
+                scheduleEventDeletion(event, 24 * 60 * 60 * 1000);
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+                sdf.setTimeZone(TimeZone.getTimeZone("Europe/Dublin"));
+                openCreateReportFromEvent(event, sdf.format(new Date()));
+            })
+            .addOnFailureListener(e -> {
+                markDoneInProgress.remove(event.getId());
+                Toast.makeText(this, "Error updating event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
+    }
+
+    /**
+     * Open Create Report (ReportActivity) with pre-filled customer name, address, date, visit type.
+     */
+    private void openCreateReportFromEvent(WorkEvent event, String reportDateDdMmYy) {
+        Intent intent = new Intent(this, ReportActivity.class);
+        intent.putExtra("USER_NAME", userName);
+        intent.putExtra("EVENT_NAME", event.getEventName());
+        intent.putExtra("EVENT_TYPE", event.getEventType() != null ? event.getEventType() : "");
+        intent.putExtra("EVENT_ADDRESS", event.getAddress() != null ? event.getAddress() : "");
+        intent.putExtra("EVENT_ISSUE", event.getIssue() != null ? event.getIssue() : "");
+        intent.putExtra("COMPANY_NAME", event.getEventName() != null ? event.getEventName() : "N/A");
+        intent.putExtra("ADDRESS", event.getAddress() != null ? event.getAddress() : "N/A");
+        // ReportActivity uses REPORT_DATE for date field (dd/MM/yyyy preferred for display)
+        try {
+            SimpleDateFormat in = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+            SimpleDateFormat out = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            intent.putExtra("REPORT_DATE", out.format(in.parse(reportDateDdMmYy)));
+        } catch (Exception e) {
+            intent.putExtra("REPORT_DATE", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+        }
+        startActivity(intent);
     }
 
     /**
@@ -949,11 +1508,12 @@ public class WorkViewActivity extends AppCompatActivity {
         updates.put("status", "scheduled");
         updates.put("completedAt", null);
         
-        db.collection(getUserWorkViewCollection()).document(event.getId())
+        db.collection(getCollectionForEvent(event)).document(event.getId())
           .update(updates)
           .addOnSuccessListener(aVoid -> {
               Toast.makeText(this, "Event marked as scheduled!", Toast.LENGTH_SHORT).show();
               loadEventsForDate(selectedDate);
+              scheduleEventNotification(event);
           })
           .addOnFailureListener(e -> {
               Toast.makeText(this, "Error updating event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -963,10 +1523,10 @@ public class WorkViewActivity extends AppCompatActivity {
     /**
      * Schedule event deletion after specified delay
      */
-    private void scheduleEventDeletion(String eventId, long delayMillis) {
+    private void scheduleEventDeletion(WorkEvent event, long delayMillis) {
         new android.os.Handler().postDelayed(() -> {
             // Delete the event after the delay
-            db.collection(getUserWorkViewCollection()).document(eventId)
+            db.collection(getCollectionForEvent(event)).document(event.getId())
               .delete()
               .addOnSuccessListener(aVoid -> {
                   Toast.makeText(this, "Completed event automatically deleted.", Toast.LENGTH_SHORT).show();
@@ -982,44 +1542,103 @@ public class WorkViewActivity extends AppCompatActivity {
      * Schedule notification for upcoming events (30 minutes before)
      */
     private void scheduleEventNotification(WorkEvent event) {
+        // In-app only reminders: schedule WorkManager to write a Firestore notification record.
+        if (event == null) return;
+        if (!"scheduled".equalsIgnoreCase(event.getStatus())) return;
+        if (event.getId() == null || event.getId().trim().isEmpty()) return;
+        // Only jobs/contracts should generate reminders
+        if (!"job".equalsIgnoreCase(event.getEventType()) && !"contract".equalsIgnoreCase(event.getEventType())) return;
+
         try {
-            // Parse event time to get notification time (30 minutes before)
-            String eventTime = event.getTime();
-            String eventDate = event.getDate();
-            
-            // Parse the event date and time
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
-            
-            Date eventDateTime = dateFormat.parse(eventDate);
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(eventDateTime);
-            
-            // Parse time (HH:mm format)
-            String[] timeParts = eventTime.split(":");
-            int hour = Integer.parseInt(timeParts[0]);
-            int minute = Integer.parseInt(timeParts[1]);
-            calendar.set(Calendar.HOUR_OF_DAY, hour);
-            calendar.set(Calendar.MINUTE, minute);
-            
-            // Calculate notification time (30 minutes before)
-            calendar.add(Calendar.MINUTE, -30);
-            Date notificationTime = calendar.getTime();
-            
-            // Check if notification time is in the future
-            if (notificationTime.after(new Date())) {
-                long delayMillis = notificationTime.getTime() - new Date().getTime();
-                
-                new android.os.Handler().postDelayed(() -> {
-                    // Send notification
-                    sendEventNotification(event);
-                }, delayMillis);
-                
-                Toast.makeText(this, "Notification scheduled for " + event.getEventName() + " at " + eventTime, Toast.LENGTH_SHORT).show();
+            // Keep an offline cache so popup reminders can fire/schedule without Firestore.
+            try {
+                WorkViewLocalEventStore.upsert(getApplicationContext(), userName, getUserWorkViewCollection(), event);
+            } catch (Exception ignored) {}
+
+            // Parse event date/time (stored as yyyy-MM-dd and HH:mm)
+            String date = event.getDate();
+            String time = event.getTime();
+            if (date == null || time == null) return;
+
+            String[] d = date.split("-");
+            String[] t = time.split(":");
+            if (d.length != 3 || t.length != 2) return;
+
+            int year = Integer.parseInt(d[0]);
+            int month = Integer.parseInt(d[1]) - 1;
+            int day = Integer.parseInt(d[2]);
+            int hour = Integer.parseInt(t[0]);
+            int minute = Integer.parseInt(t[1]);
+
+            Calendar eventCal = Calendar.getInstance();
+            eventCal.set(Calendar.YEAR, year);
+            eventCal.set(Calendar.MONTH, month);
+            eventCal.set(Calendar.DAY_OF_MONTH, day);
+            eventCal.set(Calendar.HOUR_OF_DAY, hour);
+            eventCal.set(Calendar.MINUTE, minute);
+            eventCal.set(Calendar.SECOND, 0);
+            eventCal.set(Calendar.MILLISECOND, 0);
+
+            // Reminder is 30 minutes before event time
+            eventCal.add(Calendar.MINUTE, -30);
+
+            long delayMs = eventCal.getTimeInMillis() - System.currentTimeMillis();
+            if (delayMs <= 0) {
+                return; // don't schedule past reminders
+            }
+
+            String targetUser = event.getUserName() != null ? event.getUserName() : userName;
+            String collection = getCollectionForEvent(event);
+
+            Data input = new Data.Builder()
+                    .putString(InAppReminderWorker.KEY_USER_NAME, targetUser)
+                    .putString(InAppReminderWorker.KEY_COLLECTION, collection)
+                    .putString(InAppReminderWorker.KEY_EVENT_DOC_ID, event.getId())
+                    .putString(InAppReminderWorker.KEY_EXPECTED_DATE, event.getDate())
+                    .putString(InAppReminderWorker.KEY_EXPECTED_TIME, event.getTime())
+                    .putString(InAppReminderWorker.KEY_EVENT_NAME, event.getEventName())
+                    .putString(InAppReminderWorker.KEY_EVENT_TYPE, event.getEventType())
+                    .putString(InAppReminderWorker.KEY_EVENT_ADDRESS, event.getAddress())
+                    .build();
+
+            OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(InAppReminderWorker.class)
+                    .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
+                    .setInputData(input)
+                    .build();
+
+            WorkManager.getInstance(getApplicationContext())
+                    .enqueueUniqueWork(getReminderWorkName(event), ExistingWorkPolicy.REPLACE, request);
+
+            // Local popup reminder: only schedule for the currently logged-in user on this device.
+            if (targetUser != null && targetUser.equalsIgnoreCase(userName)) {
+                WorkViewPopupReminderScheduler.scheduleForEvent(
+                        getApplicationContext(),
+                        userName,
+                        getUserWorkViewCollection(),
+                        event
+                );
             }
         } catch (Exception e) {
-            Toast.makeText(this, "Error scheduling notification: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e("WorkViewActivity", "Failed to schedule in-app reminder: " + e.getMessage());
         }
+    }
+
+    private void cancelInAppReminder(WorkEvent event) {
+        if (event == null) return;
+        try {
+            WorkManager.getInstance(getApplicationContext()).cancelUniqueWork(getReminderWorkName(event));
+            if (event.getId() != null) {
+                WorkViewPopupReminderScheduler.cancelForEvent(getApplicationContext(), event.getId());
+                try {
+                    WorkViewLocalEventStore.remove(getApplicationContext(), userName, event.getId());
+                } catch (Exception ignored) {}
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private String getReminderWorkName(WorkEvent event) {
+        return "inapp_reminder_" + (event != null && event.getId() != null ? event.getId() : "unknown");
     }
 
     /**
@@ -1211,6 +1830,9 @@ public class WorkViewActivity extends AppCompatActivity {
             db.collection(getUserWorkViewCollection()).document(event.getId())
               .update(updates)
               .addOnSuccessListener(aVoid -> {
+                  // Reschedule reminder for the new date
+                  event.setDate(tomorrowDate);
+                  scheduleEventNotification(event);
                   rescheduledCount[0]++;
                   if (rescheduledCount[0] == missedEvents.size()) {
                       Toast.makeText(this, "All missed events rescheduled for tomorrow!", Toast.LENGTH_SHORT).show();
@@ -1236,6 +1858,7 @@ public class WorkViewActivity extends AppCompatActivity {
             db.collection(getUserWorkViewCollection()).document(event.getId())
               .update(updates)
               .addOnSuccessListener(aVoid -> {
+                  cancelInAppReminder(event);
                   completedCount[0]++;
                   if (completedCount[0] == missedEvents.size()) {
                       Toast.makeText(this, "All missed events marked as complete!", Toast.LENGTH_SHORT).show();
@@ -1288,22 +1911,24 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Finish a job - delete from database and remove from calendar
+     * Finish a job - delete from JobWork and remove from calendar
      */
     private void finishJob(WorkEvent event) {
         new AlertDialog.Builder(this)
             .setTitle("Finish Job")
             .setMessage("Are you sure you want to finish this job? This will delete it from the database.")
             .setPositiveButton("Yes", (dialog, which) -> {
-                // Delete from jobs collection
-                db.collection("jobs").document(event.getEventId())
+                cancelInAppReminder(event);
+                // Delete from JobWork collection (eventId is the JobWork document ID)
+                String userCollection = getCollectionForEvent(event);
+                db.collection("JobWork").document(event.getEventId())
                   .delete()
                   .addOnSuccessListener(aVoid -> {
                       // Delete from work view collection
-                      db.collection(getUserWorkViewCollection()).document(event.getId())
+                      db.collection(userCollection).document(event.getId())
                         .delete()
                         .addOnSuccessListener(aVoid2 -> {
-                            Toast.makeText(this, "Job finished and removed!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Job finished and removed from View Jobs!", Toast.LENGTH_SHORT).show();
                             loadEventsForDate(selectedDate);
                         })
                         .addOnFailureListener(e -> {
@@ -1340,20 +1965,24 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Update contract last visit and remove from calendar
+     * Update contract last visit and remove from calendar.
+     * Updates by contract ID in the assigned user's Contracts collection (e.g. "Ian Contracts").
      */
     private void updateContractLastVisitAndRemove(WorkEvent event) {
+        String contractOwner = event.getUserName() != null ? event.getUserName() : userName;
+        String contractCollection = contractOwner + " Contracts";
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+        sdf.setTimeZone(TimeZone.getTimeZone("Europe/Dublin"));
         String today = sdf.format(new Date());
-        
+
         Map<String, Object> updates = new HashMap<>();
         updates.put("lastVisit", today);
-        
-        db.collection("contracts").document(event.getEventId())
+
+        db.collection(contractCollection).document(event.getEventId())
           .update(updates)
           .addOnSuccessListener(aVoid -> {
-              // Remove from work view collection
-              db.collection(getUserWorkViewCollection()).document(event.getId())
+              cancelInAppReminder(event);
+              db.collection(getCollectionForEvent(event)).document(event.getId())
                 .delete()
                 .addOnSuccessListener(aVoid2 -> {
                     Toast.makeText(this, "Contract visit updated and removed from calendar!", Toast.LENGTH_SHORT).show();
@@ -1403,12 +2032,14 @@ public class WorkViewActivity extends AppCompatActivity {
         timeSlotsLayout.removeAllViews();
 
         // Create time slots more efficiently
-        for (String timeSlot : TIME_SLOTS) {
+        for (int idx = 0; idx < SLOT_START_TIMES.length; idx++) {
+            String timeSlot = SLOT_START_TIMES[idx];
+            String displayRange = SLOT_DISPLAY_RANGES[idx];
             // Create time slot view
             LinearLayout timeSlotView = new LinearLayout(this);
             timeSlotView.setOrientation(LinearLayout.VERTICAL);
             timeSlotView.setPadding(16, 16, 16, 16);
-            timeSlotView.setBackgroundResource(android.R.drawable.dialog_holo_light_frame);
+            timeSlotView.setBackgroundResource(R.drawable.surface_frame);
             timeSlotView.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -1421,10 +2052,11 @@ public class WorkViewActivity extends AppCompatActivity {
 
             // Time label
             TextView timeLabel = new TextView(this);
-            timeLabel.setText(timeSlot);
+            timeLabel.setText(displayRange);
+            timeLabel.setTag(timeSlot); // store start time for matching
             timeLabel.setTextSize(18);
             timeLabel.setTypeface(null, android.graphics.Typeface.BOLD);
-            timeLabel.setTextColor(android.graphics.Color.parseColor("#2196F3"));
+            timeLabel.setTextColor(MaterialColors.getColor(timeLabel, com.google.android.material.R.attr.colorPrimary));
             timeLabel.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -1442,7 +2074,7 @@ public class WorkViewActivity extends AppCompatActivity {
             TextView noEventsText = new TextView(this);
             noEventsText.setText("No events");
             noEventsText.setTextSize(14);
-            noEventsText.setTextColor(android.graphics.Color.GRAY);
+            noEventsText.setTextColor(MaterialColors.getColor(noEventsText, com.google.android.material.R.attr.colorOnSurface));
             noEventsText.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -1452,6 +2084,70 @@ public class WorkViewActivity extends AppCompatActivity {
             // Add click listener to add event
             timeSlotView.setOnClickListener(v -> {
                 showAddEventDialogForTime(timeSlot);
+            });
+
+            // Allow dropping dragged events onto this slot to move time
+            timeSlotView.setOnDragListener(new android.view.View.OnDragListener() {
+                @Override
+                public boolean onDrag(android.view.View v, android.view.DragEvent eventDrag) {
+                    int action = eventDrag.getAction();
+                    switch (action) {
+                        case android.view.DragEvent.ACTION_DRAG_STARTED:
+                            // Accept all drags; we'll validate type on drop
+                            return true;
+                        case android.view.DragEvent.ACTION_DRAG_ENTERED:
+                            v.setAlpha(0.9f);
+                            return true;
+                        case android.view.DragEvent.ACTION_DRAG_EXITED:
+                            v.setAlpha(1.0f);
+                            return true;
+                        case android.view.DragEvent.ACTION_DROP:
+                            v.setAlpha(1.0f);
+                            Object local = eventDrag.getLocalState();
+                            if (!(local instanceof WorkEvent)) return true;
+                            WorkEvent ev = (WorkEvent) local;
+                            if (ev.getId() == null || ev.getId().trim().isEmpty()) return true;
+
+                            // Preserve duration if endTime is set; otherwise 1-hour slot
+                            String oldStart = ev.getTime();
+                            String oldEnd = ev.getEndTime();
+                            String newStart = timeSlot;
+                            String newEnd = "";
+                            if (oldEnd != null && !oldEnd.trim().isEmpty()) {
+                                int oldStartMin = parseMinutes(oldStart);
+                                int oldEndMin = parseMinutes(oldEnd);
+                                int dur = (oldStartMin >= 0 && oldEndMin > oldStartMin) ? (oldEndMin - oldStartMin) : 60;
+                                int newStartMin = parseMinutes(newStart);
+                                int newEndMin = newStartMin + dur;
+                                int endH = (newEndMin / 60) % 24;
+                                int endM = newEndMin % 60;
+                                newEnd = String.format(java.util.Locale.getDefault(), "%02d:%02d", endH, endM);
+                            }
+
+                            final String normStart = newStart;
+                            final String normEnd = newEnd;
+
+                            java.util.Map<String, Object> updates = new java.util.HashMap<>();
+                            updates.put("time", normStart);
+                            updates.put("endTime", normEnd);
+
+                            db.collection(getCollectionForEvent(ev)).document(ev.getId())
+                                    .update(updates)
+                                    .addOnSuccessListener(aVoid -> {
+                                        ev.setTime(normStart);
+                                        ev.setEndTime(normEnd);
+                                        scheduleEventNotification(ev);
+                                        android.widget.Toast.makeText(WorkViewActivity.this, "Time updated.", android.widget.Toast.LENGTH_SHORT).show();
+                                        loadEventsForDate(selectedDate);
+                                    })
+                                    .addOnFailureListener(e -> android.widget.Toast.makeText(WorkViewActivity.this, "Error updating time: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show());
+                            return true;
+                        case android.view.DragEvent.ACTION_DRAG_ENDED:
+                            v.setAlpha(1.0f);
+                            return true;
+                    }
+                    return false;
+                }
             });
 
             // Add views to time slot
@@ -1480,7 +2176,7 @@ public class WorkViewActivity extends AppCompatActivity {
                 TextView noEventsText = new TextView(this);
                 noEventsText.setText("No events");
                 noEventsText.setTextSize(14);
-                noEventsText.setTextColor(android.graphics.Color.GRAY);
+                noEventsText.setTextColor(MaterialColors.getColor(noEventsText, com.google.android.material.R.attr.colorOnSurface));
                 noEventsText.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -1492,11 +2188,14 @@ public class WorkViewActivity extends AppCompatActivity {
         // Update with actual events
         for (WorkEvent event : events) {
             String eventTime = event.getTime();
+            String slotStart = resolveSlotStartForEventTime(eventTime);
             for (int i = 0; i < timeSlotsLayout.getChildCount(); i++) {
                 LinearLayout timeSlotView = (LinearLayout) timeSlotsLayout.getChildAt(i);
                 TextView timeLabel = (TextView) timeSlotView.getChildAt(0);
                 
-                if (timeLabel.getText().equals(eventTime)) {
+                Object tag = timeLabel.getTag();
+                String slotTag = tag != null ? String.valueOf(tag) : null;
+                if (slotTag != null && slotTag.equals(slotStart)) {
                     LinearLayout eventsContainer = (LinearLayout) timeSlotView.getChildAt(1);
                     
                     // Remove "No events" text if it exists
@@ -1524,9 +2223,10 @@ public class WorkViewActivity extends AppCompatActivity {
      */
     private void showAddEventDialogForTime(String timeSlot) {
         String[] options = {"Add Contract", "Add Job", "Add Follow-up"};
+        String titleTime = formatSlotRange(timeSlot);
         
         new AlertDialog.Builder(this)
-            .setTitle("Add Event at " + timeSlot)
+            .setTitle("Add Event at " + titleTime)
             .setItems(options, (dialog, which) -> {
                 switch (which) {
                     case 0:
@@ -1544,10 +2244,61 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
+     * \"Custom time...\" flow: specify start/end once when creating an event.
+     */
+    private void showCustomTimeDialog(String eventType, String eventId, String eventName, String targetUser) {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        layout.setPadding(pad, pad, pad, pad);
+
+        EditText startInput = new EditText(this);
+        startInput.setHint("Start time (e.g. 08:30 or 0830)");
+        layout.addView(startInput);
+
+        EditText endInput = new EditText(this);
+        endInput.setHint("End time (optional, e.g. 15:00 or 1500)");
+        layout.addView(endInput);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Custom Time")
+                .setView(layout)
+                .setPositiveButton("Add", (dialog, which) -> {
+                    String rawStart = startInput.getText().toString().trim();
+                    String rawEnd = endInput.getText().toString().trim();
+
+                    String normStart = normalizeTimeInput(rawStart);
+                    if (normStart == null) {
+                        Toast.makeText(this, "Invalid start time. Use 08:30 or 0830.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    String normEnd = "";
+                    if (!rawEnd.isEmpty()) {
+                        normEnd = normalizeTimeInput(rawEnd);
+                        if (normEnd == null) {
+                            Toast.makeText(this, "Invalid end time. Use 15:00 or 1500.", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        int startMin = parseMinutes(normStart);
+                        int endMin = parseMinutes(normEnd);
+                        if (startMin < 0 || endMin < 0 || endMin <= startMin) {
+                            Toast.makeText(this, "End time must be after start time.", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                    }
+
+                    createWorkEventWithEndTime(eventType, eventId, eventName, normStart, normEnd, targetUser);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /**
      * Show add contract dialog for specific time
      */
     private void showAddContractDialogForTime(String timeSlot) {
-        if ("kristine".equalsIgnoreCase(userName)) {
+        if (canManageOtherWorkViews()) {
             showKristineContractSelectionDialogForTime(timeSlot);
         } else {
             showUserContractSelectionDialogForTime(userName, timeSlot);
@@ -1592,13 +2343,13 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show contract selection dialog for Kristine with time
+     * Show contract selection dialog for Kristine with time (James, Ian, Dean only)
      */
     private void showKristineContractSelectionDialogForTime(String timeSlot) {
-        String[] users = {"Ian", "James", "Kristine"};
+        String[] users = {"James", "Ian", "Dean"};
         
         new AlertDialog.Builder(this)
-            .setTitle("Select User's Contracts for " + timeSlot)
+            .setTitle("Select User's Contracts for " + formatSlotRange(timeSlot))
             .setItems(users, (dialog, which) -> {
                 String selectedUser = users[which];
                 showUserContractSelectionDialogForTime(selectedUser, timeSlot);
@@ -1612,7 +2363,7 @@ public class WorkViewActivity extends AppCompatActivity {
     private void showContractSelectionDialogWithSearchForTime(List<String> contractNames, List<String> contractIds, 
                                                            List<String> contractAddresses, String collectionName, String timeSlot, String user) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select Contract for " + timeSlot + " from " + collectionName);
+        builder.setTitle("Select Contract for " + formatSlotRange(timeSlot) + " from " + collectionName);
 
         // Inflate custom layout
         android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_contract_selection, null);
@@ -1638,7 +2389,11 @@ public class WorkViewActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Handle item click with better error handling
+        builder.setView(dialogView);
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        
+        AlertDialog dialog = builder.create();
+        
         listView.setOnItemClickListener((parent, view, position, id) -> {
             try {
                 String selectedContract = adapter.getItem(position);
@@ -1648,20 +2403,15 @@ public class WorkViewActivity extends AppCompatActivity {
                     if (originalIndex >= 0 && originalIndex < contractIds.size()) {
                         String selectedContractId = contractIds.get(originalIndex);
                         String contractName = adapter.getContractName(position);
+                        dialog.dismiss();
                         createWorkEvent("contract", selectedContractId, contractName, timeSlot, user);
-                        builder.create().dismiss();
                     }
                 }
             } catch (Exception e) {
                 Toast.makeText(this, "Error selecting contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
-
-        builder.setView(dialogView);
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
         
-        // Show the dialog
-        AlertDialog dialog = builder.create();
         dialog.show();
         
         // Focus on search bar for immediate typing
@@ -1669,22 +2419,28 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show add job dialog for specific time
+     * Show add job dialog for specific time.
+     * First asks New or Old. New = create new job. Old = pick from existing View Jobs list.
      */
     private void showAddJobDialogForTime(String timeSlot) {
-        if ("kristine".equalsIgnoreCase(userName)) {
-            String[] users = {"Ian", "James", "Kristine"};
-            
-            new AlertDialog.Builder(this)
-                .setTitle("Select User's Work View for " + timeSlot)
-                .setItems(users, (dialog, which) -> {
-                    String selectedUser = users[which];
-                    openAddJobActivityForTime(selectedUser, timeSlot);
-                })
-                .show();
-        } else {
-            openAddJobActivityForTime(userName, timeSlot);
-        }
+        new AlertDialog.Builder(this)
+            .setTitle("Add Job at " + formatSlotRange(timeSlot))
+            .setItems(new String[]{"New", "Old"}, (dialog, which) -> {
+                if (which == 0) {
+                    if (canManageOtherWorkViews()) {
+                        String[] users = {"James", "Ian", "Dean"};
+                        new AlertDialog.Builder(this)
+                            .setTitle("Assign Job To (" + formatSlotRange(timeSlot) + ")")
+                            .setItems(users, (d, w) -> openAddJobActivityForTime(users[w], timeSlot))
+                            .show();
+                    } else {
+                        openAddJobActivityForTime(userName, timeSlot);
+                    }
+                } else {
+                    showAddExistingJobDialog(timeSlot);
+                }
+            })
+            .show();
     }
 
     /**
@@ -1693,6 +2449,7 @@ public class WorkViewActivity extends AppCompatActivity {
     private void openAddJobActivityForTime(String targetUser, String timeSlot) {
         Intent intent = new Intent(this, AddJobFromCalendarActivity.class);
         intent.putExtra("USER_NAME", targetUser);
+        intent.putExtra("CREATED_BY", userName);
         intent.putExtra("SELECTED_DATE", selectedDate.getTime());
         intent.putExtra("SELECTED_TIME", timeSlot);
         startActivity(intent);
@@ -1710,57 +2467,100 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
+     * Resolve which 1-hour slot a stored event time belongs to.
+     * This keeps older events (e.g., "09:00") visible by mapping them into the closest slot window.
+     */
+    private String resolveSlotStartForEventTime(String eventTime) {
+        if (eventTime == null || eventTime.trim().isEmpty()) return null;
+        int eventMin = parseMinutes(eventTime);
+        if (eventMin < 0) return null;
+
+        // First, check if it matches a slot start exactly.
+        for (String start : SLOT_START_TIMES) {
+            if (eventTime.equals(start)) return start;
+        }
+
+        // Otherwise, place it into the slot window [start, start+60).
+        for (String start : SLOT_START_TIMES) {
+            int startMin = parseMinutes(start);
+            if (startMin >= 0 && eventMin >= startMin && eventMin < (startMin + 60)) {
+                return start;
+            }
+        }
+
+        // If earlier than first slot, put into first.
+        int first = parseMinutes(SLOT_START_TIMES[0]);
+        if (first >= 0 && eventMin < first) return SLOT_START_TIMES[0];
+
+        // If later than last slot end, put into last.
+        return SLOT_START_TIMES[SLOT_START_TIMES.length - 1];
+    }
+
+    private int parseMinutes(String hhmm) {
+        try {
+            String[] p = hhmm.trim().split(":");
+            if (p.length != 2) return -1;
+            int h = Integer.parseInt(p[0]);
+            int m = Integer.parseInt(p[1]);
+            if (h < 0 || h > 23 || m < 0 || m > 59) return -1;
+            return (h * 60) + m;
+        } catch (Exception ignored) {
+            return -1;
+        }
+    }
+
+    /**
+     * Normalizes time input such as \"8:30\", \"08:30\", or \"0830\" into HH:mm (24h) format.
+     */
+    private String normalizeTimeInput(String raw) {
+        if (raw == null) return null;
+        String t = raw.trim();
+        if (t.isEmpty()) return null;
+
+        // If it's already in H:mm or HH:mm form.
+        if (t.matches("^\\d{1,2}:\\d{2}$")) {
+            String[] p = t.split(":");
+            int h = Integer.parseInt(p[0]);
+            int m = Integer.parseInt(p[1]);
+            if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+            return String.format(Locale.getDefault(), "%02d:%02d", h, m);
+        }
+
+        // If it's a 3 or 4 digit number like 930 or 0930.
+        if (t.matches("^\\d{3,4}$")) {
+            if (t.length() == 3) t = "0" + t;
+            String hStr = t.substring(0, 2);
+            String mStr = t.substring(2, 4);
+            int h = Integer.parseInt(hStr);
+            int m = Integer.parseInt(mStr);
+            if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+            return String.format(Locale.getDefault(), "%02d:%02d", h, m);
+        }
+
+        return null;
+    }
+
+    private String formatSlotRange(String startTime) {
+        int startMin = parseMinutes(startTime);
+        if (startMin < 0) return startTime != null ? startTime : "";
+        int endMin = startMin + 60;
+        int endH = (endMin / 60) % 24;
+        int endM = endMin % 60;
+        return String.format(Locale.getDefault(), "%s - %02d:%02d", startTime, endH, endM);
+    }
+
+    /**
      * Create notification channel for Android 8.0+
      */
     private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                "work_events",
-                "Work Events",
-                NotificationManager.IMPORTANCE_DEFAULT
-            );
-            channel.setDescription("Notifications for upcoming work events");
-            
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
+        // In-app only notifications: Android notification channels disabled.
     }
 
     /**
      * Send notification for upcoming events with route option
      */
     private void sendEventNotification(WorkEvent event) {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "work_events")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Upcoming Work Event")
-            .setContentText(event.getEventName() + " at " + event.getTime())
-            .setStyle(new androidx.core.app.NotificationCompat.BigTextStyle()
-                .bigText(event.getEventName() + " at " + event.getTime() + "\n📍 " + (event.getAddress() != null ? event.getAddress() : "No address")))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true);
-
-        // Create intent for opening the app
-        Intent intent = new Intent(this, WorkViewActivity.class);
-        intent.putExtra("USER_NAME", userName);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent, 
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-
-        // Create intent for opening maps with route
-        Intent mapIntent = new Intent(Intent.ACTION_VIEW);
-        if (event.getAddress() != null && !event.getAddress().isEmpty() && !event.getAddress().equals("N/A")) {
-            Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(event.getAddress()));
-            mapIntent.setData(gmmIntentUri);
-            mapIntent.setPackage("com.google.android.apps.maps");
-        }
-        android.app.PendingIntent mapPendingIntent = android.app.PendingIntent.getActivity(this, 1, mapIntent, 
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-
-        builder.setContentIntent(pendingIntent);
-        builder.addAction(android.R.drawable.ic_dialog_map, "Route", mapPendingIntent);
-
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(event.getId().hashCode(), builder.build());
+        // In-app only notifications: Android system notifications disabled.
     }
 
     /**
@@ -1786,10 +2586,10 @@ public class WorkViewActivity extends AppCompatActivity {
         // Set checkbox state based on event status
         completeCheckBox.setChecked("completed".equals(event.getStatus()));
         
-        // Checkbox click listener
+        // Checkbox click listener - show confirmation before marking done; disable on Yes to prevent double tap
         completeCheckBox.setOnClickListener(v -> {
             if (completeCheckBox.isChecked()) {
-                markEventComplete(event);
+                showMarkDoneConfirmationDialog(event, () -> completeCheckBox.setChecked(false), () -> completeCheckBox.setEnabled(false));
             } else {
                 // Uncheck - revert to scheduled
                 markEventScheduled(event);
@@ -1814,7 +2614,13 @@ public class WorkViewActivity extends AppCompatActivity {
         ));
 
         TextView eventNameView = new TextView(this);
-        eventNameView.setText(event.getEventName());
+        String displayName = event.getEventName();
+        if (canManageOtherWorkViews()
+                && event.getUserName() != null
+                && !event.getUserName().trim().isEmpty()) {
+            displayName = displayName + " (" + event.getUserName() + ")";
+        }
+        eventNameView.setText(displayName);
         eventNameView.setTextSize(14);
         eventNameView.setTypeface(null, android.graphics.Typeface.BOLD);
         eventNameView.setLayoutParams(new LinearLayout.LayoutParams(
@@ -1839,10 +2645,42 @@ public class WorkViewActivity extends AppCompatActivity {
             showEventOptionsDialog(event);
         });
 
+        // Long-press to drag-and-drop between time slots (change start/end time)
+        eventView.setOnLongClickListener(v -> {
+            android.view.View.DragShadowBuilder shadow = new android.view.View.DragShadowBuilder(v);
+            v.startDragAndDrop(null, shadow, event, 0);
+            return true;
+        });
+
         eventView.addView(completeCheckBox);
         eventView.addView(eventTypeView);
         eventView.addView(eventDetails);
+
+        // Color-code by technician so Kristine can see who owns each event
+        eventNameView.setTextColor(getColorForUser(event.getUserName()));
+
         return eventView;
+    }
+
+    /**
+     * Colour mapping per user for calendar events.
+     */
+    private int getColorForUser(String user) {
+        if (user == null) {
+            return MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, 0);
+        }
+        switch (user.toLowerCase(Locale.getDefault())) {
+            case "ian":
+                return android.graphics.Color.parseColor("#FB8C00"); // Orange
+            case "dean":
+                return android.graphics.Color.parseColor("#1E88E5"); // Blue
+            case "james":
+                return android.graphics.Color.parseColor("#43A047"); // Green
+            case "kristine":
+                return android.graphics.Color.parseColor("#8E24AA"); // Purple
+            default:
+                return MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, 0);
+        }
     }
 
     /**
@@ -1943,8 +2781,9 @@ public class WorkViewActivity extends AppCompatActivity {
             .setTitle("Delete Event")
             .setMessage("Are you sure you want to delete '" + event.getEventName() + "'?")
             .setPositiveButton("Delete", (dialog, which) -> {
-                // Delete from Firebase
-                String userCollection = userName.toLowerCase() + "_workview";
+                cancelInAppReminder(event);
+                // Delete from Firebase using the correct technician's collection
+                String userCollection = getCollectionForEvent(event);
                 db.collection(userCollection).document(event.getId()).delete()
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(this, "Event deleted successfully", Toast.LENGTH_SHORT).show();
@@ -1963,6 +2802,20 @@ public class WorkViewActivity extends AppCompatActivity {
      */
     private void openInMaps(String address) {
         if (address != null && !address.isEmpty() && !address.equals("N/A")) {
+            // Record this as the user's last "map opened" location
+            try {
+                FirebaseFirestore.getInstance()
+                        .collection(LocationSharing.COLLECTION_LAST_LOCATIONS)
+                        .document(LocationSharing.userKey(userName))
+                        .set(new java.util.HashMap<String, Object>() {{
+                            put("userName", userName);
+                            put("lastMapQuery", address);
+                            put("lastMapClientTimestampMs", System.currentTimeMillis());
+                            put("lastMapAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+                            put("source", "map_open");
+                        }}, com.google.firebase.firestore.SetOptions.merge());
+            } catch (Exception ignored) {}
+
             Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(address));
             Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
             mapIntent.setPackage("com.google.android.apps.maps");

@@ -4,7 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:paddingTop="?attr/actionBarSize">
+    android:paddingTop="?attr/actionBarSize"
+    android:background="?android:attr/colorBackground"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
 
     <!-- ✅ One direct child only -->
     <LinearLayout
@@ -79,19 +82,29 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Item Price (€)"
-            android:inputType="numberDecimal" />
+            android:inputType="numberDecimal"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/edit_text_border"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
         <Button
             android:id="@+id/addItemButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Add Line Item" />
+            android:text="Add Line Item"
+            android:backgroundTint="?attr/colorSecondary"
+            android:textColor="?attr/colorOnSecondary"
+            android:layout_marginBottom="8dp" />
 
         <Button
             android:id="@+id/generatePdfButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Generate Bird Quotation PDF" />
+            android:text="Generate Bird Quotation PDF"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
     </LinearLayout>
 </ScrollView>

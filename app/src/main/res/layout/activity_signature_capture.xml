@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="@drawable/bk">
+    android:background="?android:attr/colorBackground">
 
     <!-- Title -->
     <TextView
@@ -24,7 +24,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:layout_marginBottom="16dp"
-        android:background="@android:color/white"
+        android:background="?attr/colorSurface"
         android:elevation="4dp" />
 
     <!-- Control Buttons -->
@@ -41,7 +41,8 @@
             android:layout_weight="1"
             android:text="Clear"
             android:layout_marginEnd="8dp"
-            android:backgroundTint="@android:color/holo_orange_light" />
+            android:backgroundTint="?attr/colorSecondary"
+            android:textColor="?attr/colorOnSecondary" />
 
         <Button
             android:id="@+id/saveButton"
@@ -51,7 +52,8 @@
             android:text="Save"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
-            android:backgroundTint="@android:color/holo_green_dark" />
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
         <Button
             android:id="@+id/cancelButton"
@@ -60,7 +62,8 @@
             android:layout_weight="1"
             android:text="Cancel"
             android:layout_marginStart="8dp"
-            android:backgroundTint="@android:color/holo_red_light" />
+            android:backgroundTint="?attr/colorError"
+            android:textColor="?attr/colorOnError" />
 
     </LinearLayout>
 

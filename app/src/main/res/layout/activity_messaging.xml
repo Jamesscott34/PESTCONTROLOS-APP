@@ -1,83 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:paddingTop="?attr/actionBarSize"
-    android:background="@drawable/bk"
-    android:fillViewport="true"
-    android:scrollbars="vertical"
+    android:background="?android:attr/colorBackground"
     android:fitsSystemWindows="true">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:padding="16dp"
-        android:layout_marginBottom="32dp">
-
-    <!-- Spacer for notch/status bar -->
-    <View
-        android:id="@+id/statusSpacer"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:background="@android:color/transparent" />
-
-    <ListView
-        android:id="@+id/messageListView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/deleteAllButton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="8dp"
-        android:layout_marginTop="16dp"/>
-
-    <Button
-        android:id="@+id/deleteAllButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Delete All Messages"
-        android:background="@android:color/holo_red_dark"
-        android:textColor="@android:color/white"
-        android:layout_marginBottom="16dp"
-        app:layout_constraintBottom_toTopOf="@id/messageInputLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <LinearLayout
-        android:id="@+id/messageInputLayout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="24dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:gravity="center_vertical"
+        android:background="?attr/colorPrimary"
+        android:padding="8dp">
 
-        <EditText
-            android:id="@+id/messageInput"
+        <Button
+            android:id="@+id/backButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="←"
+            android:textSize="18sp"
+            android:minWidth="48dp"
+            android:backgroundTint="@android:color/transparent"
+            android:textColor="?attr/colorOnPrimary" />
+
+        <TextView
+            android:id="@+id/chatTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Type a message"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/edit_text_border"
+            android:text="Chat"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center"
             android:padding="12dp"
-            android:inputType="textMultiLine"
-            android:maxLines="4" />
-
-        <Button
-            android:id="@+id/sendButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Send"
-            android:background="@drawable/black_border"
-            android:textColor="@android:color/white" />
+            android:textColor="?attr/colorOnPrimary" />
     </LinearLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</ScrollView>
+    <TextView
+        android:id="@+id/autoDeleteHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Messages delete after 30 min. Check &quot;Urgent&quot; to keep."
+        android:textSize="11sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:padding="4dp" />
+
+    <ListView
+        android:id="@+id/messageListView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="8dp"
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="1dp" />
+
+    <LinearLayout
+        android:id="@+id/messageInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:background="?attr/colorSurface">
+
+        <android.widget.CheckBox
+            android:id="@+id/urgentCheckbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Urgent (keep message)"
+            android:textSize="12sp"
+            android:layout_marginBottom="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/messageInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Type a message"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/edit_text_border"
+                android:padding="12dp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary"
+                android:inputType="textMultiLine"
+                android:maxLines="4" />
+
+            <Button
+                android:id="@+id/sendButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Send"
+                android:background="@drawable/black_border"
+                android:textColor="?attr/colorOnPrimary" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/deleteAllButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Delete All in This Chat"
+            android:backgroundTint="?attr/colorError"
+            android:textColor="?attr/colorOnError"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+</LinearLayout>

@@ -5,8 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="@color/white"
-    android:paddingTop="?attr/actionBarSize">
+    android:background="?android:attr/colorBackground"
+    android:paddingTop="?attr/actionBarSize"
+    android:fitsSystemWindows="true">
 
     <!-- Top Spacer to avoid notch -->
     <View
@@ -30,7 +31,8 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="12dp" />
+        android:layout_marginBottom="12dp"
+        android:textColor="?android:attr/textColorPrimary" />
 
     <!-- RecyclerView for displaying files in the folder -->
     <androidx.recyclerview.widget.RecyclerView
@@ -54,6 +56,8 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp" />
+        android:layout_marginTop="12dp"
+        android:background="@drawable/button_background"
+        android:textColor="?attr/colorOnPrimary" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -20,7 +20,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Message text here"
-            android:textColor="@android:color/black"
+            android:textColor="?android:attr/textColorPrimary"
             android:textSize="16sp"
             android:textIsSelectable="true"
             android:longClickable="true"
@@ -38,7 +38,7 @@
                 android:layout_height="wrap_content"
                 android:text="12:34 PM"
                 android:textSize="12sp"
-                android:textColor="@android:color/darker_gray" />
+                android:textColor="?android:attr/textColorSecondary" />
 
             <Button
                 android:id="@+id/copyButton"
@@ -49,7 +49,8 @@
                 android:minWidth="40dp"
                 android:minHeight="24dp"
                 android:layout_marginStart="8dp"
-                android:backgroundTint="@android:color/holo_blue_dark"
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary"
                 android:visibility="gone" />
 
         </LinearLayout>

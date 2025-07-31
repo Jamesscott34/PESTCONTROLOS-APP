@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:paddingTop="?attr/actionBarSize"
     android:padding="16dp"
-    android:background="@color/white">
+    android:background="?android:attr/colorBackground">
 
     <!-- Top Spacer to avoid notch/camera -->
     <View

@@ -7,14 +7,14 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.firebase.Timestamp;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -22,225 +22,262 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /**
- * MessagingActivity.java
- *
- * This activity provides a real-time chat feature using Firebase Firestore.
- * Users can send, receive, copy, and delete messages. Messages are stored in Firestore
- * and displayed in a ListView using a custom adapter.
- *
- * Features:
- * - Send and receive messages in real-time
- * - Store messages in Firebase Firestore
- * - Display messages in a structured format with sender, timestamp, and content
- * - Copy messages to clipboard with a single tap
- * - Delete individual messages or clear all messages
- * - Uses Firebase Authentication to identify the sender
- *
- * Author: James Scott
+ * MessagingActivity - Per-conversation chat (1:1 or group).
+ * Messages auto-delete after 30 min unless marked urgent.
  */
-
-
 public class MessagingActivity extends AppCompatActivity {
+
+    private static final int AUTO_DELETE_MINUTES = 30;
 
     private EditText messageInput;
     private Button sendButton, deleteAllButton;
+    private CheckBox urgentCheckbox;
     private ListView messageListView;
-    private ArrayList<String> messages;
-    private ArrayList<String> messageIds;
+    private TextView chatTitle, autoDeleteHint;
+
+    private ArrayList<ChatMessage> messages;
     private MessageAdapter messageAdapter;
     private FirebaseFirestore firestore;
-    private FirebaseUser currentUser;
+
+    private String userName;
+    private String conversationId;
+    private String conversationName;
+
+    private String getLastSeenPrefKey() {
+        return "CHAT_LAST_SEEN_" + conversationId;
+    }
+
+    private void markConversationSeen(long millis) {
+        getSharedPreferences("GRPC", MODE_PRIVATE)
+                .edit()
+                .putLong(getLastSeenPrefKey(), Math.max(millis, System.currentTimeMillis()))
+                .apply();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_messaging);
-        
-        // Handle keyboard properly
+
         getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        
-        // Handle system UI for Samsung devices with navigation buttons
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setFlags(
-                android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-            );
+
+        userName = getIntent().getStringExtra("USER_NAME");
+        conversationId = getIntent().getStringExtra("CONVERSATION_ID");
+        conversationName = getIntent().getStringExtra("CONVERSATION_NAME");
+
+        if (userName == null || userName.isEmpty() || conversationId == null || conversationId.isEmpty()) {
+            Toast.makeText(this, "Error: Missing conversation data", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
+
+        if (conversationName == null) conversationName = "Chat";
 
         messageInput = findViewById(R.id.messageInput);
         sendButton = findViewById(R.id.sendButton);
         deleteAllButton = findViewById(R.id.deleteAllButton);
+        urgentCheckbox = findViewById(R.id.urgentCheckbox);
         messageListView = findViewById(R.id.messageListView);
+        chatTitle = findViewById(R.id.chatTitle);
+        autoDeleteHint = findViewById(R.id.autoDeleteHint);
+
+        chatTitle.setText(conversationName);
+        autoDeleteHint.setText("Messages delete after " + AUTO_DELETE_MINUTES + " min. Check \"Urgent\" to keep.");
 
         messages = new ArrayList<>();
-        messageIds = new ArrayList<>();
         messageAdapter = new MessageAdapter(this, messages);
         messageListView.setAdapter(messageAdapter);
 
         firestore = FirebaseFirestore.getInstance();
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
-        sendButton.setOnClickListener(view -> sendMessage());
-        deleteAllButton.setOnClickListener(view -> confirmDeleteAllMessages());
+        sendButton.setOnClickListener(v -> sendMessage());
+        deleteAllButton.setOnClickListener(v -> confirmDeleteAllMessages());
 
         loadMessages();
 
-        messageListView.setOnItemClickListener((parent, view, position, id) -> copyMessage(messages.get(position)));
+        messageListView.setOnItemClickListener((parent, view, position, id) ->
+                copyMessage(messages.get(position)));
 
         messageListView.setOnItemLongClickListener((parent, view, position, id) -> {
             confirmDeleteMessage(position);
             return true;
         });
+
+        Button backBtn = findViewById(R.id.backButton);
+        if (backBtn != null) {
+            backBtn.setOnClickListener(v -> finish());
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Opening the conversation counts as "seen"
+        markConversationSeen(System.currentTimeMillis());
+    }
+
+    private String getMessagesPath() {
+        return "conversations/" + conversationId + "/messages";
     }
 
     private void sendMessage() {
         String messageText = messageInput.getText().toString().trim();
-        if (TextUtils.isEmpty(messageText) || currentUser == null) {
+        if (TextUtils.isEmpty(messageText)) {
             Toast.makeText(this, "Please enter a message", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String senderName = currentUser.getEmail().split("@")[0];
+        boolean isUrgent = urgentCheckbox.isChecked();
 
-        HashMap<String, Object> message = new HashMap<>();
-        message.put("sender", senderName);
+        Map<String, Object> message = new HashMap<>();
+        message.put("sender", userName);
         message.put("body", messageText);
-        message.put("timestamp", Timestamp.now());
+        message.put("timestamp", new Date());
+        message.put("createdAt", new Date());
+        message.put("isUrgent", isUrgent);
 
-        // Show sending indicator
         sendButton.setEnabled(false);
         sendButton.setText("Sending...");
 
-        firestore.collection("messages").add(message)
-                .addOnSuccessListener(documentReference -> {
-                    Log.d("Firestore", "Message sent successfully");
-                    Toast.makeText(this, "✅ Message sent", Toast.LENGTH_SHORT).show();
+        firestore.collection(getMessagesPath()).add(message)
+                .addOnSuccessListener(docRef -> {
+                    Toast.makeText(this, "Message sent", Toast.LENGTH_SHORT).show();
                     messageInput.setText("");
+                    urgentCheckbox.setChecked(false);
                     sendButton.setEnabled(true);
                     sendButton.setText("Send");
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("Firestore", "Error sending message", e);
-                    Toast.makeText(this, "❌ Failed to send message", Toast.LENGTH_SHORT).show();
+                    Log.e("Messaging", "Send failed", e);
+                    Toast.makeText(this, "Failed to send", Toast.LENGTH_SHORT).show();
                     sendButton.setEnabled(true);
                     sendButton.setText("Send");
                 });
     }
 
-
     private void loadMessages() {
-        firestore.collection("messages")
+        firestore.collection(getMessagesPath())
                 .orderBy("timestamp", Query.Direction.ASCENDING)
                 .addSnapshotListener((snapshots, error) -> {
                     if (error != null) {
-                        Log.e("Firestore", "Error loading messages", error);
-                        Toast.makeText(this, "❌ Error loading messages", Toast.LENGTH_SHORT).show();
+                        Log.e("Messaging", "Load error", error);
+                        Toast.makeText(this, "Error loading messages", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    if (snapshots == null || snapshots.isEmpty()) {
-                        Log.d("Firestore", "No messages found.");
-                        return;
-                    }
+                    if (snapshots == null) return;
 
-                    int newMessageCount = 0;
+                    int newCount = 0;
                     for (DocumentChange change : snapshots.getDocumentChanges()) {
                         QueryDocumentSnapshot doc = change.getDocument();
+                        if (change.getType() == DocumentChange.Type.REMOVED) {
+                            removeMessageById(doc.getId());
+                            continue;
+                        }
+
                         String sender = doc.getString("sender");
                         String body = doc.getString("body");
-                        Timestamp timestamp = doc.getTimestamp("timestamp");
+                        Date timestamp = doc.getDate("timestamp");
+                        Boolean isUrgent = doc.getBoolean("isUrgent");
+                        if (isUrgent == null) isUrgent = false;
 
                         if (sender != null && body != null && timestamp != null) {
-                            String formattedTime = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy", Locale.getDefault())
-                                    .format(timestamp.toDate());
-                            String fullMessage = String.format("%s (%s): %s", sender, formattedTime, body);
+                            String formattedTime = new SimpleDateFormat("HH:mm dd/MM", Locale.getDefault())
+                                    .format(timestamp);
 
-                            // Avoid adding duplicates
-                            if (!messageIds.contains(doc.getId())) {
-                                messages.add(fullMessage);
-                                messageIds.add(doc.getId());
-                                newMessageCount++;
+                            if (!hasMessageId(doc.getId())) {
+                                messages.add(new ChatMessage(doc.getId(), sender, body, formattedTime, isUrgent));
+                                newCount++;
                             }
                         }
                     }
-                    
-                    if (newMessageCount > 0) {
+
+                    if (newCount > 0) {
                         messageAdapter.notifyDataSetChanged();
-                        // Auto-scroll to bottom for new messages
                         messageListView.post(() -> messageListView.setSelection(messages.size() - 1));
-                        
-                        // Show notification for new messages (if not from current user)
-                        if (newMessageCount > 0 && currentUser != null) {
-                            String currentSender = currentUser.getEmail().split("@")[0];
-                            boolean hasNewMessagesFromOthers = false;
-                            
-                            // Check if any new messages are from other users
-                            for (int i = messages.size() - newMessageCount; i < messages.size(); i++) {
-                                String message = messages.get(i);
-                                if (!message.startsWith(currentSender + " (")) {
-                                    hasNewMessagesFromOthers = true;
-                                    break;
-                                }
-                            }
-                            
-                            if (hasNewMessagesFromOthers) {
-                                Toast.makeText(this, "💬 New messages received", Toast.LENGTH_SHORT).show();
-                            }
+                    }
+
+                    // Update last-seen to latest message timestamp while user is viewing the chat
+                    if (!snapshots.isEmpty()) {
+                        Date latestTs = snapshots.getDocuments()
+                                .get(snapshots.getDocuments().size() - 1)
+                                .getDate("timestamp");
+                        if (latestTs != null) {
+                            markConversationSeen(latestTs.getTime());
                         }
                     }
                 });
     }
 
+    private boolean hasMessageId(String id) {
+        for (ChatMessage m : messages) {
+            if (m.documentId.equals(id)) return true;
+        }
+        return false;
+    }
+
+    private void removeMessageById(String id) {
+        for (int i = 0; i < messages.size(); i++) {
+            if (messages.get(i).documentId.equals(id)) {
+                messages.remove(i);
+                messageAdapter.notifyDataSetChanged();
+                return;
+            }
+        }
+    }
 
     private void confirmDeleteAllMessages() {
         new AlertDialog.Builder(this)
                 .setTitle("Delete All Messages")
-                .setMessage("Are you sure you want to delete all messages?")
-                .setPositiveButton("Yes", (dialog, which) -> deleteAllMessages())
+                .setMessage("Delete all messages in this conversation?")
+                .setPositiveButton("Yes", (d, w) -> deleteAllMessages())
                 .setNegativeButton("No", null)
                 .show();
     }
 
     private void deleteAllMessages() {
-        firestore.collection("messages").get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+        firestore.collection(getMessagesPath()).get()
+                .addOnSuccessListener(snap -> {
+                    for (QueryDocumentSnapshot doc : snap) {
                         doc.getReference().delete();
                     }
                     messages.clear();
-                    messageIds.clear();
                     messageAdapter.notifyDataSetChanged();
+                    Toast.makeText(this, "Messages deleted", Toast.LENGTH_SHORT).show();
                 });
     }
 
     private void confirmDeleteMessage(int position) {
         new AlertDialog.Builder(this)
                 .setTitle("Delete Message")
-                .setMessage("Are you sure you want to delete this message?")
-                .setPositiveButton("Yes", (dialog, which) -> deleteMessage(position))
+                .setMessage("Delete this message?")
+                .setPositiveButton("Yes", (d, w) -> deleteMessage(position))
                 .setNegativeButton("No", null)
                 .show();
     }
 
     private void deleteMessage(int position) {
-        String messageId = messageIds.get(position);
-        firestore.collection("messages").document(messageId).delete()
+        String docId = messages.get(position).documentId;
+        firestore.collection(getMessagesPath()).document(docId).delete()
                 .addOnSuccessListener(aVoid -> {
                     messages.remove(position);
-                    messageIds.remove(position);
                     messageAdapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(e -> Log.e("Firestore", "Error deleting message", e));
+                });
     }
 
-    private void copyMessage(String message) {
+    private void copyMessage(ChatMessage msg) {
+        String text = msg.sender + " (" + msg.formattedTime + "): " + msg.body;
+        if (msg.isUrgent) text = "[URGENT] " + text;
+
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        android.content.ClipData clip = android.content.ClipData.newPlainText("Copied Message", message);
+        android.content.ClipData clip = android.content.ClipData.newPlainText("Message", text);
         clipboard.setPrimaryClip(clip);
-        Toast.makeText(this, "Message copied", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show();
     }
 }

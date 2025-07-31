@@ -5,7 +5,7 @@
     android:layout_height="match_parent" 
     android:paddingTop="?attr/actionBarSize" 
     android:fillViewport="true" 
-    android:background="@drawable/bk"
+    android:background="?android:attr/colorBackground"
     android:fitsSystemWindows="true">
 
     <!-- ✅ Only ONE direct child inside ScrollView -->
@@ -23,6 +23,17 @@
             android:layout_height="?attr/actionBarSize" 
             android:background="@android:color/transparent"/>
 
+        <!-- Logo -->
+        <ImageView
+            android:id="@+id/loginLogo"
+            android:layout_width="120dp"
+            android:layout_height="80dp"
+            android:layout_marginBottom="24dp"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:src="@drawable/logo"
+            android:contentDescription="GRPC Logo" />
+
         <!-- Email input -->
         <EditText 
             android:id="@+id/emailEditText" 
@@ -34,8 +45,8 @@
             android:textSize="18sp" 
             android:padding="12dp" 
             android:background="@drawable/edit_text_border"
-            android:textColor="@android:color/black"
-            android:textColorHint="@android:color/darker_gray"/>
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Password input -->
         <EditText 
@@ -48,8 +59,8 @@
             android:textSize="18sp" 
             android:padding="12dp" 
             android:background="@drawable/edit_text_border"
-            android:textColor="@android:color/black"
-            android:textColorHint="@android:color/darker_gray"/>
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary"/>
 
         <!-- Login button -->
         <Button 
@@ -60,8 +71,8 @@
             android:layout_marginBottom="12dp" 
             android:textSize="20sp" 
             android:padding="14dp" 
-            android:textColor="@android:color/white"
-            android:backgroundTint="@android:color/holo_blue_dark"/>
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary"/>
 
     </LinearLayout>
 </ScrollView>

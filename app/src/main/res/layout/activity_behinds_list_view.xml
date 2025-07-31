@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:paddingTop="?attr/actionBarSize"
     android:layout_height="match_parent"
-    android:background="@drawable/bk">
+    android:background="?android:attr/colorBackground">
 
     <!-- Top Spacer to avoid notch -->
     <View
@@ -23,7 +23,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Search BEHINDS LIST..."
-        android:padding="12dp" />
+        android:padding="12dp"
+        android:background="@drawable/edit_text_border"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary" />
 
     <!-- Replacing ListView with RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView

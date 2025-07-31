@@ -17,6 +17,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
 
+import com.google.android.material.color.MaterialColors;
 import com.google.firebase.firestore.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -172,7 +173,7 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
         LinearLayout jobBox = new LinearLayout(this);
         jobBox.setOrientation(LinearLayout.VERTICAL);
         jobBox.setPadding(16, 16, 16, 16);
-        jobBox.setBackgroundResource(android.R.drawable.dialog_holo_light_frame);
+        jobBox.setBackgroundResource(R.drawable.surface_frame);
 
         String techName = getOrDefault(job, "AssignedTech");
         String customerName = getOrDefault(job, "CustomerName");
@@ -222,8 +223,12 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
 
 
     private int getJobBackgroundColor(String followUpDateStr) {
-        if (followUpDateStr.equalsIgnoreCase("N/A")) return Color.WHITE;
-        if (followUpDateStr.trim().isEmpty()) return Color.RED;
+        if (followUpDateStr.equalsIgnoreCase("N/A")) {
+            return MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurface, 0);
+        }
+        if (followUpDateStr.trim().isEmpty()) {
+            return MaterialColors.getColor(this, com.google.android.material.R.attr.colorError, 0);
+        }
 
         followUpDateStr = followUpDateStr.trim();
 
@@ -247,17 +252,17 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
 
                 Log.d("FollowUpCheck", "Parsed with format " + format + ": " + followUpDateStr + " → " + diffHours + "h");
 
-                if (followUpDate.before(now)) return Color.RED;
-                if (diffHours < 72) return Color.YELLOW;
+                if (followUpDate.before(now)) return MaterialColors.getColor(this, com.google.android.material.R.attr.colorError, 0);
+                if (diffHours < 72) return MaterialColors.getColor(this, com.google.android.material.R.attr.colorSecondary, 0);
 
-                return Color.WHITE;
+                return MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurface, 0);
 
             } catch (Exception e) {
                 Log.e("FollowUpParse", "Failed to parse " + followUpDateStr + " with format " + format);
             }
         }
 
-        return Color.RED; // default if all formats fail
+        return MaterialColors.getColor(this, com.google.android.material.R.attr.colorError, 0); // default if all formats fail
     }
 
 
@@ -286,11 +291,19 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
             }
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Job Action")
-                    .setMessage("Do you want to accept this job or delete it?")
-                    .setPositiveButton("Accept", (dialog, which) -> showAddressDialog(documentId))
-                    .setNegativeButton("Delete", (dialog, which) -> deleteJob(documentId))
-                    .show();
+            if (canDeleteJobs()) {
+                builder.setTitle("Job Action")
+                        .setMessage("Do you want to accept this job or delete it?")
+                        .setPositiveButton("Accept", (dialog, which) -> showAddressDialog(documentId))
+                        .setNegativeButton("Delete", (dialog, which) -> deleteJob(documentId))
+                        .show();
+            } else {
+                builder.setTitle("Job Action")
+                        .setMessage("Do you want to accept this job?")
+                        .setPositiveButton("Accept", (dialog, which) -> showAddressDialog(documentId))
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
         });
     }
 
@@ -338,6 +351,20 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
             if (document.exists() && document.contains("Address")) {
                 String address = document.getString("Address");
                 if (address != null && !address.isEmpty()) {
+                    // Record this as the user's last "map opened" location
+                    try {
+                        FirebaseFirestore.getInstance()
+                                .collection(LocationSharing.COLLECTION_LAST_LOCATIONS)
+                                .document(LocationSharing.userKey(userName))
+                                .set(new java.util.HashMap<String, Object>() {{
+                                    put("userName", userName);
+                                    put("lastMapQuery", address);
+                                    put("lastMapClientTimestampMs", System.currentTimeMillis());
+                                    put("lastMapAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+                                    put("source", "map_open");
+                                }}, com.google.firebase.firestore.SetOptions.merge());
+                    } catch (Exception ignored) {}
+
                     Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(address));
                     Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
                     mapIntent.setPackage("com.google.android.apps.maps");
@@ -386,7 +413,7 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
             List<String> options = new ArrayList<>();
             if (!initialSetupDone) options.add("Initial Setup");
             options.add("Change Technician");
-            options.add("Delete");
+            if (canDeleteJobs()) options.add("Delete");
             options.add("Add Follow-Up");
 
             String[] jobOptions = options.toArray(new String[0]);
@@ -571,8 +598,26 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
 
 
     private void deleteJob(String documentId) {
+        if (!canDeleteJobs()) {
+            if ("Dean".equalsIgnoreCase(userName)) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Permission required")
+                        .setMessage("To delete a job get in touch with Ian or Kristine.")
+                        .setPositiveButton("OK", null)
+                        .show();
+            } else {
+                Toast.makeText(this, "You do not have permission to delete jobs.", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
         db.collection("ManagmentJobs").document(documentId).delete();
         loadAllJobs();
+    }
+
+    private boolean canDeleteJobs() {
+        return "James".equalsIgnoreCase(userName)
+                || "Ian".equalsIgnoreCase(userName)
+                || "Kristine".equalsIgnoreCase(userName);
     }
 
     private void updateStatistics(int total, int completed, int pending) {

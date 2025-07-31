@@ -156,8 +156,8 @@ echo APP_VERSION=%VERSION%
 echo APP_NAME=GRPest Control
 echo.
 echo # Default User Credentials (for offline mode)
-echo DEFAULT_USER_EMAIL=admin@grpc.com
-echo DEFAULT_USER_PASSWORD=admin123
+echo DEFAULT_USER_EMAIL=
+echo DEFAULT_USER_PASSWORD=
 echo.
 echo # Database Configuration
 echo DATABASE_NAME=UserDatabase

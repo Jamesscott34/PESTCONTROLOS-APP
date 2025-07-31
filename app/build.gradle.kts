@@ -35,8 +35,6 @@ android {
             buildConfigField("String", "FIREBASE_API_KEY", "\"${project.findProperty("FIREBASE_API_KEY") ?: ""}\"")
             buildConfigField("String", "APP_ENVIRONMENT", "\"production\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.grpcstaff.com\"")
-            buildConfigField("String", "DEFAULT_USER_EMAIL", "\"admin@grpc.com\"")
-            buildConfigField("String", "DEFAULT_USER_PASSWORD", "\"admin123\"")
         }
         
         debug {
@@ -45,8 +43,6 @@ android {
             buildConfigField("String", "FIREBASE_API_KEY", "\"${project.findProperty("FIREBASE_API_KEY") ?: ""}\"")
             buildConfigField("String", "APP_ENVIRONMENT", "\"development\"")
             buildConfigField("String", "API_BASE_URL", "\"https://dev-api.grpcstaff.com\"")
-            buildConfigField("String", "DEFAULT_USER_EMAIL", "\"test@grpc.com\"")
-            buildConfigField("String", "DEFAULT_USER_PASSWORD", "\"test123\"")
         }
     }
     compileOptions {
@@ -101,6 +97,12 @@ dependencies {
 
     // recyclerview
     implementation("androidx.recyclerview:recyclerview:1.2.1")
+
+    // ✅ WorkManager (used for in-app-only scheduled reminders)
+    implementation("androidx.work:work-runtime:2.10.0")
+
+    // ✅ Location (for last-known location sharing)
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // ✅ OkHttp for AI API calls
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
