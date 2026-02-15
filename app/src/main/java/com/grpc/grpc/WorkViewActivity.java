@@ -495,7 +495,14 @@ public class WorkViewActivity extends AppCompatActivity {
               
               // Sort events by time
               events.sort((e1, e2) -> e1.getTime().compareTo(e2.getTime()));
-              
+
+              // Persist today's jobs for the home screen widget (still shows after logout)
+              String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(new java.util.Date());
+              if (today.equals(dateString)) {
+                  WorkViewWidgetHelper.saveTodayJobsCache(getApplicationContext(), dateString, events);
+                  WorkViewWidgetProvider.refreshAllWidgets(getApplicationContext());
+              }
+
               if (isDailyView) {
                   // Create time slot views for daily view
                   createTimeSlotViews();

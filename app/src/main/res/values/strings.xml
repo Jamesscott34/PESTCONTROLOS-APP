@@ -67,4 +67,7 @@
     <string name="help_section6">Notifications + Messaging\n\n- Notifications are in-app only.\n- Use Messaging for 1:1 and group chat.</string>
 
     <string name="help_section7">Support\n\n- If something looks wrong, log out/in and retry.\n- Contact James for support.</string>
+
+    <!-- Admin-only (user 001 in users): OpenRouter API key setup -->
+    <string name="help_section8_admin_ai_key">AI Chat uses OpenRouter. Only the admin (user 001 / James in the users list) can update the API key.\n\n1. Create an OpenRouter account at openrouter.ai\n2. Generate an API key in the OpenRouter dashboard\n3. In the app: open AI Chat, tap the settings (gear) icon in the top-right\n4. Enter the new key and tap Update\n\nThe key is stored securely on the server (Google Secret Manager). The app never stores or displays it.</string>
 </resources>

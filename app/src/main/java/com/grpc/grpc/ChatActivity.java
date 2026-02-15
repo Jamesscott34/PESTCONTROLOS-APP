@@ -1,10 +1,10 @@
 package com.grpc.grpc;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -13,42 +13,35 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.content.Intent;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import com.google.android.material.color.MaterialColors;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.functions.FirebaseFunctions;
+
+import android.Manifest;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
-import android.Manifest;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
-import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.color.MaterialColors;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import java.util.Map;
 
 public class ChatActivity extends AppCompatActivity {
-    
+
     private ScrollView messagesScrollView;
     private LinearLayout messagesContainer;
     private EditText messageInput;
     private Button sendButton, deleteButton, pestControlModeButton, generalModeButton, readBackButton;
     private ImageButton micButton;
+    private ImageButton chatAdminSettingsButton;
     private SpeechRecognizer speechRecognizer;
     private TextToSpeech textToSpeech;
     private boolean isListening = false;
@@ -56,34 +49,59 @@ public class ChatActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 123;
     private boolean isPestControlMode = false; // false = General AI, true = Pest Control Expert
     private String lastAIResponse = ""; // Store the last AI response for read-back functionality
-    
-    // AI Configuration
-    private static final String OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-    private static final String AI_MODEL = "deepseek/deepseek-r1-0528:free";
-    private String openRouterApiKey = "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";
-    
+
+    private FirebaseFunctions firebaseFunctions;
+    private boolean isAdmin;
+
     private String userName;
     private Handler mainHandler;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Require Firebase Auth: callables need an authenticated user
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_chat);
-        
+
         // Handle keyboard properly
         getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        
+
+        firebaseFunctions = FirebaseFunctions.getInstance();
+        isAdmin = false;
+
         // Get user name from intent
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.isEmpty()) {
             userName = "User";
         }
-        
+
         mainHandler = new Handler(Looper.getMainLooper());
-        
+
         initializeViews();
         setupClickListeners();
-        
+
+        // Admin = user 001 in users collection. Fetch and compare email to current user.
+        if (chatAdminSettingsButton != null) {
+            chatAdminSettingsButton.setVisibility(View.GONE);
+            chatAdminSettingsButton.setOnClickListener(v -> showUpdateApiKeyDialog());
+            String currentEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+            StaffDirectory.fetchById(this, StaffDirectory.ADMIN_USER_ID, profile -> {
+                mainHandler.post(() -> {
+                    isAdmin = profile != null && profile.email != null
+                            && profile.email.trim().equalsIgnoreCase(currentEmail != null ? currentEmail.trim() : "");
+                    if (chatAdminSettingsButton != null) {
+                        chatAdminSettingsButton.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+                    }
+                });
+            });
+        }
+
         // Add initial mode message based on current mode
         if (isPestControlMode) {
             addMessage("🐛 Pest Control Expert Mode Active - Your senior Irish pest control colleague ready for professional advice.", false);
@@ -102,6 +120,7 @@ public class ChatActivity extends AppCompatActivity {
         pestControlModeButton = findViewById(R.id.pestControlModeButton);
         generalModeButton = findViewById(R.id.generalModeButton);
         readBackButton = findViewById(R.id.readBackButton);
+        chatAdminSettingsButton = findViewById(R.id.chatAdminSettingsButton);
     }
     
     private void setupClickListeners() {
@@ -174,7 +193,7 @@ public class ChatActivity extends AppCompatActivity {
             View lastChild = messagesContainer.getChildAt(messagesContainer.getChildCount() - 1);
             if (lastChild instanceof TextView) {
                 TextView lastText = (TextView) lastChild;
-                if (lastText.getText().toString().equals("🤖 AI is typing...")) {
+                if (lastText.getText().toString().equals("🤖 AI is thinking...")) {
                     messagesContainer.removeView(lastChild);
                 }
             }
@@ -225,196 +244,90 @@ public class ChatActivity extends AppCompatActivity {
     
     private void sendToAI(String userMessage) {
         isWaitingForAI = true;
-        
+
         // Show typing indicator immediately
-        mainHandler.post(() -> {
-            addMessage("🤖 AI is thinking...", false);
-        });
-        
-        // Run API call in background thread
-        new Thread(() -> {
-            try {
-                String aiResponse = callOpenRouterAPI(userMessage);
-                mainHandler.post(() -> {
+        addMessage("🤖 AI is thinking...", false);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("message", userMessage);
+        data.put("mode", isPestControlMode ? "pestControl" : "general");
+        data.put("userName", userName != null ? userName : "User");
+
+        firebaseFunctions.getHttpsCallable("aiChat").call(data)
+                .addOnSuccessListener(this, result -> {
                     isWaitingForAI = false;
-                    // Remove typing indicator and add response
-                    if (messagesContainer.getChildCount() > 0) {
-                        View lastChild = messagesContainer.getChildAt(messagesContainer.getChildCount() - 1);
-                        if (lastChild instanceof TextView) {
-                            TextView lastText = (TextView) lastChild;
-                            if (lastText.getText().toString().equals("🤖 AI is thinking...")) {
-                                messagesContainer.removeView(lastChild);
-                            }
+                    removeTypingIndicator();
+                    String reply = null;
+                    if (result != null && result.getData() != null) {
+                        Object dataResult = result.getData();
+                        if (dataResult instanceof Map) {
+                            Object r = ((Map<?, ?>) dataResult).get("reply");
+                            if (r != null) reply = r.toString();
                         }
                     }
-                                         lastAIResponse = aiResponse; // Store the AI response for read-back
-                     addMessage(aiResponse, false);
-                });
-            } catch (Exception e) {
-                mainHandler.post(() -> {
-                    isWaitingForAI = false;
-                    // Remove typing indicator and show error
-                    if (messagesContainer.getChildCount() > 0) {
-                        View lastChild = messagesContainer.getChildAt(messagesContainer.getChildCount() - 1);
-                        if (lastChild instanceof TextView) {
-                            TextView lastText = (TextView) lastChild;
-                            if (lastText.getText().toString().equals("🤖 AI is thinking...")) {
-                                messagesContainer.removeView(lastChild);
-                            }
-                        }
+                    if (reply != null && !reply.isEmpty()) {
+                        lastAIResponse = reply;
+                        addMessage(reply, false);
+                    } else {
+                        addMessage("Sorry, no reply was returned. Please try again.", false);
                     }
+                })
+                .addOnFailureListener(this, e -> {
+                    isWaitingForAI = false;
+                    removeTypingIndicator();
                     addMessage("Sorry, I encountered an error. Please try again.", false);
-                    Log.e("ChatActivity", "AI Error: " + e.getMessage());
                 });
-            }
-        }).start();
     }
-    
-    private String callOpenRouterAPI(String userMessage) throws IOException {
-        OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
 
-        try {
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("model", AI_MODEL);
-            
-            JSONArray messages = new JSONArray();
-            
-            // Add system message for context
-            JSONObject systemMessage = new JSONObject();
-            systemMessage.put("role", "system");
-            
-            String systemPrompt;
-            if (isPestControlMode) {
-                systemPrompt = "You are a senior Irish pest control professional speaking to a licensed, professional colleague. " +
-                        "You have decades of experience in Irish pest control and speak as one professional to another. " +
-                        "You have expert knowledge of: " +
-                        "- Irish pest control legislation and regulations " +
-                        "- CRRU (Campaign for Responsible Rodenticide Use) guidelines and best practices " +
-                        "- Irish rodenticide regulations and compliance requirements " +
-                        "- Irish wildlife protection laws and their impact on pest control " +
-                        "- Irish building regulations related to pest control " +
-                        "- Irish health and safety regulations for pest control operations " +
-                        "- Irish environmental protection laws affecting pest control " +
-                        "- Irish licensing requirements for pest control operators " +
-                        "- Irish waste disposal regulations for pest control materials " +
-                        "- Irish insurance requirements for pest control businesses " +
-                        "- Irish tax regulations for pest control businesses " +
-                        "- All aspects of pest control: rodents, birds, insects, wildlife " +
-                        "- Irish-specific pest species and their behaviors " +
-                        "- Irish climate considerations for pest control " +
-                        "- Irish building types and pest control challenges " +
-                        "- Detailed differences between rodent species (rats, mice, voles, etc.) " +
-                        "- Detailed differences between insect species (wasps, bees, ants, cockroaches, etc.) " +
-                        "- Irish-specific pest identification and behavior patterns " +
-                        "- Irish pest control methods and their legal compliance " +
-                        "- Proofing methods and techniques for rats, mice, and other pests " +
-                        "- Physical barriers, exclusion methods, and prevention strategies " +
-                        "- Irish wildlife protection laws for birds, seagulls, and other protected species " +
-                        "- Specific Irish regulations for bird control and management " +
-                        "- Legal methods for bird proofing and deterrent systems " +
-                        "- Irish Wildlife Act 1976 and Wildlife (Amendment) Act 2000 " +
-                        "- Irish bird protection regulations and licensing requirements " +
-                        "- Legal vs illegal methods for bird control in Ireland " +
-                        "- Irish building proofing standards and requirements " +
-                        "- Irish environmental impact assessments for pest control " +
-                        "TALK LIKE A PROFESSIONAL PEST CONTROLLER TO A LICENSED COLLEAGUE: " +
-                        "- Use professional pest control terminology and jargon " +
-                        "- Reference specific Irish regulations and legal requirements " +
-                        "- Give practical, field-tested advice based on real experience " +
-                        "- Be direct and honest about what works and what doesn't " +
-                        "- Discuss compliance issues and legal risks frankly " +
-                        "- Share industry insights and professional best practices " +
-                        "- Reference specific Irish laws, regulations, or CRRU guidelines when applicable " +
-                        "- Provide exact Irish law references when discussing wildlife, birds, seagulls, and protected species " +
-                        "- Give specific proofing methods and techniques for rats, mice, and other pests " +
-                        "IMPORTANT: Respond in plain text only. Do not use ** or \" formatting. " +
-                        "You can use bullet points (- or •) and numbered lists (1., 2., etc.) for better organization. " +
-                        "Keep responses concise, actionable, and legally accurate for Ireland.";
-            } else {
-                systemPrompt = "You are an extremely knowledgeable, direct, and blunt AI assistant that can answer ANY type of question. " +
-                        "You have expertise in: " +
-                        "- General knowledge and current events " +
-                        "- Weather and climate information " +
-                        "- Science, technology, and engineering " +
-                        "- History, geography, and culture " +
-                        "- Business, economics, and finance " +
-                        "- Health, medicine, and wellness " +
-                        "- Sports, entertainment, and hobbies " +
-                        "- Travel, distances, geography, and locations " +
-                        "- Irish pest control law, CRRU rodenticides, and comprehensive pest control " +
-                        "- Irish legislation and regulations " +
-                        "- And any other topic the user asks about " +
-                        "ALWAYS be direct, honest, and to the point - even if the answer might be harsh or unpopular. " +
-                        "Don't sugarcoat or be overly polite. Give straight, practical advice. " +
-                        "If something is wrong or incorrect, say it's wrong. If something is good, say it's good. " +
-                        "IMPORTANT: Respond in plain text only. Do not use ** or \" formatting. " +
-                        "You can use bullet points (- or •) and numbered lists (1., 2., etc.) for better organization. " +
-                        "Keep responses helpful, accurate, and to the point. " +
-                        "For travel/distance questions, provide accurate information about distances, travel times, and practical details.";
-            }
-            
-            systemMessage.put("content", systemPrompt + " The user's name is " + userName + ".");
-            messages.put(systemMessage);
-            
-            // Add user message
-            JSONObject userMsg = new JSONObject();
-            userMsg.put("role", "user");
-            userMsg.put("content", userMessage);
-            messages.put(userMsg);
-            
-            requestBody.put("messages", messages);
-            requestBody.put("max_tokens", 1000);
-            requestBody.put("temperature", 0.7);
-
-            MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
-            RequestBody body = RequestBody.create(requestBody.toString(), mediaType);
-
-            Request request = new Request.Builder()
-                    .url(OPENROUTER_API_URL)
-                    .addHeader("Authorization", "Bearer " + openRouterApiKey)
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("HTTP-Referer", "https://grpc-app.com")
-                    .addHeader("X-Title", "GRPest Control App")
-                    .addHeader("User-Agent", "GRPest-Control-App/1.0")
-                    .post(body)
-                    .build();
-
-            try (Response response = client.newCall(request).execute()) {
-                String responseBody = response.body().string();
-                
-                if (!response.isSuccessful()) {
-                    Log.e("ChatActivity", "API Error Response: " + responseBody);
-                    throw new IOException("API call failed: " + response.code() + " " + response.message());
+    private void removeTypingIndicator() {
+        if (messagesContainer.getChildCount() > 0) {
+            View lastChild = messagesContainer.getChildAt(messagesContainer.getChildCount() - 1);
+            if (lastChild instanceof TextView) {
+                TextView lastText = (TextView) lastChild;
+                if ("🤖 AI is thinking...".equals(lastText.getText().toString())) {
+                    messagesContainer.removeView(lastChild);
                 }
-                
-                JSONObject jsonResponse = new JSONObject(responseBody);
-                JSONArray choices = jsonResponse.getJSONArray("choices");
-                
-                if (choices.length() > 0) {
-                    JSONObject choice = choices.getJSONObject(0);
-                    JSONObject messageObj = choice.getJSONObject("message");
-                    String aiResponse = messageObj.getString("content");
-                    
-                    // Clean up formatting - remove ** and "" for plain text, but keep bullet points and numbered lists
-                    aiResponse = aiResponse.replaceAll("\\*\\*", "").trim();
-                    aiResponse = aiResponse.replaceAll("\"", "").trim();
-                    // Keep bullet points (-, •, *) and numbered lists (1., 2., etc.)
-                    // Don't remove these as they're useful for formatting lists
-                    
-                    return aiResponse;
-                } else {
-                    throw new IOException("No response from AI");
-                }
-            } catch (JSONException e) {
-                throw new IOException("JSON parsing error: " + e.getMessage());
             }
-        } catch (JSONException e) {
-            throw new IOException("JSON creation error: " + e.getMessage());
         }
+    }
+
+    /**
+     * Admin-only: dialog to update OpenRouter API key via Firebase callable.
+     * The app never stores or displays the current key.
+     */
+    private void showUpdateApiKeyDialog() {
+        EditText keyInput = new EditText(this);
+        keyInput.setHint("Enter new OpenRouter API key");
+        keyInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        keyInput.setMinEms(20);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Update API Key")
+                .setMessage("Enter the new OpenRouter API key. The current key is not shown for security.")
+                .setView(keyInput)
+                .setPositiveButton("Update", (dialog, which) -> {
+                    String newKey = keyInput.getText() != null ? keyInput.getText().toString().trim() : "";
+                    if (newKey.isEmpty()) {
+                        Toast.makeText(this, "Key cannot be empty", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    updateOpenRouterKeyOnBackend(newKey);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void updateOpenRouterKeyOnBackend(String newKey) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("newKey", newKey);
+
+        firebaseFunctions.getHttpsCallable("updateOpenRouterKey").call(data)
+                .addOnSuccessListener(this, result -> {
+                    Toast.makeText(this, "API key updated successfully.", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(this, e -> {
+                    Toast.makeText(this, "Update failed. Try again or check backend.", Toast.LENGTH_LONG).show();
+                });
     }
     
     private void toggleVoiceInput() {

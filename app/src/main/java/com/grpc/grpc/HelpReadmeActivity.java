@@ -76,6 +76,19 @@ public class HelpReadmeActivity extends AppCompatActivity {
         setupSectionToggle(R.id.section5Header, R.id.section5Content);
         setupSectionToggle(R.id.section6Header, R.id.section6Content);
         setupSectionToggle(R.id.section7Header, R.id.section7Content);
+
+        // Admin-only section 8: visible only for user 001 (James) in users collection
+        LinearLayout section8 = findViewById(R.id.section8);
+        if (section8 != null && currentUser != null && !currentUser.trim().isEmpty()) {
+            StaffDirectory.fetchByUserName(this, currentUser, profile -> {
+                runOnUiThread(() -> {
+                    if (section8 != null && profile != null && StaffDirectory.ADMIN_USER_ID.equals(profile.id)) {
+                        section8.setVisibility(View.VISIBLE);
+                        setupSectionToggle(R.id.section8Header, R.id.section8Content);
+                    }
+                });
+            });
+        }
     }
 
     private void applyRoleContent(String userKey) {

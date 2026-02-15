@@ -35,12 +35,20 @@ public class StaffDirectory {
     // Try a small set of likely collection names to avoid forcing a restructure.
     private static final String[] COLLECTIONS = new String[] {"Staff", "staff", "Users", "users"};
 
+    /** Admin user id in users collection (James = 001). Used for API key update and admin-only UI. */
+    public static final String ADMIN_USER_ID = "001";
+
     private static final Map<String, String> USERNAME_TO_ID = new HashMap<>();
+    private static final Map<String, String> ID_TO_USERNAME = new HashMap<>();
     static {
         USERNAME_TO_ID.put("james", "001");
         USERNAME_TO_ID.put("ian", "002");
         USERNAME_TO_ID.put("dean", "003");
         USERNAME_TO_ID.put("kristine", "004");
+        ID_TO_USERNAME.put("001", "james");
+        ID_TO_USERNAME.put("002", "ian");
+        ID_TO_USERNAME.put("003", "dean");
+        ID_TO_USERNAME.put("004", "kristine");
     }
 
     public interface Callback {
@@ -80,6 +88,18 @@ public class StaffDirectory {
 
         FirebaseFirestore db = FirebaseHelper.getFirestore();
         fetchFromCollections(db, id, key, 0, callback);
+    }
+
+    /** Fetches staff by document id (e.g. "001" for James) from Staff/Users collection. */
+    public static void fetchById(Context context, String id, Callback callback) {
+        if (id == null || id.trim().isEmpty()) {
+            if (callback != null) callback.onResult(null);
+            return;
+        }
+        String userKey = ID_TO_USERNAME.get(id.trim());
+        if (userKey == null) userKey = id.trim().toLowerCase(Locale.getDefault());
+        FirebaseFirestore db = FirebaseHelper.getFirestore();
+        fetchFromCollections(db, id.trim(), userKey, 0, callback);
     }
 
     private static void fetchFromCollections(FirebaseFirestore db, String id, String userKey, int idx, Callback callback) {

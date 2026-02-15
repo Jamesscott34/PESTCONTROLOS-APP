@@ -437,7 +437,7 @@ public class MainActivity extends AppCompatActivity {
         NotificationsButton = findViewById(R.id.NotificationsButton);
         LocationFinderButton = findViewById(R.id.LocationFinderButton);
         SearchButton = findViewById(R.id.SearchButton);
-       // ChatButton = findViewById(R.id.ChatButton);
+        ChatButton = findViewById(R.id.ChatButton);
     }
 
     /**

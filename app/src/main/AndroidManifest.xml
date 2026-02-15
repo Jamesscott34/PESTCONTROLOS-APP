@@ -132,11 +132,11 @@
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:exported="true"/>
 
-        <!-- Chat Activity - AI Chat Assistant
+        <!-- Chat Activity - AI Chat Assistant -->
         <activity
             android:name=".ChatActivity"
             android:windowSoftInputMode="adjustResize"
-            android:exported="false"/> -->
+            android:exported="false"/>
 
         <!-- Add Follow-up Activity -->
         <activity

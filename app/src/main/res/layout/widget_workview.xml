@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_workview_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:background="@android:color/white">
+
+    <!-- Logo -->
+    <ImageView
+        android:id="@+id/widget_workview_logo"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_horizontal"
+        android:scaleType="fitCenter"
+        android:contentDescription="GRPC Logo"
+        android:src="@drawable/logo" />
+
+    <!-- Title: Work View -->
+    <TextView
+        android:id="@+id/widget_workview_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:text="Work View"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#1a1a1a" />
+
+    <!-- Today's date -->
+    <TextView
+        android:id="@+id/widget_workview_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:gravity="center"
+        android:textSize="13sp"
+        android:textColor="#666666" />
+
+    <!-- Divider / spacer -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="6dp"
+        android:background="#eeeeee" />
+
+    <!-- Job 1 -->
+    <TextView
+        android:id="@+id/widget_job1_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#444444"
+        android:textStyle="bold" />
+    <TextView
+        android:id="@+id/widget_job1_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="#1a1a1a" />
+    <TextView
+        android:id="@+id/widget_job1_address"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="11sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="#666666"
+        android:paddingBottom="8dp" />
+
+    <!-- Job 2 -->
+    <TextView
+        android:id="@+id/widget_job2_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#444444"
+        android:textStyle="bold" />
+    <TextView
+        android:id="@+id/widget_job2_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="#1a1a1a" />
+    <TextView
+        android:id="@+id/widget_job2_address"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="11sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="#666666"
+        android:paddingBottom="8dp" />
+
+    <!-- Job 3 -->
+    <TextView
+        android:id="@+id/widget_job3_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#444444"
+        android:textStyle="bold" />
+    <TextView
+        android:id="@+id/widget_job3_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="#1a1a1a" />
+    <TextView
+        android:id="@+id/widget_job3_address"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="11sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="#666666" />
+
+</LinearLayout>

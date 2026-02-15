@@ -3,6 +3,52 @@ const admin = require('firebase-admin');
 
 admin.initializeApp();
 
+/** Admin = user document 001 in users/staff collection (James). No hardcoded email. */
+const ADMIN_USER_ID = '001';
+const USER_COLLECTIONS = ['Staff', 'staff', 'Users', 'users'];
+/** Secret name in Google Cloud Secret Manager (Console: Security → Secret Manager). AI Chat uses only this; no key in app. */
+const SECRET_NAME = 'AI-API-Work';
+
+/** Returns the email of user 001 from Firestore, or null if not found. */
+async function getAdminEmail() {
+  const db = admin.firestore();
+  for (const coll of USER_COLLECTIONS) {
+    try {
+      const doc = await db.collection(coll).doc(ADMIN_USER_ID).get();
+      if (doc && doc.exists) {
+        const data = doc.data();
+        const email = (data && (data.email || data.Email));
+        if (email && String(email).trim()) return String(email).trim();
+      }
+    } catch (e) {
+      continue;
+    }
+  }
+  return null;
+}
+
+// Lazy-load to avoid analyze-time errors; only required when AI/secret code runs
+let secretClient = null;
+function getSecretClient() {
+  if (!secretClient) {
+    const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+    secretClient = new SecretManagerServiceClient();
+  }
+  return secretClient;
+}
+
+/** Returns the OpenRouter API key from Secret Manager only. Used by aiChat; never stored in the app. */
+async function getOpenRouterKey() {
+  const projectId = process.env.GCLOUD_PROJECT;
+  if (!projectId) throw new Error('GCLOUD_PROJECT not set');
+  const [version] = await getSecretClient().accessSecretVersion({
+    name: `projects/${projectId}/secrets/${SECRET_NAME}/versions/latest`,
+  });
+  const key = version.payload.data.toString('utf8').trim();
+  if (!key) throw new Error('AI-API-Work secret is empty; add a key in Secret Manager or use Update API Key in the app.');
+  return key;
+}
+
 /** Save notification to Firestore for in-app notification history */
 async function saveNotificationHistory(recipientTopic, title, body, type, data) {
   try {
@@ -543,4 +589,64 @@ exports.onLeadUpdatedNotifyCommission = functions.firestore
     console.log('✅ Commission update in-app notification saved for', affectedTech);
     return null;
   });
+
+// ---------- AI Chat: uses ONLY the key from Secret Manager (AI-API-Work). No key in app. ----------
+const PEST_SYSTEM_PROMPT = `You are a senior Irish pest control professional speaking to a licensed, professional colleague. You have decades of experience in Irish pest control and speak as one professional to another. You have expert knowledge of: Irish pest control legislation and regulations; CRRU (Campaign for Responsible Rodenticide Use) guidelines; Irish rodenticide regulations and compliance; Irish wildlife protection laws; Irish building and health and safety regulations for pest control; Irish licensing, waste disposal, insurance and tax for pest control; rodents, birds, insects, wildlife; Irish-specific pest species and behaviors; proofing methods for rats, mice and other pests; Irish Wildlife Act 1976 and bird protection regulations. Use professional terminology, reference Irish regulations, give practical field-tested advice. Respond in plain text only; you may use bullet points and numbered lists. Keep responses concise, actionable and legally accurate for Ireland.`;
+
+const GENERAL_SYSTEM_PROMPT = `You are a knowledgeable, direct AI assistant that can answer any question: general knowledge, weather, science, history, business, health, travel, Irish pest control law, and more. Be direct and honest. Respond in plain text only; you may use bullet points and numbered lists. Keep responses helpful and to the point.`;
+
+exports.aiChat = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required.');
+
+  const message = data && data.message;
+  if (!message || typeof message !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'message must be a string');
+  }
+
+  const mode = (data && data.mode) === 'pestControl' ? 'pestControl' : 'general';
+  const userName = (data && data.userName) ? String(data.userName).trim() : 'User';
+  const systemContent = (mode === 'pestControl' ? PEST_SYSTEM_PROMPT : GENERAL_SYSTEM_PROMPT) + ' The user\'s name is ' + userName + '.';
+
+  // Key comes only from Google Secret Manager (AI-API-Work). Update via admin "Update API Key" in the app.
+  const apiKey = await getOpenRouterKey();
+  const OpenAI = require('openai');
+  const client = new OpenAI({
+    apiKey,
+    baseURL: 'https://openrouter.ai/api/v1',
+  });
+
+  const resp = await client.chat.completions.create({
+    model: 'openai/gpt-4o-mini',
+    messages: [
+      { role: 'system', content: systemContent },
+      { role: 'user', content: message },
+    ],
+  });
+
+  return { reply: (resp.choices && resp.choices[0] && resp.choices[0].message && resp.choices[0].message.content) || '' };
+});
+
+// ---------- Admin-only: Update OpenRouter API key (new secret version). Admin = user 001 in users. ----------
+exports.updateOpenRouterKey = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required.');
+
+  const callerEmail = (context.auth.token && context.auth.token.email) ? String(context.auth.token.email).trim() : '';
+  const adminEmail = await getAdminEmail();
+  if (!adminEmail || callerEmail.toLowerCase() !== adminEmail.toLowerCase()) {
+    throw new functions.https.HttpsError('permission-denied', 'Only the admin (user 001) can update the API key.');
+  }
+
+  const newKey = data && data.newKey;
+  if (!newKey || typeof newKey !== 'string' || newKey.trim() === '') {
+    throw new functions.https.HttpsError('invalid-argument', 'newKey must be a non-empty string');
+  }
+
+  const projectId = process.env.GCLOUD_PROJECT;
+  const [version] = await getSecretClient().addSecretVersion({
+    parent: `projects/${projectId}/secrets/${SECRET_NAME}`,
+    payload: { data: Buffer.from(newKey.trim(), 'utf8') },
+  });
+  console.log('AI-API-Work secret version created:', version.name);
+  return { success: true };
+});
 

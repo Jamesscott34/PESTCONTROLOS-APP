@@ -86,7 +86,8 @@ public class ActionFormActivity extends AppCompatActivity {
     // AI and Voice Recognition Components
     private static final String OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
     private static final String AI_MODEL = "mistralai/mistral-nemo";
-    private String openRouterApiKey = "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";
+    // Do not hardcode API keys. User is prompted or use secure backend. Leave empty for prompt.
+    private String openRouterApiKey = "";
     
     private SpeechRecognizer speechRecognizer;
     private TextToSpeech textToSpeech;

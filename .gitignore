@@ -125,3 +125,10 @@ credentials/
 README.local.md
 SETUP.local.md
 CONFIG.local.md
+
+# OAuth / app credentials (do not commit)
+**/credentials.json
+**/res/raw/credentials.json
+app/src/main/res/raw/credentials.json
+**/client_secret*.json
+**/client_id*.json

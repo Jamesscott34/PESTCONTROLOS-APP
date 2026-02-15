@@ -278,7 +278,7 @@
                 android:text="How to Use App"
                 android:layout_marginBottom="8dp" />
 
-            <!-- AI Chat Assistant
+            <!-- AI Chat Assistant -->
             <Button
                 android:id="@+id/ChatButton"
                 android:layout_width="match_parent"
@@ -286,7 +286,7 @@
                 android:text="🤖 AI Chat Assistant"
                 android:layout_marginBottom="8dp"
                 android:background="@drawable/button_background"
-                android:textColor="?attr/colorOnPrimary" /> -->
+                android:textColor="?attr/colorOnPrimary" />
 
         </LinearLayout>
     </ScrollView>

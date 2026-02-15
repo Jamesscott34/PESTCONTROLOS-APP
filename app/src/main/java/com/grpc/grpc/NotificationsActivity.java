@@ -297,6 +297,14 @@ public class NotificationsActivity extends AppCompatActivity {
             return;
         }
 
+        // Daily behinds/due list PDFs: open Behinds List (files location in app)
+        if ("daily_pdf".equals(type)) {
+            Intent intent = new Intent(this, BehindsListViewActivity.class);
+            intent.putExtra("USER_NAME", currentUser);
+            startActivity(intent);
+            return;
+        }
+
         // Fallback: open Notifications list only
         Toast.makeText(this, "No screen linked to this notification.", Toast.LENGTH_SHORT).show();
     }
@@ -320,6 +328,14 @@ public class NotificationsActivity extends AppCompatActivity {
     }
 
     private void openLocationForNotification(String type, Map<String, Object> data) {
+        // Daily behinds/due list: "location" = Behinds List screen in app
+        if ("daily_pdf".equals(type)) {
+            Intent intent = new Intent(this, BehindsListViewActivity.class);
+            intent.putExtra("USER_NAME", userName != null ? userName : "");
+            startActivity(intent);
+            return;
+        }
+
         // 1) Direct address in data
         String direct = extractAddress(data);
         if (!TextUtils.isEmpty(direct)) {
