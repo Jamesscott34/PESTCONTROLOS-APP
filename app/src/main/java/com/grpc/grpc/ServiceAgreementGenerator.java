@@ -45,7 +45,7 @@ import java.util.Locale;
  * - Saves the agreement locally in the designated folder
  * - Ensures contract compliance with regulatory standards
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

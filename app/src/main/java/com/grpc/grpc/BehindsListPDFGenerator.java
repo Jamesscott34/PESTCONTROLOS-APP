@@ -46,7 +46,7 @@ import java.util.Map;
  * - Formats report content with structured headings and separators
  * - Includes company branding and professional formatting
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class BehindsListPDFGenerator {

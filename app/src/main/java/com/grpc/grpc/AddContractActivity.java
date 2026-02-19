@@ -23,7 +23,7 @@ import java.util.Map;
  *
  * This activity handles the addition of contracts to the Firestore database.
  * Users input contract details, and the data is validated before being stored.
- * If the logged-in user is "Kristine," they can choose which user's contract
+ * If the logged-in user is 004, they can choose which user's contract
  * to add. Otherwise, the contract is stored under the logged-in user's name.
  *
  * Features:
@@ -31,7 +31,7 @@ import java.util.Map;
  * - Contract storage in Firestore
  * - Navigation to the ContractsActivity
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class AddContractActivity extends AppCompatActivity {
@@ -50,12 +50,11 @@ public class AddContractActivity extends AppCompatActivity {
     private String userName;
     private Spinner assignedTechSpinner;
 
-    private static final String[] TECHNICIANS = {"James", "Dean", "Ian"};
+    private static final String[] TECHNICIAN_IDS = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
 
     private boolean canAssignContracts() {
-        return "james".equalsIgnoreCase(userName)
-                || "ian".equalsIgnoreCase(userName)
-                || "kristine".equalsIgnoreCase(userName);
+        String userId = StaffDirectory.getUserId(userName);
+        return StaffDirectory.isAdminUserId(userId);
     }
 
     @SuppressLint("MissingInflatedId")
@@ -88,20 +87,20 @@ public class AddContractActivity extends AppCompatActivity {
         backButton = findViewById(R.id.buttonBack);
         assignedTechSpinner = findViewById(R.id.assignedTechSpinner);
 
-        // Assign-to dropdown for admins (prevents typos and ensures notifications go to correct inbox)
         if (assignedTechSpinner != null) {
+            String[] names = StaffDirectory.getDisplayNamesForIds(TECHNICIAN_IDS);
             android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(
                     this,
                     android.R.layout.simple_spinner_item,
-                    TECHNICIANS
+                    names
             );
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             assignedTechSpinner.setAdapter(adapter);
 
-            // Default selection = current user when possible
+            String userId = StaffDirectory.getUserId(userName);
             int sel = 0;
-            for (int i = 0; i < TECHNICIANS.length; i++) {
-                if (TECHNICIANS[i].equalsIgnoreCase(userName)) {
+            for (int i = 0; i < TECHNICIAN_IDS.length; i++) {
+                if (TECHNICIAN_IDS[i].equals(userId)) {
                     sel = i;
                     break;
                 }
@@ -147,14 +146,19 @@ public class AddContractActivity extends AppCompatActivity {
             if (email.isEmpty()) email = "N/A";
             if (contact.isEmpty()) contact = "N/A";
 
-            String owner = userName;
+            String ownerId = StaffDirectory.getUserId(userName);
+            String owner = StaffDirectory.getFallbackDisplayName(ownerId);
             if (assignedTechSpinner != null && assignedTechSpinner.getVisibility() == View.VISIBLE) {
-                Object sel = assignedTechSpinner.getSelectedItem();
-                if (sel != null) owner = String.valueOf(sel).trim();
+                int pos = assignedTechSpinner.getSelectedItemPosition();
+                if (pos >= 0 && pos < TECHNICIAN_IDS.length) {
+                    ownerId = TECHNICIAN_IDS[pos];
+                    owner = StaffDirectory.getFallbackDisplayName(ownerId);
+                }
             }
-            if (owner == null || owner.trim().isEmpty()) owner = userName;
+            if (ownerId == null) ownerId = "003";
+            if (owner == null || owner.isEmpty()) owner = StaffDirectory.getFallbackDisplayName(ownerId);
 
-            String tableName = owner + " Contracts";
+            String tableName = StaffDirectory.getContractsCollectionName(ownerId);
             addContractToFirestore(tableName, name, address, email, contact, visits, owner);
         });
 
@@ -227,33 +231,36 @@ public class AddContractActivity extends AppCompatActivity {
     }
 
     /**
-     * Oversight notification: when Dean adds a contract, notify Ian/James/Kristine.
+     * Oversight notification: when technician 003 adds a contract, notify admin users (001, 002, 004).
      */
     private void writeInAppContractOversightIfNeeded(String contractId, String contractName, String owner, String createdBy) {
         try {
             if (contractId == null || contractId.trim().isEmpty()) return;
-            String creator = createdBy != null ? createdBy.trim() : "";
-            String creatorLower = creator.toLowerCase(Locale.getDefault());
-            if (!"dean".equals(creatorLower)) return;
+            String creatorId = StaffDirectory.getUserId(createdBy);
+            if (!"003".equals(creatorId)) return;
 
             String ownerName = owner != null ? owner.trim() : "";
-            if (ownerName.isEmpty()) ownerName = "Dean";
+            if (ownerName.isEmpty()) ownerName = StaffDirectory.getFallbackDisplayName("003");
+            String creatorDisplay = StaffDirectory.getReportDisplayName("003");
+            if (creatorDisplay.isEmpty()) creatorDisplay = createdBy;
 
             Map<String, Object> data = new HashMap<>();
             data.put("contractId", contractId);
             data.put("contractName", contractName);
-            data.put("userName", ownerName); // open Dean's contracts
-            data.put("createdBy", creator);
+            data.put("userName", ownerName);
+            data.put("createdBy", createdBy);
             data.put("type", "contract_update");
 
             String title = "📋 Contract added";
-            String body = "Dean added a contract"
+            String body = creatorDisplay + " added a contract"
                     + (contractName != null && !contractName.trim().isEmpty() ? (": " + contractName.trim()) : "")
                     + " (assigned to " + ownerName + ")";
 
-            NotificationUtils.writeInAppNotification("ian", "contract_added_by_dean_" + contractId + "_ian", title, body, "contract_update", data);
-            NotificationUtils.writeInAppNotification("james", "contract_added_by_dean_" + contractId + "_james", title, body, "contract_update", data);
-            NotificationUtils.writeInAppNotification("kristine", "contract_added_by_dean_" + contractId + "_kristine", title, body, "contract_update", data);
+            for (String adminId : StaffDirectory.ADMIN_USER_IDS) {
+                String userKey = StaffDirectory.getUserNameKey(adminId);
+                if (userKey != null)
+                    NotificationUtils.writeInAppNotification(userKey, "contract_added_by_003_" + contractId + "_" + userKey, title, body, "contract_update", data);
+            }
         } catch (Exception ignored) {
         }
     }

@@ -5,7 +5,7 @@
  * Allows users to add follow-ups to existing jobs and contracts
  * with date and time selection.
  * 
- * Author: James Scott
+ * Author: GRPC
  * Company: Good Riddance Pest Control
  * Version: 1.0
  * Last Updated: 2024

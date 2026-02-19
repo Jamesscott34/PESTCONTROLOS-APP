@@ -19,7 +19,7 @@ import java.util.List;
  * - Handles user clicks on folders using an interface callback
  * - Provides a structured way to list and interact with folders
  *
- * Author: James Scott
+ * Author: GRPC
  */
 public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder> {
     private List<String> folderList;

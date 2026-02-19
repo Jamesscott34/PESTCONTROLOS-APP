@@ -2,8 +2,8 @@ package com.grpc.grpc;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Patterns;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -26,7 +26,7 @@ import java.util.List;
  * - Automatic field clearing after PDF generation
  * - Navigation back to the previous activity with user details
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class BirdQuotationActivity extends AppCompatActivity {
@@ -34,6 +34,7 @@ public class BirdQuotationActivity extends AppCompatActivity {
     private EditText addressInput, quoteDescriptionInput, userEmailInput, mobileNumberInput;
     private EditText itemDescriptionInput, itemPriceInput;
     private Button addItemButton, generatePdfButton;
+    private CheckBox check30PercentDeposit;
 
     private String userName;
 
@@ -72,11 +73,25 @@ public class BirdQuotationActivity extends AppCompatActivity {
         itemPriceInput = findViewById(R.id.itemPriceInput);
         addItemButton = findViewById(R.id.addItemButton);
         generatePdfButton = findViewById(R.id.generatePdfButton);
+        check30PercentDeposit = findViewById(R.id.check30PercentDeposit);
 
-        // Add Item Button Listener
+        // Load email and number from users database (Firestore)
+        StaffDirectory.fetchByUserName(this, userName, profile -> {
+            runOnUiThread(() -> {
+                if (profile != null) {
+                    if (userEmailInput != null && profile.email != null && !profile.email.isEmpty())
+                        userEmailInput.setText(profile.email);
+                    if (mobileNumberInput != null && profile.mobile != null && !profile.mobile.isEmpty())
+                        mobileNumberInput.setText(profile.mobile);
+                    if (userEmailInput != null && userEmailInput.getText().toString().trim().isEmpty())
+                        userEmailInput.setHint("Email (from users DB)");
+                    if (mobileNumberInput != null && mobileNumberInput.getText().toString().trim().isEmpty())
+                        mobileNumberInput.setHint("Number (from users DB)");
+                }
+            });
+        });
+
         addItemButton.setOnClickListener(v -> addItem());
-
-        // Generate PDF Button Listener
         generatePdfButton.setOnClickListener(v -> generatePdf());
     }
 
@@ -121,28 +136,21 @@ public class BirdQuotationActivity extends AppCompatActivity {
         String userEmail = userEmailInput.getText().toString().trim();
         String mobileNumber = mobileNumberInput.getText().toString().trim();
 
-        // Validate inputs
-        if (address.isEmpty() || quoteDescription.isEmpty() || userEmail.isEmpty() || mobileNumber.isEmpty()) {
-            Toast.makeText(this, "Please fill in all required fields!", Toast.LENGTH_SHORT).show();
+        if (address.isEmpty() || quoteDescription.isEmpty()) {
+            Toast.makeText(this, "Please fill in address and quote description!", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        if (!Patterns.EMAIL_ADDRESS.matcher(userEmail).matches()) {
-            Toast.makeText(this, "Please enter a valid email address!", Toast.LENGTH_SHORT).show();
+        if (userEmail.isEmpty() || mobileNumber.isEmpty()) {
+            Toast.makeText(this, "Email and number are loaded from your account. If empty, add them in the users database.", Toast.LENGTH_LONG).show();
             return;
         }
-
-        if (!mobileNumber.matches("\\d{10,15}")) { // Check for a valid mobile number
-            Toast.makeText(this, "Please enter a valid mobile number!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         if (descriptions.isEmpty() || lineTotals.isEmpty()) {
             Toast.makeText(this, "Please add at least one line item!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Generate the PDF
+        boolean include30PercentDeposit = check30PercentDeposit != null && check30PercentDeposit.isChecked();
+
         BirdQuotationPDFGenerator.generateBirdQuotation(
                 address,
                 quoteDescription,
@@ -150,6 +158,7 @@ public class BirdQuotationActivity extends AppCompatActivity {
                 lineTotals,
                 userEmail,
                 mobileNumber,
+                include30PercentDeposit,
                 this
         );
 

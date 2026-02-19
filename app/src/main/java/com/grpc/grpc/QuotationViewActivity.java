@@ -50,7 +50,7 @@ import java.util.List;
  * - Allows users to share, rename, and delete quotations
  * - Ensures user-friendly alerts for report interactions
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class QuotationViewActivity extends AppCompatActivity {

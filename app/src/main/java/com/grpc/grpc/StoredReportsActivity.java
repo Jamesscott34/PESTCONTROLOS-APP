@@ -35,7 +35,7 @@ import java.util.List;
  * - Provides user-friendly dialogs for file selection
  * - NEW: Search bars in folder and file selection dialogs
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 
@@ -241,11 +241,12 @@ public class StoredReportsActivity extends AppCompatActivity {
     }
 
     /**
-     * Shows file options dialog (View/Delete/Rename for James)
+     * Shows file options dialog (View/Delete/Rename for user 001 only)
      */
     private void showFileOptions(String folderPath, String fileName) {
-        if ("james".equalsIgnoreCase(userName)) {
-            // James can view, delete, or rename files
+        String userId = StaffDirectory.getUserId(userName);
+        if (StaffDirectory.isJamesUserId(userId)) {
+            // User 001 can view, delete, or rename files
             String[] options = {"View", "Delete", "Rename"};
             new AlertDialog.Builder(this)
                 .setTitle("File Options")

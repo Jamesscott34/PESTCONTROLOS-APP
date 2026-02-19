@@ -20,7 +20,7 @@ import androidx.appcompat.app.AppCompatActivity;
  * - Allows selection between Toxic and Non-Toxic ERAs
  * - Passes the username to the selected ERA activity
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class EnvironmentSelectionActivity extends AppCompatActivity {

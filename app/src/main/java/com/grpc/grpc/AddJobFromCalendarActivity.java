@@ -5,7 +5,7 @@
  * Saves to JobWork collection (same as AddJobsActivity) so jobs appear in View Jobs.
  * AssignedTech is pre-set from the target user; no technician name input needed.
  *
- * Author: James Scott
+ * Author: GRPC
  * Company: Good Riddance Pest Control
  * Version: 1.0
  * Last Updated: 2024
@@ -33,7 +33,7 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
     private TextView assignedToLabel;
     private Button saveJobButton, cancelButton;
     private FirebaseFirestore db;
-    private String assignedTech;  // Target user (James, Ian, Dean)
+    private String assignedTech;  // Target user (login key)
     private String createdBy;      // Logged-in user (for push notifications)
     private long selectedDate;
     private String selectedTime;
@@ -135,7 +135,7 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
     /**
      * In-app notification history (NOT system push):
      * - Always notify the assigned technician (if different from creator)
-     * - If creator is James/Dean, also notify Ian + Kristine (oversight)
+     * - If creator is 001 or 003, also notify oversight users (002, 004)
      */
     private void writeInAppJobNotifications(String jobId, String customerName, String assignedTech, String createdBy) {
         try {
@@ -165,12 +165,16 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
                 );
             }
 
-            // 2) Oversight notifications
-            if ("james".equals(creatorLower) || "dean".equals(creatorLower)) {
+            // 2) Oversight notifications when 001 or 003 adds job
+            String creatorId = StaffDirectory.getUserId(creator);
+            if ("001".equals(creatorId) || "003".equals(creatorId)) {
                 String title = "🚐 New Job Added";
                 String body = creator + " added a Service job for " + customerName + " (assigned to " + tech + ")";
-                NotificationUtils.writeInAppNotification("ian", "jobwork_added_ian_" + jobId, title, body, "jobwork", data);
-                NotificationUtils.writeInAppNotification("kristine", "jobwork_added_kristine_" + jobId, title, body, "jobwork", data);
+                for (String oversightId : StaffDirectory.JOB_OVERSIGHT_USER_IDS) {
+                    String key = StaffDirectory.getUserNameKey(oversightId);
+                    if (key != null)
+                        NotificationUtils.writeInAppNotification(key, "jobwork_added_" + key + "_" + jobId, title, body, "jobwork", data);
+                }
             }
         } catch (Exception ignored) {
             // Never block job creation on notification write

@@ -39,7 +39,7 @@ import java.util.Random;
  * - Stores the quotation details in the local database.
  * - Displays success or error messages to the user.
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class BirdQuotationPDFGenerator {
@@ -52,15 +52,16 @@ public class BirdQuotationPDFGenerator {
      * @param quoteDescription A description of the bird control services quoted.
      * @param descriptions    A list of line item descriptions.
      * @param lineTotals      A list of corresponding line item prices.
-     * @param userEmail       The customer's email address.
-     * @param mobileNumber    The customer's mobile number.
-     * @param context         The Android context for file storage and UI feedback.
+     * @param userEmail              Company email (from users DB).
+     * @param mobileNumber           Company mobile (from users DB).
+     * @param include30PercentDeposit If true, show 30% due before job and remaining; if false, total payment only.
+     * @param context                The Android context for file storage and UI feedback.
      * @return The generated PDF file.
      */
     public static File generateBirdQuotation(
             String address, String quoteDescription,
             List<String> descriptions, List<Double> lineTotals,
-            String userEmail, String mobileNumber, Context context) {
+            String userEmail, String mobileNumber, boolean include30PercentDeposit, Context context) {
 
         File quotesFolder = new File(context.getExternalFilesDir(null), "GRPEST_QUOTES");
         if (!quotesFolder.exists() && !quotesFolder.mkdirs()) {
@@ -143,10 +144,12 @@ public class BirdQuotationPDFGenerator {
             // Payment Summary
             document.add(new Paragraph("\nPayment Summary:").setFontSize(18).setBold().setUnderline());
             document.add(new Paragraph("Total Payment: €" + String.format("%.2f", grandTotal)).setFontSize(16).setBold());
-            document.add(new Paragraph("Payment Due (30%): €" + String.format("%.2f", grandTotal * 0.3)).setFontSize(16).setBold());
-            document.add(new Paragraph("Note: 30% payment is due before the job commences.").setFontSize(12).setItalic());
-            document.add(new Paragraph("Remaining Payment: €" + String.format("%.2f", grandTotal * 0.7)).setFontSize(16).setBold());
-            document.add(new Paragraph("Note: The remaining balance must be paid upon completion of the works.").setFontSize(12).setItalic());
+            if (include30PercentDeposit) {
+                document.add(new Paragraph("Payment Due (30%): €" + String.format("%.2f", grandTotal * 0.3)).setFontSize(16).setBold());
+                document.add(new Paragraph("Note: 30% payment is due before the job commences.").setFontSize(12).setItalic());
+                document.add(new Paragraph("Remaining Payment: €" + String.format("%.2f", grandTotal * 0.7)).setFontSize(16).setBold());
+                document.add(new Paragraph("Note: The remaining balance must be paid upon completion of the works.").setFontSize(12).setItalic());
+            }
 
             document.close();
 

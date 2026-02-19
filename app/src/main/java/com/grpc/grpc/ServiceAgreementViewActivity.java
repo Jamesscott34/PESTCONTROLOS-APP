@@ -37,7 +37,7 @@ import java.util.List;
  * - Enables sharing, renaming, and deleting agreements
  * - Ensures user-friendly alerts and UI interaction
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class ServiceAgreementViewActivity extends AppCompatActivity {

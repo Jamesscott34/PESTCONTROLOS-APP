@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tablet (7"+) dimensions: larger padding and content width limit -->
+<resources>
+    <dimen name="screen_padding">24dp</dimen>
+    <dimen name="screen_padding_bottom">24dp</dimen>
+    <dimen name="welcome_text_size">28sp</dimen>
+    <dimen name="welcome_logo_size">36dp</dimen>
+    <dimen name="welcome_margin_top">48dp</dimen>
+    <dimen name="welcome_margin_bottom">16dp</dimen>
+    <dimen name="button_spacing">12dp</dimen>
+    <dimen name="logout_margin_bottom">24dp</dimen>
+    <!-- Max width for main content on tablet so it doesn't stretch edge-to-edge -->
+    <dimen name="content_max_width">720dp</dimen>
+</resources>

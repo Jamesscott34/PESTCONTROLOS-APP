@@ -25,7 +25,7 @@ import java.util.Map;
  * - WhatsApp notification for the assigned technician
  * - Navigation back to JobsActivity after submission
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class AddJobsActivity extends AppCompatActivity {
@@ -34,7 +34,7 @@ public class AddJobsActivity extends AppCompatActivity {
     private Button submitButton;
     private FirebaseFirestore db;
     private String userName,  custName, custEmail, custContact, issueDetailsText; // Stores values for WhatsApp
-    private static final String[] TECHNICIANS = {"James", "Dean", "Ian", "Kristine"};
+    private static final String[] TECHNICIAN_IDS = StaffDirectory.ORDERED_USER_IDS;
 
     /**
      * Initializes the activity, retrieves user information, and sets up UI elements.
@@ -68,13 +68,14 @@ public class AddJobsActivity extends AppCompatActivity {
         }
 
         if (techNameSpinner != null) {
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, TECHNICIANS);
+            String[] names = StaffDirectory.getDisplayNamesForIds(TECHNICIAN_IDS);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, names);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             techNameSpinner.setAdapter(adapter);
-            // Default selection = current user if present
+            String userId = StaffDirectory.getUserId(userName);
             int sel = 0;
-            for (int i = 0; i < TECHNICIANS.length; i++) {
-                if (TECHNICIANS[i].equalsIgnoreCase(userName)) {
+            for (int i = 0; i < TECHNICIAN_IDS.length; i++) {
+                if (TECHNICIAN_IDS[i].equals(userId)) {
                     sel = i;
                     break;
                 }
@@ -91,8 +92,10 @@ public class AddJobsActivity extends AppCompatActivity {
      */
     private void validateAndSubmitJob() {
         String name = "";
-        if (techNameSpinner != null && techNameSpinner.getSelectedItem() != null) {
-            name = String.valueOf(techNameSpinner.getSelectedItem()).trim();
+        if (techNameSpinner != null) {
+            int pos = techNameSpinner.getSelectedItemPosition();
+            if (pos >= 0 && pos < TECHNICIAN_IDS.length)
+                name = StaffDirectory.getFallbackDisplayName(TECHNICIAN_IDS[pos]);
         }
         custName = customerName.getText().toString().trim();
         custEmail = customerEmail.getText().toString().trim();
@@ -146,7 +149,7 @@ public class AddJobsActivity extends AppCompatActivity {
     /**
      * In-app notification history (NOT system push):
      * - Always notify the assigned technician (if different from creator)
-     * - If creator is James/Dean, also notify Ian + Kristine (oversight)
+     * - If creator is 001 or 003, also notify oversight users (002, 004)
      */
     private void writeInAppJobNotifications(String jobId, String customerName, String assignedTech, String createdBy) {
         try {
@@ -174,11 +177,15 @@ public class AddJobsActivity extends AppCompatActivity {
                 );
             }
 
-            if ("james".equals(creatorLower) || "dean".equals(creatorLower)) {
+            String creatorId = StaffDirectory.getUserId(creator);
+            if ("001".equals(creatorId) || "003".equals(creatorId)) {
                 String title = "🚐 New Job Added";
                 String body = creator + " added a Service job for " + customerName + " (assigned to " + tech + ")";
-                NotificationUtils.writeInAppNotification("ian", "jobwork_added_ian_" + jobId, title, body, "jobwork", data);
-                NotificationUtils.writeInAppNotification("kristine", "jobwork_added_kristine_" + jobId, title, body, "jobwork", data);
+                for (String oversightId : StaffDirectory.JOB_OVERSIGHT_USER_IDS) {
+                    String key = StaffDirectory.getUserNameKey(oversightId);
+                    if (key != null)
+                        NotificationUtils.writeInAppNotification(key, "jobwork_added_" + key + "_" + jobId, title, body, "jobwork", data);
+                }
             }
         } catch (Exception ignored) {
         }

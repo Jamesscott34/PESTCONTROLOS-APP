@@ -86,6 +86,8 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-functions")
+    implementation("com.google.firebase:firebase-appcheck")
+    implementation("com.google.firebase:firebase-appcheck-debug")
 
 
    
@@ -107,4 +109,10 @@ dependencies {
     // ✅ OkHttp for AI API calls
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
 
+}
+
+// Hide deprecation warnings so build doesn't show "Some input files use deprecated API".
+// To see them again and fix, use: options.compilerArgs.add("-Xlint:deprecation")
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-deprecation")
 }

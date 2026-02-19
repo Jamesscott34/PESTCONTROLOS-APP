@@ -114,6 +114,72 @@
             android:backgroundTint="?attr/colorSecondary"
             android:textColor="?attr/colorOnSecondary"/>
 
+        <!-- AI Fix: professional grammar for Site Inspection and Recommendations only -->
+        <Button
+            android:id="@+id/aiFixButton"
+            android:text="✏️ AI Fix"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary"/>
+
+        <!-- PDF Template section: only visible when user is NOT logged in (offline). When logged in this is hidden. -->
+        <LinearLayout
+            android:id="@+id/pdfTemplateSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="PDF Template"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="8dp"
+                android:textColor="?android:attr/textColorPrimary" />
+            <RadioGroup
+                android:id="@+id/templateSelector"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
+                <RadioButton
+                    android:id="@+id/radioGrpcTemplate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Use GRPC Template"
+                    android:checked="true" />
+                <RadioButton
+                    android:id="@+id/radioMyTemplate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Use My Template" />
+            </RadioGroup>
+            <Button
+                android:id="@+id/pdfTemplateSettingsButton"
+                android:text="PDF Template Settings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:backgroundTint="?attr/colorSecondary"
+                android:textColor="?attr/colorOnSecondary" />
+        </LinearLayout>
+
+        <!-- Password protect PDF (same as Action Form) -->
+        <CheckBox
+            android:id="@+id/passwordProtectCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:padding="12dp"
+            android:text="Password protect PDF (require password to edit)"
+            android:textSize="14sp"
+            android:checked="false"
+            android:textColor="?android:attr/textColorPrimary" />
+
         <!-- Save button -->
         <Button
             android:id="@+id/saveButton"

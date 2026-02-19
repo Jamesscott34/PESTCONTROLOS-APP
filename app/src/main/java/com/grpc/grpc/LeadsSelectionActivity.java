@@ -21,7 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
  * - Allows navigation to the lead viewing screen
  * - Ensures USER_NAME is always passed to the next activity
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

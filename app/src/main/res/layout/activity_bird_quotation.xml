@@ -44,22 +44,40 @@
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
+        <TextView
+            android:id="@+id/userEmailLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Company email (from your account)"
+            android:textSize="12sp"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorSecondary" />
+
         <EditText
             android:id="@+id/userEmailInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="User Email"
+            android:hint="Loading…"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
             android:background="?attr/colorSurface"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
+        <TextView
+            android:id="@+id/mobileNumberLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Company number (from your account)"
+            android:textSize="12sp"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorSecondary" />
+
         <EditText
             android:id="@+id/mobileNumberInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Mobile Number"
+            android:hint="Loading…"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
             android:background="?attr/colorSurface"
@@ -96,6 +114,14 @@
             android:text="Add Line Item"
             android:backgroundTint="?attr/colorSecondary"
             android:textColor="?attr/colorOnSecondary"
+            android:layout_marginBottom="8dp" />
+
+        <CheckBox
+            android:id="@+id/check30PercentDeposit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="30% deposit due before job (uncheck for total payment only)"
+            android:textColor="?android:attr/textColorPrimary"
             android:layout_marginBottom="8dp" />
 
         <Button

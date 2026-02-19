@@ -37,7 +37,7 @@ import java.util.Random;
  * - Stores the quotation details in the local database
  * - Displays success or error messages to the user
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

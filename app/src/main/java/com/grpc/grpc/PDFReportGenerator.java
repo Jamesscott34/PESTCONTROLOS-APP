@@ -20,8 +20,10 @@ import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 
+import com.itextpdf.kernel.pdf.EncryptionConstants;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.WriterProperties;
 import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.SolidBorder;
@@ -64,7 +66,7 @@ import java.util.Set;
  * - Formats report content with structured headings and separators
  * - Allows users to attach images to the report for additional documentation
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class PDFReportGenerator {
@@ -82,6 +84,15 @@ public class PDFReportGenerator {
      */
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     public static File generatePDFReport(String reportType, String reportName, String content, Context context, List<Uri> imageUris, String reportDate) {
+        return generatePDFReport(reportType, reportName, content, context, imageUris, reportDate, null);
+    }
+
+    /**
+     * Generates a PDF report with optional password protection. Always uses full compression.
+     * @param ownerPassword If non-null and non-empty, PDF is encrypted (view/print allowed; editing requires password).
+     */
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePDFReport(String reportType, String reportName, String content, Context context, List<Uri> imageUris, String reportDate, String ownerPassword) {
         // Define the folder for storing reports
         File pdfFolder = new File(context.getExternalFilesDir(null), "GRPEST REPORTS");
         if (!pdfFolder.exists()) {
@@ -116,7 +127,18 @@ public class PDFReportGenerator {
         String sanitizedReportName = reportName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + dateToUse + ".pdf";
         File pdfFile = new File(pdfFolder, sanitizedReportName);
 
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile))) {
+        WriterProperties writerProperties = new WriterProperties();
+        writerProperties.setFullCompressionMode(true);
+        if (ownerPassword != null && !ownerPassword.isEmpty()) {
+            writerProperties.setStandardEncryption(
+                    null,
+                    ownerPassword.getBytes(),
+                    EncryptionConstants.ALLOW_PRINTING | EncryptionConstants.ALLOW_COPY,
+                    EncryptionConstants.ENCRYPTION_AES_128
+            );
+        }
+
+        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile), writerProperties)) {
             PdfDocument pdfDocument = new PdfDocument(writer);
             Document document = new Document(pdfDocument);
 
@@ -138,90 +160,7 @@ public class PDFReportGenerator {
             document.add(title);
             document.add(new Paragraph("\n"));  // Adding spacing after the title
 
-            // Normalize line breaks before splitting
-            String normalizedContent = content.replace("\r\n", "\n");
-            String[] reportDetails = normalizedContent.split("\n");
-
-// Create a black line separator
-            LineSeparator blackSeparator = new LineSeparator(new SolidLine()).setStrokeColor(ColorConstants.BLACK);
-
-// Define headings that should have separators (except "Premise Name" at the top)
-            Set<String> headingsWithSeparator = new HashSet<>(Arrays.asList(
-                    "Address", "Date", "Visit Type", "Site Inspection", "Recommendations", "Follow-Up", "Prep", "Tech"
-            ));
-
-            for (String detail : reportDetails) {
-                String[] splitDetail = detail.split(":", 2);
-
-                if (splitDetail.length == 2) {
-                    String labelText = splitDetail[0].trim();
-                    String valueText = splitDetail[1].trim().isEmpty() ? "N/A" : splitDetail[1].trim();
-
-                    // Add top separator **only if the heading is not "Premise Name"**
-                    if (headingsWithSeparator.contains(labelText)) {
-                        document.add(blackSeparator);
-                    }
-
-                    // Add a heading with reduced spacing
-                    Paragraph labelParagraph = new Paragraph(labelText)
-                            .setFontColor(ColorConstants.BLACK)
-                            .setBackgroundColor(ColorConstants.LIGHT_GRAY)
-                            .setBold()
-                            .setFontSize(14)
-                            .setTextAlignment(TextAlignment.CENTER)
-                            .setMarginBottom(8)
-                            .setMarginTop(8);
-
-                    // Add the heading to the document
-                    document.add(labelParagraph);
-
-                    // Add bottom separator **after the heading**
-                    document.add(blackSeparator);
-
-                    // Add the value text with tight spacing
-                    Paragraph valueParagraph = new Paragraph(valueText)
-                            .setFontColor(ColorConstants.BLACK)
-                            .setFontSize(12)
-                            .setTextAlignment(TextAlignment.LEFT)
-                            .setMargin(0)
-                            .setMultipliedLeading(1.2f);
-
-                    document.add(valueParagraph);
-
-                } else {
-                    // For single-line paragraphs, reduce spacing
-                    document.add(new Paragraph(detail.trim())
-                            .setFontColor(ColorConstants.BLACK)
-                            .setFontSize(12)
-                            .setTextAlignment(TextAlignment.LEFT)
-                            .setMargin(0)
-                            .setMultipliedLeading(1.2f));
-                }
-            }
-
-
-
-
-
-
-
-
-
-
-            // Adding images if provided
-            if (imageUris != null && !imageUris.isEmpty()) {
-                for (int i = 0; i < imageUris.size(); i++) {
-                    Uri uri = imageUris.get(i);
-                    try {
-                        document.add(new Paragraph("Images " + (i + 1)).setFontSize(16).setBold());
-                        ImageData imageData = ImageDataFactory.create(context.getContentResolver().openInputStream(uri).readAllBytes());
-                        Image image = new Image(imageData).scaleToFit(300, 300).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
-                        document.add(image);
-                    } catch (IOException e) {
-                        Toast.makeText(context, "Error loading image: " + uri.toString(), Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
+            addReportBodyToDocument(document, content, context, imageUris);
 
             document.close();  // Close the document after content is added
             Toast.makeText(context, "PDF Created Successfully!", Toast.LENGTH_SHORT).show();
@@ -233,6 +172,78 @@ public class PDFReportGenerator {
             e.printStackTrace();
             Toast.makeText(context, "Error Creating PDF!", Toast.LENGTH_SHORT).show();
             return null;
+        }
+    }
+
+    /**
+     * Adds the report body (key-value sections + optional images) to the document.
+     * Same layout as GRPC template: margins, fonts, separators, table-style sections.
+     * If imageUris is null or empty, no image section is added (no placeholder).
+     * Called by PDFReportGenerator and by PDFReportGeneratorWithTemplate for MY_TEMPLATE.
+     */
+    public static void addReportBodyToDocument(Document document, String content, Context context, List<Uri> imageUris) {
+        String normalizedContent = content.replace("\r\n", "\n");
+        String[] reportDetails = normalizedContent.split("\n");
+
+        LineSeparator blackSeparator = new LineSeparator(new SolidLine()).setStrokeColor(ColorConstants.BLACK);
+        Set<String> headingsWithSeparator = new HashSet<>(Arrays.asList(
+                "Address", "Date", "Visit Type", "Site Inspection", "Recommendations", "Follow-Up", "Prep", "Tech"
+        ));
+
+        for (String detail : reportDetails) {
+            String[] splitDetail = detail.split(":", 2);
+
+            if (splitDetail.length == 2) {
+                String labelText = splitDetail[0].trim();
+                String valueText = splitDetail[1].trim().isEmpty() ? "N/A" : splitDetail[1].trim();
+
+                if (headingsWithSeparator.contains(labelText)) {
+                    document.add(blackSeparator);
+                }
+
+                Paragraph labelParagraph = new Paragraph(labelText)
+                        .setFontColor(ColorConstants.BLACK)
+                        .setBackgroundColor(ColorConstants.LIGHT_GRAY)
+                        .setBold()
+                        .setFontSize(14)
+                        .setTextAlignment(TextAlignment.CENTER)
+                        .setMarginBottom(8)
+                        .setMarginTop(8);
+
+                document.add(labelParagraph);
+                document.add(blackSeparator);
+
+                Paragraph valueParagraph = new Paragraph(valueText)
+                        .setFontColor(ColorConstants.BLACK)
+                        .setFontSize(12)
+                        .setTextAlignment(TextAlignment.LEFT)
+                        .setMargin(0)
+                        .setMultipliedLeading(1.2f);
+
+                document.add(valueParagraph);
+
+            } else {
+                document.add(new Paragraph(detail.trim())
+                        .setFontColor(ColorConstants.BLACK)
+                        .setFontSize(12)
+                        .setTextAlignment(TextAlignment.LEFT)
+                        .setMargin(0)
+                        .setMultipliedLeading(1.2f));
+            }
+        }
+
+        if (imageUris != null && !imageUris.isEmpty()) {
+            for (int i = 0; i < imageUris.size(); i++) {
+                Uri uri = imageUris.get(i);
+                try {
+                    document.add(new Paragraph("Images " + (i + 1)).setFontSize(16).setBold());
+                    ImageData imageData = ImageDataFactory.create(context.getContentResolver().openInputStream(uri).readAllBytes());
+                    Image image = new Image(imageData).scaleToFit(300, 300).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
+                    document.add(image);
+                } catch (IOException e) {
+                    Toast.makeText(context, "Error loading image: " + uri.toString(), Toast.LENGTH_SHORT).show();
+                }
+            }
         }
     }
 

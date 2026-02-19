@@ -131,6 +131,19 @@
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
+        <!-- Password protect PDF (same as Action Form) -->
+        <CheckBox
+            android:id="@+id/passwordProtectCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:padding="12dp"
+            android:text="Password protect PDF (require password to edit)"
+            android:textSize="14sp"
+            android:checked="false"
+            android:textColor="?android:attr/textColorPrimary" />
+
         <Button
             android:id="@+id/generateQuoteButton"
             android:text="Generate Quote PDF"

@@ -28,8 +28,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * On first login every 24 hours: automatically generate behinds list and due list PDFs
- * for the logged-in user (Ian, James, Dean) and notify them in-app. For Kristine,
- * generates PDFs for Ian, James, and Dean and notifies Kristine.
+ * for the logged-in user (002, 001, 003) and notify them in-app. For user 004,
+ * generates PDFs for 002, 001, 003 and notifies 004.
  */
 public final class DailyContractPdfHelper {
 
@@ -37,7 +37,7 @@ public final class DailyContractPdfHelper {
     private static final String PREFIX_LAST_RUN = "DAILY_PDF_LAST_";
     private static final long INTERVAL_MS = 24 * 60 * 60 * 1000L;
 
-    private static final String[] TECHNICIANS_FOR_KRISTINE = {"Ian", "James", "Dean"};
+    private static final String[] TECHNICIAN_IDS_FOR_COMBINED = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
 
     /**
      * Call from MainActivity after user is set. Schedules a check: if last run was more than 24h ago
@@ -62,17 +62,17 @@ public final class DailyContractPdfHelper {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         List<String> techniciansToRun = new ArrayList<>();
 
-        // Kristine and Ian both get combined PDFs for Ian, James, and Dean.
-        if ("Kristine".equalsIgnoreCase(userName) || "Ian".equalsIgnoreCase(userName)) {
-            for (String t : TECHNICIANS_FOR_KRISTINE) {
-                techniciansToRun.add(t);
+        String userId = StaffDirectory.getUserId(userName);
+        // 002, 004 get combined PDFs; 001, 003 get own only.
+        if (StaffDirectory.seesAllJobsUserId(userId)) {
+            for (String techId : TECHNICIAN_IDS_FOR_COMBINED) {
+                techniciansToRun.add(StaffDirectory.getFallbackDisplayName(techId));
             }
-        } else if ("James".equalsIgnoreCase(userName) || "Dean".equalsIgnoreCase(userName)) {
-            // James and Dean only get their own PDFs.
+        } else if ("001".equals(userId) || "003".equals(userId)) {
             techniciansToRun.add(userName);
         } else {
             prefs.edit().putLong(prefsKey, runTime).apply();
-            return; // Only auto-run for Ian, James, Dean, Kristine
+            return; // Only auto-run for known user IDs
         }
 
         List<String> generatedFor = new ArrayList<>();

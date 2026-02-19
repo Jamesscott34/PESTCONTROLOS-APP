@@ -60,7 +60,7 @@
  * - Managers: Job oversight, technician assignment, payment processing
  * - All users: Job viewing and basic status updates
  * 
- * Author: James Scott
+ * Author: GRPC
  * Company: Good Riddance Pest Control
  * Version: 1.0
  * Last Updated: 2024
@@ -109,6 +109,7 @@ public class ViewJobActivity extends AppCompatActivity {
     private List<Map<String, Object>> allJobs = new ArrayList<>();
     private FirebaseFirestore db;
     private String userName;
+    private String userId; // 001, 002, 003, 004
     private String initialSearchQuery;
     private int total = 0, completed = 0, pending = 0;
 
@@ -133,13 +134,13 @@ public class ViewJobActivity extends AppCompatActivity {
         // USER AUTHENTICATION & VALIDATION
         // ============================================================================
         
-        // Retrieve and validate user information from intent
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.isEmpty()) {
             Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
+        userId = StaffDirectory.getUserId(userName);
 
         // ============================================================================
         // UI COMPONENT INITIALIZATION
@@ -205,8 +206,8 @@ public class ViewJobActivity extends AppCompatActivity {
 
     private void loadAllJobs() {
         com.google.firebase.firestore.Query baseQuery = db.collection("JobWork");
-        // Kristine and Ian see all jobs; Dean and James see only their assigned jobs
-        if (!"kristine".equalsIgnoreCase(userName) && !"ian".equalsIgnoreCase(userName)) {
+        // 002, 004 see all jobs; 001, 003 see only their assigned jobs
+        if (!StaffDirectory.seesAllJobsUserId(userId)) {
             baseQuery = baseQuery.whereEqualTo("AssignedTech", userName);
         }
         baseQuery.addSnapshotListener((snapshots, error) -> {
@@ -242,11 +243,10 @@ public class ViewJobActivity extends AppCompatActivity {
                 String followUpDate = getOrDefault(job, "FollowUpDate");
 
                 if (shouldNotifyTechnician(followUpDate)) {
-                    if (techName.equalsIgnoreCase("James")) {
-                        sendWhatsAppReminder("0879000271", job);
-                    } else if (techName.equalsIgnoreCase("Ian")) {
-                        sendWhatsAppReminder("0879134971", job);
-                    }
+                    String techId = StaffDirectory.getUserId(techName);
+                    String mobile = StaffDirectory.getMobileForUserId(techId);
+                    if (mobile != null && !mobile.isEmpty())
+                        sendWhatsAppReminder(mobile, job);
                 }
             }
 
@@ -959,10 +959,10 @@ public class ViewJobActivity extends AppCompatActivity {
 
     private void deleteJob(String documentId) {
         if (!canDeleteJobs()) {
-            if ("Dean".equalsIgnoreCase(userName)) {
+            if ("003".equals(userId)) {
                 new AlertDialog.Builder(this)
                         .setTitle("Permission required")
-                        .setMessage("To delete a job get in touch with Ian or Kristine.")
+                        .setMessage("To delete a job get in touch with an administrator.")
                         .setPositiveButton("OK", null)
                         .show();
             } else {
@@ -975,9 +975,7 @@ public class ViewJobActivity extends AppCompatActivity {
     }
 
     private boolean canDeleteJobs() {
-        return "James".equalsIgnoreCase(userName)
-                || "Ian".equalsIgnoreCase(userName)
-                || "Kristine".equalsIgnoreCase(userName);
+        return StaffDirectory.isAdminUserId(userId);
     }
 
     private void updateStatistics(int total, int completed, int pending) {

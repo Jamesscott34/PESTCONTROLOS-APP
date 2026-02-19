@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen padding -->
+    <dimen name="screen_padding">16dp</dimen>
+    <dimen name="screen_padding_bottom">16dp</dimen>
+    <!-- Welcome / header -->
+    <dimen name="welcome_text_size">24sp</dimen>
+    <dimen name="welcome_logo_size">28dp</dimen>
+    <dimen name="welcome_margin_top">64dp</dimen>
+    <dimen name="welcome_margin_bottom">8dp</dimen>
+    <!-- Buttons -->
+    <dimen name="button_spacing">8dp</dimen>
+    <dimen name="logout_margin_bottom">16dp</dimen>
+    <!-- Used only in layout-sw600dp; no effective max on phone -->
+    <dimen name="content_max_width">9999dp</dimen>
+</resources>

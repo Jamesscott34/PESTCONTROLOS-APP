@@ -20,7 +20,7 @@
  * 2. BEHINDS LIST GENERATION
  *    - Automated identification of overdue contracts
  *    - PDF report generation for overdue services
- *    - Special handling for Kristine user (dual collection access)
+ *    - Special handling for user 004 (dual collection access)
  *    - Professional formatting with company branding
  * 
  * 3. CONTRACT VIEWING & SEARCH
@@ -50,11 +50,11 @@
  * 
  * USER ROLES & PERMISSIONS:
  * - Technicians: Manage their own contracts and generate behinds lists
- * - Kristine: Access to both Ian and James contract collections
+ * - User 004: Access to multiple contract collections
  * - Administrators: Full contract management and reporting access
  * - All users: Contract viewing and basic management capabilities
  * 
- * Author: James Scott
+ * Author: GRPC
  * Company: Good Riddance Pest Control
  * Version: 1.0
  * Last Updated: 2024
@@ -266,11 +266,9 @@ public class ContractsActivity extends AppCompatActivity {
         // Show loading message
         Toast.makeText(this, "Generating behinds list...", Toast.LENGTH_SHORT).show();
 
-        if ("Kristine".equalsIgnoreCase(userName)) {
-            // For Kristine, generate separate PDFs for Ian and James
+        if ("004".equals(StaffDirectory.getUserId(userName))) {
             generateBehindsListForKristine();
         } else {
-            // Default load for Ian or James
             String tableName = userName + " Contracts";
 
             db.collection(tableName).get().addOnCompleteListener(task -> {
@@ -292,10 +290,12 @@ public class ContractsActivity extends AppCompatActivity {
     }
 
     /**
-     * Generates separate behinds list PDFs for Ian and James when Kristine is the user.
+     * Generates separate behinds list PDFs per contract technician when user is 004.
      */
     private void generateBehindsListForKristine() {
-        String[] contractCollections = {"Ian Contracts", "James Contracts"};
+        String[] contractCollections = new String[StaffDirectory.CONTRACT_TECHNICIAN_IDS.length];
+        for (int i = 0; i < StaffDirectory.CONTRACT_TECHNICIAN_IDS.length; i++)
+            contractCollections[i] = StaffDirectory.getContractsCollectionName(StaffDirectory.CONTRACT_TECHNICIAN_IDS[i]);
         Map<String, List<Map<String, Object>>> technicianContracts = new HashMap<>();
         int[] loadedCount = {0};
 
@@ -336,11 +336,9 @@ public class ContractsActivity extends AppCompatActivity {
         // Show loading message
         Toast.makeText(this, "Generating due list...", Toast.LENGTH_SHORT).show();
 
-        if ("Kristine".equalsIgnoreCase(userName)) {
-            // For Kristine, generate separate PDFs for Ian and James
+        if ("004".equals(StaffDirectory.getUserId(userName))) {
             generateDueListForKristine();
         } else {
-            // Default load for Ian or James
             String tableName = userName + " Contracts";
 
             db.collection(tableName).get().addOnCompleteListener(task -> {
@@ -362,10 +360,12 @@ public class ContractsActivity extends AppCompatActivity {
     }
 
     /**
-     * Generates separate due list PDFs for Ian and James when Kristine is the user.
+     * Generates separate due list PDFs per contract technician when user is 004.
      */
     private void generateDueListForKristine() {
-        String[] contractCollections = {"Ian Contracts", "James Contracts"};
+        String[] contractCollections = new String[StaffDirectory.CONTRACT_TECHNICIAN_IDS.length];
+        for (int i = 0; i < StaffDirectory.CONTRACT_TECHNICIAN_IDS.length; i++)
+            contractCollections[i] = StaffDirectory.getContractsCollectionName(StaffDirectory.CONTRACT_TECHNICIAN_IDS[i]);
         Map<String, List<Map<String, Object>>> technicianContracts = new HashMap<>();
         int[] loadedCount = {0};
 

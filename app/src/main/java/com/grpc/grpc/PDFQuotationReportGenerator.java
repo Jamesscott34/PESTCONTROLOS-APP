@@ -6,7 +6,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.itextpdf.kernel.events.PdfDocumentEvent;
-import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.EncryptionConstants;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.WriterProperties;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.element.*;
@@ -38,7 +41,7 @@ import java.util.Random;
  * - Applies a watermark and structured formatting to the report
  * - Ensures compliance with professional pest control service quotations
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class PDFQuotationReportGenerator {
@@ -47,6 +50,18 @@ public class PDFQuotationReportGenerator {
             String quoteNumber, String address, String quoteDescription,
             List<String> descriptions, List<Double> lineTotals,
             String userEmail, String mobileNumber, Context context) {
+        return generateQuotationReport(quoteNumber, address, quoteDescription,
+                descriptions, lineTotals, userEmail, mobileNumber, null, context);
+    }
+
+    /**
+     * Generates a quotation report PDF with optional password protection. Always uses compression.
+     * @param ownerPassword If non-null and non-empty, PDF is encrypted with this as owner password (editing restricted).
+     */
+    public static File generateQuotationReport(
+            String quoteNumber, String address, String quoteDescription,
+            List<String> descriptions, List<Double> lineTotals,
+            String userEmail, String mobileNumber, String ownerPassword, Context context) {
 
         File quotesFolder = new File(context.getExternalFilesDir(null), "GRPEST_QUOTES");
 
@@ -55,11 +70,21 @@ public class PDFQuotationReportGenerator {
             return null;
         }
 
-
         String pdfFileName = generateUniquePdfFileName();
         File pdfFile = new File(quotesFolder, pdfFileName);
 
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile));
+        WriterProperties writerProperties = new WriterProperties();
+        writerProperties.setFullCompressionMode(true);
+        if (ownerPassword != null && !ownerPassword.isEmpty()) {
+            writerProperties.setStandardEncryption(
+                    null,
+                    ownerPassword.getBytes(),
+                    EncryptionConstants.ALLOW_PRINTING | EncryptionConstants.ALLOW_COPY,
+                    EncryptionConstants.ENCRYPTION_AES_128
+            );
+        }
+
+        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile), writerProperties);
              PdfDocument pdfDocument = new PdfDocument(writer);
              Document document = new Document(pdfDocument)) {
 

@@ -26,7 +26,7 @@ import java.util.List;
  * - Clears input fields after PDF generation
  * - Navigates back to the previous activity with user details
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

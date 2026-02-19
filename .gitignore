@@ -94,6 +94,11 @@ ui-debug.log
 *.swo
 *~
 
+# Java heap dumps (e.g. from Android Studio / debugger)
+java_pid12148.hprof
+java_pid*.hprof
+*.hprof
+
 # IDE and editor files
 .vscode/
 .idea/

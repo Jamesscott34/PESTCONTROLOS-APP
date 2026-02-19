@@ -1,20 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
+    // OpenRouter API key: AI-Chat/AI-API, field KEY. Any logged-in user can read (app retrieves key for chat).
+    // Only James can update (via Update API Key in app → callable writes).
+    match /AI-Chat/AI-API {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
     // Allow access to all contract collections
     match /{collection} {
-      // Allow read/write access to all contract collections
       allow read, write: if true;
     }
-    
-    // Specific rules for contract collections
+
     match /{contractCollection} {
-      // Allow access to any collection that ends with " Contracts"
       allow read, write: if contractCollection.matches('.* Contracts');
     }
-    
-    // Allow access to all documents in any collection
+
     match /{collection}/{document=**} {
       allow read, write: if true;
     }

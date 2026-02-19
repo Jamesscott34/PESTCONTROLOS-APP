@@ -45,7 +45,7 @@ import java.util.Locale;
  * - Saves the PDF to external storage
  * - Applies a watermark and footer to the report
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class CallOutActivity extends AppCompatActivity {
@@ -190,16 +190,11 @@ public class CallOutActivity extends AppCompatActivity {
      * Sets the technician's name and contact based on the username.
      */
     private void setTechnicianDetails() {
-        if ("James".equalsIgnoreCase(userName)) {
-            techName = "James Scott";
-            techContact = "0879000271";
-        } else if ("Ian".equalsIgnoreCase(userName)) {
-            techName = "Ian Winston";
-            techContact = "0879134971";
-        } else {
-            techName = "Unknown Technician";
-            techContact = "N/A";
-        }
+        String userId = StaffDirectory.getUserId(userName);
+        techName = StaffDirectory.getReportDisplayName(userId);
+        if (techName == null || techName.isEmpty()) techName = "Unknown Technician";
+        String mobile = StaffDirectory.getMobileForUserId(userId);
+        techContact = mobile != null && !mobile.isEmpty() ? mobile : "N/A";
     }
     /**
      * Generates and saves the pest control report as a PDF file.

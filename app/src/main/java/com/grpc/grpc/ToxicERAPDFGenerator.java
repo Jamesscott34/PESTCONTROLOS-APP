@@ -45,7 +45,7 @@ import java.util.Locale;
  * - Applies a watermark and structured formatting to the document
  * - Ensures compliance with responsible pest control practices
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

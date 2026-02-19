@@ -33,17 +33,17 @@ import java.util.Map;
  * This activity allows users to generate and manage leads for pest control services.
  * Users can input premise details, price quoted, and select a reason for the lead.
  * The commission is automatically calculated for contracts, and leads are stored in Firestore.
- * If the user is "Kristine," they can assign the lead to another user.
+ * If the user is 004, they can assign the lead to another user.
  *
  * Features:
  * - Input validation for premise name, address, and price quoted
  * - Automatic commission calculation for contracts (10% of quoted price)
  * - Firebase Firestore integration for storing lead details
- * - Allows "Kristine" to assign leads to other users
+ * - Allows user 004 to assign leads to other users
  * - Supports lead categorization based on "Job" or "Contract"
  * - Provides user-friendly alerts and error handling
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 
@@ -179,9 +179,9 @@ public class GenerateLeadsActivity extends AppCompatActivity {
         CollectionReference leadsCollection = db.collection("Leads");
         leadsCollection.add(createLeadObject(premiseName, premiseAddress, priceQuoted, commission, date, reason, addedBy, createdBy))
                 .addOnSuccessListener(documentReference -> {
-                    // When James or Dean adds a lead (with commission), notify Ian in-app
-                    if ("James".equalsIgnoreCase(createdBy) || "Dean".equalsIgnoreCase(createdBy)) {
-                        notifyIanLeadAddedByJamesOrDean(createdBy, premiseName, documentReference.getId(), commission);
+                    String createdById = StaffDirectory.getUserId(createdBy);
+                    if ("001".equals(createdById) || "003".equals(createdById)) {
+                        notifyOversightLeadAdded(createdBy, premiseName, documentReference.getId(), commission);
                     }
                     Toast.makeText(this, "Lead added successfully", Toast.LENGTH_SHORT).show();
                     // Redirect to ViewLeadsActivity
@@ -216,14 +216,14 @@ public class GenerateLeadsActivity extends AppCompatActivity {
 
         double commission = "Contract".equalsIgnoreCase(selectedReason) ? priceQuoted * 0.10 : 0.0;
 
-        if ("Kristine".equalsIgnoreCase(userName)) {
+        if ("004".equals(StaffDirectory.getUserId(userName))) {
             showAssignToDialog(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason);
         } else {
             saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason, userName, userName);
         }
     }
 
-    // Method to show the dialog for Kristine to assign the lead
+    // Show assign-to dialog for user 004
     private void showAssignToDialog(String premiseName, String premiseAddress, double priceQuoted, double commission, String date, String reason) {
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
         dialogBuilder.setTitle("Assign Lead");
@@ -271,9 +271,11 @@ public class GenerateLeadsActivity extends AppCompatActivity {
         return lead;
     }
 
-    /** Notify Ian in-app when James or Dean adds a lead (with commission) so Ian can oversee. */
-    private void notifyIanLeadAddedByJamesOrDean(String createdBy, String premiseName, String leadId, double commission) {
+    /** Notify oversight user (002) when 001 or 003 adds a lead with commission. */
+    private void notifyOversightLeadAdded(String createdBy, String premiseName, String leadId, double commission) {
         try {
+            String oversightKey = StaffDirectory.getUserNameKey(StaffDirectory.LEAD_OVERSIGHT_USER_ID);
+            if (oversightKey == null) return;
             String title = "Lead added with commission";
             String body = createdBy + " added a lead: " + (premiseName != null ? premiseName : "Unknown")
                     + (commission > 0 ? " (Commission: €" + String.format(Locale.getDefault(), "%.2f", commission) + ")" : "");
@@ -282,7 +284,7 @@ public class GenerateLeadsActivity extends AppCompatActivity {
             data.put("premiseName", premiseName);
             data.put("createdBy", createdBy);
             String docId = "lead_added_" + leadId + "_" + System.currentTimeMillis();
-            NotificationUtils.writeInAppNotification("Ian", docId, title, body, "lead_update", data);
+            NotificationUtils.writeInAppNotification(oversightKey, docId, title, body, "lead_update", data);
         } catch (Exception ignored) {
         }
     }

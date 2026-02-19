@@ -51,7 +51,7 @@ import java.util.Locale;
  * - Apply a watermark and structured formatting to the updated report
  * - Save the updated report and replace the original file
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class FollowUpActivity extends AppCompatActivity {

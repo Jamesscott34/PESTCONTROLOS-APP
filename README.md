@@ -1,18 +1,23 @@
 # GRPC (GRPest Control) — Android + Firebase Platform
 
-This repository contains a production-style Android application used by GRPest Control staff to manage **contracts**, **jobs**, **work scheduling**, **reports**, **messaging**, **leads/commission**, and **in-app notifications**, backed by **Firebase (Firestore + Storage)**. **Cloud Functions are optional** for automation (cleanup/schedules).
+This repository contains a production-style Android application used by GRPest Control staff to manage **contracts**, **jobs**, **work scheduling**, **reports**, **messaging**, **leads/commission**, and **in-app notifications**, backed by **Firebase (Firestore + Storage)**. **Cloud Functions are optional** for automation (cleanup/schedules). **LLM APIs** (Groq / Hugging Face) power in-app AI Chat and report polish (AI Fix); keys are maintained by admin via app settings.
 
 The solution is intentionally designed around **in-app notifications only** (no FCM push notifications and no Android system notifications) to keep notification delivery consistent and fully under application control.
+
+For the **full architecture overview** (platform stack, data flow, key workflows, multi-company options, and offline PDF template), see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ---
 
 ## Contents
 
 - [Key capabilities](#key-capabilities)
+  - [Login and offline mode](#login-and-offline-mode)
+  - [AI features (Chat &amp; AI Fix)](#ai-features-chat--ai-fix)
 - [Roles and user model](#roles-and-user-model)
 - [How to use the app (by user)](#how-to-use-the-app-by-user)
 - [Technology stack](#technology-stack)
 - [Repository layout](#repository-layout)
+- [Architecture (PDF reporting and offline template)](#architecture-pdf-reporting-and-offline-template)
 - [Setup (end-to-end)](#setup-end-to-end)
   - [Prerequisites](#prerequisites)
   - [Package name / applicationId changes](#package-name--applicationid-changes)
@@ -33,6 +38,12 @@ The solution is intentionally designed around **in-app notifications only** (no 
 
 ## Key capabilities
 
+### Login and offline mode
+
+- **Firebase login:** Email/password sign-in via Firebase Authentication; user name derived from email and passed to Main Activity.
+- **Offline login:** On the login screen, **"Offline login"** lets you use the app without Firebase. You enter as **"Offline User"**. The **main menu shows only Create Report, View Reports, and Logout**; all other buttons (Notifications, Work View, Contracts, etc.) are hidden. In **View Reports**, the **Stored Reports** option is hidden for the offline user.
+- When **logged in** (Firebase Auth), the **Create Report** screen hides the PDF template section (Use GRPC Template / Use My Template and PDF Template Settings); reports always use the GRPC template. When **not logged in** (offline), that section is shown so you can choose GRPC or My Template and open PDF Template Settings.
+
 ### Work View (schedule)
 
 - **Calendar-first scheduling** for technician field work.
@@ -44,7 +55,7 @@ The solution is intentionally designed around **in-app notifications only** (no 
   - Contract “last visit” updates and schedule cleanup for completed items.
 - **Multi-user oversight**:
   - Regular technicians primarily manage their own calendar.
-  - **Ian/Kristine** can view and manage multiple technicians’ work views (combined calendar behavior).
+  - **Users 002 and 004** can view and manage multiple technicians’ work views (combined calendar behavior).
 - **In-app reminders** (no system notifications):
   - WorkManager schedules an **in-app notification record** ~30 minutes before scheduled events.
   - Reminders are de‑duplicated and cancelled when events are completed/rescheduled.
@@ -55,7 +66,7 @@ The solution is intentionally designed around **in-app notifications only** (no 
 
 ### Contracts
 
-- Contracts are stored per technician in Firestore collections named `"[User] Contracts"` (e.g. `Ian Contracts`).
+- Contracts are stored per technician in Firestore collections named `"[User] Contracts"` (e.g. per user ID).
 - **Search + status highlighting**:
   - “Behind / Due / Up‑to‑date” counters and filtering.
   - Visual status cues to help prioritise visits.
@@ -66,7 +77,7 @@ The solution is intentionally designed around **in-app notifications only** (no 
   - “View Reports” prompts for a year and searches within `ReportsYY` (e.g., `Reports26`) in Firebase Storage.
   - Matching is flexible (case/spacing/underscore tolerant).
 - **Role-aware assignment**:
-  - Ian/Kristine can add contracts to another technician’s list (and the assigned technician receives an in‑app notification record).
+  - Admin users (002, 004) can add contracts to another technician’s list (and the assigned technician receives an in‑app notification record).
 
 ### Jobs
 
@@ -86,12 +97,21 @@ The solution is intentionally designed around **in-app notifications only** (no 
   - General service reports
   - Rodent reports (Initial / Routine / Call‑Out / External flows)
   - ERA documents (Toxic / Non‑Toxic)
+- **File compression**: All generated PDFs (Action Forms, Create Report, custom templates) are **automatically compressed** for smaller file size (no user option).
+- **Create Report (quotation)**:
+  - **Password protection**: An optional checkbox “Password protect PDF” lets you set an owner password; the PDF is then encrypted (viewing/printing allowed; editing requires the password).
 - **Storage model**:
   - Reports are organized in Firebase Storage under year folders like `ReportsYY/` (optionally with month subfolders).
   - Reports can also be generated/stored locally under the app’s external files directories (e.g. quotes, service agreements).
 - **Viewing and sharing**:
   - Browse stored report lists, download/share PDFs.
   - Contract-specific search is scoped by year folder for speed and organisation.
+- **Offline PDF template (Create Report)**:
+  - On the **Report selection** screen: **"Custom Report (PDF Template)"** opens **PDF Template Settings**; **"Create Custom Report"** opens the Create Report form with **My Template** pre-selected (same form: password protect, add image, body fields).
+  - **Named templates:** In PDF Template Settings you can enter a **template name** and tap **"Save as named template"** to save the current logo, watermark, and header blocks as a named template. **"View templates"** lists all saved templates; tap **"Use"** on one to open the Create Report form with that template applied (report body is the same; the PDF uses that template's headers/logo/watermark when you save).
+  - On the **Create Report** screen (when not logged in) you can choose **Use GRPC Template** or **Use My Template**, and open PDF Template Settings. **When logged in**, the PDF template section is **hidden**; reports always use the GRPC template.
+  - **PDF Template Settings**: configure logo, watermark (on/off, text or image), and an ordered list of header blocks (text with style H1/H2/BODY or image). All settings and named templates are stored **locally** (SharedPreferences + files in `pdf_template/`); no Firebase. Fully offline.
+  - Body layout (margins, fonts, sections, table, footer, page numbers) is identical to the GRPC template in both modes; only the header area and watermark differ when using My Template. If no images are selected for the report, no image section or placeholder is added to the PDF.
 
 ### Quotations & service documents
 
@@ -99,17 +119,23 @@ The solution is intentionally designed around **in-app notifications only** (no 
   - Point-based quotations (4pt/6pt/8pt/12pt).
   - General quotations and Bird quotations with line items.
   - Professional formatting with VAT/line totals and consistent branding.
+- **Bird quotation**:
+  - **30% deposit option**: A checkbox “30% deposit due before job (uncheck for total payment only)” controls the PDF: when **checked**, the PDF shows 30% due before the job and the remaining amount; when **unchecked**, only the total payment is shown.
+  - **Email and number**: Company email and mobile on the Bird quotation are loaded from the **users database** (Firestore) for the logged-in user; they are not typed manually (add/update them in the users/staff data if missing).
 - **Service agreements**:
   - Create and view service agreements with signature fields and stored PDFs.
 
 ### Leads & commission
 
 - Lead capture and tracking in Firestore `Leads` with commission calculations and invoice/payment status fields.
+- **Mark as paid** and **Add/Edit materials** are restricted to admins only (user IDs 001, 002, 004). User 003 can view leads assigned to them but cannot mark invoices as paid or edit materials cost.
 - Admin-side edit flows can trigger in-app notifications to the affected technician (commission change audit trail behavior).
 
 ### Action Forms (password-protected PDFs)
 
 - Generate **password-protected Action Form PDFs** (owner-password protected for editing restrictions) using iText.
+- **File compression**: All Action Form PDFs are written with **full compression** (smaller file size).
+- Optional **password protection** via a checkbox; when enabled, a dialog prompts for an owner password (required to edit the PDF).
 - Optional inclusion of **technician and customer signatures**.
 - Optional attachment of images to the PDF.
 
@@ -127,6 +153,17 @@ The solution is intentionally designed around **in-app notifications only** (no 
   - Non-urgent messages are auto-deleted after ~30 minutes (optional automation via Cloud Functions).
   - Urgent messages can be retained (per-message flag).
 
+### AI (Chat & report polish)
+
+- **AI Chat**:
+  - In-app chat powered by **Hugging Face** (via HF Router) or **Groq**; the app uses Groq if a Groq key is set, otherwise the Hugging Face key.
+  - API keys are stored in Firestore at `AI-Chat/AI-API`: field **KEY** (Hugging Face) and **key-grog** (Groq). Only user 001 can update these via Settings (Update Hugging Face Key / Update Groq Key).
+  - Replies are shown as plain text (no markdown tables/headings); long replies supported (e.g. max 2048 tokens).
+- **AI Fix** — rewrites text in **Create Report** and **Action Form**:
+  - **Create Report**: An “AI Fix” button rewrites **Site Inspection** and **Recommendations** only. Text is made professional, grammatically correct, and free of asterisks or filler; a few sentences may be added where appropriate.
+  - **Action Form**: The same “AI Fix” flow rewrites **Service Report** and **Recommendations**.
+  - AI Fix uses the same Firestore API keys as AI Chat (KEY or key-grog). If no key is set, the app prompts that the admin must set one in AI Chat settings.
+
 ### In-app notifications (no push)
 
 - Notification history is stored in Firestore under `notifications/{user}/items`.
@@ -140,19 +177,33 @@ The solution is intentionally designed around **in-app notifications only** (no 
 - Theme-aware UI using Material DayNight and attribute-based colors (`?android:attr/colorBackground`, `?attr/colorSurface`, `?android:attr/textColorPrimary/Secondary`) so screens render correctly in Light/Dark modes.
 - Layouts avoid hardcoded white/black and instead use theme surfaces/“on-surface” text, with consistent button styling.
 
+### AI features (Chat & AI Fix)
+
+- **AI Chat**  
+  In-app chat backed by AI (Hugging Face–style or Groq). Replies are plain text, no markdown. API keys are stored in Firestore at `AI-Chat/AI-API`:
+  - **KEY** — Hugging Face token (see [Hugging Face tokens](https://huggingface.co/settings/tokens)).
+  - **key-grog** — Groq API key (see [Groq Console](https://console.groq.com)).  
+  If **key-grog** is set, the app uses Groq; otherwise it uses the Hugging Face key. Only user 001 can update these keys (via Settings in the app; Cloud Functions enforce admin-only writes).
+- **AI Fix button**  
+  Available in **Create Report** and **Action Form**:
+  - **Create Report**: Fixes **Site Inspection** and **Recommendations** only. Tap “✏️ AI Fix” to polish the text (professional, grammatical, no asterisks/filler; adds a few sentences where appropriate).
+  - **Action Form**: Fixes **Service Report** and **Recommendations** only, with the same behaviour.  
+  Both use the same Firestore API key as AI Chat (KEY or key-grog). The button is disabled until content exists in the relevant fields.
+
 ---
 
 ## Roles and user model
 
-This app is role-aware and uses simple “known user” rules for what each staff member can see/do.
+This app is role-aware and uses **user IDs** (001, 002, …) for permission checks; display names are still used in the UI and in Firestore (e.g. “Added By”, “AssignedTech”).
 
-- **Admins / oversight**: **James**, **Ian**, **Kristine**
+- **User IDs** (match Firestore `users` collection): **001**, **002**, **003**, **004** (extensible). Display names and contact details are loaded from the database.
+- **Admins / oversight**: **001**, **002**, **004**
   - Can assign work to other technicians (jobs/contracts).
   - Can delete contracts and jobs.
-  - Receive oversight notifications for certain actions (e.g. when Dean adds contracts).
-- **Technician**: **Dean**
-  - Can complete work, create reports, and add contracts to his own list.
-  - **Cannot delete contracts or jobs** (the app will prompt to contact Ian/Kristine).
+  - Receive oversight notifications for certain actions (e.g. when 003 adds contracts).
+- **Technician**: **003**
+  - Can complete work, create reports, and add contracts to their own list.
+  - **Cannot delete contracts or jobs** (the app will prompt to contact an administrator).
   - Can delete local reports (with an extra “uploaded to Firebase?” confirmation).
 
 Notes:
@@ -172,7 +223,7 @@ Notes:
   - The assigned technician receives an **in-app notification**.
 - **Assign contracts**:
   - Use Contracts → Add Contract.
-  - Use the Assign-to dropdown (James / Dean / Ian) to put the contract into the correct technician’s list.
+  - Use the Assign-to dropdown (per technician) to put the contract into the correct technician’s list.
   - The assigned technician receives an **in-app notification**.
 - **Work View management**:
   - Use Work View to schedule jobs/contracts and mark them complete.
@@ -183,6 +234,9 @@ Notes:
 - **Where to check activity**:
   - Notifications screen (in-app history).
   - Messaging (1:1 and group chat).
+- **Commission / Leads** (users 002, 004):
+  - Generate Lead / View Leads to manage commission tracking and invoice status.
+  - Lead updates can notify the assigned technician.
 
 ### (Admin / Owner)
 
@@ -196,7 +250,7 @@ Notes:
 ### (Admin / Office)
 
 - **Assign jobs** (Job Work / Management Jobs) using the dropdown to avoid typos.
-- **Assign contracts** to James/Dean/Ian via the Assign-to dropdown.
+- **Assign contracts** via the Assign-to dropdown.
 - **Oversight workflows**:
   - Use Notifications to review what was assigned/changed.
   - Use Leads to track invoice status, materials cost, and commission.
@@ -220,8 +274,8 @@ Notes:
   - You can delete local reports, but the app will ask you to confirm you uploaded to Firebase first.
 - **Restrictions**:
   - You **cannot delete** contracts or jobs. If you try, you’ll see:
-    - “To delete a contract get in touch with Ian or Kristine.”
-    - “To delete a job get in touch with Ian or Kristine.”
+    - “To delete a contract get in touch with an administrator.”
+    - “To delete a job get in touch with an administrator.”
 
 ---
 
@@ -232,7 +286,7 @@ Notes:
   - **Firestore**: primary database (contracts, jobs, leads, messages, notifications, workview).
   - **Storage**: PDF report storage (`ReportsYY/...`).
   - **Cloud Functions (Node.js)**: optional automation (cleanup/schedules).
-- **PDF**: iText (report generation; Action Forms support encryption).
+- **PDF**: iText (report generation; full compression for Action Forms and Create Report quotation PDFs; optional encryption for Action Forms and Create Report).
 
 ---
 
@@ -249,6 +303,34 @@ grpc/
 ├── setup-env.sh                 # Linux/macOS env setup helper
 └── .gitignore                   # Secret/build artifact exclusions
 ```
+
+---
+
+## Architecture (PDF reporting and offline template)
+
+This section details the PDF report and **offline template** behaviour. For the full platform architecture (stack, data flow, workflows, multi-company options), see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
+- **Create Report (GRPC template)**  
+  `ReportActivity` collects form data and, on save, calls `PDFReportGenerator.generatePDFReport(...)`. That method creates the PDF with a fixed logo (drawable), title “Good Riddance Pest Control Report”, and body built by `PDFReportGenerator.addReportBodyToDocument(...)`. A page event handler (`PdfWatermarkAndFooterHandler`) adds the default watermark and footer on every page. Images are added only when the user has selected at least one image (no placeholder when none are selected).
+
+- **Offline PDF template (My Template)**  
+  The same Create Report screen offers a template selector: **Use GRPC Template** or **Use My Template**. Template preferences are stored locally via `PdfTemplateStorage` (SharedPreferences + JSON for header blocks; logo and watermark image files in `context.getFilesDir()/pdf_template/`). The **PDF Template Settings** screen (`PdfTemplateSettingsActivity`) lets users set logo, enable/configure watermark (text or image), and add/remove/reorder header blocks (text with style H1/H2/BODY or image).
+
+- **PDF generation flow**  
+  When the user saves a report, `ReportActivity` either uses a selected saved template (when launched from View Templates → Use, via `EXTRA_TEMPLATE_ID`) or loads `PdfTemplateSettings` from `PdfTemplateStorage` and sets `templateSelection` from the radio choice (GRPC vs MY_TEMPLATE). It then calls `PDFReportGeneratorWithTemplate.generatePdf(..., settings)`. All PDFs are auto-compressed.
+  - If **GRPC**: `PDFReportGeneratorWithTemplate` delegates to `PDFReportGenerator.generatePDFReport(...)` with no other changes.
+  - If **MY_TEMPLATE**: `PDFReportGeneratorWithTemplate` creates the writer/document, registers a custom page handler (`CustomWatermarkAndFooterHandler`) that applies the user’s watermark (or the default “bk” drawable if custom watermark is off) and footer, draws the **custom header** (logo from settings or fallback drawable at 200×200 centre; then each header block in order — text styled H1/H2/BODY or image scaled to max width), then calls `PDFReportGenerator.addReportBodyToDocument(...)` so the body layout is identical to the GRPC report. No change to margins, fonts, sections, footer, or image-section rule (no images ⇒ no image section).
+
+- **Named templates:** In PDF Template Settings, **Save as named template** stores the current setup; **View templates** lists them; **Use** opens Create Report with that template applied (same form; PDF uses that template's headers/logo/watermark). All PDFs are **auto-compressed** (no checkbox).
+
+- **Key classes**  
+  - `PdfTemplateSettings` — POJO: templateSelection, logoPath, watermark (enabled, type, text, imagePath), list of `HeaderBlock` (blockType, textStyle, text, imagePath).  
+  - `SavedTemplate` — Named template (id, name, logoPath, watermark*, headerBlocks); `toPdfTemplateSettings()` for generation.  
+  - `PdfTemplateStorage` — Loads/saves settings; saved templates list (loadSavedTemplates, addSavedTemplate, getSavedTemplateById); SharedPreferences + JSON.  
+  - `PDFReportGenerator` — existing: `generatePDFReport(...)` (unchanged), `addReportBodyToDocument(document, content, context, imageUris)` (body + optional image section).  
+  - `PDFReportGeneratorWithTemplate` — `generatePdf(..., settings)`: GRPC path → existing generator; MY_TEMPLATE path → custom header + custom/default watermark + same body; auto-compress.  
+  - `PdfTemplateSettingsActivity` — UI for logo, watermark, header blocks; template name; Save as named template; View templates.  
+  - `ViewTemplatesActivity` — Lists saved templates; Use → ReportActivity with EXTRA_TEMPLATE_ID.
 
 ---
 
@@ -479,7 +561,7 @@ The included `.gitignore` is configured to prevent this. If sensitive files were
 ### “Access denied” in Contracts
 
 - Confirm Firestore rules allow reads for `"[User] Contracts"` collections.
-- Confirm collection names match exactly: `Ian Contracts`, `James Contracts`, `Dean Contracts`, `Kristine Contracts`.
+- Confirm collection names match exactly: `[User] Contracts` per technician (e.g. from StaffDirectory.getContractsCollectionName(id)).
 
 ### “No reports found”
 

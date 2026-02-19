@@ -83,4 +83,22 @@
         android:text="Action Form"
         android:textSize="18sp"
         android:layout_marginBottom="16dp" />
+
+    <!-- Custom report: open PDF Template Settings (logo, watermark, header blocks) -->
+    <Button
+        android:id="@+id/buttonCustomReport"
+        android:layout_width="wrap_content"
+        android:layout_height="58dp"
+        android:text="Custom Template"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Create Custom Report: create report with My Template, password protect, add image, compress -->
+    <Button
+        android:id="@+id/buttonCreateCustomReport"
+        android:layout_width="wrap_content"
+        android:layout_height="58dp"
+        android:text="Create Custom Report"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
 </LinearLayout>

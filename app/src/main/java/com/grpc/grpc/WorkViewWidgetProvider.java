@@ -28,11 +28,11 @@ public class WorkViewWidgetProvider extends AppWidgetProvider {
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_workview);
 
-        views.setImageViewResource(R.id.widget_workview_logo, R.drawable.logo);
         views.setTextViewText(R.id.widget_workview_title, TITLE);
-        views.setTextViewText(R.id.widget_workview_date, WorkViewWidgetHelper.getCachedDateForDisplay(context));
+        WorkViewWidgetHelper.WidgetDisplay display = WorkViewWidgetHelper.getWidgetDisplay(context);
+        views.setTextViewText(R.id.widget_workview_date, display.displayDate);
 
-        List<WorkViewWidgetHelper.JobLine> jobs = WorkViewWidgetHelper.getCachedJobsForDisplay(context);
+        List<WorkViewWidgetHelper.JobLine> jobs = display.jobs;
 
         setJobRow(views, jobs, 0, R.id.widget_job1_time, R.id.widget_job1_name, R.id.widget_job1_address);
         setJobRow(views, jobs, 1, R.id.widget_job2_time, R.id.widget_job2_name, R.id.widget_job2_address);
@@ -64,6 +64,7 @@ public class WorkViewWidgetProvider extends AppWidgetProvider {
         }
         if (index == 0 && name.isEmpty() && time.isEmpty()) {
             name = "No jobs today";
+            address = "Open Work View to load";
         }
         views.setTextViewText(idTime, time);
         views.setTextViewText(idName, name);

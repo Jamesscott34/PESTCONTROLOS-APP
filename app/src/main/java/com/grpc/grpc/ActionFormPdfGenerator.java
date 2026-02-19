@@ -58,7 +58,7 @@ import java.util.Set;
  * - Formats report content with structured headings and separators
  * - Allows users to attach images to the report for additional documentation
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class ActionFormPdfGenerator {
@@ -127,19 +127,17 @@ public class ActionFormPdfGenerator {
         File pdfFile = new File(pdfFolder, sanitizedPremisesName);
 
         try {
-            PdfWriter writer;
+            WriterProperties writerProperties = new WriterProperties();
+            writerProperties.setFullCompressionMode(true);
             if (ownerPassword != null && !ownerPassword.isEmpty()) {
-                WriterProperties writerProperties = new WriterProperties();
                 writerProperties.setStandardEncryption(
                     null,
                     ownerPassword.getBytes(),
                     EncryptionConstants.ALLOW_PRINTING | EncryptionConstants.ALLOW_COPY,
                     EncryptionConstants.ENCRYPTION_AES_128
                 );
-                writer = new PdfWriter(new FileOutputStream(pdfFile), writerProperties);
-            } else {
-                writer = new PdfWriter(new FileOutputStream(pdfFile));
             }
+            PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile), writerProperties);
             PdfDocument pdfDocument = new PdfDocument(writer);
             Document document = new Document(pdfDocument, com.itextpdf.kernel.geom.PageSize.A4, false);
             document.setMargins(20, 20, 20, 20); // Tight margins for single page

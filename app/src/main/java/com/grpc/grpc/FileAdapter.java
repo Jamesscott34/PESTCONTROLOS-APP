@@ -22,7 +22,7 @@ import java.util.List;
  * - Handles user clicks on files using an interface callback
  * - Utilizes a RecyclerView for efficient file listing
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {

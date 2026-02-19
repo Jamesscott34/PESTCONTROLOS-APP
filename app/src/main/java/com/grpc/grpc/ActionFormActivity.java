@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
 
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -71,7 +72,7 @@ public class ActionFormActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 123;
 
     // Action Buttons
-    private Button saveButton, backButton, selectImageButton, aiPolishButton, readBackButton;
+    private Button saveButton, backButton, selectImageButton, aiFixButton, readBackButton;
     private Button technicianSignatureButton, customerSignatureButton;
     private ToggleButton followUpToggle;
     private LinearLayout followUpContainer;
@@ -83,11 +84,12 @@ public class ActionFormActivity extends AppCompatActivity {
     private Uri customerSignatureUri = null;
     private String lastAIResponse = ""; // Store the last AI response for read-back functionality
 
-    // AI and Voice Recognition Components
-    private static final String OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-    private static final String AI_MODEL = "mistralai/mistral-nemo";
-    // Do not hardcode API keys. User is prompted or use secure backend. Leave empty for prompt.
-    private String openRouterApiKey = "";
+    // AI Fix: same keys as Chat (Firestore AI-Chat/AI-API: KEY = HF, key-grog = Groq)
+    private static final String GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String GROQ_MODEL = "llama-3.1-8b-instant";
+    private static final String HF_ROUTER_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
+    private static final String HF_ROUTER_MODEL = "openai/gpt-oss-20b:groq";
+    private static final int AI_FIX_MAX_TOKENS = 2048;
     
     private SpeechRecognizer speechRecognizer;
     private TextToSpeech textToSpeech;
@@ -189,7 +191,7 @@ public class ActionFormActivity extends AppCompatActivity {
         saveButton = findViewById(R.id.saveButton);
         backButton = findViewById(R.id.backButton);
         selectImageButton = findViewById(R.id.selectImageButton);
-        aiPolishButton = null; // AI button removed from UI
+        aiFixButton = findViewById(R.id.aiFixButton);
         readBackButton = findViewById(R.id.readBackButton);
         technicianSignatureButton = findViewById(R.id.technicianSignatureButton);
         customerSignatureButton = findViewById(R.id.customerSignatureButton);
@@ -205,13 +207,10 @@ public class ActionFormActivity extends AppCompatActivity {
             finish();
         });
         selectImageButton.setOnClickListener(v -> openImageSelector());
-        if (aiPolishButton != null) {
-            aiPolishButton.setOnClickListener(v -> {
-                // Check if there's a stored AI response to read back
+        if (aiFixButton != null) {
+            aiFixButton.setOnClickListener(v -> {
                 if (!lastAIResponse.isEmpty()) {
                     readAIResponseBack();
-                } else if (openRouterApiKey.isEmpty()) {
-                    requestOpenRouterApiKey();
                 } else {
                     polishWithAI();
                 }
@@ -1023,157 +1022,96 @@ public class ActionFormActivity extends AppCompatActivity {
         setCurrentDateTime();
     }
 
-    private void requestOpenRouterApiKey() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("🤖 AI Polish Setup")
-                .setMessage("To use AI polishing, please enter your OpenRouter API key:")
-                .setView(createApiKeyInputView())
-                .setPositiveButton("Save", (dialog, which) -> {})
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
-                .setCancelable(false);
-        
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
-    private android.view.View createApiKeyInputView() {
-        EditText apiKeyInput = new EditText(this);
-        apiKeyInput.setHint("Enter your OpenRouter API key");
-        apiKeyInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        apiKeyInput.setPadding(50, 20, 50, 20);
-        
-        apiKeyInput.addTextChangedListener(new android.text.TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(android.text.Editable s) {
-                openRouterApiKey = s.toString().trim();
-            }
-        });
-        
-        return apiKeyInput;
-    }
-
+    /**
+     * AI Fix: only Service Report and Recommendations. Professional, grammatically correct, no * or filler. Uses key from Firestore (same as Chat).
+     */
     private void polishWithAI() {
         String serviceReport = serviceReportInput.getEditText().getText().toString().trim();
         String recommendations = recommendationsInput.getEditText().getText().toString().trim();
-        
         if (serviceReport.isEmpty() && recommendations.isEmpty()) {
-            Toast.makeText(this, "Please enter some content in Service Report or Recommendations first", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Enter content in Service Report or Recommendations first", Toast.LENGTH_SHORT).show();
             return;
         }
-        
-        if (openRouterApiKey.isEmpty()) {
-            Toast.makeText(this, "Please set your OpenRouter API key first", Toast.LENGTH_SHORT).show();
-            return;
+        if (aiFixButton != null) {
+            aiFixButton.setEnabled(false);
+            aiFixButton.setText("✏️ Fixing...");
         }
-        
-        Toast.makeText(this, "🤖 AI is polishing your Action Form...", Toast.LENGTH_SHORT).show();
-        if (aiPolishButton != null) {
-            aiPolishButton.setEnabled(false);
-            aiPolishButton.setText("🤖 Polishing...");
-        }
-        
-        String prompt = "Rewrite the following text to make it sound more professional, slightly longer, and more fluid. " +
-                "Ensure the grammar is correct throughout. Keep the original meaning and all key information intact, " +
-                "but improve the sentence structure, vocabulary, and tone to reflect the voice of a confident, experienced professional. " +
-                "Expand naturally where appropriate without adding unrelated content. " +
-                "Return the result as plain text only — do not include quotation marks, asterisks, or colons in the output formatting.\n\n";
-        
-        if (!serviceReport.isEmpty()) {
-            prompt += "Service Report: " + serviceReport + "\n\n";
-        } else {
-            prompt += "Service Report: No service report details noted\n\n";
-        }
-        
-        if (!recommendations.isEmpty()) {
-            prompt += "Recommendations: " + recommendations + "\n\n";
-        } else {
-            prompt += "Recommendations: No recommendations noted\n\n";
-        }
-        
-        prompt += "Please provide the enhanced content in this exact format:\n\n" +
-                "Service Report: [professional content with improved grammar]\n\n" +
-                "Recommendations: [professional recommendations with improved grammar]\n\n" +
-                "Do not include any other text, labels, or formatting symbols. Return plain text only.";
-        
-        final String finalPrompt = prompt;
-        new Thread(() -> {
-            try {
-                String response = callOpenRouterAPI(finalPrompt);
-                updateUIWithAIPolish(response);
-            } catch (Exception e) {
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "AI polishing failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    if (aiPolishButton != null) {
-                        aiPolishButton.setEnabled(true);
-                        aiPolishButton.setText("🤖 AI Polish Form");
+        Toast.makeText(this, "✏️ AI Fix in progress...", Toast.LENGTH_SHORT).show();
+
+        String systemPrompt = "You are a professional editor for pest control service reports. Rewrite the given text so it is professional, grammatically correct, and suitable for a formal report. Do not use asterisks (*), bullet symbols, or filler words like 'emm' or 'uh'. Add 3 to 4 extra sentences where appropriate to improve clarity and completeness. Output only the revised text.";
+        String userPrompt = "Rewrite the following in the exact format below. Plain text only, no markdown.\n\n";
+        if (!serviceReport.isEmpty()) userPrompt += "Service Report: " + serviceReport + "\n\n";
+        else userPrompt += "Service Report: (none)\n\n";
+        if (!recommendations.isEmpty()) userPrompt += "Recommendations: " + recommendations + "\n\n";
+        else userPrompt += "Recommendations: (none)\n\n";
+        userPrompt += "Respond with exactly:\nService Report: [revised text]\n\nRecommendations: [revised text]";
+
+        final String finalSystemPrompt = systemPrompt;
+        final String finalUserPrompt = userPrompt;
+
+        FirebaseFirestore.getInstance().document("AI-Chat/AI-API").get()
+                .addOnSuccessListener(this, docSnap -> {
+                    if (docSnap == null || !docSnap.exists()) {
+                        setAiFixDone("Admin must set an API key in AI Chat (Settings → Update Hugging Face Key or Groq Key).");
+                        return;
                     }
-                });
-            }
-        }).start();
+                    Object grogObj = docSnap.get("key-grog");
+                    Object hfObj = docSnap.get("KEY");
+                    String keyGrog = grogObj != null ? grogObj.toString().trim() : "";
+                    String keyHf = hfObj != null ? hfObj.toString().trim() : "";
+                    String apiKey = !keyGrog.isEmpty() ? keyGrog : keyHf;
+                    if (apiKey.isEmpty()) {
+                        setAiFixDone("Admin must set an API key in AI Chat (Settings → Update Hugging Face Key or Groq Key).");
+                        return;
+                    }
+                    boolean useGroq = !keyGrog.isEmpty();
+                    new Thread(() -> {
+                        try {
+                            String response = callChatAPI(apiKey, useGroq, finalSystemPrompt, finalUserPrompt);
+                            runOnUiThread(() -> updateUIWithAIPolish(response));
+                        } catch (Exception e) {
+                            runOnUiThread(() -> setAiFixDone("AI Fix failed: " + e.getMessage()));
+                        }
+                    }).start();
+                })
+                .addOnFailureListener(this, e -> setAiFixDone("Could not load API key. Check connection."));
     }
 
-    private String callOpenRouterAPI(String prompt) throws IOException {
-        okhttp3.OkHttpClient client = new okhttp3.OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(60, TimeUnit.SECONDS)
-                .build();
+    private void setAiFixDone(String message) {
+        if (aiFixButton != null) {
+            aiFixButton.setEnabled(true);
+            aiFixButton.setText("✏️ AI Fix");
+        }
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
 
+    private String callChatAPI(String apiKey, boolean useGroq, String systemPrompt, String userPrompt) throws IOException {
         try {
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("model", AI_MODEL);
-            
+            OkHttpClient client = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS).readTimeout(90, TimeUnit.SECONDS).writeTimeout(60, TimeUnit.SECONDS).build();
             JSONArray messages = new JSONArray();
-            JSONObject message = new JSONObject();
-            message.put("role", "user");
-            message.put("content", prompt);
-            messages.put(message);
-            requestBody.put("messages", messages);
-            requestBody.put("max_tokens", 4000);
-            requestBody.put("temperature", 0.8);
-
-            okhttp3.RequestBody body = okhttp3.RequestBody.create(
-                    requestBody.toString(),
-                    okhttp3.MediaType.parse("application/json; charset=utf-8")
-            );
-
+            messages.put(new JSONObject().put("role", "system").put("content", systemPrompt));
+            messages.put(new JSONObject().put("role", "user").put("content", userPrompt));
+            String url = useGroq ? GROQ_CHAT_URL : HF_ROUTER_CHAT_URL;
+            String model = useGroq ? GROQ_MODEL : HF_ROUTER_MODEL;
+            JSONObject body = new JSONObject().put("model", model).put("messages", messages).put("max_tokens", AI_FIX_MAX_TOKENS);
             okhttp3.Request request = new okhttp3.Request.Builder()
-                    .url(OPENROUTER_API_URL)
-                    .addHeader("Authorization", "Bearer " + openRouterApiKey)
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("HTTP-Referer", "https://grpc-app.com")
-                    .addHeader("X-Title", "GRPest Control App")
-                    .addHeader("User-Agent", "GRPest-Control-App/1.0")
-                    .post(body)
+                    .url(url)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .post(okhttp3.RequestBody.create(body.toString(), okhttp3.MediaType.parse("application/json")))
                     .build();
-
             try (okhttp3.Response response = client.newCall(request).execute()) {
-                String responseBody = response.body().string();
-                
-                if (!response.isSuccessful()) {
-                    Log.e("ActionFormActivity", "API Error Response: " + responseBody);
-                    throw new IOException("API call failed: " + response.code() + " " + response.message() + "\nResponse: " + responseBody);
+                String responseBody = response.body() != null ? response.body().string() : "";
+                if (!response.isSuccessful()) throw new IOException("API " + response.code() + ": " + responseBody);
+                JSONObject json = new JSONObject(responseBody);
+                JSONArray choices = json.optJSONArray("choices");
+                if (choices != null && choices.length() > 0) {
+                    Object content = choices.getJSONObject(0).optJSONObject("message").opt("content");
+                    return content != null ? content.toString() : "";
                 }
-                
-                JSONObject jsonResponse = new JSONObject(responseBody);
-                JSONArray choices = jsonResponse.getJSONArray("choices");
-                
-                if (choices.length() > 0) {
-                    JSONObject choice = choices.getJSONObject(0);
-                    JSONObject messageObj = choice.getJSONObject("message");
-                    return messageObj.getString("content");
-                } else {
-                    throw new IOException("No response content from AI");
-                }
+                throw new IOException("No response content");
             }
         } catch (org.json.JSONException e) {
-            throw new IOException("JSON parsing error: " + e.getMessage());
+            throw new IOException("JSON error: " + e.getMessage(), e);
         }
     }
 
@@ -1216,14 +1154,14 @@ public class ActionFormActivity extends AppCompatActivity {
                     recommendationsInput.getEditText().setText(recommendations);
                 }
                 
-                Toast.makeText(this, "✅ AI polishing completed! Tap AI button to hear response.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "✅ AI Fix completed! Tap AI Fix to hear response.", Toast.LENGTH_LONG).show();
                 
             } catch (Exception e) {
                 Toast.makeText(this, "Error parsing AI response: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             } finally {
-                if (aiPolishButton != null) {
-                    aiPolishButton.setEnabled(true);
-                    aiPolishButton.setText("🤖 AI Polish Form");
+                if (aiFixButton != null) {
+                    aiFixButton.setEnabled(true);
+                    aiFixButton.setText("✏️ AI Fix");
                 }
             }
         });
@@ -1269,8 +1207,8 @@ public class ActionFormActivity extends AppCompatActivity {
         
         // Reset the AI response after reading it back
         lastAIResponse = "";
-        if (aiPolishButton != null) {
-            aiPolishButton.setText("🤖 AI Polish Form");
+        if (aiFixButton != null) {
+            aiFixButton.setText("✏️ AI Fix");
         }
     }
 

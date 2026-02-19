@@ -63,8 +63,9 @@ public class SearchActivity extends AppCompatActivity {
             userName = getSharedPreferences("GRPC", MODE_PRIVATE).getString("USER_NAME", "User");
         }
 
-        // James-only access for now
-        if (TextUtils.isEmpty(userName) || !"james".equalsIgnoreCase(userName.trim())) {
+        // 001 (James) only
+        String userId = StaffDirectory.getUserId(userName);
+        if (TextUtils.isEmpty(userName) || !StaffDirectory.isJamesUserId(userId)) {
             android.widget.Toast.makeText(this, "Access denied.", android.widget.Toast.LENGTH_SHORT).show();
             finish();
             return;

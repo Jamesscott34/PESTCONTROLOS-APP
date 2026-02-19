@@ -2,6 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Support phones and tablets; layout-sw600dp used for 7"+ screens -->
+    <supports-screens
+        android:smallScreens="true"
+        android:normalScreens="true"
+        android:largeScreens="true"
+        android:xlargeScreens="true"
+        android:anyDensity="true" />
+
     <!-- ============================================================================
          GRPest Control Application - Android Manifest
          ============================================================================
@@ -57,11 +65,13 @@
          Main application settings and theme configuration
          ============================================================================ -->
     <application
+        android:name=".GrpcApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@drawable/bk"
-        android:label="Good Riddance Pest Control"
+        android:label="GRPC"
         android:roundIcon="@drawable/bk"
         android:supportsRtl="true"
         android:theme="@style/Theme.Grpc"
@@ -155,6 +165,17 @@
             android:name=".ReportActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
+        <!-- Offline PDF template settings (logo, watermark, header blocks) -->
+        <activity
+            android:name=".PdfTemplateSettingsActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
+        <activity
+            android:name=".ViewTemplatesActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
 
         <activity
             android:name=".ReportViewActivity"

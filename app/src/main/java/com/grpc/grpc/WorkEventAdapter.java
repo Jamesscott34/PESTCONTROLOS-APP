@@ -4,7 +4,7 @@
  * RecyclerView adapter for displaying work events in the calendar view.
  * Handles the display of events with their status, time, and actions.
  * 
- * Author: James Scott
+ * Author: GRPC
  * Company: Good Riddance Pest Control
  * Version: 1.0
  * Last Updated: 2024

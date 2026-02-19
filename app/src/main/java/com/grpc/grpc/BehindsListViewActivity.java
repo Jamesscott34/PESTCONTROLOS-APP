@@ -33,7 +33,7 @@ import java.util.List;
  * - Enables sharing, renaming, and deleting files
  * - Ensures user-friendly alerts and UI interaction
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class BehindsListViewActivity extends AppCompatActivity {

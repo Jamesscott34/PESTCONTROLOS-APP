@@ -25,7 +25,7 @@ import java.util.List;
  * - Displays files in a RecyclerView
  * - Allows users to share files via intent
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

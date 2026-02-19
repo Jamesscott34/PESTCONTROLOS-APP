@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="PDF Template Settings"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Template name (for saving as named template)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <EditText
+            android:id="@+id/templateNameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="e.g. My Company Report"
+            android:inputType="text"
+            android:layout_marginTop="4dp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_border"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <Button
+            android:id="@+id/saveAsTemplateButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save as named template"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="?attr/colorSecondary"
+            android:textColor="?attr/colorOnSecondary" />
+
+        <Button
+            android:id="@+id/viewTemplatesButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="View templates"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Logo (used in My Template header)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <Button
+            android:id="@+id/chooseLogoButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Choose logo image"
+            android:layout_marginTop="4dp" />
+        <TextView
+            android:id="@+id/logoPathLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:layout_marginTop="2dp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Watermark (all pages when using My Template)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <CheckBox
+            android:id="@+id/watermarkEnabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enable custom watermark"
+            android:layout_marginTop="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <RadioGroup
+            android:id="@+id/watermarkTypeGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
+            <RadioButton
+                android:id="@+id/watermarkTypeText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Text" />
+            <RadioButton
+                android:id="@+id/watermarkTypeImage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Image" />
+        </RadioGroup>
+        <EditText
+            android:id="@+id/watermarkTextInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Watermark text"
+            android:inputType="text"
+            android:layout_marginTop="4dp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_border"
+            android:textColor="?android:attr/textColorPrimary" />
+        <Button
+            android:id="@+id/chooseWatermarkImageButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Choose watermark image"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/watermarkImagePathLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:layout_marginTop="2dp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Header blocks (order: top to bottom)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <Button
+            android:id="@+id/addHeaderBlockButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add header block"
+            android:layout_marginTop="4dp"
+            android:backgroundTint="?attr/colorSecondary"
+            android:textColor="?attr/colorOnSecondary" />
+        <LinearLayout
+            android:id="@+id/headerBlocksContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="8dp" />
+
+        <Button
+            android:id="@+id/saveTemplateButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save template settings"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
+
+    </LinearLayout>
+</ScrollView>

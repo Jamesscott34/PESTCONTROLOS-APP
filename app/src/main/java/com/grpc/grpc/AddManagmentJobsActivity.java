@@ -26,7 +26,7 @@ import java.util.Map;
  * - WhatsApp notification for the assigned technician
  * - Navigation back to JobsActivity after submission
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class AddManagmentJobsActivity extends AppCompatActivity {
@@ -35,7 +35,7 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
     private Button submitButton;
     private FirebaseFirestore db;
     private String userName,  custName,  custContact, issueDetailsText; // Stores values for WhatsApp
-    private static final String[] TECHNICIANS = {"James", "Dean", "Ian", "Kristine"};
+    private static final String[] TECHNICIAN_IDS = StaffDirectory.ORDERED_USER_IDS;
 
     /**
      * Initializes the activity, retrieves user information, and sets up UI elements.
@@ -71,13 +71,15 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
         }
 
         if (techNameSpinner != null) {
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, TECHNICIANS);
+            String[] names = StaffDirectory.getDisplayNamesForIds(TECHNICIAN_IDS);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, names);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             techNameSpinner.setAdapter(adapter);
             // Default selection = current user if present
             int sel = 0;
-            for (int i = 0; i < TECHNICIANS.length; i++) {
-                if (TECHNICIANS[i].equalsIgnoreCase(userName)) {
+            String userId = StaffDirectory.getUserId(userName);
+            for (int i = 0; i < TECHNICIAN_IDS.length; i++) {
+                if (TECHNICIAN_IDS[i].equals(userId)) {
                     sel = i;
                     break;
                 }

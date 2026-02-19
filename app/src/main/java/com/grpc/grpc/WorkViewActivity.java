@@ -52,7 +52,7 @@
  * - Administrators: Oversight of all scheduled work
  * - All users: View their assigned work schedule
  * 
- * Author: James Scott
+ * Author: GRPC
  * Company: Good Riddance Pest Control
  * Version: 1.0
  * Last Updated: 2024
@@ -157,15 +157,13 @@ public class WorkViewActivity extends AppCompatActivity {
             "16:30 - 17:30"
     };
 
-    // Known technicians for shared calendar views
-    private static final String[] TECHNICIANS = {"Ian", "James", "Dean", "Kristine"};
+    private static final String[] TECHNICIAN_IDS = StaffDirectory.ORDERED_USER_IDS;
 
     /** Prevents double-tap on Mark as Done (idempotent save). */
     private final Set<String> markDoneInProgress = new HashSet<>();
 
-    /** Kristine and Ian can add to other users' work views (same permissions). */
     private boolean canManageOtherWorkViews() {
-        return "kristine".equalsIgnoreCase(userName) || "ian".equalsIgnoreCase(userName);
+        return StaffDirectory.seesAllJobsUserId(StaffDirectory.getUserId(userName));
     }
 
     /**
@@ -471,7 +469,7 @@ public class WorkViewActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         String dateString = sdf.format(date);
 
-        // Kristine and Ian see a combined calendar for all technicians
+        // Users 002 and 004 see a combined calendar for all technicians
         if (canManageOtherWorkViews()) {
             loadEventsForDateAllUsers(dateString);
             return;
@@ -518,13 +516,14 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Load events for a specific date across all technicians (Kristine view)
+     * Load events for a specific date across all technicians (combined view)
      */
     private void loadEventsForDateAllUsers(String dateString) {
         List<WorkEvent> allEvents = new ArrayList<>();
         final int[] completed = {0};
 
-        for (String tech : TECHNICIANS) {
+        for (String techId : TECHNICIAN_IDS) {
+            String tech = StaffDirectory.getFallbackDisplayName(techId);
             String collection = getCollectionForUser(tech);
             db.collection(collection)
               .whereEqualTo("date", dateString)
@@ -534,7 +533,6 @@ public class WorkViewActivity extends AppCompatActivity {
                       WorkEvent event = document.toObject(WorkEvent.class);
                       if (event != null) {
                           event.setId(document.getId());
-                          // Ensure the event knows which technician it belongs to
                           if (event.getUserName() == null || event.getUserName().trim().isEmpty()) {
                               event.setUserName(tech);
                           }
@@ -543,7 +541,7 @@ public class WorkViewActivity extends AppCompatActivity {
                   }
 
                   completed[0]++;
-                  if (completed[0] == TECHNICIANS.length) {
+                  if (completed[0] == TECHNICIAN_IDS.length) {
                       // Sort events by time
                       allEvents.sort((e1, e2) -> e1.getTime().compareTo(e2.getTime()));
 
@@ -558,7 +556,7 @@ public class WorkViewActivity extends AppCompatActivity {
               .addOnFailureListener(e -> {
                   Log.e("WorkViewActivity", "Error loading events for " + tech + ": " + e.getMessage());
                   completed[0]++;
-                  if (completed[0] == TECHNICIANS.length) {
+                  if (completed[0] == TECHNICIAN_IDS.length) {
                       if (isDailyView) {
                           createTimeSlotViews();
                           updateTimeSlotsWithEvents(allEvents);
@@ -634,7 +632,7 @@ public class WorkViewActivity extends AppCompatActivity {
      */
     private void showAddContractDialog() {
         if (canManageOtherWorkViews()) {
-            // Kristine and Ian can access all users' contracts (James, Ian, Dean)
+            // Users 002 and 004 can access all contract technicians' calendars
             showKristineContractSelectionDialog();
         } else {
             // Regular users can only access their own contracts
@@ -742,11 +740,11 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show contract selection dialog for Kristine (can add to James, Ian, or Dean)
+     * Show contract selection dialog for oversight users (can add to any contract technician)
      */
     private void showKristineContractSelectionDialog() {
-        String[] users = {"James", "Ian", "Dean"};
-        
+        String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
+        String[] users = StaffDirectory.getDisplayNamesForIds(ids);
         new AlertDialog.Builder(this)
             .setTitle("Select User's Contracts")
             .setItems(users, (dialog, which) -> {
@@ -761,7 +759,7 @@ public class WorkViewActivity extends AppCompatActivity {
      */
     private void showTimeSelectionDialog(String eventType, String eventId, String eventName) {
         if (canManageOtherWorkViews()) {
-            // Kristine and Ian can select which user's work view to add the event to
+            // Oversight users can select which user's work view to add the event to
             showKristineUserSelectionDialog(eventType, eventId, eventName);
         } else {
             // Regular users add to their own work view
@@ -770,11 +768,11 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show user selection dialog for Kristine
+     * Show user selection dialog for oversight users
      */
     private void showKristineUserSelectionDialog(String eventType, String eventId, String eventName) {
-        String[] users = {"James", "Ian", "Dean", "Kristine"};
-        
+        String[] ids = StaffDirectory.ORDERED_USER_IDS;
+        String[] users = StaffDirectory.getDisplayNamesForIds(ids);
         new AlertDialog.Builder(this)
             .setTitle("Select User's Work View")
             .setItems(users, (dialog, which) -> {
@@ -825,7 +823,8 @@ public class WorkViewActivity extends AppCompatActivity {
     /** Show user selection then open AddJobFromCalendarActivity (New job). */
     private void showAddNewJobDialog() {
         if (canManageOtherWorkViews()) {
-            String[] users = {"James", "Ian", "Dean"};
+            String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
+            String[] users = StaffDirectory.getDisplayNamesForIds(ids);
             new AlertDialog.Builder(this)
                 .setTitle("Assign Job To")
                 .setItems(users, (d, which) -> openAddJobActivity(users[which]))
@@ -835,11 +834,12 @@ public class WorkViewActivity extends AppCompatActivity {
         }
     }
 
-    /** Load jobs from JobWork and show selection. Kristine/Ian: all jobs. Dean: only his. */
+    /** Load jobs from JobWork and show selection. 002/004: all jobs. 003: only assigned. */
     private void showAddExistingJobDialog(String timeSlot) {
         String targetUser = userName;
         if (canManageOtherWorkViews()) {
-            String[] users = {"James", "Ian", "Dean"};
+            String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
+            String[] users = StaffDirectory.getDisplayNamesForIds(ids);
             new AlertDialog.Builder(this)
                 .setTitle("Whose jobs to add?")
                 .setItems(users, (d, which) -> loadJobsAndShowSelection(users[which], timeSlot))
@@ -1126,7 +1126,7 @@ public class WorkViewActivity extends AppCompatActivity {
               // Schedule notification for the event
               scheduleEventNotification(workEvent);
 
-              // In-app notification history when Ian/Kristine add to someone else's work view
+              // In-app notification when oversight users add to someone else's work view
               writeInAppWorkViewUpdateIfNeeded(documentReference.getId(), event);
               
               loadEventsForDate(selectedDate);
@@ -1138,11 +1138,11 @@ public class WorkViewActivity extends AppCompatActivity {
 
     /**
      * In-app notification history (NOT system push).
-     * When Ian/Kristine add an event to another user's work view, notify that user.
+     * When oversight users add an event to another user's work view, notify that user.
      */
     private void writeInAppWorkViewUpdateIfNeeded(String workViewDocId, Map<String, Object> event) {
         try {
-            if (!canManageOtherWorkViews()) return; // only Ian/Kristine
+            if (!canManageOtherWorkViews()) return; // only 002, 004
             if (event == null) return;
 
             String targetUser = asString(event.get("userName"));
@@ -1973,7 +1973,7 @@ public class WorkViewActivity extends AppCompatActivity {
 
     /**
      * Update contract last visit and remove from calendar.
-     * Updates by contract ID in the assigned user's Contracts collection (e.g. "Ian Contracts").
+     * Updates by contract ID in the assigned user's Contracts collection.
      */
     private void updateContractLastVisitAndRemove(WorkEvent event) {
         String contractOwner = event.getUserName() != null ? event.getUserName() : userName;
@@ -2350,11 +2350,11 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show contract selection dialog for Kristine with time (James, Ian, Dean only)
+     * Show contract selection dialog for oversight users with time (contract technicians only)
      */
     private void showKristineContractSelectionDialogForTime(String timeSlot) {
-        String[] users = {"James", "Ian", "Dean"};
-        
+        String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
+        String[] users = StaffDirectory.getDisplayNamesForIds(ids);
         new AlertDialog.Builder(this)
             .setTitle("Select User's Contracts for " + formatSlotRange(timeSlot))
             .setItems(users, (dialog, which) -> {
@@ -2435,7 +2435,8 @@ public class WorkViewActivity extends AppCompatActivity {
             .setItems(new String[]{"New", "Old"}, (dialog, which) -> {
                 if (which == 0) {
                     if (canManageOtherWorkViews()) {
-                        String[] users = {"James", "Ian", "Dean"};
+                        String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
+                        String[] users = StaffDirectory.getDisplayNamesForIds(ids);
                         new AlertDialog.Builder(this)
                             .setTitle("Assign Job To (" + formatSlotRange(timeSlot) + ")")
                             .setItems(users, (d, w) -> openAddJobActivityForTime(users[w], timeSlot))
@@ -2663,7 +2664,7 @@ public class WorkViewActivity extends AppCompatActivity {
         eventView.addView(eventTypeView);
         eventView.addView(eventDetails);
 
-        // Color-code by technician so Kristine can see who owns each event
+        // Color-code by technician for combined view
         eventNameView.setTextColor(getColorForUser(event.getUserName()));
 
         return eventView;

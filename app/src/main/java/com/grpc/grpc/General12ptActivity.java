@@ -46,7 +46,7 @@ import java.util.Random;
  * - Saves the generated quote and allows navigation back to the main quote activity
  * - Supports a 12-visit service contract (every 4 weeks)
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 
@@ -76,7 +76,7 @@ public class General12ptActivity extends AppCompatActivity {
         staffDisplayName = userName;
         staffTitle = "";
 
-        // Fetch Email/Name/Title from Firebase by username -> ID (James=001, Ian=002, Dean=003, Kristine=004)
+        // Fetch Email/Name/Title from Firebase by username -> ID
         StaffDirectory.fetchByUserName(this, userName, profile -> {
             if (profile == null) return;
             if (profile.email != null && !profile.email.isEmpty()) userEmail = profile.email;

@@ -25,7 +25,7 @@ import java.util.Map;
  * - Individual chats: Ian, Kristine, Dean
  * - Group chat: All users
  *
- * Author: James Scott
+ * Author: GRPC
  */
 public class MessagingConversationsActivity extends AppCompatActivity {
 

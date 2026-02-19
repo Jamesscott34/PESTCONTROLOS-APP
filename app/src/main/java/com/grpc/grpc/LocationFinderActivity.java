@@ -23,12 +23,12 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * James-only view: shows each tech's last known location and opens it in Maps.
+ * User 001 only: shows each tech's last known location and opens it in Maps.
  * Works offline using a small local SharedPreferences cache.
  */
 public class LocationFinderActivity extends AppCompatActivity {
 
-    private static final String[] TECHS = new String[] {"Ian", "Dean", "James", "Kristine"};
+    private static final String[] TECH_IDS = StaffDirectory.ORDERED_USER_IDS;
 
     private String userName;
     private LinearLayout container;
@@ -44,7 +44,8 @@ public class LocationFinderActivity extends AppCompatActivity {
             userName = getSharedPreferences("GRPC", MODE_PRIVATE).getString("USER_NAME", "User");
         }
 
-        if (!"james".equalsIgnoreCase(userName)) {
+        String userId = StaffDirectory.getUserId(userName);
+        if (!StaffDirectory.isJamesUserId(userId)) {
             Toast.makeText(this, "Access denied.", Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -61,10 +62,11 @@ public class LocationFinderActivity extends AppCompatActivity {
     }
 
     private void buildTechRows() {
-        if (container == null) return;
+        if (container == null || TECH_IDS == null) return;
         container.removeAllViews();
 
-        for (String tech : TECHS) {
+        for (String techId : TECH_IDS) {
+            String tech = StaffDirectory.getFallbackDisplayName(techId);
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
             card.setPadding(24, 16, 24, 16);
@@ -110,8 +112,9 @@ public class LocationFinderActivity extends AppCompatActivity {
     }
 
     private void attachFirestoreListeners() {
-        if (db == null) return;
-        for (String tech : TECHS) {
+        if (db == null || TECH_IDS == null) return;
+        for (String techId : TECH_IDS) {
+            String tech = StaffDirectory.getFallbackDisplayName(techId);
             final String techKey = LocationSharing.userKey(tech);
             if (techKey.isEmpty()) continue;
 

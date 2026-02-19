@@ -38,29 +38,33 @@ public class HelpReadmeActivity extends AppCompatActivity {
         }
 
         // Role-aware help: only show the current user's content.
-        // James can preview his own + Ian + Dean.
+        // User 001 can preview roles for contract technicians.
         LinearLayout roleRow = findViewById(R.id.helpRoleRow);
         Spinner roleSpinner = findViewById(R.id.helpRoleSpinner);
 
-        if ("james".equals(currentUserKey) && roleRow != null && roleSpinner != null) {
+        String currentUserId = StaffDirectory.getUserId(currentUserKey);
+        if (StaffDirectory.isJamesUserId(currentUserId) && roleRow != null && roleSpinner != null) {
             roleRow.setVisibility(View.VISIBLE);
-            final String[] options = new String[]{"James", "Ian", "Dean"};
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, options);
+            final String[] displayNames = StaffDirectory.getDisplayNamesForIds(StaffDirectory.CONTRACT_TECHNICIAN_IDS);
+            final String[] keys = new String[StaffDirectory.CONTRACT_TECHNICIAN_IDS.length];
+            for (int i = 0; i < keys.length; i++)
+                keys[i] = StaffDirectory.getUserNameKey(StaffDirectory.CONTRACT_TECHNICIAN_IDS[i]);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, displayNames);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             roleSpinner.setAdapter(adapter);
             roleSpinner.setSelection(0);
 
-            applyRoleContent("james");
+            applyRoleContent(keys.length > 0 ? keys[0] : "");
             roleSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    String pick = options[position];
-                    applyRoleContent(normalizeUserKey(pick));
+                    if (position >= 0 && position < keys.length && keys[position] != null)
+                        applyRoleContent(keys[position]);
                 }
 
                 @Override
                 public void onNothingSelected(AdapterView<?> parent) {
-                    applyRoleContent("james");
+                    if (keys.length > 0) applyRoleContent(keys[0]);
                 }
             });
         } else {
@@ -77,7 +81,7 @@ public class HelpReadmeActivity extends AppCompatActivity {
         setupSectionToggle(R.id.section6Header, R.id.section6Content);
         setupSectionToggle(R.id.section7Header, R.id.section7Content);
 
-        // Admin-only section 8: visible only for user 001 (James) in users collection
+        // Admin-only section 8: visible only for user 001
         LinearLayout section8 = findViewById(R.id.section8);
         if (section8 != null && currentUser != null && !currentUser.trim().isEmpty()) {
             StaffDirectory.fetchByUserName(this, currentUser, profile -> {

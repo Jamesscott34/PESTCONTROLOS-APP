@@ -3,6 +3,7 @@ package com.grpc.grpc;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,7 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
  * - Ensures USER_NAME is always passed to the next activity
  * - Supports viewing different document categories such as reports, quotations, agreements, and ERA files
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 
@@ -77,5 +78,10 @@ public class PDFSelectionActivity extends AppCompatActivity {
             intent.putExtra("USER_NAME", userName); // Pass username to the next activity
             startActivity(intent);
         });
+
+        // Offline user: hide Stored Reports in View Reports
+        if ("Offline User".equals(userName) && buttonStoredReports != null) {
+            buttonStoredReports.setVisibility(View.GONE);
+        }
     }
 }

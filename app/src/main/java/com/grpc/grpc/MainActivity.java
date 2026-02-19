@@ -91,7 +91,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
  * - External API integrations (WhatsApp, Maps)
  * 
  * USER ROLES & PERMISSIONS:
- * - Admin Users (James, Ian, Kristine): Full access to all features
+ * - Admin users (001, 002, 004): Full access to all features
  * - Technicians: Job assignment, report generation, customer management
  * - Sales Staff: Lead management, quotation generation, commission tracking
  * 
@@ -107,7 +107,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
  * - Company website integration
  * - Email and SMS notifications
  * 
- * Author: James Scott
+ * Author: GRPC
  * Company: Good Riddance Pest Control
  * Version: 1.0
  * Last Updated: 2024
@@ -173,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
             userName = intentUserName;
             Log.d("MainActivity", "Username from intent: " + userName);
         } else if (userEmail != null && !userEmail.isEmpty()) {
-            // Extract name from email address (e.g., "james" from "james@domain")
+            // Extract name from email address (e.g. user from user@domain)
             userName = extractNameFromEmail(userEmail);
             Log.d("MainActivity", "Username extracted from email: " + userName);
         } else {
@@ -183,6 +183,9 @@ public class MainActivity extends AppCompatActivity {
         }
         // Persist logged-in identity for other screens
         ActiveUserContext.setActiveUser(this, userName, userEmail != null ? userEmail : "");
+
+        // Load staff names and numbers from Firestore (users) so reports/WhatsApp use DB data
+        StaffDirectory.refreshFromFirestore(this);
 
         // Location sharing: schedule background workers (best effort)
         LocationSharing.ensureScheduled(this, userName);
@@ -222,6 +225,9 @@ public class MainActivity extends AppCompatActivity {
         
         // Set up click listeners for all buttons
         setupButtonClickListeners();
+
+        // Offline user: show only Create Report, View Reports, and Logout
+        applyOfflineUserVisibility();
         
         // Initialize gesture detector for swipe navigation
         initializeGestureDetector();
@@ -284,9 +290,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         java.util.ArrayList<String> convIds = new java.util.ArrayList<>();
-        String[] allUsers = {"James", "Ian", "Kristine", "Dean"};
-        for (String other : allUsers) {
-            if (other.equalsIgnoreCase(userName)) continue;
+        for (String id : StaffDirectory.ORDERED_USER_IDS) {
+            String other = StaffDirectory.getUserNameKey(id);
+            if (other == null || other.equalsIgnoreCase(userName)) continue;
             convIds.add(MessagingConversationsActivity.getConversationId(userName, other));
         }
         convIds.add("group");
@@ -445,7 +451,7 @@ public class MainActivity extends AppCompatActivity {
      * Each button opens a specific activity with user information passed along
      */
     private void setupButtonClickListeners() {
-        // Instant messaging - conversation list (Ian, Kristine, Dean, Group)
+        // Instant messaging - conversation list (all users + group)
         if (InstantMessage != null) {
             InstantMessage.setOnClickListener(view -> {
                 openActivity(MessagingConversationsActivity.class);
@@ -457,11 +463,12 @@ public class MainActivity extends AppCompatActivity {
             NotificationsButton.setOnClickListener(view -> openActivity(NotificationsActivity.class));
         }
 
-        // Global search entry point
+        // Global search: user 001 only
         if (SearchButton != null) {
-            boolean isJames = userName != null && "james".equalsIgnoreCase(userName.trim());
-            SearchButton.setVisibility(isJames ? View.VISIBLE : View.GONE);
-            if (isJames) {
+            String userId = StaffDirectory.getUserId(userName);
+            boolean isSearchUser = StaffDirectory.isJamesUserId(userId);
+            SearchButton.setVisibility(isSearchUser ? View.VISIBLE : View.GONE);
+            if (isSearchUser) {
                 SearchButton.setOnClickListener(v -> {
                     Intent intent = new Intent(MainActivity.this, SearchActivity.class);
                     intent.putExtra("USER_NAME", userName);
@@ -501,9 +508,14 @@ public class MainActivity extends AppCompatActivity {
             quotesButton.setOnClickListener(view -> openActivity(QuotesActivity.class));
         }
 
-        // Sales leads and commission tracking
+        // Commission / Leads: 001, 002, 003, 004
         if (CommisionButton != null) {
-            CommisionButton.setOnClickListener(view -> openActivity(LeadsSelectionActivity.class));
+            String userId = StaffDirectory.getUserId(userName);
+            boolean canAccessCommission = StaffDirectory.canAccessCommissionLeadsUserId(userId);
+            CommisionButton.setVisibility(canAccessCommission ? View.VISIBLE : View.GONE);
+            if (canAccessCommission) {
+                CommisionButton.setOnClickListener(view -> openActivity(LeadsSelectionActivity.class));
+            }
         }
 
         // Environmental Risk Assessments (ERA)
@@ -532,11 +544,12 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // James-only Location Finder
+        // Location Finder: user 001 only
         if (LocationFinderButton != null) {
-            boolean isJames = userName != null && "james".equalsIgnoreCase(userName.trim());
-            LocationFinderButton.setVisibility(isJames ? View.VISIBLE : View.GONE);
-            if (isJames) {
+            String userId = StaffDirectory.getUserId(userName);
+            boolean isLocationUser = StaffDirectory.isJamesUserId(userId);
+            LocationFinderButton.setVisibility(isLocationUser ? View.VISIBLE : View.GONE);
+            if (isLocationUser) {
                 LocationFinderButton.setOnClickListener(v -> {
                     Intent intent = new Intent(MainActivity.this, LocationFinderActivity.class);
                     intent.putExtra("USER_NAME", userName);
@@ -599,9 +612,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * For offline user, show only Create Report, View Reports, and Logout; hide all other buttons.
+     */
+    private void applyOfflineUserVisibility() {
+        if (userName == null || !userName.equals("Offline User")) return;
+        if (NotificationsButton != null) NotificationsButton.setVisibility(View.GONE);
+        if (SearchButton != null) SearchButton.setVisibility(View.GONE);
+        if (WorkViewButton != null) WorkViewButton.setVisibility(View.GONE);
+        if (LocationFinderButton != null) LocationFinderButton.setVisibility(View.GONE);
+        if (contractsButton != null) contractsButton.setVisibility(View.GONE);
+        if (quotesButton != null) quotesButton.setVisibility(View.GONE);
+        if (ServiceAgreementButton != null) ServiceAgreementButton.setVisibility(View.GONE);
+        if (CommisionButton != null) CommisionButton.setVisibility(View.GONE);
+        if (JobButton != null) JobButton.setVisibility(View.GONE);
+        if (EnviromentButton != null) EnviromentButton.setVisibility(View.GONE);
+        if (InstantMessage != null) InstantMessage.setVisibility(View.GONE);
+        if (WebsiteButton != null) WebsiteButton.setVisibility(View.GONE);
+        if (HelpButton != null) HelpButton.setVisibility(View.GONE);
+        if (ChatButton != null) ChatButton.setVisibility(View.GONE);
+        // Keep visible: reportButton (Create Report), reportViewButton (View Reports), logoutButton (Logout)
+    }
+
+    /**
      * Generic method to open activities with user information
      * Passes the current user's name to the target activity
-     * 
+     *
      * @param targetActivity The activity class to open
      */
     private void openActivity(Class<?> targetActivity) {
@@ -622,7 +657,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Extracts a user-friendly name from an email address
-     * Converts email format to display name (e.g., "james@domain" -> "James")
+     * Converts email format to display name (e.g. user@domain -> User)
      * 
      * @param email The email address to extract name from
      * @return The extracted name with first letter capitalized

@@ -28,7 +28,7 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="?android:attr/colorBackground"
-    android:padding="16dp"
+    android:padding="@dimen/screen_padding"
     android:paddingTop="?attr/actionBarSize">
 
     <!-- ============================================================================
@@ -54,7 +54,7 @@
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="@dimen/button_spacing"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/LogoutButton">
 
@@ -79,13 +79,13 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center"
-                android:layout_marginTop="64dp"
-                android:layout_marginBottom="8dp">
+                android:layout_marginTop="@dimen/welcome_margin_top"
+                android:layout_marginBottom="@dimen/welcome_margin_bottom">
 
                 <ImageView
                     android:id="@+id/welcomeLogo"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="@dimen/welcome_logo_size"
+                    android:layout_height="@dimen/welcome_logo_size"
                     android:layout_marginEnd="8dp"
                     android:adjustViewBounds="true"
                     android:scaleType="fitCenter"
@@ -97,7 +97,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Welcome, User!"
-                android:textSize="24sp"
+                android:textSize="@dimen/welcome_text_size"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:textColor="?android:attr/textColorPrimary" />
@@ -109,7 +109,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Notifications"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="@dimen/button_spacing"
                 android:backgroundTint="?attr/colorSecondary"
                 android:textColor="?attr/colorOnSecondary" />
 
@@ -119,7 +119,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Search"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="@dimen/button_spacing"
                 android:visibility="gone" />
 
 
@@ -136,7 +136,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Create Report"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- View and manage stored reports -->
             <Button
@@ -144,7 +144,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="View Reports"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- ============================================================================
                  WORK MANAGEMENT BUTTONS
@@ -158,7 +158,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Work View"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- James-only: technician last location finder -->
             <Button
@@ -166,7 +166,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Location Finder"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="@dimen/button_spacing"
                 android:visibility="gone" />
 
             <!-- ============================================================================
@@ -181,7 +181,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Contracts"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- ============================================================================
                  QUOTATION & SERVICE AGREEMENTS
@@ -195,7 +195,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="General Quotes"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- Create and manage service agreements with customers -->
             <Button
@@ -203,7 +203,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Service agreement"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- ============================================================================
                  SALES & COMMISSION TRACKING
@@ -217,7 +217,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Commision"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- ============================================================================
                  JOB MANAGEMENT
@@ -231,7 +231,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Job Work"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- ============================================================================
                  ENVIRONMENTAL COMPLIANCE
@@ -245,7 +245,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="ERA"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- ============================================================================
                  COMMUNICATION & EXTERNAL LINKS
@@ -259,7 +259,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Messaging"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- Access company website and resources -->
             <Button
@@ -268,7 +268,7 @@
                 android:layout_height="wrap_content"
                 android:text="Visit GRPC Staff"
                 android:onClick="WorkWebsite"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- In-app help / README -->
             <Button
@@ -276,7 +276,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="How to Use App"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- AI Chat Assistant -->
             <Button
@@ -284,7 +284,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="🤖 AI Chat Assistant"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="@dimen/button_spacing"
                 android:background="@drawable/button_background"
                 android:textColor="?attr/colorOnPrimary" />
 
@@ -304,7 +304,7 @@
         android:text="Logout"
         android:backgroundTint="?attr/colorError"
         android:textColor="?attr/colorOnError"
-        android:layout_marginBottom="16dp"
+                android:layout_marginBottom="@dimen/logout_margin_bottom"
         android:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

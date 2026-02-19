@@ -74,7 +74,7 @@ import java.util.Arrays;
  * - Allows sharing, renaming, and deleting reports
  * - Provides user-friendly alerts for report interactions
  *
- * Author: James Scott
+ * Author: GRPC
  */
 public class ERAViewActivity extends AppCompatActivity {
 

@@ -55,7 +55,7 @@
  * - Administrators: Report review and management
  * - All users: Report viewing and PDF export
  * 
- * Author: James Scott
+ * Author: GRPC
  * Company: Good Riddance Pest Control
  * Version: 1.0
  * Last Updated: 2024
@@ -76,13 +76,19 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.view.View;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.GestureDetectorCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -135,7 +141,8 @@ public class ReportActivity extends AppCompatActivity {
     // ACTION BUTTONS - User interface controls
     // ============================================================================
     
-    private Button saveButton, backButton, selectImageButton, aiPolishButton, readBackButton;
+    private Button saveButton, backButton, selectImageButton, aiFixButton, readBackButton;
+    private CheckBox passwordProtectCheckbox;
 
     // ============================================================================
     // DATA MANAGEMENT - Image and content storage
@@ -144,15 +151,19 @@ public class ReportActivity extends AppCompatActivity {
     // List to hold selected image URIs for visual documentation
     private List<Uri> selectedImageUris = new ArrayList<>();
 
+    /** When set (from View Templates -> Use), PDF is generated with this saved template's headers/logo/watermark. */
+    private String selectedTemplateId;
+
     // ============================================================================
     // AI AND VOICE RECOGNITION COMPONENTS
     // ============================================================================
     
-    // AI API Configuration
-    private static final String OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-    private static final String AI_MODEL = "mistralai/mistral-nemo";
-    // Do not hardcode API keys. User is prompted or use secure backend. Leave empty for prompt.
-    private String openRouterApiKey = "";
+    // AI Fix: same keys as Chat (Firestore AI-Chat/AI-API: KEY = HF, key-grog = Groq)
+    private static final String GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String GROQ_MODEL = "llama-3.1-8b-instant";
+    private static final String HF_ROUTER_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
+    private static final String HF_ROUTER_MODEL = "openai/gpt-oss-20b:groq";
+    private static final int AI_FIX_MAX_TOKENS = 2048;
     
     // Voice Recognition Components
     private SpeechRecognizer speechRecognizer;
@@ -193,6 +204,7 @@ public class ReportActivity extends AppCompatActivity {
             finish();
             return;
         }
+        selectedTemplateId = getIntent().getStringExtra(ViewTemplatesActivity.EXTRA_TEMPLATE_ID);
         Log.d("ReportActivity", "Username loaded from intent: " + userName);
         Log.d("ReportActivity", "ReportActivity created with user: " + userName);
 
@@ -219,6 +231,8 @@ public class ReportActivity extends AppCompatActivity {
         
         initializeInputFields();
         initializeButtons();
+        setupPdfTemplateSectionVisibility();
+        applyCreateCustomReportIntent();
         setupKeyboardHandling();
         setCurrentDate();
         
@@ -277,12 +291,60 @@ public class ReportActivity extends AppCompatActivity {
         // SAVE BUTTON FUNCTIONALITY
         // ============================================================================
         
-        // Save button - stores report data and generates PDF
-        saveButton.setOnClickListener(v -> {
-            ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            saveReport(db);
-        });
+        // Save button - stores report data and generates PDF (optional password)
+        saveButton.setOnClickListener(v -> performSaveReport());
+    }
+
+    /**
+     * If password protect is checked, show password dialog then save; otherwise save without password.
+     */
+    private void performSaveReport() {
+        ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        if (passwordProtectCheckbox != null && passwordProtectCheckbox.isChecked()) {
+            showPasswordDialogAndSave(db);
+        } else {
+            saveReport(db, null);
+        }
+    }
+
+    private void showPasswordDialogAndSave(SQLiteDatabase db) {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 20, 50, 20);
+        final EditText passwordInput = new EditText(this);
+        passwordInput.setHint("Enter password (min 6 characters)");
+        passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        passwordInput.setPadding(20, 20, 20, 20);
+        final EditText confirmInput = new EditText(this);
+        confirmInput.setHint("Confirm password");
+        confirmInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        confirmInput.setPadding(20, 20, 20, 20);
+        layout.addView(passwordInput);
+        layout.addView(confirmInput);
+        new AlertDialog.Builder(this)
+                .setTitle("Password protect PDF")
+                .setMessage("Set an owner password. It will be required to edit the PDF.")
+                .setView(layout)
+                .setPositiveButton("Save Report", (dialog, which) -> {
+                    String password = passwordInput.getText().toString();
+                    String confirm = confirmInput.getText().toString();
+                    if (password.trim().isEmpty()) {
+                        Toast.makeText(this, "Please enter a password", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (password.length() < 6) {
+                        Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (!password.equals(confirm)) {
+                        Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    saveReport(db, password);
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
     }
 
     /**
@@ -409,15 +471,22 @@ public class ReportActivity extends AppCompatActivity {
         saveButton = findViewById(R.id.saveButton);
         backButton = findViewById(R.id.backButton);
         selectImageButton = findViewById(R.id.selectImageButton);
-        aiPolishButton = null; // AI button removed from UI
+        aiFixButton = findViewById(R.id.aiFixButton);
         readBackButton = findViewById(R.id.readBackButton);
 
-        // Save button - stores report data and generates PDF
-        saveButton.setOnClickListener(v -> {
-            ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            saveReport(db);
-        });
+        passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
+        // Save button - stores report data and generates PDF (optional password)
+        saveButton.setOnClickListener(v -> performSaveReport());
+
+        // PDF Template Settings (offline custom logo/watermark/header)
+        Button pdfTemplateSettingsButton = findViewById(R.id.pdfTemplateSettingsButton);
+        if (pdfTemplateSettingsButton != null) {
+            pdfTemplateSettingsButton.setOnClickListener(v -> {
+                Intent intent = new Intent(ReportActivity.this, PdfTemplateSettingsActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
+            });
+        }
         
         // Back button - returns to previous screen
         backButton.setOnClickListener(v -> {
@@ -430,21 +499,39 @@ public class ReportActivity extends AppCompatActivity {
         // Image selection button - opens image picker
         selectImageButton.setOnClickListener(v -> openImageSelector());
         
-        // AI Polish button - enhances report content using AI
-        if (aiPolishButton != null) {
-            aiPolishButton.setOnClickListener(v -> {
-                if (openRouterApiKey.isEmpty()) {
-                    requestOpenRouterApiKey();
-                } else {
-                    polishWithAI();
-                }
-            });
+        // AI Fix button - professional grammar for Site Inspection and Recommendations only
+        if (aiFixButton != null) {
+            aiFixButton.setOnClickListener(v -> polishWithAI());
         }
         
 
         
         // Read Back button - reads the entire report
         readBackButton.setOnClickListener(v -> readReportBack());
+    }
+
+    /**
+     * Show PDF template section (Use GRPC / Use My Template + PDF Template Settings) only when user is NOT logged in.
+     * When logged in (Firebase Auth current user present), hide it and reports always use GRPC template.
+     */
+    private void setupPdfTemplateSectionVisibility() {
+        View pdfTemplateSection = findViewById(R.id.pdfTemplateSection);
+        if (pdfTemplateSection != null) {
+            boolean isLoggedIn = FirebaseAuth.getInstance().getCurrentUser() != null;
+            pdfTemplateSection.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
+        }
+    }
+
+    /**
+     * When launched via "Create Custom Report", show PDF template section and pre-select My Template
+     * (form already has password protect, add image, compress checkbox).
+     */
+    private void applyCreateCustomReportIntent() {
+        if (!getIntent().getBooleanExtra("USE_MY_TEMPLATE", false)) return;
+        View pdfTemplateSection = findViewById(R.id.pdfTemplateSection);
+        RadioButton radioMyTemplate = findViewById(R.id.radioMyTemplate);
+        if (pdfTemplateSection != null) pdfTemplateSection.setVisibility(View.VISIBLE);
+        if (radioMyTemplate != null) radioMyTemplate.setChecked(true);
     }
 
     /**
@@ -548,8 +635,9 @@ public class ReportActivity extends AppCompatActivity {
      * Saves the report data into the SQLite database and generates a PDF report.
      *
      * @param db The writable SQLiteDatabase instance.
+     * @param ownerPassword If non-null, PDF is encrypted with this owner password (editing restricted).
      */
-    private void saveReport(SQLiteDatabase db) {
+    private void saveReport(SQLiteDatabase db, String ownerPassword) {
         // Collect input values for the report
         String reportName = nameInput.getEditText().getText().toString();
         String content = "Premise Name: " + nameInput.getEditText().getText().toString() +
@@ -579,15 +667,35 @@ public class ReportActivity extends AppCompatActivity {
         if (newRowId != -1) {
             Toast.makeText(this, "Company Report Saved Successfully!", Toast.LENGTH_SHORT).show();
 
-            // Generate a PDF report only if the OS version supports it
+            // Generate a PDF report only if the OS version supports it (compressed; optional password)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                PDFReportGenerator.generatePDFReport(
+                PdfTemplateSettings settings;
+                if (selectedTemplateId != null) {
+                    SavedTemplate t = new PdfTemplateStorage(this).getSavedTemplateById(userName, selectedTemplateId);
+                    settings = t != null ? t.toPdfTemplateSettings() : new PdfTemplateStorage(this).load();
+                } else {
+                    settings = new PdfTemplateStorage(this).load();
+                    View pdfTemplateSection = findViewById(R.id.pdfTemplateSection);
+                    if (pdfTemplateSection != null && pdfTemplateSection.getVisibility() != View.VISIBLE) {
+                        settings.setTemplateSelection(PdfTemplateSettings.GRPC);
+                    } else {
+                        RadioButton radioMyTemplate = findViewById(R.id.radioMyTemplate);
+                        if (radioMyTemplate != null && radioMyTemplate.isChecked()) {
+                            settings.setTemplateSelection(PdfTemplateSettings.MY_TEMPLATE);
+                        } else {
+                            settings.setTemplateSelection(PdfTemplateSettings.GRPC);
+                        }
+                    }
+                }
+                PDFReportGeneratorWithTemplate.generatePdf(
                         "Company",
                         reportName,
                         content,
                         this,
                         !selectedImageUris.isEmpty() ? selectedImageUris : null,
-                        dateInput.getText().toString() // Pass the date from the input field
+                        dateInput.getText().toString(),
+                        ownerPassword,
+                        settings
                 );
             }
             
@@ -860,174 +968,95 @@ public class ReportActivity extends AppCompatActivity {
     }
 
     /**
-     * Request OpenRouter API key from user
-     */
-    private void requestOpenRouterApiKey() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("🤖 AI Polish Setup")
-                .setMessage("To use AI polishing, please enter your OpenRouter API key:")
-                .setView(createApiKeyInputView())
-                .setPositiveButton("Save", (dialog, which) -> {
-                    // API key will be saved in the EditText's text
-                })
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
-                .setCancelable(false);
-        
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
-    /**
-     * Create input view for API key
-     */
-    private android.view.View createApiKeyInputView() {
-        EditText apiKeyInput = new EditText(this);
-        apiKeyInput.setHint("Enter your OpenRouter API key");
-        apiKeyInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        apiKeyInput.setPadding(50, 20, 50, 20);
-        
-        // Set up text change listener to save API key
-        apiKeyInput.addTextChangedListener(new android.text.TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(android.text.Editable s) {
-                openRouterApiKey = s.toString().trim();
-            }
-        });
-        
-        return apiKeyInput;
-    }
-
-    /**
-     * Polish the report content using AI
+     * AI Fix: only Site Inspection and Recommendations. Professional, grammatically correct, no * or filler. Uses key from Firestore (same as Chat).
      */
     private void polishWithAI() {
         String siteInspection = siteInspectionInput.getEditText().getText().toString().trim();
         String recommendations = recommendationsInput.getEditText().getText().toString().trim();
-        
         if (siteInspection.isEmpty() && recommendations.isEmpty()) {
-            Toast.makeText(this, "Please enter some content in Site Inspection or Recommendations first", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Enter content in Site Inspection or Recommendations first", Toast.LENGTH_SHORT).show();
             return;
         }
-        
-        if (openRouterApiKey.isEmpty()) {
-            Toast.makeText(this, "Please set your OpenRouter API key first", Toast.LENGTH_SHORT).show();
-            return;
+        if (aiFixButton != null) {
+            aiFixButton.setEnabled(false);
+            aiFixButton.setText("✏️ Fixing...");
         }
-        
-        // Show loading indicator
-        Toast.makeText(this, "🤖 AI is polishing your report...", Toast.LENGTH_SHORT).show();
-        if (aiPolishButton != null) {
-            aiPolishButton.setEnabled(false);
-            aiPolishButton.setText("🤖 Polishing...");
-        }
-        
-        // Create the prompt for AI
-        String prompt = "Rewrite the following text to make it sound more professional, slightly longer, and more fluid. " +
-                "Ensure the grammar is correct throughout. Keep the original meaning and all key information intact, " +
-                "but improve the sentence structure, vocabulary, and tone to reflect the voice of a confident, experienced professional. " +
-                "Expand naturally where appropriate without adding unrelated content. " +
-                "Return the result as plain text only — do not include quotation marks, asterisks, or colons in the output formatting.\n\n";
-        
-        if (!siteInspection.isEmpty()) {
-            prompt += "Site Inspection: " + siteInspection + "\n\n";
-        } else {
-            prompt += "Site Inspection: No site inspection details noted\n\n";
-        }
-        
-        if (!recommendations.isEmpty()) {
-            prompt += "Recommendations: " + recommendations + "\n\n";
-        } else {
-            prompt += "Recommendations: No recommendations noted\n\n";
-        }
-        
-        prompt += "Please provide the enhanced content in this exact format:\n\n" +
-                "Site Inspection: [professional content with improved grammar]\n\n" +
-                "Recommendations: [professional recommendations with improved grammar]\n\n" +
-                "Do not include any other text, labels, or formatting symbols. Return plain text only.";
-        
-        // Make API call in background thread
-        final String finalPrompt = prompt;
-        new Thread(() -> {
-            try {
-                String response = callOpenRouterAPI(finalPrompt);
-                updateUIWithAIPolish(response);
-            } catch (Exception e) {
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "AI polishing failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        if (aiPolishButton != null) {
-                            aiPolishButton.setEnabled(true);
-                            aiPolishButton.setText("🤖 AI Polish Report");
+        Toast.makeText(this, "✏️ AI Fix in progress...", Toast.LENGTH_SHORT).show();
+
+        String systemPrompt = "You are a professional editor for pest control reports. Rewrite the given text so it is professional, grammatically correct, and suitable for a formal service report. Do not use asterisks (*), bullet symbols, or filler words like 'emm' or 'uh'. Add 3 to 4 extra sentences where appropriate to improve clarity and completeness. Output only the revised text.";
+        String userPrompt = "Rewrite the following in the exact format below. Plain text only, no markdown.\n\n";
+        if (!siteInspection.isEmpty()) userPrompt += "Site Inspection: " + siteInspection + "\n\n";
+        else userPrompt += "Site Inspection: (none)\n\n";
+        if (!recommendations.isEmpty()) userPrompt += "Recommendations: " + recommendations + "\n\n";
+        else userPrompt += "Recommendations: (none)\n\n";
+        userPrompt += "Respond with exactly:\nSite Inspection: [revised text]\n\nRecommendations: [revised text]";
+
+        final String finalSystemPrompt = systemPrompt;
+        final String finalUserPrompt = userPrompt;
+
+        FirebaseFirestore.getInstance().document("AI-Chat/AI-API").get()
+                .addOnSuccessListener(this, docSnap -> {
+                    if (docSnap == null || !docSnap.exists()) {
+                        setAiFixDone("Admin must set an API key in AI Chat (Settings → Update Hugging Face Key or Groq Key).");
+                        return;
+                    }
+                    Object grogObj = docSnap.get("key-grog");
+                    Object hfObj = docSnap.get("KEY");
+                    String keyGrog = grogObj != null ? grogObj.toString().trim() : "";
+                    String keyHf = hfObj != null ? hfObj.toString().trim() : "";
+                    String apiKey = !keyGrog.isEmpty() ? keyGrog : keyHf;
+                    if (apiKey.isEmpty()) {
+                        setAiFixDone("Admin must set an API key in AI Chat (Settings → Update Hugging Face Key or Groq Key).");
+                        return;
+                    }
+                    boolean useGroq = !keyGrog.isEmpty();
+                    new Thread(() -> {
+                        try {
+                            String response = callChatAPI(apiKey, useGroq, finalSystemPrompt, finalUserPrompt);
+                            runOnUiThread(() -> updateUIWithAIPolish(response));
+                        } catch (Exception e) {
+                            runOnUiThread(() -> setAiFixDone("AI Fix failed: " + e.getMessage()));
                         }
-                });
-            }
-        }).start();
+                    }).start();
+                })
+                .addOnFailureListener(this, e -> setAiFixDone("Could not load API key. Check connection."));
     }
 
-    /**
-     * Call OpenRouter API with the given prompt
-     */
-    private String callOpenRouterAPI(String prompt) throws IOException {
-        okhttp3.OkHttpClient client = new okhttp3.OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(60, TimeUnit.SECONDS)
-                .build();
+    private void setAiFixDone(String message) {
+        if (aiFixButton != null) {
+            aiFixButton.setEnabled(true);
+            aiFixButton.setText("✏️ AI Fix");
+        }
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
 
+    private String callChatAPI(String apiKey, boolean useGroq, String systemPrompt, String userPrompt) throws IOException {
         try {
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("model", AI_MODEL);
-            
+            OkHttpClient client = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS).readTimeout(90, TimeUnit.SECONDS).writeTimeout(60, TimeUnit.SECONDS).build();
             JSONArray messages = new JSONArray();
-            JSONObject message = new JSONObject();
-            message.put("role", "user");
-            message.put("content", prompt);
-            messages.put(message);
-            requestBody.put("messages", messages);
-            requestBody.put("max_tokens", 4000);
-            requestBody.put("temperature", 0.8);
-
-            okhttp3.RequestBody body = okhttp3.RequestBody.create(
-                    requestBody.toString(),
-                    okhttp3.MediaType.parse("application/json; charset=utf-8")
-            );
-
+            messages.put(new JSONObject().put("role", "system").put("content", systemPrompt));
+            messages.put(new JSONObject().put("role", "user").put("content", userPrompt));
+            String url = useGroq ? GROQ_CHAT_URL : HF_ROUTER_CHAT_URL;
+            String model = useGroq ? GROQ_MODEL : HF_ROUTER_MODEL;
+            JSONObject body = new JSONObject().put("model", model).put("messages", messages).put("max_tokens", AI_FIX_MAX_TOKENS);
             okhttp3.Request request = new okhttp3.Request.Builder()
-                    .url(OPENROUTER_API_URL)
-                    .addHeader("Authorization", "Bearer " + openRouterApiKey)
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("HTTP-Referer", "https://grpc-app.com")
-                    .addHeader("X-Title", "GRPest Control App")
-                    .addHeader("User-Agent", "GRPest-Control-App/1.0")
-                    .post(body)
+                    .url(url)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .post(okhttp3.RequestBody.create(body.toString(), okhttp3.MediaType.parse("application/json")))
                     .build();
-
             try (okhttp3.Response response = client.newCall(request).execute()) {
-                String responseBody = response.body().string();
-                
-                if (!response.isSuccessful()) {
-                    Log.e("ReportActivity", "API Error Response: " + responseBody);
-                    throw new IOException("API call failed: " + response.code() + " " + response.message() + "\nResponse: " + responseBody);
+                String responseBody = response.body() != null ? response.body().string() : "";
+                if (!response.isSuccessful()) throw new IOException("API " + response.code() + ": " + responseBody);
+                JSONObject json = new JSONObject(responseBody);
+                JSONArray choices = json.optJSONArray("choices");
+                if (choices != null && choices.length() > 0) {
+                    Object content = choices.getJSONObject(0).optJSONObject("message").opt("content");
+                    return content != null ? content.toString() : "";
                 }
-                
-                JSONObject jsonResponse = new JSONObject(responseBody);
-                JSONArray choices = jsonResponse.getJSONArray("choices");
-                
-                if (choices.length() > 0) {
-                    JSONObject choice = choices.getJSONObject(0);
-                    JSONObject messageObj = choice.getJSONObject("message");
-                    return messageObj.getString("content");
-                } else {
-                    throw new IOException("No response content from AI");
-                }
+                throw new IOException("No response content");
             }
         } catch (org.json.JSONException e) {
-            throw new IOException("JSON parsing error: " + e.getMessage());
+            throw new IOException("JSON error: " + e.getMessage(), e);
         }
     }
 
@@ -1067,43 +1096,29 @@ public class ReportActivity extends AppCompatActivity {
                         recommendationsInput.getEditText().setText(recommendations);
                     }
                     
-                    Toast.makeText(this, "✅ AI polishing completed!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "✅ AI Fix completed!", Toast.LENGTH_SHORT).show();
                 } else {
-                    // If parsing fails, try to split by common separators
                     String[] altSections = aiResponse.split("(?i)recommendations:", -1);
                     if (altSections.length >= 2) {
                         String siteInspection = altSections[0].replaceAll("(?i)site inspection:", "").trim();
                         String recommendations = altSections[1].trim();
-                        
-                        // Remove formatting symbols
-                        siteInspection = siteInspection.replaceAll("\\*\\*", "").trim();
-                        siteInspection = siteInspection.replaceAll("\"", "").trim();
-                        recommendations = recommendations.replaceAll("\\*\\*", "").trim();
-                        recommendations = recommendations.replaceAll("\"", "").trim();
-                        
-                        if (!siteInspection.isEmpty()) {
-                            siteInspectionInput.getEditText().setText(siteInspection);
-                        }
-                        if (!recommendations.isEmpty()) {
-                            recommendationsInput.getEditText().setText(recommendations);
-                        }
-                        Toast.makeText(this, "✅ AI polishing completed!", Toast.LENGTH_SHORT).show();
+                        siteInspection = siteInspection.replaceAll("\\*+", "").replaceAll("\"", "").trim();
+                        recommendations = recommendations.replaceAll("\\*+", "").replaceAll("\"", "").trim();
+                        if (!siteInspection.isEmpty()) siteInspectionInput.getEditText().setText(siteInspection);
+                        if (!recommendations.isEmpty()) recommendationsInput.getEditText().setText(recommendations);
+                        Toast.makeText(this, "✅ AI Fix completed!", Toast.LENGTH_SHORT).show();
                     } else {
-                        // Last resort - just use the whole response
-                        String cleanResponse = aiResponse.trim();
-                        // Remove formatting symbols from the whole response
-                        cleanResponse = cleanResponse.replaceAll("\\*\\*", "").trim();
-                        cleanResponse = cleanResponse.replaceAll("\"", "").trim();
-                        siteInspectionInput.getEditText().setText(cleanResponse);
-                        Toast.makeText(this, "✅ AI polishing completed!", Toast.LENGTH_SHORT).show();
+                        String clean = aiResponse.replaceAll("\\*+", "").replaceAll("\"", "").trim();
+                        if (!clean.isEmpty()) siteInspectionInput.getEditText().setText(clean);
+                        Toast.makeText(this, "✅ AI Fix completed!", Toast.LENGTH_SHORT).show();
                     }
                 }
             } catch (Exception e) {
                 Toast.makeText(this, "Error parsing AI response: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             } finally {
-                if (aiPolishButton != null) {
-                    aiPolishButton.setEnabled(true);
-                    aiPolishButton.setText("🤖 AI Polish Report");
+                if (aiFixButton != null) {
+                    aiFixButton.setEnabled(true);
+                    aiFixButton.setText("✏️ AI Fix");
                 }
             }
         });

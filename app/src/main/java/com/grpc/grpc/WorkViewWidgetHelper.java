@@ -28,6 +28,8 @@ public final class WorkViewWidgetHelper {
     private static final int LOOKAHEAD_DAYS = 14;
     private static final int MAX_JOBS = 5;
     private static final int MAX_CACHED_JOBS = 10;
+    /** Number of jobs to show in the widget. */
+    private static final int WIDGET_JOB_COUNT = 3;
 
     private WorkViewWidgetHelper() {}
 
@@ -43,6 +45,19 @@ public final class WorkViewWidgetHelper {
             this.name = name != null ? name : "";
             this.time = time != null ? time : "";
             this.address = address != null ? address : "";
+        }
+    }
+
+    /**
+     * Date + jobs for widget. If today has no jobs, displayDate is the next day that has jobs and jobs are the next 3.
+     */
+    public static class WidgetDisplay {
+        public final String displayDate;
+        public final List<JobLine> jobs;
+
+        public WidgetDisplay(String displayDate, List<JobLine> jobs) {
+            this.displayDate = displayDate != null ? displayDate : "";
+            this.jobs = jobs != null ? jobs : new ArrayList<JobLine>();
         }
     }
 
@@ -127,39 +142,93 @@ public final class WorkViewWidgetHelper {
      * Returns the date string for display (e.g. "Mon, 15 Feb 2025"). Uses cached date if it's today.
      */
     public static String getCachedDateForDisplay(Context context) {
-        if (context == null) return "";
-        String today = todayYyyyMmDd();
-        String cached = widgetCachePrefs(context).getString(KEY_CACHE_DATE, "");
-        String dateToShow = (today.equals(cached) && !cached.isEmpty()) ? cached : today;
-        try {
-            Date d = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateToShow);
-            if (d != null) {
-                return new SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault()).format(d);
-            }
-        } catch (Exception ignored) { }
-        return dateToShow;
+        return getWidgetDisplay(context).displayDate;
     }
 
     /**
-     * Returns jobs for widget display. If the persistent cache is for today, returns those jobs
-     * (so widget still shows today's work after logout). Otherwise returns empty list.
+     * Returns jobs for widget display (next 3 jobs; if today has none, from next day).
      */
     public static List<JobLine> getCachedJobsForDisplay(Context context) {
-        List<JobLine> out = new ArrayList<>();
-        if (context == null) return out;
+        return getWidgetDisplay(context).jobs;
+    }
+
+    /**
+     * Returns date + next 3 jobs for the widget. If today has cached jobs, shows today and those jobs.
+     * If today has no jobs (or cache is stale), shows the next day that has jobs and the next 3 jobs.
+     */
+    public static WidgetDisplay getWidgetDisplay(Context context) {
+        List<JobLine> jobs = new ArrayList<>();
+        String displayDate = formatDate(todayYyyyMmDd());
+        if (context == null) return new WidgetDisplay(displayDate, jobs);
+
         String today = todayYyyyMmDd();
         SharedPreferences prefs = widgetCachePrefs(context);
         String cachedDate = prefs.getString(KEY_CACHE_DATE, "");
-        if (!today.equals(cachedDate)) return out;
-        int n = prefs.getInt(KEY_JOB_COUNT, 0);
-        for (int i = 0; i < Math.min(n, MAX_JOBS); i++) {
-            String p = KEY_JOB_PREFIX + i + "_";
-            String name = prefs.getString(p + "name", "");
-            String time = prefs.getString(p + "time", "");
-            String address = prefs.getString(p + "address", "");
-            out.add(new JobLine(name, time, address));
+        int cachedCount = prefs.getInt(KEY_JOB_COUNT, 0);
+
+        if (today.equals(cachedDate) && cachedCount > 0) {
+            for (int i = 0; i < Math.min(cachedCount, WIDGET_JOB_COUNT); i++) {
+                String p = KEY_JOB_PREFIX + i + "_";
+                jobs.add(new JobLine(
+                        prefs.getString(p + "name", ""),
+                        prefs.getString(p + "time", ""),
+                        prefs.getString(p + "address", "")
+                ));
+            }
+            return new WidgetDisplay(displayDate, jobs);
         }
-        return out;
+
+        String userName = getLastUserName(context);
+        if (userName.isEmpty()) return new WidgetDisplay(displayDate, jobs);
+
+        List<WorkViewLocalEventStore.CachedEvent> list = WorkViewLocalEventStore.listUpcomingScheduled(
+                context.getApplicationContext(), userName, LOOKAHEAD_DAYS);
+        Collections.sort(list, new Comparator<WorkViewLocalEventStore.CachedEvent>() {
+            @Override
+            public int compare(WorkViewLocalEventStore.CachedEvent a, WorkViewLocalEventStore.CachedEvent b) {
+                WorkEvent ea = a.event;
+                WorkEvent eb = b.event;
+                if (ea == null || eb == null) return 0;
+                int d = safe(ea.getDate()).compareTo(safe(eb.getDate()));
+                if (d != 0) return d;
+                return safe(ea.getTime()).compareTo(safe(eb.getTime()));
+            }
+        });
+
+        int take = Math.min(WIDGET_JOB_COUNT, list.size());
+        for (int i = 0; i < take; i++) {
+            WorkEvent e = list.get(i).event;
+            if (e == null) continue;
+            jobs.add(new JobLine(e.getEventName(), e.getTime(), e.getAddress()));
+        }
+        if (take > 0 && list.get(0).event != null) {
+            String firstDate = list.get(0).event.getDate();
+            displayDate = formatDateAsTodayTomorrowOrFull(firstDate, today);
+        }
+        return new WidgetDisplay(displayDate, jobs);
+    }
+
+    private static String formatDate(String yyyyMmDd) {
+        if (yyyyMmDd == null || yyyyMmDd.isEmpty()) return yyyyMmDd;
+        try {
+            Date d = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(yyyyMmDd);
+            if (d != null) return new SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault()).format(d);
+        } catch (Exception ignored) { }
+        return yyyyMmDd;
+    }
+
+    private static String formatDateAsTodayTomorrowOrFull(String yyyyMmDd, String todayYyyyMmDd) {
+        if (yyyyMmDd == null || yyyyMmDd.isEmpty()) return formatDate(yyyyMmDd);
+        if (yyyyMmDd.equals(todayYyyyMmDd)) return "Today";
+        try {
+            Date today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(todayYyyyMmDd);
+            Date d = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(yyyyMmDd);
+            if (today != null && d != null) {
+                long diff = (d.getTime() - today.getTime()) / (24 * 60 * 60 * 1000);
+                if (diff == 1) return "Tomorrow";
+            }
+        } catch (Exception ignored) { }
+        return formatDate(yyyyMmDd);
     }
 
     private static String safe(String s) {

@@ -68,6 +68,6 @@
 
     <string name="help_section7">Support\n\n- If something looks wrong, log out/in and retry.\n- Contact James for support.</string>
 
-    <!-- Admin-only (user 001 in users): OpenRouter API key setup -->
-    <string name="help_section8_admin_ai_key">AI Chat uses OpenRouter. Only the admin (user 001 / James in the users list) can update the API key.\n\n1. Create an OpenRouter account at openrouter.ai\n2. Generate an API key in the OpenRouter dashboard\n3. In the app: open AI Chat, tap the settings (gear) icon in the top-right\n4. Enter the new key and tap Update\n\nThe key is stored securely on the server (Google Secret Manager). The app never stores or displays it.</string>
+    <!-- Admin-only (user 001 in users): AI Chat API keys in Firestore AI-Chat/AI-API -->
+    <string name="help_section8_admin_ai_key">AI Chat uses keys stored in Firestore (collection AI-Chat, document AI-API). Only James (user 001) can update them.\n\n• KEY = Hugging Face token. Get it at: https://huggingface.co/settings/tokens (create a token with Inference permissions). Used with Hugging Face Router.\n\n• key-grog = Groq API key. Get it at: https://console.groq.com (sign in, go to API Keys, create a key). Used with Groq.\n\nThe app uses Groq if key-grog is set; otherwise it uses Hugging Face if KEY is set. Set at least one.\n\nTo update in the app:\n1. Open AI Chat\n2. Tap the settings (gear) icon top-right\n3. Choose \"Update Hugging Face Key\" or \"Update Groq Key\"\n4. Enter the new key and tap Update\n\nThe keys are stored in Firestore only; the app never displays them.</string>
 </resources>

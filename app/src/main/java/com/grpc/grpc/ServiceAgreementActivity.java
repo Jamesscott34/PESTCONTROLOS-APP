@@ -27,7 +27,7 @@ import androidx.appcompat.app.AppCompatActivity;
  * - Clears input fields after successful PDF generation
  * - Navigates back to the previous activity with user details
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

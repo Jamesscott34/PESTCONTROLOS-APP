@@ -25,7 +25,7 @@ import com.google.firebase.auth.FirebaseAuth;
  * - Extracts the user's name from their email for a personalized experience
  * - Redirects to the main activity upon successful authentication
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 
@@ -51,7 +51,7 @@ public class LoginActivity extends AppCompatActivity {
         passwordEditText = findViewById(R.id.passwordEditText);
         loginButton = findViewById(R.id.loginButton);
 
-        // Login Button Action
+        // Login Button Action (Firebase)
         loginButton.setOnClickListener(view -> {
             String email = emailEditText.getText().toString().trim();
             String password = passwordEditText.getText().toString().trim();
@@ -81,6 +81,18 @@ public class LoginActivity extends AppCompatActivity {
                         }
                     });
         });
+
+        // Offline login: use app without Firebase (no account; custom PDF template etc.)
+        Button offlineLoginButton = findViewById(R.id.offlineLoginButton);
+        if (offlineLoginButton != null) {
+            offlineLoginButton.setOnClickListener(view -> {
+                Toast.makeText(LoginActivity.this, "Using app in offline mode", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                intent.putExtra("USER_NAME", "Offline User");
+                startActivity(intent);
+                finish();
+            });
+        }
     }
 
     // Helper to extract the name from the email

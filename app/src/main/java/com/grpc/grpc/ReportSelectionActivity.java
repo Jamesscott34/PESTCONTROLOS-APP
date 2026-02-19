@@ -20,7 +20,7 @@ import androidx.appcompat.app.AppCompatActivity;
  * - Ensures USER_NAME is always passed to the next activity
  * - Supports creating company reports, pest control quotations, bird control quotations, and general quotations
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 
@@ -94,5 +94,26 @@ public class ReportSelectionActivity extends AppCompatActivity {
             startActivity(intent);
 
         });
+
+        // Custom Report: open PDF Template Settings (logo, watermark, header blocks)
+        Button buttonCustomReport = findViewById(R.id.buttonCustomReport);
+        if (buttonCustomReport != null) {
+            buttonCustomReport.setOnClickListener(v -> {
+                Intent intent = new Intent(this, PdfTemplateSettingsActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
+            });
+        }
+
+        // Create Custom Report: open Create Report with My Template (password protect, add image, compress)
+        Button buttonCreateCustomReport = findViewById(R.id.buttonCreateCustomReport);
+        if (buttonCreateCustomReport != null) {
+            buttonCreateCustomReport.setOnClickListener(v -> {
+                Intent intent = new Intent(this, ReportActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                intent.putExtra("USE_MY_TEMPLATE", true);
+                startActivity(intent);
+            });
+        }
     }
 }

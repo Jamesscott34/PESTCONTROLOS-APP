@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * - Generates routine pest control reports based on job details
  * - Provides an intuitive UI with click and long-press options for job management
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 
@@ -54,6 +54,7 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
     private List<Map<String, Object>> allJobs = new ArrayList<>();
     private FirebaseFirestore db;
     private String userName;
+    private String userId;
     private int total = 0, completed = 0, pending = 0;
 
     @SuppressLint("MissingInflatedId")
@@ -70,6 +71,7 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
             finish();
             return;
         }
+        userId = StaffDirectory.getUserId(userName);
 
         searchBar = findViewById(R.id.searchBar);
         jobsContainer = findViewById(R.id.jobsContainer);
@@ -599,10 +601,10 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
 
     private void deleteJob(String documentId) {
         if (!canDeleteJobs()) {
-            if ("Dean".equalsIgnoreCase(userName)) {
+            if ("003".equals(userId)) {
                 new AlertDialog.Builder(this)
                         .setTitle("Permission required")
-                        .setMessage("To delete a job get in touch with Ian or Kristine.")
+                        .setMessage("To delete a job get in touch with an administrator.")
                         .setPositiveButton("OK", null)
                         .show();
             } else {
@@ -615,9 +617,7 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
     }
 
     private boolean canDeleteJobs() {
-        return "James".equalsIgnoreCase(userName)
-                || "Ian".equalsIgnoreCase(userName)
-                || "Kristine".equalsIgnoreCase(userName);
+        return StaffDirectory.isAdminUserId(userId);
     }
 
     private void updateStatistics(int total, int completed, int pending) {

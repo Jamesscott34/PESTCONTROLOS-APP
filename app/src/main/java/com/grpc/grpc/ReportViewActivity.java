@@ -13,7 +13,7 @@
  * - Supports adding follow-up details to an existing PDF report
  * - Ensures user-friendly alerts for all interactions
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

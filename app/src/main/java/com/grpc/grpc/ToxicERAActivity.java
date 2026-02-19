@@ -25,7 +25,7 @@ import androidx.appcompat.app.AppCompatActivity;
  * - Clears input fields after generating the report
  * - Displays a confirmation message upon successful PDF creation
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

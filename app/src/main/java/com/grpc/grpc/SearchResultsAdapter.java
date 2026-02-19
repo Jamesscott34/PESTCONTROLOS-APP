@@ -21,7 +21,7 @@ import java.util.List;
  * - Real-time filtering with updateResults method
  * - Theme-aware styling
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class SearchResultsAdapter extends RecyclerView.Adapter<SearchResultsAdapter.ViewHolder> {

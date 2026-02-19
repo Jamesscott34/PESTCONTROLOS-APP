@@ -40,7 +40,7 @@ import java.util.Set;
  * - Supports opening, sharing, renaming, and deleting reports
  * - Efficiently binds report data to the RecyclerView
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportViewHolder> {

@@ -45,7 +45,7 @@ import java.util.Locale;
  * - Applies a watermark and footer for branding
  * - Supports external call-out reports for emergency pest control interventions
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 
@@ -144,20 +144,11 @@ public class RodentCallOutExternalActivity extends AppCompatActivity {
      * Sets the technician's name and contact based on the username.
      */
     private void setTechnicianDetails() {
-        switch (userName) {
-            case "James":
-                techName = "James Scott";
-                techContact = "0879000271";
-                break;
-            case "Ian":
-                techName = "Ian Winston";
-                techContact = "0879134971";
-                break;
-            default:
-                techName = "Unknown Technician";
-                techContact = "N/A";
-                break;
-        }
+        String userId = StaffDirectory.getUserId(userName);
+        techName = StaffDirectory.getReportDisplayName(userId);
+        if (techName == null || techName.isEmpty()) techName = "Unknown Technician";
+        String mobile = StaffDirectory.getMobileForUserId(userId);
+        techContact = mobile != null && !mobile.isEmpty() ? mobile : "N/A";
     }
 
     /**

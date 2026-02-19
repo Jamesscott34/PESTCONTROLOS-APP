@@ -43,7 +43,7 @@ import java.util.Locale;
  * - Applies a watermark and structured formatting to the document
  * - Ensures responsible pest control practices through an Integrated Pest Management (IPM) approach
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

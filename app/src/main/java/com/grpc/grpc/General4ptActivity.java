@@ -48,7 +48,7 @@ import java.util.Random;
  * - Automatically assigns quarterly payments and VAT calculations
  * - Saves the generated quote and allows navigation back to the main quote activity
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class General4ptActivity extends AppCompatActivity {
@@ -77,7 +77,7 @@ public class General4ptActivity extends AppCompatActivity {
         staffDisplayName = userName;
         staffTitle = "";
 
-        // Fetch Email/Name/Title from Firebase by username -> ID (James=001, Ian=002, Dean=003, Kristine=004)
+        // Fetch Email/Name/Title from Firebase by username -> ID
         StaffDirectory.fetchByUserName(this, userName, profile -> {
             if (profile == null) return;
             if (profile.email != null && !profile.email.isEmpty()) userEmail = profile.email;

@@ -19,7 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
  * - Ensures USER_NAME is always passed to the next activity
  * - Supports multiple service contract types (4pt, 6pt, 8pt, 12pt)
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 

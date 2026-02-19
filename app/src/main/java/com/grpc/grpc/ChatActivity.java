@@ -21,7 +21,20 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.material.color.MaterialColors;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.functions.FirebaseFunctions;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 import android.Manifest;
 import android.speech.RecognitionListener;
@@ -55,7 +68,18 @@ public class ChatActivity extends AppCompatActivity {
 
     private String userName;
     private Handler mainHandler;
-    
+
+    /** Hugging Face Router (OpenAI-compatible). KEY = HF token in Firestore. */
+    private static final String HF_ROUTER_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
+    private static final String HF_ROUTER_MODEL = "openai/gpt-oss-20b:groq";
+    /** Groq API when key-grog is set in Firestore. */
+    private static final String GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String GROQ_MODEL = "llama-3.1-8b-instant";
+    /** Max tokens in the model reply; increase if responses get cut off. */
+    private static final int MAX_TOKENS = 2048;
+    private static final String PEST_SYSTEM_PROMPT = "You are a senior Irish pest control professional speaking to a licensed, professional colleague. You have decades of experience in Irish pest control and speak as one professional to another. You have expert knowledge of: Irish pest control legislation and regulations; CRRU guidelines; Irish rodenticide regulations and compliance; Irish wildlife protection laws; Irish building and health and safety regulations for pest control; Irish licensing, waste disposal, insurance and tax for pest control; rodents, birds, insects, wildlife; Irish-specific pest species and behaviors; proofing methods for rats, mice and other pests; Irish Wildlife Act 1976 and bird protection regulations. Use professional terminology, reference Irish regulations, give practical field-tested advice.\n\nFormat for mobile: plain text only. Use simple bullet points or short numbered lists. Do NOT use markdown headings (## or ###), tables, or horizontal rules. Use at most one blank line between paragraphs. Keep responses concise and complete; always finish your answer.";
+    private static final String GENERAL_SYSTEM_PROMPT = "You are a knowledgeable, direct AI assistant that can answer any question: general knowledge, weather, science, history, business, health, travel, Irish pest control law, and more. Be direct and honest.\n\nFormat for mobile: plain text only. Use simple bullet points or short paragraphs. Do NOT use markdown headings, tables, or excessive line breaks. Use at most one blank line between paragraphs. Always complete your answer.";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,7 +96,8 @@ public class ChatActivity extends AppCompatActivity {
         // Handle keyboard properly
         getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
-        firebaseFunctions = FirebaseFunctions.getInstance();
+        // Use us-central1 to match deployed functions (updateOpenRouterKey writes AI key to Firestore)
+        firebaseFunctions = FirebaseFunctions.getInstance("us-central1");
         isAdmin = false;
 
         // Get user name from intent
@@ -187,6 +212,18 @@ public class ChatActivity extends AppCompatActivity {
         sendToAI(messageText);
     }
     
+    /** Cleans AI reply for display: fewer line breaks, no raw markdown. */
+    private static String cleanReplyForDisplay(String text) {
+        if (text == null) return "";
+        String s = text.trim();
+        if (s.isEmpty()) return s;
+        s = s.replaceAll("(\n\\s*){3,}", "\n\n");
+        s = s.replaceAll("(?m)^#+\\s*", "");
+        s = s.replaceAll("(?m)^[-|\\s]+\\s*$", "");
+        s = s.replaceAll("\\|\\s*", "  ");
+        return s.trim();
+    }
+
     private void addMessage(String text, boolean isUser) {
         // Remove typing indicator if it exists
         if (!isUser && messagesContainer.getChildCount() > 0) {
@@ -214,9 +251,10 @@ public class ChatActivity extends AppCompatActivity {
             ((LinearLayout.LayoutParams) messageView.getLayoutParams()).gravity = android.view.Gravity.END;
             messagesContainer.addView(messageView);
         } else {
-            // Create AI message with long press to copy
+            // Create AI message with long press to copy (show cleaned text, copy original)
+            String displayText = cleanReplyForDisplay(text);
             TextView messageView = new TextView(this);
-            messageView.setText(text);
+            messageView.setText(displayText);
             messageView.setTextSize(16);
             messageView.setPadding(16, 12, 16, 12);
             messageView.setBackgroundResource(R.drawable.message_bubble);
@@ -244,39 +282,208 @@ public class ChatActivity extends AppCompatActivity {
     
     private void sendToAI(String userMessage) {
         isWaitingForAI = true;
-
-        // Show typing indicator immediately
         addMessage("🤖 AI is thinking...", false);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("message", userMessage);
-        data.put("mode", isPestControlMode ? "pestControl" : "general");
-        data.put("userName", userName != null ? userName : "User");
-
-        firebaseFunctions.getHttpsCallable("aiChat").call(data)
-                .addOnSuccessListener(this, result -> {
-                    isWaitingForAI = false;
-                    removeTypingIndicator();
-                    String reply = null;
-                    if (result != null && result.getData() != null) {
-                        Object dataResult = result.getData();
-                        if (dataResult instanceof Map) {
-                            Object r = ((Map<?, ?>) dataResult).get("reply");
-                            if (r != null) reply = r.toString();
-                        }
+        // Keys in Firestore AI-Chat/AI-API: KEY (Hugging Face), key-grog (Groq). Prefer Grok if key-grog set, else HF. James can update either via settings.
+        FirebaseFirestore.getInstance().document("AI-Chat/AI-API").get()
+                .addOnSuccessListener(this, docSnap -> {
+                    if (docSnap == null || !docSnap.exists()) {
+                        isWaitingForAI = false;
+                        removeTypingIndicator();
+                        addMessage("Admin must set an API key first: settings icon → Update Hugging Face Key or Update Groq Key.", false);
+                        return;
                     }
-                    if (reply != null && !reply.isEmpty()) {
-                        lastAIResponse = reply;
-                        addMessage(reply, false);
+                    Object grogObj = docSnap.get("key-grog");
+                    Object hfObj = docSnap.get("KEY");
+                    String keyGrog = grogObj != null ? grogObj.toString().trim() : "";
+                    String keyHf = hfObj != null ? hfObj.toString().trim() : "";
+                    if (!keyGrog.isEmpty()) {
+                        callGroq(keyGrog, userMessage);
+                    } else if (!keyHf.isEmpty()) {
+                        callHFRouter(keyHf, userMessage);
                     } else {
-                        addMessage("Sorry, no reply was returned. Please try again.", false);
+                        isWaitingForAI = false;
+                        removeTypingIndicator();
+                        addMessage("Admin must set an API key first: settings icon → Update Hugging Face Key or Update Groq Key.", false);
                     }
                 })
                 .addOnFailureListener(this, e -> {
                     isWaitingForAI = false;
                     removeTypingIndicator();
-                    addMessage("Sorry, I encountered an error. Please try again.", false);
+                    android.util.Log.w("ChatActivity", "Failed to get API key from Firestore", e);
+                    addMessage("Could not load API key. Check your connection and try again.", false);
                 });
+    }
+
+    /** Call Groq API (OpenAI-compatible). Used when key-grog is set in Firestore. */
+    private void callGroq(String apiKey, String userMessage) {
+        String systemContent = (isPestControlMode ? PEST_SYSTEM_PROMPT : GENERAL_SYSTEM_PROMPT)
+                + " The user's name is " + (userName != null ? userName : "User") + ".";
+        try {
+            JSONArray messages = new JSONArray();
+            messages.put(new JSONObject().put("role", "system").put("content", systemContent));
+            messages.put(new JSONObject().put("role", "user").put("content", userMessage));
+            JSONObject body = new JSONObject()
+                    .put("model", GROQ_MODEL)
+                    .put("messages", messages)
+                    .put("max_tokens", MAX_TOKENS);
+            RequestBody requestBody = RequestBody.create(body.toString(), MediaType.parse("application/json"));
+            Request request = new Request.Builder()
+                    .url(GROQ_CHAT_URL)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .post(requestBody)
+                    .build();
+            new OkHttpClient().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    mainHandler.post(() -> {
+                        isWaitingForAI = false;
+                        removeTypingIndicator();
+                        android.util.Log.w("ChatActivity", "Groq request failed", e);
+                        addMessage("Network error. Please try again.", false);
+                    });
+                }
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    String reply = "";
+                    String errorDetail = null;
+                    int code = response.code();
+                    String json = response.body() != null ? response.body().string() : "";
+                    if (response.isSuccessful()) {
+                        try {
+                            JSONObject obj = new JSONObject(json);
+                            JSONArray choices = obj.optJSONArray("choices");
+                            if (choices != null && choices.length() > 0) {
+                                JSONObject msg = choices.getJSONObject(0).optJSONObject("message");
+                                if (msg != null && msg.has("content")) {
+                                    Object content = msg.get("content");
+                                    reply = content != null ? content.toString() : "";
+                                }
+                            }
+                        } catch (Exception e) {
+                            android.util.Log.w("ChatActivity", "Parse Groq response", e);
+                            errorDetail = "Invalid response from API.";
+                        }
+                    } else {
+                        try {
+                            JSONObject err = new JSONObject(json);
+                            JSONObject error = err.optJSONObject("error");
+                            if (error != null && error.has("message")) errorDetail = error.optString("message", "");
+                        } catch (Exception ignored) { }
+                        if (errorDetail == null) errorDetail = "HTTP " + code;
+                    }
+                    final String finalReply = reply != null ? reply.trim() : "";
+                    final String finalError = errorDetail;
+                    mainHandler.post(() -> {
+                        isWaitingForAI = false;
+                        removeTypingIndicator();
+                        if (!finalReply.isEmpty()) {
+                            lastAIResponse = finalReply;
+                            addMessage(finalReply, false);
+                        } else {
+                            String userMsg = finalError != null ? finalError : "Sorry, no reply was returned. Please try again.";
+                            if (code == 401) userMsg = "Invalid Groq key. Get a free key at console.groq.com and set it via Settings → Update Groq Key.";
+                            else if (code == 429) userMsg = "Rate limited. Wait a moment and try again.";
+                            addMessage(userMsg, false);
+                        }
+                    });
+                }
+            });
+        } catch (Exception e) {
+            isWaitingForAI = false;
+            removeTypingIndicator();
+            android.util.Log.w("ChatActivity", "Build Groq request", e);
+            addMessage("Error preparing request. Please try again.", false);
+        }
+    }
+
+    /** Call Hugging Face Router (OpenAI-compatible). base_url=v1, model=openai/gpt-oss-20b:groq. Key = HF token from Firestore. */
+    private void callHFRouter(String apiKey, String userMessage) {
+        String systemContent = (isPestControlMode ? PEST_SYSTEM_PROMPT : GENERAL_SYSTEM_PROMPT)
+                + " The user's name is " + (userName != null ? userName : "User") + ".";
+        try {
+            JSONArray messages = new JSONArray();
+            messages.put(new JSONObject().put("role", "system").put("content", systemContent));
+            messages.put(new JSONObject().put("role", "user").put("content", userMessage));
+            JSONObject body = new JSONObject()
+                    .put("model", HF_ROUTER_MODEL)
+                    .put("messages", messages)
+                    .put("max_tokens", MAX_TOKENS);
+            RequestBody requestBody = RequestBody.create(body.toString(), MediaType.parse("application/json"));
+            Request request = new Request.Builder()
+                    .url(HF_ROUTER_CHAT_URL)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .post(requestBody)
+                    .build();
+            new OkHttpClient().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    mainHandler.post(() -> {
+                        isWaitingForAI = false;
+                        removeTypingIndicator();
+                        android.util.Log.w("ChatActivity", "HF Router request failed", e);
+                        addMessage("Network error. Please try again.", false);
+                    });
+                }
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    String reply = "";
+                    String errorDetail = null;
+                    int code = response.code();
+                    String json = response.body() != null ? response.body().string() : "";
+
+                    if (response.isSuccessful()) {
+                        try {
+                            JSONObject obj = new JSONObject(json);
+                            JSONArray choices = obj.optJSONArray("choices");
+                            if (choices != null && choices.length() > 0) {
+                                JSONObject msg = choices.getJSONObject(0).optJSONObject("message");
+                                if (msg != null && msg.has("content")) {
+                                    Object content = msg.get("content");
+                                    reply = content != null ? content.toString() : "";
+                                }
+                            }
+                            if (reply.isEmpty()) {
+                                android.util.Log.w("ChatActivity", "HF Router 200 but no content. Response: " + (json.length() > 500 ? json.substring(0, 500) + "..." : json));
+                            }
+                        } catch (Exception e) {
+                            android.util.Log.w("ChatActivity", "Parse HF Router response", e);
+                            errorDetail = "Invalid response from API.";
+                        }
+                    } else {
+                        try {
+                            JSONObject err = new JSONObject(json);
+                            JSONObject error = err.optJSONObject("error");
+                            if (error != null && error.has("message")) errorDetail = error.optString("message", "");
+                            if (errorDetail == null && err.has("message")) errorDetail = err.optString("message", "");
+                        } catch (Exception ignored) { }
+                        if (errorDetail == null) errorDetail = "HTTP " + code;
+                        android.util.Log.w("ChatActivity", "HF Router error: " + code + " " + errorDetail + (json.isEmpty() ? "" : " body=" + (json.length() > 300 ? json.substring(0, 300) + "..." : json)));
+                    }
+
+                    final String finalReply = reply != null ? reply.trim() : "";
+                    final String finalError = errorDetail;
+                    mainHandler.post(() -> {
+                        isWaitingForAI = false;
+                        removeTypingIndicator();
+                        if (!finalReply.isEmpty()) {
+                            lastAIResponse = finalReply;
+                            addMessage(finalReply, false);
+                        } else {
+                            String userMsg = finalError != null ? finalError : "Sorry, no reply was returned. Please try again.";
+                            if (code == 401) userMsg = "Invalid API key. Use a Hugging Face token (huggingface.co/settings/tokens) and set it via Settings → Update API Key.";
+                            else if (code == 429) userMsg = "Rate limited. Wait a moment and try again.";
+                            addMessage(userMsg, false);
+                        }
+                    });
+                }
+            });
+        } catch (Exception e) {
+            isWaitingForAI = false;
+            removeTypingIndicator();
+            android.util.Log.w("ChatActivity", "Build HF Router request", e);
+            addMessage("Error preparing request. Please try again.", false);
+        }
     }
 
     private void removeTypingIndicator() {
@@ -292,18 +499,27 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     /**
-     * Admin-only: dialog to update OpenRouter API key via Firebase callable.
-     * The app never stores or displays the current key.
+     * Admin-only: choose which key to update (Hugging Face or Grok), then show input dialog.
      */
     private void showUpdateApiKeyDialog() {
-        EditText keyInput = new EditText(this);
-        keyInput.setHint("Enter new OpenRouter API key");
-        keyInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        keyInput.setMinEms(20);
-
         new AlertDialog.Builder(this)
                 .setTitle("Update API Key")
-                .setMessage("Enter the new OpenRouter API key. The current key is not shown for security.")
+                .setItems(new CharSequence[]{"Update Hugging Face Key", "Update Groq Key"}, (dialog, which) -> {
+                    if (which == 0) showUpdateHfKeyDialog();
+                    else showUpdateGrokKeyDialog();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void showUpdateHfKeyDialog() {
+        EditText keyInput = new EditText(this);
+        keyInput.setHint("Hugging Face token (hf_...)");
+        keyInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        keyInput.setMinEms(20);
+        new AlertDialog.Builder(this)
+                .setTitle("Update Hugging Face Key")
+                .setMessage("Enter your Hugging Face token (huggingface.co/settings/tokens). Current key is not shown.")
                 .setView(keyInput)
                 .setPositiveButton("Update", (dialog, which) -> {
                     String newKey = keyInput.getText() != null ? keyInput.getText().toString().trim() : "";
@@ -311,23 +527,47 @@ public class ChatActivity extends AppCompatActivity {
                         Toast.makeText(this, "Key cannot be empty", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    updateOpenRouterKeyOnBackend(newKey);
+                    updateHfKeyOnBackend(newKey);
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
     }
 
-    private void updateOpenRouterKeyOnBackend(String newKey) {
+    private void showUpdateGrokKeyDialog() {
+        EditText keyInput = new EditText(this);
+        keyInput.setHint("Groq API key (console.groq.com)");
+        keyInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        keyInput.setMinEms(20);
+        new AlertDialog.Builder(this)
+                .setTitle("Update Groq Key")
+                .setMessage("Enter your Groq API key (free at console.groq.com). Current key is not shown.")
+                .setView(keyInput)
+                .setPositiveButton("Update", (dialog, which) -> {
+                    String newKey = keyInput.getText() != null ? keyInput.getText().toString().trim() : "";
+                    if (newKey.isEmpty()) {
+                        Toast.makeText(this, "Key cannot be empty", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    updateGrokKeyOnBackend(newKey);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void updateHfKeyOnBackend(String newKey) {
         Map<String, Object> data = new HashMap<>();
         data.put("newKey", newKey);
-
         firebaseFunctions.getHttpsCallable("updateOpenRouterKey").call(data)
-                .addOnSuccessListener(this, result -> {
-                    Toast.makeText(this, "API key updated successfully.", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(this, e -> {
-                    Toast.makeText(this, "Update failed. Try again or check backend.", Toast.LENGTH_LONG).show();
-                });
+                .addOnSuccessListener(this, result -> Toast.makeText(this, "Hugging Face key updated.", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(this, e -> Toast.makeText(this, "Update failed. Try again or check backend.", Toast.LENGTH_LONG).show());
+    }
+
+    private void updateGrokKeyOnBackend(String newKey) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("newKey", newKey);
+        firebaseFunctions.getHttpsCallable("updateGrokKey").call(data)
+                .addOnSuccessListener(this, result -> Toast.makeText(this, "Groq key updated.", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(this, e -> Toast.makeText(this, "Update failed. Try again or check backend.", Toast.LENGTH_LONG).show());
     }
     
     private void toggleVoiceInput() {

@@ -31,7 +31,7 @@ import android.widget.EditText;
  * - Allows viewing, downloading, and sharing reports
  * - Provides user-friendly interface for report management
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class ContractReportsActivity extends AppCompatActivity {

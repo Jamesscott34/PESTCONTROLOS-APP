@@ -2,11 +2,14 @@ package com.grpc.grpc;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.ArrayList;
@@ -26,7 +29,7 @@ import java.util.List;
  * - PDF generation and database storage of the quotation
  * - Navigation back to the previous activity with user details
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 public class CreateReportActivity extends AppCompatActivity {
@@ -34,6 +37,7 @@ public class CreateReportActivity extends AppCompatActivity {
     private EditText dateInput, addressInput, quoteDescriptionInput, emailInput, mobileNumberInput;
     private LinearLayout lineItemsContainer;
     private Button addLineItemButton, generateQuoteButton, backButton;
+    private CheckBox passwordProtectCheckbox;
     private static int quoteNumberCounter = 50001; // Auto-incrementing quote number
     private List<EditText> descriptionInputs = new ArrayList<>();
     private List<EditText> lineTotalInputs = new ArrayList<>();
@@ -76,6 +80,7 @@ public class CreateReportActivity extends AppCompatActivity {
         addLineItemButton = findViewById(R.id.addLineItemButton);
         generateQuoteButton = findViewById(R.id.generateQuoteButton);
         backButton = findViewById(R.id.backButton);
+        passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
 
         // Auto-generate quote number
         EditText quoteNumberInput = findViewById(R.id.quoteNumberInput);
@@ -91,7 +96,13 @@ public class CreateReportActivity extends AppCompatActivity {
 
         // Button Click Listeners
         addLineItemButton.setOnClickListener(v -> addLineItem());
-        generateQuoteButton.setOnClickListener(v -> generatePDFReport());
+        generateQuoteButton.setOnClickListener(v -> {
+            if (passwordProtectCheckbox != null && passwordProtectCheckbox.isChecked()) {
+                showPasswordDialogAndGenerate();
+            } else {
+                generatePDFReport(null);
+            }
+        });
         backButton.setOnClickListener(v -> navigateBackToPreviousActivity());
 
         // Add the first line item field automatically
@@ -129,10 +140,54 @@ public class CreateReportActivity extends AppCompatActivity {
         lineTotalInputs.add(lineTotalInput);
     }
     /**
-     * Gathers all input data, validates the fields, calculates the total price,
-     * saves the report to the database, and generates a PDF report.
+     * Shows a password dialog; on confirm calls generatePDFReport with the entered password.
      */
-    private void generatePDFReport() {
+    private void showPasswordDialogAndGenerate() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 20, 50, 20);
+        final EditText passwordInput = new EditText(this);
+        passwordInput.setHint("Enter password (min 6 characters)");
+        passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        passwordInput.setPadding(20, 20, 20, 20);
+        final EditText confirmInput = new EditText(this);
+        confirmInput.setHint("Confirm password");
+        confirmInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        confirmInput.setPadding(20, 20, 20, 20);
+        layout.addView(passwordInput);
+        layout.addView(confirmInput);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Password protect PDF")
+                .setMessage("Set an owner password. It will be required to edit the PDF.")
+                .setView(layout)
+                .setPositiveButton("Generate PDF", (dialog, which) -> {
+                    String password = passwordInput.getText().toString();
+                    String confirm = confirmInput.getText().toString();
+                    if (password.trim().isEmpty()) {
+                        Toast.makeText(this, "Please enter a password", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (password.length() < 6) {
+                        Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (!password.equals(confirm)) {
+                        Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    generatePDFReport(password);
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    /**
+     * Gathers all input data, validates the fields, calculates the total price,
+     * saves the report to the database, and generates a compressed PDF report.
+     * @param ownerPassword If non-null, PDF is encrypted with this password (editing restricted).
+     */
+    private void generatePDFReport(String ownerPassword) {
         String userEmail = emailInput.getText().toString().trim();
         String mobileNumber = mobileNumberInput.getText().toString().trim();
         String date = dateInput.getText().toString().trim();
@@ -167,15 +222,14 @@ public class CreateReportActivity extends AppCompatActivity {
                 quoteNumber, date, address, quoteDescription,
                 totalAmount, userEmail, mobileNumber, true);
 
-        // Generate the PDF
+        // Generate the PDF (compressed; optional password)
         PDFQuotationReportGenerator.generateQuotationReport(
                 quoteNumber, address, quoteDescription,
-                descriptions, lineTotals, userEmail, mobileNumber, this);
+                descriptions, lineTotals, userEmail, mobileNumber, ownerPassword, this);
 
         Toast.makeText(this, "Report Generated Successfully!", Toast.LENGTH_SHORT).show();
         quoteNumberCounter++;
 
-        // Return to the previous activity with username
         navigateBackToPreviousActivity();
     }
     /**

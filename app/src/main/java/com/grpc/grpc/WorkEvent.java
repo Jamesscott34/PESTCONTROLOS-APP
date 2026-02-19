@@ -5,7 +5,7 @@
  * Contains all necessary information for displaying and managing
  * calendar events including contracts, jobs, and follow-ups.
  * 
- * Author: James Scott
+ * Author: GRPC
  * Company: Good Riddance Pest Control
  * Version: 1.0
  * Last Updated: 2024

@@ -40,7 +40,7 @@ import java.util.Map;
  * - Enables lead deletion for admin users (James, Ian, Kristine)
  * - Provides an intuitive UI with click and long-press options for lead management
  *
- * Author: James Scott
+ * Author: GRPC
  */
 
 
@@ -53,7 +53,8 @@ public class ViewLeadsActivity extends AppCompatActivity {
     private List<Map<String, Object>> allLeads = new ArrayList<>();
     private FirebaseFirestore db;
 
-    private String userName; // Dynamically retrieved username
+    private String userName;
+    private String userId; // 001, 002, 003, 004 from StaffDirectory
     private int total = 0, paid = 0, unpaid = 0;
 
     @Override
@@ -63,13 +64,13 @@ public class ViewLeadsActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
-        // Get username from intent
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.isEmpty()) {
             Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
+        userId = StaffDirectory.getUserId(userName);
 
         // Initialize UI elements
         searchBar = findViewById(R.id.searchBar);
@@ -175,10 +176,9 @@ public class ViewLeadsActivity extends AppCompatActivity {
                             Map<String, Object> lead = document.getData();
                             lead.put("documentId", document.getId());
 
-                            // Check if the current user can view the lead
+                            // Admins (001, 002, 003) see all; others see only leads they added (Added By matches userName)
                             String addedBy = (String) lead.get("Added By");
-                            if (userName.equalsIgnoreCase("James") || userName.equalsIgnoreCase("Ian") || userName.equalsIgnoreCase("Kristine") ||
-                                    (addedBy != null && addedBy.equalsIgnoreCase(userName))) {
+                            if (StaffDirectory.isAdminUserId(userId) || (addedBy != null && addedBy.equalsIgnoreCase(userName))) {
                                 allLeads.add(lead);
 
                                 // Update counts
@@ -259,30 +259,24 @@ public class ViewLeadsActivity extends AppCompatActivity {
 
         leadDetails.setText(leadInfo);
 
-        // Single press: Show options for "Mark as Paid" or "Edit Materials"
+        // Mark as Paid / Edit Materials: 001, 002, 003 only
+        boolean canMarkPaidOrEditMaterials = StaffDirectory.canMarkPaidLeadsUserId(userId);
         leadBox.setOnClickListener(v -> {
+            if (!canMarkPaidOrEditMaterials) {
+                Toast.makeText(this, "Only James, Ian, or Kristine can mark as paid or edit materials.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             AlertDialog.Builder optionsDialog = new AlertDialog.Builder(this);
             optionsDialog.setTitle("Select an Action");
 
-            // Check the reason to determine the options to display
             if ("Contract".equalsIgnoreCase(reason)) {
-                // Only show "Mark as Paid" for contracts
                 optionsDialog.setItems(new String[]{"Mark as Paid"}, (dialog, which) -> {
-                    if (which == 0) {
-                        // Mark as Paid
-                        markAsPaid(documentId, lead);
-                    }
+                    if (which == 0) markAsPaid(documentId, lead);
                 });
             } else if ("Job".equalsIgnoreCase(reason)) {
-                // Show both options for jobs
                 optionsDialog.setItems(new String[]{"Mark as Paid", "Add/Edit Materials"}, (dialog, which) -> {
-                    if (which == 0) {
-                        // Mark as Paid
-                        markAsPaid(documentId, lead);
-                    } else if (which == 1) {
-                        // Edit Materials
-                        showEditMaterialsDialog(lead, documentId);
-                    }
+                    if (which == 0) markAsPaid(documentId, lead);
+                    else if (which == 1) showEditMaterialsDialog(lead, documentId);
                 });
             }
 
@@ -291,9 +285,9 @@ public class ViewLeadsActivity extends AppCompatActivity {
         });
 
 
-        // Long press: Delete the lead
+        // Long press: Delete — admins 001, 002, 003 only
         leadBox.setOnLongClickListener(v -> {
-            if (userName.equalsIgnoreCase("James") || userName.equalsIgnoreCase("Ian") || userName.equalsIgnoreCase("Kristine")) {
+            if (StaffDirectory.isAdminUserId(userId)) {
                 new AlertDialog.Builder(this)
                         .setTitle("Delete Lead")
                         .setMessage("Are you sure you want to delete this lead?")
