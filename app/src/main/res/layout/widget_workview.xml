@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Work View home screen widget. Do NOT add ImageView, drawable, or PNG references here:
+     app widgets (RemoteViews) can fail to display if the layout uses unsupported or heavy resources. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_workview_root"
     android:layout_width="match_parent"

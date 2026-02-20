@@ -63,6 +63,7 @@ For the **full architecture overview** (platform stack, data flow, key workflows
   - **Create with custom duration:** Add Job/Contract/Follow‑up via Work View. When the time dialog opens, choose **“Custom time…”**. Enter start (e.g. 08:30 or 0830) and end (e.g. 15:00 or 1500) → event is created as 08:30–15:00.
   - **Adjust an existing event:** Tap the event → **Edit Time**. Change start and optionally end (e.g. 09:30–14:30) and save; duration is preserved if you only change one.
   - **Move an event (drag-and-drop):** In daily view, long‑press an event, drag it to another time slot bar, and release. Start time snaps to that slot; duration is preserved if the event had an end time.
+- **Work View home screen widget:** A home screen widget shows **Work View** title, today’s date, and the **next 3 jobs** (time, name, address). Tap opens Work View. Data is cached when you open Work View so the widget can show today’s jobs even after logout. The widget layout **must not** use ImageView, drawable, or PNG references (RemoteViews restrictions). If the widget does not display, see **`app/src/main/assets/WIDGET_TROUBLESHOOTING.md`**.
 
 ### Contracts
 
@@ -107,11 +108,13 @@ For the **full architecture overview** (platform stack, data flow, key workflows
   - Browse stored report lists, download/share PDFs.
   - Contract-specific search is scoped by year folder for speed and organisation.
 - **Offline PDF template (Create Report)**:
-  - On the **Report selection** screen: **"Custom Report (PDF Template)"** opens **PDF Template Settings**; **"Create Custom Report"** opens the Create Report form with **My Template** pre-selected (same form: password protect, add image, body fields).
-  - **Named templates:** In PDF Template Settings you can enter a **template name** and tap **"Save as named template"** to save the current logo, watermark, and header blocks as a named template. **"View templates"** lists all saved templates; tap **"Use"** on one to open the Create Report form with that template applied (report body is the same; the PDF uses that template's headers/logo/watermark when you save).
+  - On the **Report selection** screen: **"Custom Report (PDF Template)"** opens **PDF Template Settings**; **"Create Custom Report"** opens the Create Report form with a choice of **Default** or **Select template…** (saved templates). The Create Report screen does not show the PDF Template radio block; only the report form and template choice.
+  - **Named templates:** In PDF Template Settings you enter a **template name** and tap **"Save template settings"** to save the current setup (main header, logo, watermark, header blocks) as a named template; the form is then **cleared** and the cleared state is saved, so the next time you open PDF Template Settings or create a new template you start with empty fields. **"View templates"** lists saved templates; tap **"Use"** to open Create Report with that template, or **Delete** (with confirmation) to remove one.
   - On the **Create Report** screen (when not logged in) you can choose **Use GRPC Template** or **Use My Template**, and open PDF Template Settings. **When logged in**, the PDF template section is **hidden**; reports always use the GRPC template.
-  - **PDF Template Settings**: configure logo, watermark (on/off, text or image), and an ordered list of header blocks (text with style H1/H2/BODY or image). All settings and named templates are stored **locally** (SharedPreferences + files in `pdf_template/`); no Firebase. Fully offline.
+  - **PDF Template Settings**: **Main header** (e.g. company name) and **main header colour** (Blue, Black, Dark Gray, Red, Green); logo; watermark (on/off, text or image); and an ordered list of header blocks (text with style H1/H2/BODY or image). All settings and named templates are stored **locally** (SharedPreferences + files in `pdf_template/`); no Firebase. Fully offline.
+  - **My Template PDF layout:** At the top, **logo first** (same size as GRPC: 200×200), then **main header** text in the chosen colour. If no logo is selected, nothing is shown for the logo. Header blocks appear only in the body; watermark and footer use only the user’s content (no default watermark when disabled); footer text is **"Created by reporting system"**.
   - Body layout (margins, fonts, sections, table, footer, page numbers) is identical to the GRPC template in both modes; only the header area and watermark differ when using My Template. If no images are selected for the report, no image section or placeholder is added to the PDF.
+  - **After saving a report:** A “Report Saved Successfully!” dialog offers **View**, **Share**, and (when **logged in**) **Upload to Firebase**. Tapping outside the dialog dismisses it. **Offline users** do not see the Upload to Firebase option in this dialog or in View Reports (file options).
 
 ### Quotations & service documents
 
@@ -159,9 +162,10 @@ For the **full architecture overview** (platform stack, data flow, key workflows
   - In-app chat powered by **Hugging Face** (via HF Router) or **Groq**; the app uses Groq if a Groq key is set, otherwise the Hugging Face key.
   - API keys are stored in Firestore at `AI-Chat/AI-API`: field **KEY** (Hugging Face) and **key-grog** (Groq). Only user 001 can update these via Settings (Update Hugging Face Key / Update Groq Key).
   - Replies are shown as plain text (no markdown tables/headings); long replies supported (e.g. max 2048 tokens).
-- **AI Fix** — rewrites text in **Create Report** and **Action Form**:
-  - **Create Report**: An “AI Fix” button rewrites **Site Inspection** and **Recommendations** only. Text is made professional, grammatically correct, and free of asterisks or filler; a few sentences may be added where appropriate.
-  - **Action Form**: The same “AI Fix” flow rewrites **Service Report** and **Recommendations**.
+- **AI Fix** — rewrites text in **Create Report** and **Action Form** (logged-in users only):
+  - The **AI Fix** button is **only visible when the user is logged in** (Firebase Auth). **Offline users do not see** the AI Fix button.
+  - When a logged-in user taps AI Fix, a dialog asks **which fields to update**: **Create Report** — Site Inspection and/or Recommendations; **Action Form** — Service Report and/or Recommendations. Only the selected fields are sent to the API and updated.
+  - Text is made professional, grammatically correct, and free of asterisks or filler; a few sentences may be added where appropriate.
   - AI Fix uses the same Firestore API keys as AI Chat (KEY or key-grog). If no key is set, the app prompts that the admin must set one in AI Chat settings.
 
 ### In-app notifications (no push)
@@ -185,10 +189,10 @@ For the **full architecture overview** (platform stack, data flow, key workflows
   - **key-grog** — Groq API key (see [Groq Console](https://console.groq.com)).  
   If **key-grog** is set, the app uses Groq; otherwise it uses the Hugging Face key. Only user 001 can update these keys (via Settings in the app; Cloud Functions enforce admin-only writes).
 - **AI Fix button**  
-  Available in **Create Report** and **Action Form**:
-  - **Create Report**: Fixes **Site Inspection** and **Recommendations** only. Tap “✏️ AI Fix” to polish the text (professional, grammatical, no asterisks/filler; adds a few sentences where appropriate).
-  - **Action Form**: Fixes **Service Report** and **Recommendations** only, with the same behaviour.  
-  Both use the same Firestore API key as AI Chat (KEY or key-grog). The button is disabled until content exists in the relevant fields.
+  Shown **only when the user is logged in** (offline users do not see it). In **Create Report** and **Action Form**:
+  - Tap “✏️ AI Fix” to open a dialog: **choose which fields to update** (Create Report: Site Inspection and/or Recommendations; Action Form: Service Report and/or Recommendations). Only the selected fields are polished.
+  - Text is made professional, grammatical, no asterisks/filler; a few sentences may be added where appropriate.  
+  Uses the same Firestore API key as AI Chat (KEY or key-grog). The button is disabled until content exists in the relevant fields.
 
 ---
 
@@ -314,23 +318,23 @@ This section details the PDF report and **offline template** behaviour. For the 
   `ReportActivity` collects form data and, on save, calls `PDFReportGenerator.generatePDFReport(...)`. That method creates the PDF with a fixed logo (drawable), title “Good Riddance Pest Control Report”, and body built by `PDFReportGenerator.addReportBodyToDocument(...)`. A page event handler (`PdfWatermarkAndFooterHandler`) adds the default watermark and footer on every page. Images are added only when the user has selected at least one image (no placeholder when none are selected).
 
 - **Offline PDF template (My Template)**  
-  The same Create Report screen offers a template selector: **Use GRPC Template** or **Use My Template**. Template preferences are stored locally via `PdfTemplateStorage` (SharedPreferences + JSON for header blocks; logo and watermark image files in `context.getFilesDir()/pdf_template/`). The **PDF Template Settings** screen (`PdfTemplateSettingsActivity`) lets users set logo, enable/configure watermark (text or image), and add/remove/reorder header blocks (text with style H1/H2/BODY or image).
+  The same Create Report screen offers a template selector: **Use GRPC Template** or **Use My Template** (when not logged in). Template preferences are stored locally via `PdfTemplateStorage` (SharedPreferences + JSON for header blocks; logo and watermark image files in `context.getFilesDir()/pdf_template/`). The **PDF Template Settings** screen (`PdfTemplateSettingsActivity`) lets users set **main header** text and **main header colour** (Blue, Black, Dark Gray, Red, Green), logo, enable/configure watermark (text or image), and add/remove/reorder header blocks (text with style H1/H2/BODY or image). **Save template settings** saves the current setup as a named template, then **clears all fields** and persists that cleared state so the next time the user opens PDF Template Settings or creates a new template, the form is empty.
 
 - **PDF generation flow**  
   When the user saves a report, `ReportActivity` either uses a selected saved template (when launched from View Templates → Use, via `EXTRA_TEMPLATE_ID`) or loads `PdfTemplateSettings` from `PdfTemplateStorage` and sets `templateSelection` from the radio choice (GRPC vs MY_TEMPLATE). It then calls `PDFReportGeneratorWithTemplate.generatePdf(..., settings)`. All PDFs are auto-compressed.
   - If **GRPC**: `PDFReportGeneratorWithTemplate` delegates to `PDFReportGenerator.generatePDFReport(...)` with no other changes.
-  - If **MY_TEMPLATE**: `PDFReportGeneratorWithTemplate` creates the writer/document, registers a custom page handler (`CustomWatermarkAndFooterHandler`) that applies the user’s watermark (or the default “bk” drawable if custom watermark is off) and footer, draws the **custom header** (logo from settings or fallback drawable at 200×200 centre; then each header block in order — text styled H1/H2/BODY or image scaled to max width), then calls `PDFReportGenerator.addReportBodyToDocument(...)` so the body layout is identical to the GRPC report. No change to margins, fonts, sections, footer, or image-section rule (no images ⇒ no image section).
+  - If **MY_TEMPLATE**: `PDFReportGeneratorWithTemplate` creates the writer/document, registers a custom page handler (`CustomWatermarkAndFooterHandler`) for watermark and footer. The **custom header** is: **logo first** (same size as GRPC: 200×200, centre; nothing if no logo path), then **main header** paragraph (user text in chosen colour). Header blocks (text/image) are only in the body, not at the very top. Watermark uses only the user’s text or image when enabled; no default when disabled. Footer text is **"Created by reporting system"**. Then `PDFReportGenerator.addReportBodyToDocument(...)` is called so the body layout is identical to the GRPC report.
 
-- **Named templates:** In PDF Template Settings, **Save as named template** stores the current setup; **View templates** lists them; **Use** opens Create Report with that template applied (same form; PDF uses that template's headers/logo/watermark). All PDFs are **auto-compressed** (no checkbox).
+- **Named templates:** In PDF Template Settings, **Save template settings** saves the current setup as a named template and clears the form; **View templates** lists them (with **Delete** + confirm); **Use** opens Create Report with that template applied. All PDFs are **auto-compressed** (no checkbox).
 
 - **Key classes**  
-  - `PdfTemplateSettings` — POJO: templateSelection, logoPath, watermark (enabled, type, text, imagePath), list of `HeaderBlock` (blockType, textStyle, text, imagePath).  
-  - `SavedTemplate` — Named template (id, name, logoPath, watermark*, headerBlocks); `toPdfTemplateSettings()` for generation.  
+  - `PdfTemplateSettings` — POJO: templateSelection, mainHeaderText, mainHeaderColorHex, logoPath, watermark (enabled, type, text, imagePath), list of `HeaderBlock` (blockType, textStyle, text, imagePath).  
+  - `SavedTemplate` — Named template (id, name, mainHeaderText, mainHeaderColorHex, logoPath, watermark*, headerBlocks); `toPdfTemplateSettings()` for generation.  
   - `PdfTemplateStorage` — Loads/saves settings; saved templates list (loadSavedTemplates, addSavedTemplate, getSavedTemplateById); SharedPreferences + JSON.  
   - `PDFReportGenerator` — existing: `generatePDFReport(...)` (unchanged), `addReportBodyToDocument(document, content, context, imageUris)` (body + optional image section).  
-  - `PDFReportGeneratorWithTemplate` — `generatePdf(..., settings)`: GRPC path → existing generator; MY_TEMPLATE path → custom header + custom/default watermark + same body; auto-compress.  
-  - `PdfTemplateSettingsActivity` — UI for logo, watermark, header blocks; template name; Save as named template; View templates.  
-  - `ViewTemplatesActivity` — Lists saved templates; Use → ReportActivity with EXTRA_TEMPLATE_ID.
+  - `PDFReportGeneratorWithTemplate` — `generatePdf(..., settings)`: GRPC path → existing generator; MY_TEMPLATE path → logo (200×200) then main header, custom watermark/footer, same body; auto-compress.  
+  - `PdfTemplateSettingsActivity` — UI for main header + colour, logo, watermark, header blocks; template name; Save template settings; View templates.  
+  - `ViewTemplatesActivity` — Lists saved templates; Use → ReportActivity with EXTRA_TEMPLATE_ID; Delete with confirmation.
 
 ---
 
@@ -576,6 +580,10 @@ The included `.gitignore` is configured to prevent this. If sensitive files were
 ### Environment variables not updating
 
 - Values are embedded at build time. Run `./gradlew clean` and rebuild the APK after changing `gradle.properties`.
+
+### Work View widget blank or not updating
+
+- See **`app/src/main/assets/WIDGET_TROUBLESHOOTING.md`**. In short: do not add drawables/PNG to the widget layout; open Work View once to populate the cache; remove and re-add the widget to force an update; check Logcat for tag `WorkViewWidget` if the widget fails to update.
 
 ---
 

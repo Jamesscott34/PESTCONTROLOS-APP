@@ -3,13 +3,21 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:fillViewport="true">
+    android:paddingTop="?attr/actionBarSize"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="32dp">
+
+        <!-- Spacer so header is not cut off by status bar / action bar -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:background="@android:color/transparent" />
 
         <TextView
             android:layout_width="match_parent"
@@ -18,6 +26,7 @@
             android:textSize="20sp"
             android:textStyle="bold"
             android:gravity="center"
+            android:layout_marginTop="8dp"
             android:layout_marginBottom="16dp"
             android:textColor="?android:attr/textColorPrimary" />
 
@@ -41,20 +50,44 @@
             android:textColor="?android:attr/textColorPrimary" />
 
         <Button
-            android:id="@+id/saveAsTemplateButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Save as named template"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="?attr/colorSecondary"
-            android:textColor="?attr/colorOnSecondary" />
-
-        <Button
             android:id="@+id/viewTemplatesButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="View templates"
             android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Main header (e.g. Good Riddance Pest Control)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <EditText
+            android:id="@+id/mainHeaderInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter main header text for PDF"
+            android:inputType="text"
+            android:layout_marginTop="4dp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_border"
+            android:textColor="?android:attr/textColorPrimary" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Main header colour"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <Spinner
+            android:id="@+id/mainHeaderColorSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:padding="12dp" />
 
         <TextView
             android:layout_width="match_parent"
@@ -69,6 +102,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Choose logo image"
+            android:layout_marginTop="4dp" />
+        <Button
+            android:id="@+id/useDefaultLogoButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Use default logo (same as GRPC PDF)"
             android:layout_marginTop="4dp" />
         <TextView
             android:id="@+id/logoPathLabel"
@@ -136,6 +175,55 @@
             android:visibility="gone"
             android:layout_marginTop="2dp"
             android:textColor="?android:attr/textColorSecondary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Header size (main header and section labels)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <Spinner
+            android:id="@+id/headerSizeSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:padding="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Body text size (never bigger than header)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <Spinner
+            android:id="@+id/bodyTextSizeSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:padding="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Footer (every page)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <EditText
+            android:id="@+id/footerTextInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Leave blank for default: Created by reporting system"
+            android:inputType="text"
+            android:layout_marginTop="4dp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_border"
+            android:textColor="?android:attr/textColorPrimary" />
 
         <TextView
             android:layout_width="match_parent"

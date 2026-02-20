@@ -41,6 +41,7 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
 
     private TextView logoPathLabel;
     private EditText watermarkTextInput;
+    private EditText footerTextInput;
     private Button chooseWatermarkImageButton;
     private TextView watermarkImagePathLabel;
     private LinearLayout headerBlocksContainer;
@@ -84,23 +85,35 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.isEmpty()) userName = "Offline User";
         storage = new PdfTemplateStorage(this);
-        settings = storage.load();
+        // Always start with empty form so user is creating a new template; "My Template" in Create Report uses storage from last Save template settings
+        settings = new PdfTemplateSettings();
 
         logoPathLabel = findViewById(R.id.logoPathLabel);
         watermarkTextInput = findViewById(R.id.watermarkTextInput);
+        footerTextInput = findViewById(R.id.footerTextInput);
         chooseWatermarkImageButton = findViewById(R.id.chooseWatermarkImageButton);
         watermarkImagePathLabel = findViewById(R.id.watermarkImagePathLabel);
         headerBlocksContainer = findViewById(R.id.headerBlocksContainer);
 
+        android.widget.EditText mainHeaderInput = findViewById(R.id.mainHeaderInput);
+        if (mainHeaderInput != null) mainHeaderInput.setText(settings.getMainHeaderText());
+        setupMainHeaderColorSpinner();
+        setupHeaderSizeSpinner();
+        setupBodyTextSizeSpinner();
+        if (footerTextInput != null) footerTextInput.setText(settings.getFooterText() != null ? settings.getFooterText() : "");
         bindLogo();
         bindWatermark();
         bindHeaderBlocks();
         setupWatermarkTypeToggle();
         findViewById(R.id.chooseLogoButton).setOnClickListener(v -> openImagePicker(pickLogoLauncher));
+        findViewById(R.id.useDefaultLogoButton).setOnClickListener(v -> {
+            settings.setLogoPath(PdfTemplateSettings.USE_DEFAULT_LOGO);
+            bindLogo();
+            Toast.makeText(this, "Using default logo (same as GRPC PDF).", Toast.LENGTH_SHORT).show();
+        });
         findViewById(R.id.chooseWatermarkImageButton).setOnClickListener(v -> openImagePicker(pickWatermarkImageLauncher));
         findViewById(R.id.addHeaderBlockButton).setOnClickListener(v -> addHeaderBlockRow());
-        findViewById(R.id.saveTemplateButton).setOnClickListener(v -> saveSettings());
-        findViewById(R.id.saveAsTemplateButton).setOnClickListener(v -> saveAsNamedTemplate());
+        findViewById(R.id.saveTemplateButton).setOnClickListener(v -> saveSettingsAndClear());
         findViewById(R.id.viewTemplatesButton).setOnClickListener(v -> {
             Intent intent = new Intent(this, ViewTemplatesActivity.class);
             intent.putExtra("USER_NAME", userName);
@@ -108,10 +121,72 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
         });
     }
 
+    private static final String[] MAIN_HEADER_COLOR_NAMES = {"Blue", "Black", "Dark Gray", "Red", "Green"};
+    private static final String[] MAIN_HEADER_COLOR_HEX = {"#0000FF", "#000000", "#333333", "#CC0000", "#006600"};
+    private static final String[] HEADER_SIZE_NAMES = {"Default", "Bigger", "Smaller"};
+    private static final String[] HEADER_SIZE_VALUES = {PdfTemplateSettings.HEADER_SIZE_DEFAULT, PdfTemplateSettings.HEADER_SIZE_BIGGER, PdfTemplateSettings.HEADER_SIZE_SMALLER};
+    private static final String[] BODY_TEXT_SIZE_NAMES = {"Default (12pt)", "8pt", "10pt", "12pt", "14pt"};
+    private static final String[] BODY_TEXT_SIZE_VALUES = {PdfTemplateSettings.BODY_TEXT_SIZE_DEFAULT, "8", "10", "12", "14"};
+
+    private void setupMainHeaderColorSpinner() {
+        Spinner spinner = findViewById(R.id.mainHeaderColorSpinner);
+        if (spinner == null) return;
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, MAIN_HEADER_COLOR_NAMES);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        String savedHex = settings.getMainHeaderColorHex();
+        for (int i = 0; i < MAIN_HEADER_COLOR_HEX.length; i++) {
+            if (MAIN_HEADER_COLOR_HEX[i].equalsIgnoreCase(savedHex)) {
+                spinner.setSelection(i);
+                break;
+            }
+        }
+    }
+
+    private void setupHeaderSizeSpinner() {
+        Spinner spinner = findViewById(R.id.headerSizeSpinner);
+        if (spinner == null) return;
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, HEADER_SIZE_NAMES);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        String saved = settings.getHeaderSize();
+        for (int i = 0; i < HEADER_SIZE_VALUES.length; i++) {
+            if (HEADER_SIZE_VALUES[i].equals(saved)) {
+                spinner.setSelection(i);
+                break;
+            }
+        }
+    }
+
+    private void setupBodyTextSizeSpinner() {
+        Spinner spinner = findViewById(R.id.bodyTextSizeSpinner);
+        if (spinner == null) return;
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, BODY_TEXT_SIZE_NAMES);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        String saved = settings.getBodyTextSize();
+        if (saved == null) saved = PdfTemplateSettings.BODY_TEXT_SIZE_DEFAULT;
+        if (PdfTemplateSettings.BODY_TEXT_SIZE_SMALLER.equals(saved)) saved = "10";
+        if (PdfTemplateSettings.BODY_TEXT_SIZE_BIGGER.equals(saved)) saved = "14";
+        for (int i = 0; i < BODY_TEXT_SIZE_VALUES.length; i++) {
+            if (BODY_TEXT_SIZE_VALUES[i].equals(saved)) {
+                spinner.setSelection(i);
+                break;
+            }
+        }
+    }
+
     private void bindLogo() {
-        if (settings.getLogoPath() != null && !settings.getLogoPath().isEmpty()) {
-            logoPathLabel.setText(new File(settings.getLogoPath()).getName());
+        String path = settings.getLogoPath();
+        if (path != null && !path.isEmpty()) {
             logoPathLabel.setVisibility(android.view.View.VISIBLE);
+            if (PdfTemplateSettings.USE_DEFAULT_LOGO.equals(path)) {
+                logoPathLabel.setText("Default logo (GRPC)");
+            } else {
+                logoPathLabel.setText(new File(path).getName());
+            }
+        } else {
+            logoPathLabel.setVisibility(android.view.View.GONE);
         }
     }
 
@@ -189,7 +264,12 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
         EditText textInput = new EditText(this);
         textInput.setHint("Header text");
         textInput.setPadding(16, 12, 16, 12);
-        textInput.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        textInput.setMinLines(3);
+        textInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        textInput.setGravity(android.view.Gravity.TOP);
+        LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        textParams.topMargin = (int) (8 * getResources().getDisplayMetrics().density);
+        textInput.setLayoutParams(textParams);
 
         Button chooseImgBtn = new Button(this);
         chooseImgBtn.setText("Choose image");
@@ -238,10 +318,10 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
         });
         topRow.addView(typeGroup);
         topRow.addView(styleSpinner);
-        topRow.addView(textInput);
         topRow.addView(chooseImgBtn);
         topRow.addView(removeBtn);
         row.addView(topRow);
+        row.addView(textInput);
         row.setTag(holder);
         headerBlocksContainer.addView(row);
     }
@@ -321,7 +401,37 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
         }
     }
 
-    private void saveSettings() {
+    /**
+     * Saves current settings as default, saves as named template using the template name field,
+     * then clears all fields so the user can create another template.
+     */
+    private void saveSettingsAndClear() {
+        android.widget.EditText nameInput = findViewById(R.id.templateNameInput);
+        String name = nameInput != null ? nameInput.getText().toString().trim() : "";
+        if (name.isEmpty()) {
+            Toast.makeText(this, "Enter a template name.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        android.widget.EditText mainHeaderInput = findViewById(R.id.mainHeaderInput);
+        settings.setMainHeaderText(mainHeaderInput != null ? mainHeaderInput.getText().toString().trim() : "");
+        Spinner colorSpinner = findViewById(R.id.mainHeaderColorSpinner);
+        int colorIndex = colorSpinner != null ? colorSpinner.getSelectedItemPosition() : 0;
+        if (colorIndex >= 0 && colorIndex < MAIN_HEADER_COLOR_HEX.length) {
+            settings.setMainHeaderColorHex(MAIN_HEADER_COLOR_HEX[colorIndex]);
+        }
+        Spinner headerSizeSpinner = findViewById(R.id.headerSizeSpinner);
+        int headerSizeIndex = headerSizeSpinner != null ? headerSizeSpinner.getSelectedItemPosition() : 0;
+        if (headerSizeIndex >= 0 && headerSizeIndex < HEADER_SIZE_VALUES.length) {
+            settings.setHeaderSize(HEADER_SIZE_VALUES[headerSizeIndex]);
+        }
+        Spinner bodyTextSizeSpinner = findViewById(R.id.bodyTextSizeSpinner);
+        int bodyTextSizeIndex = bodyTextSizeSpinner != null ? bodyTextSizeSpinner.getSelectedItemPosition() : 0;
+        if (bodyTextSizeIndex >= 0 && bodyTextSizeIndex < BODY_TEXT_SIZE_VALUES.length) {
+            settings.setBodyTextSize(BODY_TEXT_SIZE_VALUES[bodyTextSizeIndex]);
+        }
+        String footerText = footerTextInput != null ? footerTextInput.getText().toString().trim() : "";
+        settings.setFooterText(footerText.isEmpty() ? null : footerText);
         settings.setWatermarkEnabled(((CheckBox) findViewById(R.id.watermarkEnabled)).isChecked());
         settings.setWatermarkText(watermarkTextInput.getText().toString());
         if (((RadioButton) findViewById(R.id.watermarkTypeImage)).isChecked()) {
@@ -351,26 +461,61 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
         settings.setHeaderBlocks(blocks);
 
         storage.save(settings);
-        Toast.makeText(this, "Template settings saved.", Toast.LENGTH_SHORT).show();
-        finish();
-    }
-
-    private void saveAsNamedTemplate() {
-        String name = "";
-        android.widget.EditText nameInput = findViewById(R.id.templateNameInput);
-        if (nameInput != null) name = nameInput.getText().toString().trim();
-        if (name.isEmpty()) {
-            Toast.makeText(this, "Enter a template name.", Toast.LENGTH_SHORT).show();
-            return;
-        }
         SavedTemplate t = buildSavedTemplateFromUi();
         t.setName(name);
-        storage.addSavedTemplate(userName, t);
+        storage.addOrUpdateSavedTemplate(userName, t);
         Toast.makeText(this, "Template \"" + name + "\" saved. Use View templates to use it.", Toast.LENGTH_SHORT).show();
+
+        clearAllFields();
+        // Do not save empty settings here: storage keeps the template we just saved so "My Template" in Create Report uses it
+    }
+
+    private void clearAllFields() {
+        android.widget.EditText nameInput = findViewById(R.id.templateNameInput);
+        if (nameInput != null) nameInput.setText("");
+        android.widget.EditText mainHeaderInput = findViewById(R.id.mainHeaderInput);
+        if (mainHeaderInput != null) mainHeaderInput.setText("");
+        settings.setMainHeaderText("");
+        settings.setMainHeaderColorHex("#0000FF");
+        Spinner colorSpinner = findViewById(R.id.mainHeaderColorSpinner);
+        if (colorSpinner != null) colorSpinner.setSelection(0);
+        settings.setHeaderSize(PdfTemplateSettings.HEADER_SIZE_DEFAULT);
+        Spinner headerSizeSpinner = findViewById(R.id.headerSizeSpinner);
+        if (headerSizeSpinner != null) headerSizeSpinner.setSelection(0);
+        settings.setBodyTextSize(PdfTemplateSettings.BODY_TEXT_SIZE_DEFAULT);
+        Spinner bodyTextSizeSpinner = findViewById(R.id.bodyTextSizeSpinner);
+        if (bodyTextSizeSpinner != null) bodyTextSizeSpinner.setSelection(0);
+        settings.setFooterText(null);
+        if (footerTextInput != null) footerTextInput.setText("");
+        settings.setLogoPath(null);
+        logoPathLabel.setText("");
+        logoPathLabel.setVisibility(android.view.View.GONE);
+        ((CheckBox) findViewById(R.id.watermarkEnabled)).setChecked(false);
+        watermarkTextInput.setText("");
+        ((RadioButton) findViewById(R.id.watermarkTypeText)).setChecked(true);
+        chooseWatermarkImageButton.setVisibility(android.view.View.GONE);
+        watermarkTextInput.setVisibility(android.view.View.VISIBLE);
+        settings.setWatermarkImagePath(null);
+        watermarkImagePathLabel.setText("");
+        watermarkImagePathLabel.setVisibility(android.view.View.GONE);
+        settings.setHeaderBlocks(new ArrayList<>());
+        headerBlocksContainer.removeAllViews();
     }
 
     private SavedTemplate buildSavedTemplateFromUi() {
         SavedTemplate t = new SavedTemplate();
+        android.widget.EditText mainHeaderInput = findViewById(R.id.mainHeaderInput);
+        t.setMainHeaderText(mainHeaderInput != null ? mainHeaderInput.getText().toString().trim() : "");
+        Spinner colorSpinner = findViewById(R.id.mainHeaderColorSpinner);
+        int colorIndex = colorSpinner != null ? colorSpinner.getSelectedItemPosition() : 0;
+        if (colorIndex >= 0 && colorIndex < MAIN_HEADER_COLOR_HEX.length) {
+            t.setMainHeaderColorHex(MAIN_HEADER_COLOR_HEX[colorIndex]);
+        } else {
+            t.setMainHeaderColorHex(settings.getMainHeaderColorHex());
+        }
+        t.setHeaderSize(settings.getHeaderSize());
+        t.setBodyTextSize(settings.getBodyTextSize());
+        t.setFooterText(settings.getFooterText());
         t.setLogoPath(settings.getLogoPath());
         t.setWatermarkEnabled(((CheckBox) findViewById(R.id.watermarkEnabled)).isChecked());
         t.setWatermarkText(watermarkTextInput.getText().toString());

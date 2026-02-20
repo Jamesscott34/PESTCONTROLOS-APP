@@ -58,6 +58,12 @@ public class StoredReportsActivity extends AppCompatActivity {
         if (userName == null) {
             userName = "Unknown";
         }
+        // Offline User must not view Firebase folders (same rule as hiding Stored Reports button)
+        if ("Offline User".equals(userName)) {
+            Toast.makeText(this, "Stored Reports is not available in offline mode.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         folderRecyclerView = findViewById(R.id.folderRecyclerView);
         folderRecyclerView.setLayoutManager(new LinearLayoutManager(this));

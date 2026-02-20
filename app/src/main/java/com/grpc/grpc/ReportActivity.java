@@ -73,14 +73,18 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -153,6 +157,11 @@ public class ReportActivity extends AppCompatActivity {
 
     /** When set (from View Templates -> Use), PDF is generated with this saved template's headers/logo/watermark. */
     private String selectedTemplateId;
+
+    /** When a saved template is selected: body form is built from template headers. (label, EditText) for content building. */
+    private List<Pair<String, EditText>> dynamicTemplateFields = new ArrayList<>();
+    private View reportBodyContainer;
+    private View dynamicTemplateContainer;
 
     // ============================================================================
     // AI AND VOICE RECOGNITION COMPONENTS
@@ -233,6 +242,7 @@ public class ReportActivity extends AppCompatActivity {
         initializeButtons();
         setupPdfTemplateSectionVisibility();
         applyCreateCustomReportIntent();
+        setupTemplateModeIfNeeded(savedInstanceState);
         setupKeyboardHandling();
         setCurrentDate();
         
@@ -499,9 +509,13 @@ public class ReportActivity extends AppCompatActivity {
         // Image selection button - opens image picker
         selectImageButton.setOnClickListener(v -> openImageSelector());
         
-        // AI Fix button - professional grammar for Site Inspection and Recommendations only
+        // AI Fix button - same rule as Upload to Firebase: only when logged in and not Offline User
         if (aiFixButton != null) {
-            aiFixButton.setOnClickListener(v -> polishWithAI());
+            boolean showAIFix = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
+            if (showAIFix) {
+                aiFixButton.setVisibility(View.VISIBLE);
+                aiFixButton.setOnClickListener(v -> showAIFixFieldPicker());
+            }
         }
         
 
@@ -523,15 +537,200 @@ public class ReportActivity extends AppCompatActivity {
     }
 
     /**
-     * When launched via "Create Custom Report", show PDF template section and pre-select My Template
-     * (form already has password protect, add image, compress checkbox).
+     * When launched via "Create Custom Report", hide the PDF template section (Default vs Select template at top is enough),
+     * and show Report form choice (Default vs Select template).
      */
     private void applyCreateCustomReportIntent() {
         if (!getIntent().getBooleanExtra("USE_MY_TEMPLATE", false)) return;
         View pdfTemplateSection = findViewById(R.id.pdfTemplateSection);
-        RadioButton radioMyTemplate = findViewById(R.id.radioMyTemplate);
-        if (pdfTemplateSection != null) pdfTemplateSection.setVisibility(View.VISIBLE);
-        if (radioMyTemplate != null) radioMyTemplate.setChecked(true);
+        if (pdfTemplateSection != null) pdfTemplateSection.setVisibility(View.GONE);
+        setupReportFormChoiceSection();
+    }
+
+    /**
+     * Show "Report form: Default | Select template" and wire buttons so user can use default or pick a saved template.
+     */
+    private void setupReportFormChoiceSection() {
+        View section = findViewById(R.id.reportFormChoiceSection);
+        Button defaultButton = findViewById(R.id.reportFormDefaultButton);
+        Button selectTemplateButton = findViewById(R.id.reportFormSelectTemplateButton);
+        if (section == null || defaultButton == null || selectTemplateButton == null) return;
+        section.setVisibility(View.VISIBLE);
+        defaultButton.setOnClickListener(v -> switchToDefaultForm());
+        selectTemplateButton.setOnClickListener(v -> showSelectTemplateDialog());
+        updateReportFormChoiceLabel();
+    }
+
+    private void switchToDefaultForm() {
+        selectedTemplateId = null;
+        dynamicTemplateFields.clear();
+        reportBodyContainer = findViewById(R.id.reportBodyContainer);
+        dynamicTemplateContainer = findViewById(R.id.dynamicTemplateContainer);
+        if (reportBodyContainer != null) reportBodyContainer.setVisibility(View.VISIBLE);
+        if (dynamicTemplateContainer != null) {
+            if (dynamicTemplateContainer instanceof ViewGroup) {
+                ((ViewGroup) dynamicTemplateContainer).removeAllViews();
+            }
+            dynamicTemplateContainer.setVisibility(View.GONE);
+        }
+        updateReportFormChoiceLabel();
+    }
+
+    private void showSelectTemplateDialog() {
+        List<SavedTemplate> templates = new PdfTemplateStorage(this).loadSavedTemplates(userName);
+        if (templates == null || templates.isEmpty()) {
+            Toast.makeText(this, "No saved templates. Create one in PDF Template Settings.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        String[] names = new String[templates.size()];
+        for (int i = 0; i < templates.size(); i++) names[i] = templates.get(i).getName();
+        new AlertDialog.Builder(this)
+                .setTitle("Select a template")
+                .setItems(names, (dialog, which) -> {
+                    SavedTemplate t = templates.get(which);
+                    if (t != null && t.getId() != null) {
+                        selectedTemplateId = t.getId();
+                        applyTemplateSelection(t);
+                        updateReportFormChoiceLabel();
+                    }
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    /** Apply the given template: show dynamic form, hide fixed form. */
+    private void applyTemplateSelection(SavedTemplate template) {
+        reportBodyContainer = findViewById(R.id.reportBodyContainer);
+        dynamicTemplateContainer = findViewById(R.id.dynamicTemplateContainer);
+        if (reportBodyContainer == null || dynamicTemplateContainer == null) return;
+        if (template == null || template.getHeaderBlocks() == null || template.getHeaderBlocks().isEmpty()) {
+            Toast.makeText(this, "Template has no headers.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        reportBodyContainer.setVisibility(View.GONE);
+        dynamicTemplateContainer.setVisibility(View.VISIBLE);
+        buildDynamicFormFromTemplate(template);
+    }
+
+    private void updateReportFormChoiceLabel() {
+        Button selectTemplateButton = findViewById(R.id.reportFormSelectTemplateButton);
+        if (selectTemplateButton == null) return;
+        if (selectedTemplateId != null) {
+            SavedTemplate t = new PdfTemplateStorage(this).getSavedTemplateById(userName, selectedTemplateId);
+            selectTemplateButton.setText(t != null ? "Template: " + t.getName() : "Select template...");
+        } else {
+            selectTemplateButton.setText("Select template...");
+        }
+    }
+
+    /**
+     * When opened from View Templates with a template id, show dynamic form (header + field per template header)
+     * and hide the fixed report body. Preserves state on configuration change via savedInstanceState.
+     */
+    private void setupTemplateModeIfNeeded(Bundle savedInstanceState) {
+        if (selectedTemplateId == null || selectedTemplateId.isEmpty()) return;
+        reportBodyContainer = findViewById(R.id.reportBodyContainer);
+        dynamicTemplateContainer = findViewById(R.id.dynamicTemplateContainer);
+        if (reportBodyContainer == null || dynamicTemplateContainer == null) return;
+
+        SavedTemplate template = new PdfTemplateStorage(this).getSavedTemplateById(userName, selectedTemplateId);
+        if (template == null || template.getHeaderBlocks() == null || template.getHeaderBlocks().isEmpty()) {
+            Toast.makeText(this, "Template not found or has no headers.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        reportBodyContainer.setVisibility(View.GONE);
+        dynamicTemplateContainer.setVisibility(View.VISIBLE);
+        buildDynamicFormFromTemplate(template);
+
+        // Restore dynamic field values after rotation/config change
+        if (savedInstanceState != null) {
+            String[] savedValues = savedInstanceState.getStringArray("dynamicTemplateValues");
+            if (savedValues != null && savedValues.length == dynamicTemplateFields.size()) {
+                for (int i = 0; i < dynamicTemplateFields.size() && i < savedValues.length; i++) {
+                    dynamicTemplateFields.get(i).second.setText(savedValues[i]);
+                }
+            }
+        }
+        updateReportFormChoiceLabel();
+    }
+
+    /**
+     * Build header+input rows from the saved template's header blocks. Each header (text or image) has one body field below it.
+     */
+    private void buildDynamicFormFromTemplate(SavedTemplate template) {
+        dynamicTemplateContainer = findViewById(R.id.dynamicTemplateContainer);
+        if (!(dynamicTemplateContainer instanceof LinearLayout)) return;
+        LinearLayout container = (LinearLayout) dynamicTemplateContainer;
+        container.removeAllViews();
+        dynamicTemplateFields.clear();
+
+        List<PdfTemplateSettings.HeaderBlock> blocks = template.getHeaderBlocks();
+        int dp16 = (int) (16 * getResources().getDisplayMetrics().density);
+        int dp8 = (int) (8 * getResources().getDisplayMetrics().density);
+        int dp12 = (int) (12 * getResources().getDisplayMetrics().density);
+
+        for (int i = 0; i < blocks.size(); i++) {
+            PdfTemplateSettings.HeaderBlock block = blocks.get(i);
+            String labelForContent = getLabelForHeaderBlock(block, i);
+
+            // Section wrapper: header on top, input below (clean vertical structure)
+            LinearLayout section = new LinearLayout(this);
+            section.setOrientation(LinearLayout.VERTICAL);
+            section.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            section.setPadding(0, 0, 0, dp16);
+
+            if (PdfTemplateSettings.BLOCK_IMAGE.equals(block.getBlockType())) {
+                ImageView headerImage = new ImageView(this);
+                headerImage.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (120 * getResources().getDisplayMetrics().density)));
+                headerImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                headerImage.setAdjustViewBounds(true);
+                if (block.getImagePath() != null && !block.getImagePath().isEmpty()) {
+                    try {
+                        headerImage.setImageURI(Uri.fromFile(new java.io.File(block.getImagePath())));
+                    } catch (Exception ignored) { }
+                }
+                section.addView(headerImage);
+            } else {
+                TextView headerText = new TextView(this);
+                headerText.setText(block.getText() != null ? block.getText() : "");
+                headerText.setTextSize(16);
+                headerText.setPadding(dp8, dp8, dp8, dp8);
+                if (PdfTemplateSettings.STYLE_H1.equals(block.getTextStyle())) {
+                    headerText.setTextSize(18);
+                    headerText.setTypeface(null, android.graphics.Typeface.BOLD);
+                } else if (PdfTemplateSettings.STYLE_H2.equals(block.getTextStyle())) {
+                    headerText.setTextSize(14);
+                    headerText.setTypeface(null, android.graphics.Typeface.BOLD);
+                }
+                headerText.setTextColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.black));
+                section.addView(headerText);
+            }
+
+            DictateEditText bodyInput = new DictateEditText(this);
+            bodyInput.setHint("Enter " + (labelForContent.length() > 30 ? "value" : labelForContent));
+            bodyInput.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            bodyInput.setMinLines(3);
+            bodyInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            bodyInput.setGravity(android.view.Gravity.TOP);
+            bodyInput.setPadding(dp12, dp12, dp12, dp12);
+            section.addView(bodyInput);
+
+            dynamicTemplateFields.add(new Pair<>(labelForContent, bodyInput.getEditText()));
+            container.addView(section);
+        }
+    }
+
+    private String getLabelForHeaderBlock(PdfTemplateSettings.HeaderBlock block, int index) {
+        if (PdfTemplateSettings.BLOCK_IMAGE.equals(block.getBlockType())) {
+            return "Section " + (index + 1);
+        }
+        String text = block.getText();
+        return (text != null && !text.trim().isEmpty()) ? text.trim() : ("Section " + (index + 1));
+    }
+
+    private boolean isTemplateMode() {
+        return selectedTemplateId != null && !selectedTemplateId.isEmpty() && !dynamicTemplateFields.isEmpty();
     }
 
     /**
@@ -633,41 +832,67 @@ public class ReportActivity extends AppCompatActivity {
 
     /**
      * Saves the report data into the SQLite database and generates a PDF report.
+     * Supports both fixed form and template-based (dynamic) form.
      *
      * @param db The writable SQLiteDatabase instance.
      * @param ownerPassword If non-null, PDF is encrypted with this owner password (editing restricted).
      */
     private void saveReport(SQLiteDatabase db, String ownerPassword) {
-        // Collect input values for the report
-        String reportName = nameInput.getEditText().getText().toString();
-        String content = "Premise Name: " + nameInput.getEditText().getText().toString() +
-                "\nAddress: " + addressInput.getEditText().getText().toString() +
-                "\nDate: " + dateInput.getText().toString() +
-                "\nVisit Type: " + visitTypeInput.getEditText().getText().toString() +
-                "\nSite Inspection: " + siteInspectionInput.getEditText().getText().toString() +
-                "\nRecommendations: " + recommendationsInput.getEditText().getText().toString() +
-                "\nFollow-Up: " + followUpInput.getEditText().getText().toString() +
-                "\nPrep: " + prepInput.getEditText().getText().toString() +
-                "\nTech: " + techInput.getEditText().getText().toString();
-
-        // Store values in a ContentValues object for database insertion
+        String reportName;
+        String content;
+        String reportDate;
         ContentValues values = new ContentValues();
-        values.put("name", reportName);
-        values.put("address", addressInput.getEditText().getText().toString());
-        values.put("date", dateInput.getText().toString());
-        values.put("visit_type", visitTypeInput.getEditText().getText().toString());
-        values.put("site_inspection", siteInspectionInput.getEditText().getText().toString());
-        values.put("recommendations", recommendationsInput.getEditText().getText().toString());
-        values.put("follow_up", followUpInput.getEditText().getText().toString());
-        values.put("prep", prepInput.getEditText().getText().toString());
-        values.put("tech", techInput.getEditText().getText().toString());
 
-        // Insert the report data into the database
+        if (isTemplateMode()) {
+            // Build content from dynamic template fields (Label: value per line for PDF body)
+            StringBuilder sb = new StringBuilder();
+            for (Pair<String, EditText> pair : dynamicTemplateFields) {
+                String value = pair.second.getText() != null ? pair.second.getText().toString().trim() : "";
+                sb.append(pair.first).append(": ").append(value.isEmpty() ? "N/A" : value).append("\n");
+            }
+            content = sb.toString();
+            reportName = dynamicTemplateFields.isEmpty() ? "Custom Report" : (dynamicTemplateFields.get(0).second.getText() != null ? dynamicTemplateFields.get(0).second.getText().toString().trim() : "Custom Report");
+            if (reportName.isEmpty()) reportName = "Custom Report";
+            reportDate = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+            values.put("name", reportName);
+            values.put("address", "");
+            values.put("date", reportDate);
+            values.put("visit_type", "");
+            values.put("site_inspection", "");
+            values.put("recommendations", "");
+            values.put("follow_up", "");
+            values.put("prep", "");
+            values.put("tech", "");
+            values.put("template_id", selectedTemplateId);
+            values.put("template_content", content);
+        } else {
+            // Original fixed form
+            reportName = nameInput.getEditText().getText().toString();
+            content = "Premise Name: " + nameInput.getEditText().getText().toString() +
+                    "\nAddress: " + addressInput.getEditText().getText().toString() +
+                    "\nDate: " + dateInput.getText().toString() +
+                    "\nVisit Type: " + visitTypeInput.getEditText().getText().toString() +
+                    "\nSite Inspection: " + siteInspectionInput.getEditText().getText().toString() +
+                    "\nRecommendations: " + recommendationsInput.getEditText().getText().toString() +
+                    "\nFollow-Up: " + followUpInput.getEditText().getText().toString() +
+                    "\nPrep: " + prepInput.getEditText().getText().toString() +
+                    "\nTech: " + techInput.getEditText().getText().toString();
+            reportDate = dateInput.getText().toString();
+            values.put("name", reportName);
+            values.put("address", addressInput.getEditText().getText().toString());
+            values.put("date", reportDate);
+            values.put("visit_type", visitTypeInput.getEditText().getText().toString());
+            values.put("site_inspection", siteInspectionInput.getEditText().getText().toString());
+            values.put("recommendations", recommendationsInput.getEditText().getText().toString());
+            values.put("follow_up", followUpInput.getEditText().getText().toString());
+            values.put("prep", prepInput.getEditText().getText().toString());
+            values.put("tech", techInput.getEditText().getText().toString());
+        }
+
         long newRowId = db.insert("CompanyReports", null, values);
         if (newRowId != -1) {
             Toast.makeText(this, "Company Report Saved Successfully!", Toast.LENGTH_SHORT).show();
 
-            // Generate a PDF report only if the OS version supports it (compressed; optional password)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 PdfTemplateSettings settings;
                 if (selectedTemplateId != null) {
@@ -693,16 +918,12 @@ public class ReportActivity extends AppCompatActivity {
                         content,
                         this,
                         !selectedImageUris.isEmpty() ? selectedImageUris : null,
-                        dateInput.getText().toString(),
+                        reportDate,
                         ownerPassword,
                         settings
                 );
             }
-            
-            // Clear fields after successful save
             clearInputFields();
-            
-            // Show options dialog after successful save
             showReportOptionsDialog();
         } else {
             Toast.makeText(this, "Error Saving Report!", Toast.LENGTH_SHORT).show();
@@ -710,30 +931,50 @@ public class ReportActivity extends AppCompatActivity {
     }
 
     /**
-     * Shows a dialog with options to share report, upload to Firebase, or cancel
+     * Shows a dialog: View, Share; and if logged in (and not Offline User), Upload to Firebase. Offline users see only View and Share (and Cancel).
      */
     private void showReportOptionsDialog() {
         try {
+            boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Report Saved Successfully!")
                     .setMessage("What would you like to do with your report?")
-                    .setPositiveButton("Share Report", (dialog, which) -> {
-                        shareReport();
-                    })
-                    .setNegativeButton("Upload to Firebase", (dialog, which) -> {
-                        showFirebaseFolderSelectionPopup();
-                    })
-                    .setNeutralButton("Cancel", (dialog, which) -> {
-                        dialog.dismiss();
-                    })
-                    .setCancelable(false);
-            
+                    .setPositiveButton("View", (dialog, which) -> viewLatestReport())
+                    .setNegativeButton("Share", (dialog, which) -> shareReport());
+            if (showUpload) {
+                builder.setNeutralButton("Upload to Firebase", (dialog, which) -> showFirebaseFolderSelectionPopup());
+            }
+            builder.setCancelable(true);
             AlertDialog dialog = builder.create();
+            dialog.setCanceledOnTouchOutside(true);
             dialog.show();
         } catch (Exception e) {
             Toast.makeText(this, "Error showing dialog: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
+    }
+
+    private void viewLatestReport() {
+        File reportsFolder = new File(getExternalFilesDir(null), "GRPEST REPORTS");
+        if (!reportsFolder.exists()) {
+            Toast.makeText(this, "Report folder not found!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        File[] files = reportsFolder.listFiles((dir, name) -> name.endsWith(".pdf"));
+        if (files == null || files.length == 0) {
+            Toast.makeText(this, "No PDF report found.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        File latestFile = files[0];
+        for (File f : files) {
+            if (f.lastModified() > latestFile.lastModified()) latestFile = f;
+        }
+        Uri uri = androidx.core.content.FileProvider.getUriForFile(this, "com.grpc.grpc.fileprovider", latestFile);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(uri, "application/pdf");
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(Intent.createChooser(intent, "View Report"));
+        showReportOptionsDialog();
     }
 
     /**
@@ -925,22 +1166,27 @@ public class ReportActivity extends AppCompatActivity {
     }
 
     /**
-     * Clears all input fields after successful save and upload
+     * Clears all input fields after successful save and upload.
+     * In template mode clears dynamic fields; otherwise clears fixed form.
      */
     private void clearInputFields() {
-        nameInput.getEditText().setText("");
-        addressInput.getEditText().setText("");
-        dateInput.setText("");
-        visitTypeInput.getEditText().setText("");
-        siteInspectionInput.getEditText().setText("");
-        recommendationsInput.getEditText().setText("");
-        followUpInput.getEditText().setText("");
-        prepInput.getEditText().setText("");
-        techInput.getEditText().setText("");
+        if (isTemplateMode()) {
+            for (Pair<String, EditText> pair : dynamicTemplateFields) {
+                if (pair.second != null) pair.second.setText("");
+            }
+        } else {
+            nameInput.getEditText().setText("");
+            addressInput.getEditText().setText("");
+            dateInput.setText("");
+            visitTypeInput.getEditText().setText("");
+            siteInspectionInput.getEditText().setText("");
+            recommendationsInput.getEditText().setText("");
+            followUpInput.getEditText().setText("");
+            prepInput.getEditText().setText("");
+            techInput.getEditText().setText("");
+            setCurrentDate();
+        }
         selectedImageUris.clear();
-        
-        // Set current date as default
-        setCurrentDate();
     }
 
     // ============================================================================
@@ -968,15 +1214,52 @@ public class ReportActivity extends AppCompatActivity {
     }
 
     /**
-     * AI Fix: only Site Inspection and Recommendations. Professional, grammatically correct, no * or filler. Uses key from Firestore (same as Chat).
+     * Show dialog for logged-in user to choose which fields to update with AI Fix (Site Inspection, Recommendations).
      */
-    private void polishWithAI() {
+    private void showAIFixFieldPicker() {
+        if (isTemplateMode()) {
+            Toast.makeText(this, "AI Fix is available for the standard report form.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         String siteInspection = siteInspectionInput.getEditText().getText().toString().trim();
         String recommendations = recommendationsInput.getEditText().getText().toString().trim();
         if (siteInspection.isEmpty() && recommendations.isEmpty()) {
             Toast.makeText(this, "Enter content in Site Inspection or Recommendations first", Toast.LENGTH_SHORT).show();
             return;
         }
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 10);
+        final CheckBox cbSite = new CheckBox(this);
+        cbSite.setText("Site Inspection");
+        cbSite.setChecked(!siteInspection.isEmpty());
+        final CheckBox cbRec = new CheckBox(this);
+        cbRec.setText("Recommendations");
+        cbRec.setChecked(!recommendations.isEmpty());
+        layout.addView(cbSite);
+        layout.addView(cbRec);
+        new AlertDialog.Builder(this)
+                .setTitle("Which fields to update?")
+                .setView(layout)
+                .setPositiveButton("Fix selected", (dialog, which) -> {
+                    boolean fixSite = cbSite.isChecked();
+                    boolean fixRec = cbRec.isChecked();
+                    if (!fixSite && !fixRec) {
+                        Toast.makeText(this, "Select at least one field.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    polishWithAIFields(fixSite, fixRec);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /**
+     * AI Fix: only selected fields (Site Inspection and/or Recommendations). Professional, grammatically correct, no * or filler. Uses key from Firestore (same as Chat).
+     */
+    private void polishWithAIFields(boolean fixSiteInspection, boolean fixRecommendations) {
+        String siteInspection = siteInspectionInput.getEditText().getText().toString().trim();
+        String recommendations = recommendationsInput.getEditText().getText().toString().trim();
         if (aiFixButton != null) {
             aiFixButton.setEnabled(false);
             aiFixButton.setText("✏️ Fixing...");
@@ -985,14 +1268,22 @@ public class ReportActivity extends AppCompatActivity {
 
         String systemPrompt = "You are a professional editor for pest control reports. Rewrite the given text so it is professional, grammatically correct, and suitable for a formal service report. Do not use asterisks (*), bullet symbols, or filler words like 'emm' or 'uh'. Add 3 to 4 extra sentences where appropriate to improve clarity and completeness. Output only the revised text.";
         String userPrompt = "Rewrite the following in the exact format below. Plain text only, no markdown.\n\n";
-        if (!siteInspection.isEmpty()) userPrompt += "Site Inspection: " + siteInspection + "\n\n";
-        else userPrompt += "Site Inspection: (none)\n\n";
-        if (!recommendations.isEmpty()) userPrompt += "Recommendations: " + recommendations + "\n\n";
-        else userPrompt += "Recommendations: (none)\n\n";
-        userPrompt += "Respond with exactly:\nSite Inspection: [revised text]\n\nRecommendations: [revised text]";
+        if (fixSiteInspection) {
+            userPrompt += "Site Inspection: " + (!siteInspection.isEmpty() ? siteInspection : "(none)") + "\n\n";
+        } else {
+            userPrompt += "Site Inspection: (skip - do not include in response)\n\n";
+        }
+        if (fixRecommendations) {
+            userPrompt += "Recommendations: " + (!recommendations.isEmpty() ? recommendations : "(none)") + "\n\n";
+        } else {
+            userPrompt += "Recommendations: (skip - do not include in response)\n\n";
+        }
+        userPrompt += "Respond with exactly:\nSite Inspection: [revised text or leave empty if skipped]\n\nRecommendations: [revised text or leave empty if skipped]";
 
         final String finalSystemPrompt = systemPrompt;
         final String finalUserPrompt = userPrompt;
+        final boolean applySite = fixSiteInspection;
+        final boolean applyRec = fixRecommendations;
 
         FirebaseFirestore.getInstance().document("AI-Chat/AI-API").get()
                 .addOnSuccessListener(this, docSnap -> {
@@ -1013,7 +1304,7 @@ public class ReportActivity extends AppCompatActivity {
                     new Thread(() -> {
                         try {
                             String response = callChatAPI(apiKey, useGroq, finalSystemPrompt, finalUserPrompt);
-                            runOnUiThread(() -> updateUIWithAIPolish(response));
+                            runOnUiThread(() -> updateUIWithAIPolish(response, applySite, applyRec));
                         } catch (Exception e) {
                             runOnUiThread(() -> setAiFixDone("AI Fix failed: " + e.getMessage()));
                         }
@@ -1061,55 +1352,40 @@ public class ReportActivity extends AppCompatActivity {
     }
 
     /**
-     * Update UI with AI polished content
+     * Update UI with AI polished content; only applies to fields that were selected for fix.
      */
-    private void updateUIWithAIPolish(String aiResponse) {
+    private void updateUIWithAIPolish(String aiResponse, boolean applySiteInspection, boolean applyRecommendations) {
         runOnUiThread(() -> {
             try {
                 // Parse the AI response to extract Site Inspection and Recommendations
                 String[] sections = aiResponse.split("Site Inspection:|Recommendations:", -1);
-                
                 if (sections.length >= 3) {
-                    // Extract site inspection (section 1) - clean content only
                     String siteInspection = sections[1].trim();
-                    if (!siteInspection.isEmpty()) {
-                        // Remove any remaining "Site Inspection:" or "Recommendations:" labels
-                        siteInspection = siteInspection.replaceAll("(?i)Site Inspection:", "").trim();
-                        siteInspection = siteInspection.replaceAll("(?i)Recommendations:", "").trim();
-                        // Remove formatting symbols
-                        siteInspection = siteInspection.replaceAll("\\*\\*", "").trim();
-                        siteInspection = siteInspection.replaceAll("\"", "").trim();
-                        // Set clean content without formatting
+                    siteInspection = siteInspection.replaceAll("(?i)Site Inspection:", "").trim();
+                    siteInspection = siteInspection.replaceAll("(?i)Recommendations:", "").trim();
+                    siteInspection = siteInspection.replaceAll("\\*\\*", "").replaceAll("\"", "").trim();
+                    if (applySiteInspection && !siteInspection.isEmpty()) {
                         siteInspectionInput.getEditText().setText(siteInspection);
                     }
-                    
-                    // Extract recommendations (section 2) - clean content only
                     String recommendations = sections[2].trim();
-                    if (!recommendations.isEmpty()) {
-                        // Remove any remaining "Site Inspection:" or "Recommendations:" labels
-                        recommendations = recommendations.replaceAll("(?i)Site Inspection:", "").trim();
-                        recommendations = recommendations.replaceAll("(?i)Recommendations:", "").trim();
-                        // Remove formatting symbols
-                        recommendations = recommendations.replaceAll("\\*\\*", "").trim();
-                        recommendations = recommendations.replaceAll("\"", "").trim();
-                        // Set clean content without formatting
+                    recommendations = recommendations.replaceAll("(?i)Site Inspection:", "").trim();
+                    recommendations = recommendations.replaceAll("(?i)Recommendations:", "").trim();
+                    recommendations = recommendations.replaceAll("\\*\\*", "").replaceAll("\"", "").trim();
+                    if (applyRecommendations && !recommendations.isEmpty()) {
                         recommendationsInput.getEditText().setText(recommendations);
                     }
-                    
                     Toast.makeText(this, "✅ AI Fix completed!", Toast.LENGTH_SHORT).show();
                 } else {
                     String[] altSections = aiResponse.split("(?i)recommendations:", -1);
                     if (altSections.length >= 2) {
-                        String siteInspection = altSections[0].replaceAll("(?i)site inspection:", "").trim();
-                        String recommendations = altSections[1].trim();
-                        siteInspection = siteInspection.replaceAll("\\*+", "").replaceAll("\"", "").trim();
-                        recommendations = recommendations.replaceAll("\\*+", "").replaceAll("\"", "").trim();
-                        if (!siteInspection.isEmpty()) siteInspectionInput.getEditText().setText(siteInspection);
-                        if (!recommendations.isEmpty()) recommendationsInput.getEditText().setText(recommendations);
+                        String siteInspection = altSections[0].replaceAll("(?i)site inspection:", "").trim().replaceAll("\\*+", "").replaceAll("\"", "").trim();
+                        String recommendations = altSections[1].trim().replaceAll("\\*+", "").replaceAll("\"", "").trim();
+                        if (applySiteInspection && !siteInspection.isEmpty()) siteInspectionInput.getEditText().setText(siteInspection);
+                        if (applyRecommendations && !recommendations.isEmpty()) recommendationsInput.getEditText().setText(recommendations);
                         Toast.makeText(this, "✅ AI Fix completed!", Toast.LENGTH_SHORT).show();
                     } else {
                         String clean = aiResponse.replaceAll("\\*+", "").replaceAll("\"", "").trim();
-                        if (!clean.isEmpty()) siteInspectionInput.getEditText().setText(clean);
+                        if (applySiteInspection && !clean.isEmpty()) siteInspectionInput.getEditText().setText(clean);
                         Toast.makeText(this, "✅ AI Fix completed!", Toast.LENGTH_SHORT).show();
                     }
                 }
@@ -1388,7 +1664,7 @@ public class ReportActivity extends AppCompatActivity {
             } else if (lowerText.contains("polish report") || lowerText.contains("ai polish")) {
                 // Trigger AI polish via voice command
                 Toast.makeText(this, "🤖 Starting AI polish...", Toast.LENGTH_SHORT).show();
-                polishWithAI();
+                showAIFixFieldPicker();
                 return;
             } else if (lowerText.contains("read back") || lowerText.contains("read report")) {
                 // Trigger read back via voice command
@@ -1570,24 +1846,42 @@ public class ReportActivity extends AppCompatActivity {
     }
     
     /**
-     * Actually read the report content using Text-to-Speech
+     * Actually read the report content using Text-to-Speech.
+     * In template mode reads dynamic fields; otherwise reads fixed form.
      */
     private void readReportContent() {
-        // Build the report text
         StringBuilder reportText = new StringBuilder();
-        reportText.append("Property Name: ").append(nameInput.getEditText().getText().toString()).append(". ");
-        reportText.append("Address: ").append(addressInput.getEditText().getText().toString()).append(". ");
-        reportText.append("Date: ").append(dateInput.getText().toString()).append(". ");
-        reportText.append("Visit Type: ").append(visitTypeInput.getEditText().getText().toString()).append(". ");
-        reportText.append("Site Inspection: ").append(siteInspectionInput.getEditText().getText().toString()).append(". ");
-        reportText.append("Recommendations: ").append(recommendationsInput.getEditText().getText().toString()).append(". ");
-        reportText.append("Prep Steps: ").append(prepInput.getEditText().getText().toString()).append(". ");
-        reportText.append("Follow Up: ").append(followUpInput.getEditText().getText().toString()).append(". ");
-        reportText.append("Technician Name: ").append(techInput.getEditText().getText().toString()).append(". ");
-        
-        // Speak the report
+        if (isTemplateMode()) {
+            for (Pair<String, EditText> pair : dynamicTemplateFields) {
+                String value = pair.second != null && pair.second.getText() != null ? pair.second.getText().toString() : "";
+                reportText.append(pair.first).append(": ").append(value).append(". ");
+            }
+        } else {
+            reportText.append("Property Name: ").append(nameInput.getEditText().getText().toString()).append(". ");
+            reportText.append("Address: ").append(addressInput.getEditText().getText().toString()).append(". ");
+            reportText.append("Date: ").append(dateInput.getText().toString()).append(". ");
+            reportText.append("Visit Type: ").append(visitTypeInput.getEditText().getText().toString()).append(". ");
+            reportText.append("Site Inspection: ").append(siteInspectionInput.getEditText().getText().toString()).append(". ");
+            reportText.append("Recommendations: ").append(recommendationsInput.getEditText().getText().toString()).append(". ");
+            reportText.append("Prep Steps: ").append(prepInput.getEditText().getText().toString()).append(". ");
+            reportText.append("Follow Up: ").append(followUpInput.getEditText().getText().toString()).append(". ");
+            reportText.append("Technician Name: ").append(techInput.getEditText().getText().toString()).append(". ");
+        }
         textToSpeech.speak(reportText.toString(), TextToSpeech.QUEUE_FLUSH, null, "REPORT_READBACK");
         Toast.makeText(this, "📖 Reading report back...", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (isTemplateMode()) {
+            String[] values = new String[dynamicTemplateFields.size()];
+            for (int i = 0; i < dynamicTemplateFields.size(); i++) {
+                EditText et = dynamicTemplateFields.get(i).second;
+                values[i] = et != null ? (et.getText() != null ? et.getText().toString() : "") : "";
+            }
+            outState.putStringArray("dynamicTemplateValues", values);
+        }
     }
 
     /**
@@ -1596,7 +1890,14 @@ public class ReportActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Ensure proper keyboard handling when activity resumes
+        // AI Fix: same rule as Upload to Firebase (logged in and not Offline User)
+        if (aiFixButton != null) {
+            boolean showAIFix = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
+            aiFixButton.setVisibility(showAIFix ? View.VISIBLE : View.GONE);
+            if (showAIFix && !aiFixButton.hasOnClickListeners()) {
+                aiFixButton.setOnClickListener(v -> showAIFixFieldPicker());
+            }
+        }
     }
     
     /**

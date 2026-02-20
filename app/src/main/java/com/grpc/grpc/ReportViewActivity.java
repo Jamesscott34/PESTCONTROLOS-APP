@@ -25,6 +25,7 @@ import android.provider.OpenableColumns;
 import android.widget.Toast;
 
 import androidx.appcompat.view.ActionMode;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -240,28 +241,31 @@ public class ReportViewActivity extends AppCompatActivity {
      * @param file The selected report file.
      */
     private void showSinglePressOptions(File file) {
+        // Same rule as stored reports: hide Upload to Firebase for Offline User
+        boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
+        CharSequence[] items = showUpload
+                ? new CharSequence[]{"View", "Edit", "Share", "Rename", "Delete", "Upload to Firebase"}
+                : new CharSequence[]{"View", "Edit", "Share", "Rename", "Delete"};
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select an Option")
-                .setItems(new CharSequence[]{"View", "Edit", "Share", "Rename", "Delete", "Upload to Firebase"}, (dialog, which) -> {
-                    switch (which) {
-                        case 0:
-                            viewPDF(file);
-                            break;
-                        case 1:
-                            showEditOptions(file);
-                            break;
-                        case 2:
-                            shareReport(file);
-                            break;
-                        case 3:
-                            renameReport(file);
-                            break;
-                        case 4:
-                            confirmDeleteMultiple(java.util.Arrays.asList(file));
-                            break;
-                        case 5:
-                            showFolderSelectionDialog(file);
-                            break;
+                .setItems(items, (dialog, which) -> {
+                    if (showUpload) {
+                        switch (which) {
+                            case 0: viewPDF(file); break;
+                            case 1: showEditOptions(file); break;
+                            case 2: shareReport(file); break;
+                            case 3: renameReport(file); break;
+                            case 4: confirmDeleteMultiple(java.util.Arrays.asList(file)); break;
+                            case 5: showFolderSelectionDialog(file); break;
+                        }
+                    } else {
+                        switch (which) {
+                            case 0: viewPDF(file); break;
+                            case 1: showEditOptions(file); break;
+                            case 2: shareReport(file); break;
+                            case 3: renameReport(file); break;
+                            case 4: confirmDeleteMultiple(java.util.Arrays.asList(file)); break;
+                        }
                     }
                 })
                 .show();
@@ -284,17 +288,23 @@ public class ReportViewActivity extends AppCompatActivity {
      * @param file The selected report file.
      */
     private void showLongPressOptions(File file) {
+        // Same rule as stored reports: hide Upload to Firebase for Offline User
+        boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
+        CharSequence[] items = showUpload
+                ? new CharSequence[]{"Share", "Delete", "Rename", "Upload to Firebase"}
+                : new CharSequence[]{"Share", "Delete", "Rename"};
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select an Option")
-                .setItems(new CharSequence[]{"Share", "Delete", "Rename", "Upload to Firebase"}, (dialog, which) -> {
-                    if (which == 0) {
-                        shareReport(file);
-                    } else if (which == 1) {
-                        confirmDeleteMultiple(java.util.Arrays.asList(file));
-                    } else if (which == 2) {
-                        renameReport(file);
-                    } else if (which == 3) {
-                        showFolderSelectionDialog(file);
+                .setItems(items, (dialog, which) -> {
+                    if (showUpload) {
+                        if (which == 0) shareReport(file);
+                        else if (which == 1) confirmDeleteMultiple(java.util.Arrays.asList(file));
+                        else if (which == 2) renameReport(file);
+                        else if (which == 3) showFolderSelectionDialog(file);
+                    } else {
+                        if (which == 0) shareReport(file);
+                        else if (which == 1) confirmDeleteMultiple(java.util.Arrays.asList(file));
+                        else if (which == 2) renameReport(file);
                     }
                 })
                 .show();

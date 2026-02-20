@@ -91,6 +91,7 @@
         android:layout_height="58dp"
         android:text="Custom Template"
         android:textSize="18sp"
+        android:layout_marginTop="24dp"
         android:layout_marginBottom="16dp" />
 
     <!-- Create Custom Report: create report with My Template, password protect, add image, compress -->
@@ -100,5 +101,6 @@
         android:layout_height="58dp"
         android:text="Create Custom Report"
         android:textSize="18sp"
+        android:layout_marginTop="24dp"
         android:layout_marginBottom="16dp" />
 </LinearLayout>

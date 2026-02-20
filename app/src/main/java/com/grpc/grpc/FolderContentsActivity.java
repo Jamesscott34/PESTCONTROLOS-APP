@@ -2,11 +2,15 @@ package com.grpc.grpc;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
@@ -49,9 +53,22 @@ public class FolderContentsActivity extends AppCompatActivity {
 
         folderName = getIntent().getStringExtra("FOLDER_NAME");
         userName = getIntent().getStringExtra("USER_NAME");
+        // Offline User must not view Firebase folder contents (same rule as Stored Reports)
+        if ("Offline User".equals(userName)) {
+            Toast.makeText(this, "Folder view is not available in offline mode.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         recyclerView = findViewById(R.id.fileRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        Button uploadButton = findViewById(R.id.buttonUploadFile);
+        if (uploadButton != null) {
+            // Same rule as stored reports: hide Upload for Offline User
+            boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
+            uploadButton.setVisibility(showUpload ? View.VISIBLE : View.GONE);
+        }
 
         loadFilesFromFirebase();
     }

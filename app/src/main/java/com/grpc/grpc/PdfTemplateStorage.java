@@ -24,6 +24,11 @@ public class PdfTemplateStorage {
     private static final String KEY_WATERMARK_TEXT = "watermark_text";
     private static final String KEY_WATERMARK_IMAGE_PATH = "watermark_image_path";
     private static final String KEY_HEADER_BLOCKS = "header_blocks";
+    private static final String KEY_MAIN_HEADER_TEXT = "main_header_text";
+    private static final String KEY_MAIN_HEADER_COLOR = "main_header_color_hex";
+    private static final String KEY_HEADER_SIZE = "header_size";
+    private static final String KEY_BODY_TEXT_SIZE = "body_text_size";
+    private static final String KEY_FOOTER_TEXT = "footer_text";
     private static final String KEY_SAVED_TEMPLATES = "saved_templates";
 
     private final SharedPreferences prefs;
@@ -35,6 +40,11 @@ public class PdfTemplateStorage {
     public PdfTemplateSettings load() {
         PdfTemplateSettings s = new PdfTemplateSettings();
         s.setTemplateSelection(prefs.getString(KEY_TEMPLATE_SELECTION, PdfTemplateSettings.GRPC));
+        s.setMainHeaderText(prefs.getString(KEY_MAIN_HEADER_TEXT, ""));
+        s.setMainHeaderColorHex(prefs.getString(KEY_MAIN_HEADER_COLOR, "#0000FF"));
+        s.setHeaderSize(prefs.getString(KEY_HEADER_SIZE, PdfTemplateSettings.HEADER_SIZE_DEFAULT));
+        s.setBodyTextSize(prefs.getString(KEY_BODY_TEXT_SIZE, PdfTemplateSettings.BODY_TEXT_SIZE_DEFAULT));
+        s.setFooterText(prefs.getString(KEY_FOOTER_TEXT, null));
         s.setLogoPath(prefs.getString(KEY_LOGO_PATH, null));
         s.setWatermarkEnabled(prefs.getBoolean(KEY_WATERMARK_ENABLED, false));
         s.setWatermarkType(prefs.getString(KEY_WATERMARK_TYPE, PdfTemplateSettings.WATERMARK_TEXT));
@@ -48,6 +58,11 @@ public class PdfTemplateStorage {
         if (s == null) return;
         prefs.edit()
                 .putString(KEY_TEMPLATE_SELECTION, s.getTemplateSelection())
+                .putString(KEY_MAIN_HEADER_TEXT, s.getMainHeaderText())
+                .putString(KEY_MAIN_HEADER_COLOR, s.getMainHeaderColorHex())
+                .putString(KEY_HEADER_SIZE, s.getHeaderSize())
+                .putString(KEY_BODY_TEXT_SIZE, s.getBodyTextSize())
+                .putString(KEY_FOOTER_TEXT, s.getFooterText() != null ? s.getFooterText() : "")
                 .putString(KEY_LOGO_PATH, s.getLogoPath())
                 .putBoolean(KEY_WATERMARK_ENABLED, s.isWatermarkEnabled())
                 .putString(KEY_WATERMARK_TYPE, s.getWatermarkType())
@@ -146,6 +161,27 @@ public class PdfTemplateStorage {
         saveSavedTemplates(userName, list);
     }
 
+    /**
+     * If a template with the same name (case-insensitive) exists, update it with the new content (keeping the existing id).
+     * Otherwise add as a new template.
+     */
+    public void addOrUpdateSavedTemplate(String userName, SavedTemplate t) {
+        if (t == null) return;
+        if (userName == null) userName = "Offline User";
+        String nameTrim = t.getName() != null ? t.getName().trim() : "";
+        List<SavedTemplate> list = loadSavedTemplates(userName);
+        for (int i = 0; i < list.size(); i++) {
+            SavedTemplate existing = list.get(i);
+            if (existing != null && nameTrim.equalsIgnoreCase(existing.getName() != null ? existing.getName().trim() : "")) {
+                t.setId(existing.getId());
+                list.set(i, t);
+                saveSavedTemplates(userName, list);
+                return;
+            }
+        }
+        addSavedTemplate(userName, t);
+    }
+
     public SavedTemplate getSavedTemplateById(String userName, String id) {
         if (id == null) return null;
         if (userName == null) userName = "Offline User";
@@ -169,6 +205,11 @@ public class PdfTemplateStorage {
                 JSONObject o = new JSONObject();
                 o.put("id", t.getId());
                 o.put("name", t.getName());
+                o.put("mainHeaderText", t.getMainHeaderText());
+                o.put("mainHeaderColorHex", t.getMainHeaderColorHex());
+                o.put("headerSize", t.getHeaderSize() != null ? t.getHeaderSize() : PdfTemplateSettings.HEADER_SIZE_DEFAULT);
+                o.put("bodyTextSize", t.getBodyTextSize() != null ? t.getBodyTextSize() : PdfTemplateSettings.BODY_TEXT_SIZE_DEFAULT);
+                o.put("footerText", t.getFooterText() != null ? t.getFooterText() : JSONObject.NULL);
                 o.put("logoPath", t.getLogoPath() != null ? t.getLogoPath() : JSONObject.NULL);
                 o.put("watermarkEnabled", t.isWatermarkEnabled());
                 o.put("watermarkType", t.getWatermarkType());
@@ -193,6 +234,11 @@ public class PdfTemplateStorage {
                 SavedTemplate t = new SavedTemplate();
                 t.setId(o.optString("id", ""));
                 t.setName(o.optString("name", ""));
+                t.setMainHeaderText(o.optString("mainHeaderText", ""));
+                t.setMainHeaderColorHex(o.optString("mainHeaderColorHex", "#0000FF"));
+                t.setHeaderSize(o.optString("headerSize", PdfTemplateSettings.HEADER_SIZE_DEFAULT));
+                t.setBodyTextSize(o.optString("bodyTextSize", PdfTemplateSettings.BODY_TEXT_SIZE_DEFAULT));
+                t.setFooterText(o.has("footerText") && !o.isNull("footerText") ? o.optString("footerText") : null);
                 t.setLogoPath(o.has("logoPath") && !o.isNull("logoPath") ? o.optString("logoPath") : null);
                 t.setWatermarkEnabled(o.optBoolean("watermarkEnabled", false));
                 t.setWatermarkType(o.optString("watermarkType", PdfTemplateSettings.WATERMARK_TEXT));

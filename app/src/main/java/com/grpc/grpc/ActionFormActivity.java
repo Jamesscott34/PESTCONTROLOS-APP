@@ -1,6 +1,7 @@
 package com.grpc.grpc;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -16,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -45,7 +47,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -207,14 +208,19 @@ public class ActionFormActivity extends AppCompatActivity {
             finish();
         });
         selectImageButton.setOnClickListener(v -> openImageSelector());
+        // AI Fix: same rule as Upload to Firebase (logged in and not Offline User)
         if (aiFixButton != null) {
-            aiFixButton.setOnClickListener(v -> {
-                if (!lastAIResponse.isEmpty()) {
-                    readAIResponseBack();
-                } else {
-                    polishWithAI();
-                }
-            });
+            boolean showAIFix = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
+            if (showAIFix) {
+                aiFixButton.setVisibility(View.VISIBLE);
+                aiFixButton.setOnClickListener(v -> {
+                    if (!lastAIResponse.isEmpty()) {
+                        readAIResponseBack();
+                    } else {
+                        showAIFixFieldPicker();
+                    }
+                });
+            }
         }
         readBackButton.setOnClickListener(v -> readFormBack());
         
@@ -408,7 +414,7 @@ public class ActionFormActivity extends AppCompatActivity {
                 }
             } else if (lowerText.contains("polish form") || lowerText.contains("ai polish")) {
                 Toast.makeText(this, "🤖 Starting AI polish...", Toast.LENGTH_SHORT).show();
-                polishWithAI();
+                showAIFixFieldPicker();
             } else if (lowerText.contains("read back") || lowerText.contains("read form")) {
                 Toast.makeText(this, "📖 Reading form back...", Toast.LENGTH_SHORT).show();
                 readFormBack();
@@ -833,17 +839,23 @@ public class ActionFormActivity extends AppCompatActivity {
     }
 
     private void showSuccessDialog() {
+        boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Action Form PDF Created Successfully!")
                 .setMessage("Your Action Form PDF has been created.")
                 .setPositiveButton("Share PDF", (dialog, which) -> shareActionForm())
-                .setNegativeButton("Upload to Firebase", (dialog, which) -> showFirebaseFolderSelectionPopup())
-                .setNeutralButton("OK", (dialog, which) -> dialog.dismiss())
                 .setCancelable(false);
+        if (showUpload) {
+            builder.setNegativeButton("Upload to Firebase", (dialog, which) -> showFirebaseFolderSelectionPopup())
+                    .setNeutralButton("OK", (dialog, which) -> dialog.dismiss());
+        } else {
+            builder.setNeutralButton("OK", (dialog, which) -> dialog.dismiss());
+        }
         builder.create().show();
     }
 
     private void showSuccessDialog(String password) {
+        boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("🔒 Action Form PDF Created Successfully!")
                 .setMessage("Your Action Form PDF has been created with password protection.\n\n" +
@@ -852,9 +864,13 @@ public class ActionFormActivity extends AppCompatActivity {
                         "🔑 Owner Password: " + password + "\n\n" +
                         "⚠️ Please save this password securely!")
                 .setPositiveButton("Share PDF", (dialog, which) -> shareActionForm())
-                .setNegativeButton("Upload to Firebase", (dialog, which) -> showFirebaseFolderSelectionPopup())
-                .setNeutralButton("OK", (dialog, which) -> dialog.dismiss())
                 .setCancelable(false);
+        if (showUpload) {
+            builder.setNegativeButton("Upload to Firebase", (dialog, which) -> showFirebaseFolderSelectionPopup())
+                    .setNeutralButton("OK", (dialog, which) -> dialog.dismiss());
+        } else {
+            builder.setNeutralButton("OK", (dialog, which) -> dialog.dismiss());
+        }
         builder.create().show();
     }
 
@@ -1023,15 +1039,48 @@ public class ActionFormActivity extends AppCompatActivity {
     }
 
     /**
-     * AI Fix: only Service Report and Recommendations. Professional, grammatically correct, no * or filler. Uses key from Firestore (same as Chat).
+     * Show dialog for logged-in user to choose which fields to update with AI Fix (Service Report, Recommendations).
      */
-    private void polishWithAI() {
+    private void showAIFixFieldPicker() {
         String serviceReport = serviceReportInput.getEditText().getText().toString().trim();
         String recommendations = recommendationsInput.getEditText().getText().toString().trim();
         if (serviceReport.isEmpty() && recommendations.isEmpty()) {
             Toast.makeText(this, "Enter content in Service Report or Recommendations first", Toast.LENGTH_SHORT).show();
             return;
         }
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 10);
+        final CheckBox cbService = new CheckBox(this);
+        cbService.setText("Service Report");
+        cbService.setChecked(!serviceReport.isEmpty());
+        final CheckBox cbRec = new CheckBox(this);
+        cbRec.setText("Recommendations");
+        cbRec.setChecked(!recommendations.isEmpty());
+        layout.addView(cbService);
+        layout.addView(cbRec);
+        new AlertDialog.Builder(this)
+                .setTitle("Which fields to update?")
+                .setView(layout)
+                .setPositiveButton("Fix selected", (dialog, which) -> {
+                    boolean fixService = cbService.isChecked();
+                    boolean fixRec = cbRec.isChecked();
+                    if (!fixService && !fixRec) {
+                        Toast.makeText(this, "Select at least one field.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    polishWithAIFields(fixService, fixRec);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /**
+     * AI Fix: only selected fields (Service Report and/or Recommendations). Professional, grammatically correct, no * or filler. Uses key from Firestore (same as Chat).
+     */
+    private void polishWithAIFields(boolean fixServiceReport, boolean fixRecommendations) {
+        String serviceReport = serviceReportInput.getEditText().getText().toString().trim();
+        String recommendations = recommendationsInput.getEditText().getText().toString().trim();
         if (aiFixButton != null) {
             aiFixButton.setEnabled(false);
             aiFixButton.setText("✏️ Fixing...");
@@ -1040,14 +1089,22 @@ public class ActionFormActivity extends AppCompatActivity {
 
         String systemPrompt = "You are a professional editor for pest control service reports. Rewrite the given text so it is professional, grammatically correct, and suitable for a formal report. Do not use asterisks (*), bullet symbols, or filler words like 'emm' or 'uh'. Add 3 to 4 extra sentences where appropriate to improve clarity and completeness. Output only the revised text.";
         String userPrompt = "Rewrite the following in the exact format below. Plain text only, no markdown.\n\n";
-        if (!serviceReport.isEmpty()) userPrompt += "Service Report: " + serviceReport + "\n\n";
-        else userPrompt += "Service Report: (none)\n\n";
-        if (!recommendations.isEmpty()) userPrompt += "Recommendations: " + recommendations + "\n\n";
-        else userPrompt += "Recommendations: (none)\n\n";
-        userPrompt += "Respond with exactly:\nService Report: [revised text]\n\nRecommendations: [revised text]";
+        if (fixServiceReport) {
+            userPrompt += "Service Report: " + (!serviceReport.isEmpty() ? serviceReport : "(none)") + "\n\n";
+        } else {
+            userPrompt += "Service Report: (skip - do not include in response)\n\n";
+        }
+        if (fixRecommendations) {
+            userPrompt += "Recommendations: " + (!recommendations.isEmpty() ? recommendations : "(none)") + "\n\n";
+        } else {
+            userPrompt += "Recommendations: (skip - do not include in response)\n\n";
+        }
+        userPrompt += "Respond with exactly:\nService Report: [revised text or leave empty if skipped]\n\nRecommendations: [revised text or leave empty if skipped]";
 
         final String finalSystemPrompt = systemPrompt;
         final String finalUserPrompt = userPrompt;
+        final boolean applyService = fixServiceReport;
+        final boolean applyRec = fixRecommendations;
 
         FirebaseFirestore.getInstance().document("AI-Chat/AI-API").get()
                 .addOnSuccessListener(this, docSnap -> {
@@ -1068,7 +1125,7 @@ public class ActionFormActivity extends AppCompatActivity {
                     new Thread(() -> {
                         try {
                             String response = callChatAPI(apiKey, useGroq, finalSystemPrompt, finalUserPrompt);
-                            runOnUiThread(() -> updateUIWithAIPolish(response));
+                            runOnUiThread(() -> updateUIWithAIPolish(response, applyService, applyRec));
                         } catch (Exception e) {
                             runOnUiThread(() -> setAiFixDone("AI Fix failed: " + e.getMessage()));
                         }
@@ -1115,47 +1172,31 @@ public class ActionFormActivity extends AppCompatActivity {
         }
     }
 
-    private void updateUIWithAIPolish(String aiResponse) {
+    private void updateUIWithAIPolish(String aiResponse, boolean applyServiceReport, boolean applyRecommendations) {
         // Store the AI response for read-back functionality
         lastAIResponse = aiResponse;
         
         runOnUiThread(() -> {
             try {
-                // Parse the AI response for Service Report and Recommendations only
                 String serviceReport = "";
                 String recommendations = "";
-                
-                // Extract Service Report
                 if (aiResponse.contains("Service Report:")) {
                     int startIndex = aiResponse.indexOf("Service Report:") + "Service Report:".length();
                     int endIndex = aiResponse.indexOf("Recommendations:");
                     if (endIndex == -1) endIndex = aiResponse.length();
-                    
-                    serviceReport = aiResponse.substring(startIndex, endIndex).trim();
-                    serviceReport = serviceReport.replaceAll("\\*\\*", "").trim();
-                    serviceReport = serviceReport.replaceAll("\"", "").trim();
+                    serviceReport = aiResponse.substring(startIndex, endIndex).trim().replaceAll("\\*\\*", "").replaceAll("\"", "").trim();
                 }
-                
-                // Extract Recommendations
                 if (aiResponse.contains("Recommendations:")) {
                     int startIndex = aiResponse.indexOf("Recommendations:") + "Recommendations:".length();
-                    int endIndex = aiResponse.length();
-                    
-                    recommendations = aiResponse.substring(startIndex, endIndex).trim();
-                    recommendations = recommendations.replaceAll("\\*\\*", "").trim();
-                    recommendations = recommendations.replaceAll("\"", "").trim();
+                    recommendations = aiResponse.substring(startIndex, aiResponse.length()).trim().replaceAll("\\*\\*", "").replaceAll("\"", "").trim();
                 }
-                
-                // Update UI fields (only Service Report and Recommendations)
-                if (!serviceReport.isEmpty()) {
+                if (applyServiceReport && !serviceReport.isEmpty()) {
                     serviceReportInput.getEditText().setText(serviceReport);
                 }
-                if (!recommendations.isEmpty()) {
+                if (applyRecommendations && !recommendations.isEmpty()) {
                     recommendationsInput.getEditText().setText(recommendations);
                 }
-                
                 Toast.makeText(this, "✅ AI Fix completed! Tap AI Fix to hear response.", Toast.LENGTH_LONG).show();
-                
             } catch (Exception e) {
                 Toast.makeText(this, "Error parsing AI response: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             } finally {
@@ -1247,6 +1288,22 @@ public class ActionFormActivity extends AppCompatActivity {
         
         textToSpeech.speak(formText.toString(), TextToSpeech.QUEUE_FLUSH, null, "FORM_READBACK");
         Toast.makeText(this, "📖 Reading Action Form back...", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // AI Fix: same rule as Upload to Firebase (logged in and not Offline User)
+        if (aiFixButton != null) {
+            boolean showAIFix = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
+            aiFixButton.setVisibility(showAIFix ? View.VISIBLE : View.GONE);
+            if (showAIFix && !aiFixButton.hasOnClickListeners()) {
+                aiFixButton.setOnClickListener(v -> {
+                    if (!lastAIResponse.isEmpty()) readAIResponseBack();
+                    else showAIFixFieldPicker();
+                });
+            }
+        }
     }
 
     @Override

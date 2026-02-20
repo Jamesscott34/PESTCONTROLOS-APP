@@ -44,40 +44,29 @@ public class DictateEditText extends FrameLayout {
         LayoutInflater.from(context).inflate(R.layout.edittext_with_dictate, this, true);
         
         editText = findViewById(R.id.editText);
-        dictateButton = findViewById(R.id.dictateButton);
+        dictateButton = null;
         
-        // Always show the dictate button
-        dictateButton.setVisibility(VISIBLE);
-        dictateButton.setAlpha(0.7f);
+        if (dictateButton != null) {
+            dictateButton.setVisibility(VISIBLE);
+            dictateButton.setAlpha(0.7f);
+            dictateButton.setOnClickListener(v -> {
+                if (!isDictating) startDictation();
+                else stopDictation();
+            });
+        }
         
-        // Show dictate button when EditText is focused
         editText.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
-                dictateButton.setAlpha(1.0f);
-            } else {
-                dictateButton.setAlpha(0.7f);
-                if (isDictating) {
-                    stopDictation();
-                }
+            if (dictateButton != null) {
+                if (hasFocus) dictateButton.setAlpha(1.0f);
+                else dictateButton.setAlpha(0.7f);
             }
+            if (!hasFocus && isDictating) stopDictation();
         });
-        
-        // Also show button when EditText is clicked
         editText.setOnClickListener(v -> {
-            dictateButton.setAlpha(1.0f);
+            if (dictateButton != null) dictateButton.setAlpha(1.0f);
         });
         
-        // Dictate button click listener
-        dictateButton.setOnClickListener(v -> {
-            if (!isDictating) {
-                startDictation();
-            } else {
-                stopDictation();
-            }
-        });
-        
-        // Initialize speech recognizer
-        setupSpeechRecognizer();
+        if (dictateButton != null) setupSpeechRecognizer();
     }
 
     private void setupSpeechRecognizer() {
@@ -177,6 +166,7 @@ public class DictateEditText extends FrameLayout {
     }
 
     private void updateDictateButton() {
+        if (dictateButton == null) return;
         if (isDictating) {
             dictateButton.setBackgroundResource(android.R.drawable.ic_media_pause);
             dictateButton.setAlpha(1.0f);

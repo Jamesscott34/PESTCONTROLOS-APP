@@ -397,6 +397,7 @@
                 android:layout_weight="1"
                 android:text="✏️ AI Fix"
                 android:layout_marginEnd="4dp"
+                android:visibility="gone"
                 android:background="@drawable/button_background"
                 android:textColor="?attr/colorOnPrimary" />
 

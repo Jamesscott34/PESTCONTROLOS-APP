@@ -30,7 +30,7 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
 
     // Database Configuration
     private static final String DATABASE_NAME = "grpest_reports.db";
-    private static final int DATABASE_VERSION = 3; // Incremented for quotes support
+    private static final int DATABASE_VERSION = 4; // 4: additive template columns for custom report
 
     // CompanyReports Table
     private static final String TABLE_COMPANY_REPORTS = "CompanyReports";
@@ -44,6 +44,10 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_COMPANY_FOLLOW_UP = "follow_up";
     private static final String COLUMN_COMPANY_PREP = "prep";
     private static final String COLUMN_COMPANY_TECH = "tech";
+    /** Optional: set when report was created from a saved template. */
+    private static final String COLUMN_TEMPLATE_ID = "template_id";
+    /** Optional: body content for template-based reports (Label: value lines). */
+    private static final String COLUMN_TEMPLATE_CONTENT = "template_content";
 
     // Events Table
     private static final String TABLE_EVENTS = "events";
@@ -88,7 +92,7 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
      */
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Company Reports Table
+        // Company Reports Table (template_id and template_content for template-based reports)
         db.execSQL("CREATE TABLE " + TABLE_COMPANY_REPORTS + " (" +
                 COLUMN_COMPANY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_COMPANY_NAME + " TEXT, " +
@@ -99,7 +103,9 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_COMPANY_RECOMMENDATIONS + " TEXT, " +
                 COLUMN_COMPANY_FOLLOW_UP + " TEXT, " +
                 COLUMN_COMPANY_PREP + " TEXT, " +
-                COLUMN_COMPANY_TECH + " TEXT)");
+                COLUMN_COMPANY_TECH + " TEXT, " +
+                COLUMN_TEMPLATE_ID + " TEXT, " +
+                COLUMN_TEMPLATE_CONTENT + " TEXT)");
 
         // Events Table
         db.execSQL("CREATE TABLE " + TABLE_EVENTS + " (" +
@@ -131,15 +137,25 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Upgrades the database by dropping and recreating tables.
+     * Upgrades the database. Version 4: add template_id and template_content to CompanyReports
+     * without dropping tables (additive, backward compatible).
      */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_COMPANY_REPORTS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_EVENTS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_QUOTES);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_BIRD_QUOTES);
-        onCreate(db);
+        if (oldVersion < 3) {
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_COMPANY_REPORTS);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_EVENTS);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_QUOTES);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_BIRD_QUOTES);
+            onCreate(db);
+        } else if (oldVersion < 4) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_COMPANY_REPORTS + " ADD COLUMN " + COLUMN_TEMPLATE_ID + " TEXT");
+            } catch (Exception ignored) { /* column may already exist */ }
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_COMPANY_REPORTS + " ADD COLUMN " + COLUMN_TEMPLATE_CONTENT + " TEXT");
+            } catch (Exception ignored) { /* column may already exist */ }
+        }
     }
 
     /**

@@ -9,7 +9,9 @@ import androidx.annotation.RequiresApi;
 
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.events.Event;
 import com.itextpdf.kernel.events.IEventHandler;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
@@ -94,7 +96,7 @@ public class PDFReportGeneratorWithTemplate {
             pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new CustomWatermarkAndFooterHandler(context, settings));
 
             addCustomHeader(document, context, settings);
-            PDFReportGenerator.addReportBodyToDocument(document, content, context, imageUris);
+            PDFReportGenerator.addReportBodyToDocument(document, content, context, imageUris, settings.getHeaderSize(), settings.getBodyTextSize());
 
             document.close();
             Toast.makeText(context, "PDF Created Successfully!", Toast.LENGTH_SHORT).show();
@@ -124,49 +126,58 @@ public class PDFReportGeneratorWithTemplate {
     }
 
     private static void addCustomHeader(Document document, Context context, PdfTemplateSettings settings) {
+        // Logo first (same size as PDFReportGenerator: 200x200), then main header below
         Image logo = loadLogoImage(context, settings);
         if (logo != null) {
             logo.scaleToFit(LOGO_MAX_WIDTH, LOGO_MAX_HEIGHT).setHorizontalAlignment(HorizontalAlignment.CENTER);
             document.add(logo);
         }
-
-        for (PdfTemplateSettings.HeaderBlock block : settings.getHeaderBlocks()) {
-            if (PdfTemplateSettings.BLOCK_IMAGE.equals(block.getBlockType())) {
-                Image img = loadHeaderImage(context, block.getImagePath());
-                if (img != null) {
-                    img.scaleToFit(HEADER_IMAGE_MAX_WIDTH, HEADER_IMAGE_MAX_WIDTH).setHorizontalAlignment(HorizontalAlignment.CENTER);
-                    document.add(img);
-                }
-            } else {
-                Paragraph p = formatHeaderText(block.getText(), block.getTextStyle());
-                if (p != null) document.add(p);
-            }
+        String mainHeader = settings.getMainHeaderText() != null ? settings.getMainHeaderText().trim() : "";
+        if (!mainHeader.isEmpty()) {
+            Color headerColor = parseHexColor(settings.getMainHeaderColorHex());
+            float mainHeaderFontSize = getMainHeaderFontSize(settings.getHeaderSize());
+            Paragraph mainHeaderP = new Paragraph(mainHeader)
+                    .setFontSize(mainHeaderFontSize).setBold().setFontColor(headerColor).setTextAlignment(TextAlignment.CENTER);
+            document.add(mainHeaderP);
         }
         document.add(new Paragraph("\n"));
     }
 
-    private static Image loadLogoImage(Context context, PdfTemplateSettings settings) {
-        if (settings.getLogoPath() != null && !settings.getLogoPath().isEmpty()) {
-            File f = new File(settings.getLogoPath());
-            if (f.exists()) {
-                try {
-                    byte[] bytes = new byte[(int) f.length()];
-                    try (FileInputStream fis = new FileInputStream(f)) {
-                        fis.read(bytes);
-                    }
-                    return new Image(ImageDataFactory.create(bytes));
-                } catch (IOException ignored) {
-                    // fall through to drawable
-                }
-            }
+    private static Color parseHexColor(String hex) {
+        if (hex == null || !hex.startsWith("#") || hex.length() != 7) return ColorConstants.BLUE;
+        try {
+            int r = Integer.parseInt(hex.substring(1, 3), 16);
+            int g = Integer.parseInt(hex.substring(3, 5), 16);
+            int b = Integer.parseInt(hex.substring(5, 7), 16);
+            return new DeviceRgb(r, g, b);
+        } catch (Exception e) {
+            return ColorConstants.BLUE;
         }
-        int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
-        if (logoResourceId != 0) {
+    }
+
+    private static Image loadLogoImage(Context context, PdfTemplateSettings settings) {
+        String path = settings.getLogoPath();
+        if (path == null || path.isEmpty()) return null;
+        if (PdfTemplateSettings.USE_DEFAULT_LOGO.equals(path)) {
             try {
-                ImageData logoData = ImageDataFactory.create(context.getResources().openRawResource(logoResourceId).readAllBytes());
-                return new Image(logoData);
+                int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
+                if (logoResourceId != 0) {
+                    byte[] bytes = context.getResources().openRawResource(logoResourceId).readAllBytes();
+                    return new Image(ImageDataFactory.create(bytes));
+                }
             } catch (Exception ignored) {
-                // return null
+            }
+            return null;
+        }
+        File f = new File(path);
+        if (f.exists()) {
+            try {
+                byte[] bytes = new byte[(int) f.length()];
+                try (FileInputStream fis = new FileInputStream(f)) {
+                    fis.read(bytes);
+                }
+                return new Image(ImageDataFactory.create(bytes));
+            } catch (IOException ignored) {
             }
         }
         return null;
@@ -185,6 +196,12 @@ public class PDFReportGeneratorWithTemplate {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    private static float getMainHeaderFontSize(String headerSize) {
+        if (PdfTemplateSettings.HEADER_SIZE_BIGGER.equals(headerSize)) return 22f;
+        if (PdfTemplateSettings.HEADER_SIZE_SMALLER.equals(headerSize)) return 14f;
+        return 18f;
     }
 
     private static Paragraph formatHeaderText(String text, String textStyle) {
@@ -237,28 +254,21 @@ public class PDFReportGeneratorWithTemplate {
                             doc.add(wm);
                         }
                     } else {
-                        Paragraph wmText = new Paragraph(settings.getWatermarkText() != null ? settings.getWatermarkText() : "")
-                                .setFontSize(48).setFontColor(ColorConstants.LIGHT_GRAY).setOpacity(0.3f);
-                        float approxWidth = Math.min(pageWidth * 0.8f, 400);
-                        wmText.setFixedPosition((pageWidth - approxWidth) / 2, pageHeight / 2 - 24, approxWidth);
-                        wmText.setTextAlignment(TextAlignment.CENTER);
-                        doc.add(wmText);
-                    }
-                } else {
-                    int watermarkResourceId = context.getResources().getIdentifier("bk", "drawable", context.getPackageName());
-                    if (watermarkResourceId != 0) {
-                        try {
-                            ImageData watermarkData = ImageDataFactory.create(context.getResources().openRawResource(watermarkResourceId).readAllBytes());
-                            Image watermark = new Image(watermarkData).scaleToFit(500, 500).setFixedPosition(pageWidth / 4, pageHeight / 4);
-                            watermark.setOpacity(0.1f);
-                            doc.add(watermark);
-                        } catch (Exception ignored) {
-                            // skip default watermark if resource unavailable
+                        String wmTextOnly = settings.getWatermarkText() != null ? settings.getWatermarkText().trim() : "";
+                        if (!wmTextOnly.isEmpty()) {
+                            Paragraph wmText = new Paragraph(wmTextOnly)
+                                    .setFontSize(48).setFontColor(ColorConstants.LIGHT_GRAY).setOpacity(0.3f);
+                            float approxWidth = Math.min(pageWidth * 0.8f, 400);
+                            wmText.setFixedPosition((pageWidth - approxWidth) / 2, pageHeight / 2 - 24, approxWidth);
+                            wmText.setTextAlignment(TextAlignment.CENTER);
+                            doc.add(wmText);
                         }
                     }
                 }
 
-                Paragraph footer = new Paragraph("This report was generated by GRPC Reporting System")
+                String footerStr = settings.getFooterText();
+                if (footerStr == null || footerStr.trim().isEmpty()) footerStr = "Created by reporting system";
+                Paragraph footer = new Paragraph(footerStr.trim())
                         .setFontSize(12).setTextAlignment(TextAlignment.CENTER)
                         .setFixedPosition(pageWidth / 2 - 150, 20, 300);
                 doc.add(footer);

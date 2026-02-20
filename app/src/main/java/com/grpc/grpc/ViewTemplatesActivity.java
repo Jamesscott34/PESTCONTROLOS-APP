@@ -8,6 +8,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.List;
@@ -71,16 +72,37 @@ public class ViewTemplatesActivity extends AppCompatActivity {
             useButton.setText("Use");
             useButton.setOnClickListener(v -> useTemplate(t.getId()));
 
+            Button deleteButton = new Button(this);
+            deleteButton.setText("Delete");
+            deleteButton.setOnClickListener(v -> confirmDeleteTemplate(t));
+
             row.addView(nameLabel);
             row.addView(useButton);
+            row.addView(deleteButton);
             templatesContainer.addView(row);
         }
     }
 
+    /** Ask for confirmation then delete the template and refresh the list. */
+    private void confirmDeleteTemplate(SavedTemplate template) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete template?")
+                .setMessage("Delete \"" + template.getName() + "\"? This cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    storage.deleteSavedTemplate(userName, template.getId());
+                    Toast.makeText(this, "Template deleted.", Toast.LENGTH_SHORT).show();
+                    loadTemplates();
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    /** Opens Create Custom Report with the selected template: dynamic headers + body fields, Save Report, Add Image, Password protect. */
     private void useTemplate(String templateId) {
         Intent intent = new Intent(this, ReportActivity.class);
         intent.putExtra("USER_NAME", userName);
         intent.putExtra(EXTRA_TEMPLATE_ID, templateId);
+        intent.putExtra("USE_MY_TEMPLATE", true); // Show PDF template section and My Template selected
         startActivity(intent);
         Toast.makeText(this, "Fill in the report and save to use this template.", Toast.LENGTH_SHORT).show();
         finish();

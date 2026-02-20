@@ -37,64 +37,129 @@
             android:layout_marginBottom="16dp"
             android:textColor="?android:attr/textColorPrimary" />
 
-        <!-- Input field for property name -->
-        <com.grpc.grpc.DictateEditText
-            android:id="@+id/nameInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-
-        <!-- Input field for address -->
-        <com.grpc.grpc.DictateEditText
-            android:id="@+id/addressInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-
-        <!-- Date and Time -->
-        <EditText
-            android:id="@+id/dateInput"
+        <!-- Report form choice: Default or Select template (visible when opened via Create Custom Report) -->
+        <LinearLayout
+            android:id="@+id/reportFormChoiceSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginBottom="12dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Report form"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
+                <Button
+                    android:id="@+id/reportFormDefaultButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Default"
+                    android:layout_marginEnd="4dp" />
+                <Button
+                    android:id="@+id/reportFormSelectTemplateButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Select template..."
+                    android:layout_marginStart="4dp"
+                    android:backgroundTint="?attr/colorSecondary"
+                    android:textColor="?attr/colorOnSecondary" />
+            </LinearLayout>
+        </LinearLayout>
 
-        <!-- Visit type -->
-        <com.grpc.grpc.DictateEditText
-            android:id="@+id/visitTypeInput"
+        <!-- Fixed report body (used when no template selected). Template-based report uses dynamicTemplateContainer. -->
+        <LinearLayout
+            android:id="@+id/reportBodyContainer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-        <!-- Site inspection -->
-        <com.grpc.grpc.DictateEditText
-            android:id="@+id/siteInspectionInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            <!-- Input field for property name -->
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/nameInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"/>
 
-        <!-- Recommendations -->
-        <com.grpc.grpc.DictateEditText
-            android:id="@+id/recommendationsInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            <!-- Input field for address -->
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/addressInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"/>
 
-        <!-- Prep steps -->
-        <com.grpc.grpc.DictateEditText
-            android:id="@+id/prepInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            <!-- Date and Time -->
+            <EditText
+                android:id="@+id/dateInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/edit_text_border"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary"/>
 
-        <!-- Follow up -->
-        <com.grpc.grpc.DictateEditText
-            android:id="@+id/followUpInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            <!-- Visit type -->
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/visitTypeInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"/>
 
-        <!-- Technician name -->
-        <com.grpc.grpc.DictateEditText
-            android:id="@+id/techInput"
+            <!-- Site inspection -->
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/siteInspectionInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Recommendations -->
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/recommendationsInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Prep steps -->
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/prepInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Follow up -->
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/followUpInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Technician name -->
+            <com.grpc.grpc.DictateEditText
+                android:id="@+id/techInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"/>
+
+        </LinearLayout>
+
+        <!-- Dynamic template body: header+field pairs when a saved template is selected. Initially empty and hidden. -->
+        <LinearLayout
+            android:id="@+id/dynamicTemplateContainer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginBottom="8dp" />
 
         <!-- Image button -->
         <Button
@@ -114,13 +179,14 @@
             android:backgroundTint="?attr/colorSecondary"
             android:textColor="?attr/colorOnSecondary"/>
 
-        <!-- AI Fix: professional grammar for Site Inspection and Recommendations only -->
+        <!-- AI Fix: only visible when logged in (offline users must not see this) -->
         <Button
             android:id="@+id/aiFixButton"
             android:text="✏️ AI Fix"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:visibility="gone"
             android:background="@drawable/button_background"
             android:textColor="?attr/colorOnPrimary"/>
 
