@@ -1,4 +1,4 @@
-# GRPC (GRPest Control) — Android + Firebase Platform
+# GRPC (GRPest Control) - Reporting System
 
 This repository contains a production-style Android application used by GRPest Control staff to manage **contracts**, **jobs**, **work scheduling**, **reports**, **messaging**, **leads/commission**, and **in-app notifications**, backed by **Firebase (Firestore + Storage)**. **Cloud Functions are optional** for automation (cleanup/schedules). **LLM APIs** (Groq / Hugging Face) power in-app AI Chat and report polish (AI Fix); keys are maintained by admin via app settings.
 
