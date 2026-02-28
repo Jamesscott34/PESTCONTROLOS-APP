@@ -18,24 +18,24 @@ The same diagram in Mermaid (renders on GitHub/GitLab and in many Markdown viewe
 
 ```mermaid
 flowchart LR
-  subgraph Device[Android device]
-    A[Android app (Java)\nActivities + Workers + Widget]
-    L[(Local storage)\nSharedPreferences + app files]
-    WM[WorkManager\nreminders + periodic tasks]
-    SR[SpeechRecognizer + TTS]
+  subgraph Device["Android device"]
+    A["Android app - Java\nActivities + Workers + Widget"]
+    L["Local storage\nSharedPreferences + app files"]
+    WM["WorkManager\nreminders + periodic tasks"]
+    SR["SpeechRecognizer + TTS"]
   end
 
-  subgraph Firebase[Firebase backend]
-    AUTH[Auth\nemail/password]
-    FS[Firestore\nusers, jobs, contracts, leads,\nmessages, notifications]
-    ST[Storage\nReportsYY/... PDFs]
-    FN[Cloud Functions (callable)\nadmin key updates etc]
-    AC[App Check\n(should be Play Integrity in prod)]
+  subgraph Firebase["Firebase backend"]
+    AUTH["Auth\nemail/password"]
+    FS["Firestore\nusers, jobs, contracts, leads\nmessages, notifications"]
+    ST["Storage\nReportsYY/... PDFs"]
+    FN["Cloud Functions callable\nadmin key updates etc"]
+    AC["App Check\nPlay Integrity in prod"]
   end
 
-  subgraph AI[External AI providers]
-    G[Groq\nOpenAI-compatible Chat Completions]
-    HF[Hugging Face Router\nOpenAI-compatible Chat Completions]
+  subgraph AI["External AI providers"]
+    G["Groq\nOpenAI-compatible Chat Completions"]
+    HF["Hugging Face Router\nOpenAI-compatible Chat Completions"]
   end
 
   A --> AUTH
