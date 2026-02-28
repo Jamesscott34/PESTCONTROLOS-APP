@@ -1,0 +1,33 @@
+flowchart LR
+  subgraph Device[Android device]
+    A[Android app (Java)\nActivities + Workers + Widget]
+    L[(Local storage)\nSharedPreferences + app files]
+    WM[WorkManager\nreminders + periodic tasks]
+    SR[SpeechRecognizer + TTS]
+  end
+
+  subgraph Firebase[Firebase backend]
+    AUTH[Auth\nemail/password]
+    FS[Firestore\nusers, jobs, contracts, leads,\nmessages, notifications]
+    ST[Storage\nReportsYY/... PDFs]
+    FN[Cloud Functions (callable)\nadmin key updates etc]
+    AC[App Check\n(should be Play Integrity in prod)]
+  end
+
+  subgraph AI[External AI providers]
+    G[Groq\nOpenAI-compatible Chat Completions]
+    HF[Hugging Face Router\nOpenAI-compatible Chat Completions]
+  end
+
+  A --> AUTH
+  A --> FS
+  A --> ST
+  A --> FN
+  A --> AC
+
+  A --> G
+  A --> HF
+
+  A --> L
+  A --> WM
+  A --> SR

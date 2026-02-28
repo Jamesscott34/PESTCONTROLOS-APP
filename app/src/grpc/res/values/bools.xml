@@ -1,0 +1,5 @@
+<resources>
+    <!-- GRPC production tenant: show the GRPC Staff portal button. -->
+    <bool name="show_grpcstaff_portal">true</bool>
+</resources>
+

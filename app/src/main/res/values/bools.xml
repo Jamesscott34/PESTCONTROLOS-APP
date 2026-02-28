@@ -1,0 +1,5 @@
+<resources>
+    <!-- Default to OFF for safety: only GRPC tenant should show grpcstaff portal button. -->
+    <bool name="show_grpcstaff_portal">false</bool>
+</resources>
+

@@ -1,0 +1,4 @@
+<resources>
+    <!-- Demo: show Visit website button (opens pestcontrolos.ie). -->
+    <bool name="show_grpcstaff_portal">true</bool>
+</resources>

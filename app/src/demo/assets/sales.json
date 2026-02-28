@@ -1,0 +1,164 @@
+[
+  {
+    "categoryKey": "rodents",
+    "categoryName": "Rodents",
+    "items": [
+      {
+        "key": "rodent_rats_internal",
+        "displayName": "Rats – Internal (3 Visit Programme)",
+        "quoteBreakdown": "Comprehensive internal rat control programme delivered over three structured visits to ensure effective eradication and long-term prevention.\n\nFirst Visit: A full and detailed inspection of the property is completed to identify signs of activity, entry points, harbourage areas, food sources and contributing factors. Professional-grade, tamper-resistant bait stations are then strategically installed throughout key internal locations. All bait points are positioned discreetly (out of sight where possible) and placed in a safe, controlled manner.\n\nSecond Visit: All bait stations are inspected and monitored. Bait levels are assessed and replenished where necessary to maintain control pressure. Any reachable deceased rodents are safely removed and disposed of in accordance with environmental guidance.\n\nThird Visit: A final inspection is carried out to confirm control has been achieved. Minor proofing works identified during the programme (such as sealing small gaps, repairing minor entry points, or closing accessible void access) will be completed on site where feasible.\n\nThis structured approach provides consistent monitoring, effective control and practical prevention support to reduce the likelihood of re-infestation.",
+        "description": "Three-visit internal rat control programme including inspection, discreet bait placement, monitoring and minor proofing works to reduce re-infestation risk."
+      },
+      {
+        "key": "rodent_rats_external",
+        "displayName": "Rats – External (3 Visit Programme)",
+        "quoteBreakdown": "Structured external rat control programme delivered over three scheduled visits, designed to target rodent activity around the perimeter of the property and reduce the risk of entry indoors.\n\nFirst Visit: A comprehensive external inspection is conducted covering perimeter walls, bin/waste areas, sheds, gardens, boundary lines and potential harbourage zones. Secure, tamper-resistant external bait stations are installed at strategic points to target active travel routes and feeding areas.\n\nSecond Visit: All bait stations are inspected, monitored and replenished where required. Any accessible deceased rodents are safely removed where reachable.\n\nThird Visit: Final inspection to confirm control and complete minor proofing works where practical (e.g., sealing small gaps, addressing minor access points, and advising on environmental improvements).\n\nImportant Drainage Note: For rat activity, drainage systems may require baiting as part of effective control. Additional services such as rat flap installation, drain surveys, camera inspections, or “look-see” investigations may be recommended depending on site findings. Any additional charges will be clearly explained, and pricing will be provided by the technician on site for approval before proceeding.",
+        "description": "Three-visit external rat control programme with perimeter inspection, secured bait stations, monitoring, and optional drainage-related recommendations where required."
+      },
+      {
+        "key": "rodent_mice",
+        "displayName": "Mice (3 Visit Programme)",
+        "quoteBreakdown": "Professional mouse control programme delivered over three structured visits to ensure effective elimination and long-term prevention.\n\nFirst Visit: A detailed inspection is carried out to identify entry points, nesting areas, activity routes and contributing food sources. Discreet bait stations and/or trapping systems are installed strategically throughout affected areas, placed out of sight where possible to minimise disruption while ensuring effective coverage.\n\nSecond Visit: Monitoring of all bait stations and traps is completed. Consumables are replenished where required and any reachable deceased rodents are safely removed and disposed of appropriately.\n\nThird Visit: Final inspection to confirm control. Minor proofing works (such as sealing small gaps and entry points) will be completed on site where feasible.\n\nGuidance is also provided regarding hygiene, food storage practices, and structural improvements to help prevent future infestation.",
+        "description": "Three-visit mouse control programme including inspection, discreet baiting/trapping, monitoring, removal of reachable rodents and minor proofing works where required."
+      }
+    ]
+  },
+  {
+    "categoryKey": "birds",
+    "categoryName": "Birds",
+    "items": [
+      {
+        "key": "bird_pigeons_solar_panel",
+        "displayName": "Pigeons – Solar Panel Proofing",
+        "quoteBreakdown": "Specialist pigeon proofing service designed to prevent pigeons nesting and roosting beneath solar panel arrays.\n\nThe service begins with a roof-level inspection to identify access points, nesting activity, and contamination risks. Where required, accessible debris may be removed prior to installation. A high-quality galvanised or stainless-steel solar mesh system is then fitted around the perimeter of the solar panel array. This forms a durable barrier that prevents birds accessing the cavity beneath the panels while maintaining airflow and ensuring the solar system continues to perform efficiently.\n\nInstallations are completed carefully to protect roof integrity and to avoid interference with solar panel function or warranties where applicable.",
+        "description": "Solar panel bird-proofing using durable mesh installation to prevent pigeons nesting under panels while maintaining airflow and system performance."
+      },
+      {
+        "key": "bird_pigeons_chimney",
+        "displayName": "Pigeons – Chimney Proofing",
+        "quoteBreakdown": "Professional chimney bird proofing solution to prevent pigeons roosting and nesting within chimney pots and surrounding roofline areas.\n\nThe service includes inspection of chimney access points and nesting evidence. Where legally appropriate and safely accessible, nesting material may be removed. A durable stainless-steel chimney guard/cap is installed to block entry while maintaining correct ventilation and airflow.\n\nThis solution prevents blockages, odours, nesting debris build-up and long-term contamination issues.",
+        "description": "Chimney bird-proofing using fitted guards/caps to prevent pigeon nesting while maintaining safe ventilation and airflow."
+      },
+      {
+        "key": "bird_seagull_solar_panel",
+        "displayName": "Seagull – Solar Panel Proofing",
+        "quoteBreakdown": "Heavy-duty solar panel bird proofing solution designed specifically for larger species such as seagulls.\n\nThis service includes inspection of roof access points and nesting behaviour, with removal of accessible nesting material where legally permitted. A reinforced solar mesh barrier is then installed around the solar panel array to prevent birds accessing the cavity beneath.\n\nThe system is designed to withstand exposed conditions (including coastal/high-wind environments) while maintaining airflow and solar panel efficiency. This reduces disturbance, contamination, and the risk of roof damage caused by nesting activity.",
+        "description": "Reinforced solar mesh proofing to prevent seagulls nesting beneath panels, reducing contamination and roof damage while maintaining airflow."
+      },
+      {
+        "key": "bird_seagull_chimney",
+        "displayName": "Seagull – Chimney Proofing",
+        "quoteBreakdown": "Reinforced chimney protection system designed to prevent seagulls nesting and roosting on chimney structures.\n\nThe service includes inspection and installation of a heavy-duty chimney guard suited to larger bird species. The guard prevents entry while maintaining ventilation and safe airflow.\n\nThis protects against nesting debris, blockages, contamination and ongoing roofline disturbance.",
+        "description": "Heavy-duty chimney guards installed to prevent seagull nesting/roosting, protecting against debris build-up and contamination."
+      },
+      {
+        "key": "bird_starling_gutter_front",
+        "displayName": "Starling – Front Gutter Protection",
+        "quoteBreakdown": "Targeted starling deterrent and proofing solution for the front gutter and roofline areas of the property.\n\nA site inspection identifies vulnerable perching and nesting points. Professional stainless-steel bird spikes and/or mesh protection is installed where required. Bird spikes are discreet deterrent strips designed to prevent perching and nesting without harming birds, while mesh can be used to close off accessible gaps.\n\nThis service helps prevent gutter blockages, water overflow, staining and structural issues caused by nesting debris.",
+        "description": "Front gutter bird-proofing using stainless-steel spikes and/or mesh to prevent starling nesting and reduce blockages, overflow and damage."
+      },
+      {
+        "key": "bird_starling_gutter_back",
+        "displayName": "Starling – Rear Gutter Protection",
+        "quoteBreakdown": "Rear elevation gutter protection service to prevent starling nesting and debris accumulation.\n\nFollowing inspection, stainless-steel bird spikes are installed along vulnerable perching points and/or mesh is fitted where access gaps require closure. The system prevents nesting and reduces the risk of gutter blockages and water overflow.\n\nThis improves gutter performance and reduces long-term maintenance and property damage risk.",
+        "description": "Rear gutter bird-proofing with spikes and/or mesh to prevent starling nesting, improving drainage performance and reducing maintenance risk."
+      },
+      {
+        "key": "bird_starling_gutter_all",
+        "displayName": "Starling – Full Gutter Protection",
+        "quoteBreakdown": "Comprehensive gutter and roofline protection service covering all elevations (front, rear and sides).\n\nFollowing a full inspection, professional stainless-steel bird spikes are installed along all vulnerable perching areas, and mesh protection is applied where required to prevent nesting access.\n\nThis property-wide solution significantly reduces nesting, protects gutter drainage performance, prevents overflow and damp issues, and reduces maintenance requirements over the long term.",
+        "description": "Property-wide gutter protection using spikes and mesh to prevent starling nesting across all elevations, reducing blockages and long-term damage."
+      }
+    ]
+  },
+  {
+    "categoryKey": "wildlife",
+    "categoryName": "Wildlife",
+    "items": [
+      {
+        "key": "wildlife_foxes",
+        "displayName": "Foxes",
+        "quoteBreakdown": "Humane fox management and deterrent service designed to reduce unwanted fox activity and associated damage.\n\nA full site inspection is carried out to identify access routes, den locations (where present) and attractants such as unsecured waste, food sources or shelter areas. Based on findings, appropriate deterrent measures and practical exclusion recommendations are provided.\n\nCustomers receive guidance on waste control, boundary improvements and environmental changes to reduce repeat activity. All actions are carried out in line with humane wildlife practices.",
+        "description": "Humane fox deterrent service with site inspection, identification of attractants, and practical exclusion guidance to reduce recurring activity."
+      },
+      {
+        "key": "wildlife_squirrels",
+        "displayName": "Squirrels",
+        "quoteBreakdown": "Specialist squirrel control and prevention service for lofts, roof voids and external structures.\n\nThe service includes inspection to identify entry points, nesting areas and damage risk (including insulation disturbance and potential wiring hazards). Appropriate control measures are implemented where permitted, and detailed proofing recommendations are provided to prevent re-entry.\n\nCustomers receive preventative guidance focused on structural sealing, tree access reduction and long-term protection.",
+        "description": "Squirrel inspection, control and prevention service with proofing recommendations to reduce re-entry and protect roof voids and wiring."
+      }
+    ]
+  },
+  {
+    "categoryKey": "insects",
+    "categoryName": "Insects",
+    "items": [
+      {
+        "key": "insect_silverfish_single",
+        "displayName": "Silverfish – Single Visit",
+        "quoteBreakdown": "Professional silverfish treatment suitable for light to moderate activity.\n\nIncludes a detailed inspection focusing on damp and humid environments such as bathrooms, kitchens, utility rooms, skirting boards and void spaces. Targeted application of professional-grade insecticidal products is completed at harbourage points and movement routes.\n\nPractical advice is provided on moisture reduction, ventilation improvements and hygiene actions to reduce conditions that support silverfish activity.",
+        "description": "Targeted silverfish treatment with inspection and professional application to harbourage areas, plus moisture and prevention guidance."
+      },
+      {
+        "key": "insect_silverfish_3_visit",
+        "displayName": "Silverfish – 3 Visit Programme",
+        "quoteBreakdown": "Structured three-visit silverfish control programme designed for persistent or recurring infestations.\n\nFirst Visit: Full inspection and initial targeted treatment of key harbourage zones.\nSecond Visit: Follow-up inspection to assess activity levels, re-treatment of hotspots and adjustment of treatment strategy where required.\nThird Visit: Final inspection and treatment reinforcement where necessary, with preventative recommendations to reduce re-occurrence.\n\nThis programme applies consistent control pressure across the silverfish lifecycle for improved long-term results.",
+        "description": "Three-visit silverfish programme including inspection, follow-up treatments and prevention guidance to improve long-term results."
+      },
+      {
+        "key": "insect_ants_single_visit",
+        "displayName": "Ants – Single Visit",
+        "quoteBreakdown": "Single visit ant control treatment designed to reduce visible activity and treat primary access points.\n\nThe service includes inspection to identify likely nesting zones and entry routes, followed by a professional treatment strategy using residual insecticidal application and/or targeted baiting depending on the environment.\n\nCustomers receive guidance on food storage, sanitation, and reducing attractants to help prevent further activity.",
+        "description": "Single-visit ant treatment with inspection, targeted application and practical prevention guidance to reduce future activity."
+      },
+      {
+        "key": "insect_ants_3_visit",
+        "displayName": "Ants – 3 Visit Programme",
+        "quoteBreakdown": "Three-visit ant control programme recommended for established infestations or recurring activity.\n\nFirst Visit: Detailed inspection, identification of trails and entry routes, and initial treatment strategy (baiting and/or residual treatment).\nSecond Visit: Monitoring and reassessment of activity with follow-up treatment to disrupt colony strength.\nThird Visit: Final inspection and reinforcement treatment where required, with preventative recommendations provided.\n\nThis structured programme improves long-term control by applying consistent pressure across the infestation cycle.",
+        "description": "Three-visit ant programme with inspection, monitoring and follow-up treatments to disrupt colony strength and reduce recurrence."
+      },
+      {
+        "key": "insect_ants_seasonal",
+        "displayName": "Ants – Seasonal (Up to 6 Sprays)",
+        "quoteBreakdown": "Seasonal ant control programme designed for properties that experience recurring ant activity throughout the warmer months.\n\nThis service includes up to 6 treatment visits (sprays) across the active ant season. Treatments are carried out as required until the end of the ant season, typically running through September and in many cases into October depending on activity and weather.\n\nEach visit includes inspection of current activity points, targeted treatment of trails and access routes, and adjustments to the treatment plan where necessary. Ongoing prevention advice is provided throughout the programme to reduce attractants and help prevent recurring infestations.",
+        "description": "Seasonal ant programme including up to 6 sprays, delivered as needed through the ant season (typically until September/October)."
+      },
+      {
+        "key": "insect_wasps_treatment",
+        "displayName": "Wasps – Treatment",
+        "quoteBreakdown": "Professional wasp nest treatment service for active nests located in roof spaces, soffits, sheds, cavity walls and external structures.\n\nThe service includes identification of the nest entry point, safe application of an approved professional insecticidal treatment, and guidance on preventing further nesting in vulnerable areas.\n\nTreatment is designed to neutralise activity effectively and safely with minimal disruption to the property.",
+        "description": "Professional wasp nest treatment with safe application of approved insecticide and preventative guidance to reduce re-nesting risk."
+      },
+      {
+        "key": "insect_wasps_nest_removal",
+        "displayName": "Wasps – Nest Removal",
+        "quoteBreakdown": "Wasp nest removal service carried out once activity has been neutralised and it is safe to remove the nest structure.\n\nWhere accessible and suitable, the nest is removed from the property to reduce contamination risk and prevent re-use of the nest area.\n\nRemoval is subject to safe access and site conditions and is typically performed following a completed treatment.",
+        "description": "Wasp nest removal (where safe and accessible) after treatment has neutralised activity, helping reduce contamination and repeat nesting."
+      },
+      {
+        "key": "insect_bees",
+        "displayName": "Bees",
+        "quoteBreakdown": "Bee management service carried out in line with environmental and wildlife guidance.\n\nThe service includes assessment of bee activity, identification of likely nesting location, and determination of the most appropriate course of action. Where possible, relocation or referral to an appropriate specialist channel is recommended.\n\nBee-related issues are handled with care to protect pollinator populations while addressing safety concerns for occupants.",
+        "description": "Bee assessment and management service with responsible guidance and referral/relocation options where appropriate."
+      },
+      {
+        "key": "insect_cockroaches_single_visit",
+        "displayName": "Cockroaches – Single Visit",
+        "quoteBreakdown": "Professional single-visit cockroach treatment suitable for light or early-stage infestations.\n\nIncludes detailed inspection of harbourage areas such as kitchens, utility rooms, void spaces, behind appliances and drainage points. Specialist professional-grade gel bait formulations are applied strategically to targeted zones, alongside residual insecticide treatment where appropriate.\n\nThis service is designed for minor activity and includes hygiene and sanitation guidance to reduce the risk of recurrence.",
+        "description": "Single-visit cockroach treatment with inspection, targeted gel baiting and hygiene guidance for early-stage or light activity."
+      },
+      {
+        "key": "insect_cockroaches_4_visit",
+        "displayName": "Cockroaches – 4 Visit Programme",
+        "quoteBreakdown": "Structured four-visit cockroach control programme recommended for moderate infestations or properties experiencing ongoing activity.\n\nFirst Visit: Comprehensive inspection and targeted gel bait application to identified harbourage areas and movement routes.\nSecond Visit: Monitoring of bait consumption, reassessment of infestation levels and additional treatment where required.\nThird Visit: Continued monitoring and reinforcement treatment to disrupt breeding cycles.\nFourth Visit: Final inspection to confirm eradication, with preventative recommendations provided.\n\nThis structured approach applies consistent treatment pressure across the cockroach life cycle and improves long-term control outcomes.",
+        "description": "Four-visit cockroach programme with inspection, monitoring and follow-up treatments to disrupt breeding cycles and confirm eradication."
+      },
+      {
+        "key": "insect_cockroaches_6_visit",
+        "displayName": "Cockroaches – 6 Visit Programme",
+        "quoteBreakdown": "Comprehensive six-visit cockroach eradication programme designed for severe, established or high-risk infestations, including commercial environments.\n\nFirst Visit: Detailed inspection and implementation of an intensive treatment strategy using advanced gel bait systems and residual insecticides where appropriate.\nSecond to Fifth Visits: Ongoing monitoring, reinforcement treatments targeting newly emerged nymphs, and bait rotation where necessary to support effectiveness and reduce resistance risks.\nSixth Visit: Final inspection, validation of control and preventative guidance to minimise re-infestation.\n\nThis extended programme is designed to fully disrupt breeding cycles and ensure long-term elimination of persistent cockroach populations.",
+        "description": "Six-visit intensive cockroach eradication programme for severe or commercial infestations, with monitoring, reinforcement and final validation."
+      }
+    ]
+  }
+]
