@@ -29,7 +29,7 @@ public class GeneralQuotationFromCatalogActivity extends AppCompatActivity {
 
     private static final double VAT_RATE = 0.135;
 
-    private EditText customerNameInput, customerAddressInput, dateInput, basePriceInput, basePriceInput2, additionalInfoInput, descriptionShortInput;
+    private EditText customerNameInput, customerAddressInput, dateInput, basePriceInput, basePriceInput2, additionalInfoInput;
     private Spinner issueSpinner, issueSpinner2;
     private TextView vatValue, totalValue;
     private Button generatePdfButton, addSecondIssueButton;
@@ -65,7 +65,6 @@ public class GeneralQuotationFromCatalogActivity extends AppCompatActivity {
         customerAddressInput = findViewById(R.id.customerAddressInput);
         dateInput = findViewById(R.id.dateInput);
         issueSpinner = findViewById(R.id.issueSpinner);
-        descriptionShortInput = findViewById(R.id.descriptionShortInput);
         basePriceInput = findViewById(R.id.basePriceInput);
         addSecondIssueButton = findViewById(R.id.addSecondIssueButton);
         secondIssueSection = findViewById(R.id.secondIssueSection);
@@ -229,10 +228,9 @@ public class GeneralQuotationFromCatalogActivity extends AppCompatActivity {
         if (mobileNumber == null) mobileNumber = "";
 
         String additionalInfo = additionalInfoInput != null ? additionalInfoInput.getText().toString().trim() : "";
-        String descriptionShort = descriptionShortInput != null ? descriptionShortInput.getText().toString().trim() : "";
         GeneralQuotationPDF.generateCatalogQuotation(
                 customerName, address, dateStr,
-                item1, basePrice, item2, basePrice2, descriptionShort, additionalInfo,
+                item1, basePrice, item2, basePrice2, additionalInfo,
                 userEmail, mobileNumber, ownerPassword,
                 this);
     }

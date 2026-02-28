@@ -199,7 +199,7 @@ public class GeneralQuotationPDF {
             String customerName, String address, String dateStr,
             SalesCatalog.SalesItem item, double basePrice,
             SalesCatalog.SalesItem item2, double basePrice2,
-            String descriptionShort, String additionalInfo,
+            String additionalInfo,
             String userEmail, String mobileNumber, String ownerPassword,
             Context context) {
 
@@ -225,14 +225,14 @@ public class GeneralQuotationPDF {
         // Quote breakdown section: long text from sales.json quoteBreakdown
         String quoteBreakdown1 = item != null ? item.getQuoteBreakdown() : "";
         String quoteBreakdown2 = hasSecondLine && item2 != null ? item2.getQuoteBreakdown() : "";
-        // Description section: short text only (sales.json description or user input)
-        String shortDesc = (descriptionShort != null && !descriptionShort.trim().isEmpty()) ? descriptionShort.trim() : "";
-        if (shortDesc.isEmpty() && item != null && item.getDescription() != null && !item.getDescription().trim().isEmpty()) shortDesc = item.getDescription().trim();
+        // Description section (under Quote Breakdown): short text from sales.json "description" only
+        String shortDesc = "";
+        if (item != null && item.getDescription() != null && !item.getDescription().trim().isEmpty()) shortDesc = item.getDescription().trim();
         if (shortDesc.isEmpty() && hasSecondLine && item2 != null && item2.getDescription() != null && !item2.getDescription().trim().isEmpty()) shortDesc = item2.getDescription().trim();
         if (shortDesc.isEmpty() && item != null) shortDesc = item.getDisplayName();
-        // Table line labels: short description per line
-        String line1Label = (item != null && item.getDescription() != null && !item.getDescription().trim().isEmpty()) ? item.getDescription().trim() : (item != null ? item.getDisplayName() : "");
-        String line2Label = (hasSecondLine && item2 != null && item2.getDescription() != null && !item2.getDescription().trim().isEmpty()) ? item2.getDescription().trim() : (hasSecondLine && item2 != null ? item2.getDisplayName() : "");
+        // Table line labels: display name only (description is shown once in Description section above)
+        String line1Label = item != null ? item.getDisplayName() : "";
+        String line2Label = (hasSecondLine && item2 != null) ? item2.getDisplayName() : "";
 
         WriterProperties writerProperties = new WriterProperties();
         writerProperties.setFullCompressionMode(true);

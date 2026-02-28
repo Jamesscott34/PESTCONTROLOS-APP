@@ -349,4 +349,4 @@ Working with customer data, location information and AI services demands careful
 
 For questions, please contact the maintainer or open an issue in the associated repository. Remember to provide device logs (with sensitive data removed) and describe the steps to reproduce your issue.
 
-The staff CRM/portal that shares this Firebase backend is hosted at [https://grpcstaff.ie](https://grpcstaff.ie) (and [https://www.grpcstaff.ie](https://www.grpcstaff.ie)).
+The staff CRM/portal that shares this Firebase backend is hosted at [https://pestcontrolos.ie](https://pestcontrolos.ie) (and [https://www.pestcontrolos.ie](https://www.pestcontrolos.ie)).

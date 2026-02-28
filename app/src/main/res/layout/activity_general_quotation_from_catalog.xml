@@ -81,20 +81,6 @@
             android:background="@drawable/edit_text_border" />
 
         <EditText
-            android:id="@+id/descriptionShortInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/general_quotation_description_hint"
-            android:minLines="1"
-            android:maxLines="2"
-            android:inputType="textCapSentences"
-            android:layout_marginBottom="12dp"
-            android:padding="12dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary" />
-
-        <EditText
             android:id="@+id/basePriceInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
