@@ -373,8 +373,14 @@ public class ViewContractActivity extends AppCompatActivity {
                 return;
             }
         }
-        // Tech/non-admin: load only their own contracts collection
-        loadContractsForSelection(userId);
+        // Tech/non-admin: load own contracts by ContractKey (collection is "Dean Contracts", not "003 Contracts")
+        // Prefer ContractKey from session; if it looks like StaffID (e.g. "003") use userName so collection name is correct
+        String contractKey = SessionManager.getContractKey(this);
+        if (contractKey != null && !contractKey.trim().isEmpty() && !contractKey.trim().matches("\\d{3}")) {
+            loadContractsForSelection(contractKey.trim());
+        } else {
+            loadContractsForSelection(userName != null ? userName.trim() : userId);
+        }
     }
 
     private void loadContractsForSelection(String techIdOrAll) {
@@ -560,7 +566,11 @@ public class ViewContractActivity extends AppCompatActivity {
             else if (userName != null && !userName.trim().isEmpty())
                 loadContractsForSelection(userName.trim());
         } else {
-            String tableName = StaffDirectory.getContractsCollectionNameFromAnyKey(userName);
+            // Tech: use ContractKey (collection "Dean Contracts"); if session has StaffID like "003" use userName
+            String key = SessionManager.getContractKey(this);
+            if (key == null || key.trim().isEmpty() || key.trim().matches("\\d{3}")) key = userName;
+            if (key == null || key.trim().isEmpty()) key = userId;
+            String tableName = StaffDirectory.getContractsCollectionNameFromAnyKey(key);
             Log.d("ViewContractActivity", "Loading collection: " + tableName);
             final String ownerName = tableName.replace(" Contracts", "");
 

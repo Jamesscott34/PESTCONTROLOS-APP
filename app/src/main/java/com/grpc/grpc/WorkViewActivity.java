@@ -294,11 +294,18 @@ public class WorkViewActivity extends AppCompatActivity {
                                 finish(); // Destroy this activity
                                 return true;
                             } else {
-                                // Swipe left - open ViewContractActivity (previous in sequence)
-                                Log.d("WorkViewActivity", "Swipe LEFT detected - opening ViewContractActivity with user: " + userName);
-                                Intent intent = new Intent(WorkViewActivity.this, ViewContractActivity.class);
-                                intent.putExtra("USER_NAME", userName);
-                                startActivity(intent);
+                                // Swipe left - admins: View Contract; techs: Main (no view contract)
+                                if (SessionManager.isAdmin(WorkViewActivity.this)) {
+                                    Log.d("WorkViewActivity", "Swipe LEFT detected - opening ViewContractActivity with user: " + userName);
+                                    Intent intent = new Intent(WorkViewActivity.this, ViewContractActivity.class);
+                                    intent.putExtra("USER_NAME", userName);
+                                    startActivity(intent);
+                                } else {
+                                    Log.d("WorkViewActivity", "Swipe LEFT detected - opening MainActivity with user: " + userName);
+                                    Intent intent = new Intent(WorkViewActivity.this, MainActivity.class);
+                                    intent.putExtra("USER_NAME", userName);
+                                    startActivity(intent);
+                                }
                                 finish(); // Destroy this activity
                                 return true;
                             }

@@ -438,11 +438,18 @@ public class MainActivity extends AppCompatActivity {
                     if (Math.abs(diffX) > Math.abs(diffY)) {
                         if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                             if (diffX > 0) {
-                                // Swipe right - open ViewContractActivity
-                                Log.d("MainActivity", "Swipe RIGHT detected - opening ViewContractActivity with user: " + userName);
-                                Intent intent = new Intent(MainActivity.this, ViewContractActivity.class);
-                                intent.putExtra("USER_NAME", userName);
-                                startActivity(intent);
+                                // Swipe right - admins: View Contract; techs: Work View only
+                                if (SessionManager.isAdmin(MainActivity.this)) {
+                                    Log.d("MainActivity", "Swipe RIGHT detected - opening ViewContractActivity with user: " + userName);
+                                    Intent intent = new Intent(MainActivity.this, ViewContractActivity.class);
+                                    intent.putExtra("USER_NAME", userName);
+                                    startActivity(intent);
+                                } else {
+                                    Log.d("MainActivity", "Swipe RIGHT detected - opening WorkViewActivity (work view) with user: " + userName);
+                                    Intent intent = new Intent(MainActivity.this, WorkViewActivity.class);
+                                    intent.putExtra("USER_NAME", userName);
+                                    startActivity(intent);
+                                }
                                 finish(); // Destroy this activity
                                 return true;
                             } else {

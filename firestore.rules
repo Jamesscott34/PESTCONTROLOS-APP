@@ -152,10 +152,7 @@ service cloud.firestore {
       allow read: if signedIn() && isAdmin();
 
       // Staff profile docs (3-digit StaffIDs)
-      //
-      // NOTE: During first login, the app may not have created users/{uid}.StaffID yet.
-      // SessionManager will temporarily resolve StaffID by email and read users/{StaffID}.
-      // Allow that single staff doc read by matching the Firebase Auth email to the staff profile Email.
+      // First login: app may not have users/{uid} yet, so it looks up by email. Allow read when doc Email matches auth email.
       allow read: if signedIn() && isStaffId(userId) && (
         userId == myStaffId()
         || isAdmin()
@@ -182,15 +179,10 @@ service cloud.firestore {
     // - Admin visibility is done via fan-out writes to admin inboxes.
     // ============================================================
     match /notifications/{staffId}/items/{itemId} {
-      // Read:
-      // - user reads own inbox
-      // - admins may read any inbox (CRM-friendly; app doesn't require this)
+      // Read: user reads own inbox; admins may read any inbox
       allow read: if signedIn() && (staffId == myStaffId() || isAdmin());
 
-      // Writes:
-      // - user writes own inbox
-      // - any signed-in user may write into admin inboxes (fan-out)
-      // - admins may write anywhere (e.g., commission update notifying technician)
+      // Writes: user writes own inbox; any signed-in user may write into admin inboxes; admins may write anywhere
       allow create, update, delete: if signedIn()
         && (
           staffId == myStaffId()
@@ -201,6 +193,7 @@ service cloud.firestore {
 
     // ============================================================
     // Contracts collections: "{ContractKey} Contracts"
+    // Read: admin or own collection (work view). Create/update/delete: admin only (no view contract).
     // ============================================================
     match /{contractCollection}/{contractId} {
       allow read: if signedIn()
@@ -210,24 +203,9 @@ service cloud.firestore {
           || (effectiveContractKeyLower() != '' && contractCollection.lower() == (effectiveContractKeyLower() + ' contracts'))
         );
 
-      // Create/update allowed for own contract collection; delete admin-only.
-      allow create: if signedIn()
+      allow create, update, delete: if signedIn()
         && contractCollection.matches('.* Contracts')
-        && (
-          isAdmin()
-          || (effectiveContractKeyLower() != '' && contractCollection.lower() == (effectiveContractKeyLower() + ' contracts'))
-        );
-
-      allow update: if signedIn()
-        && contractCollection.matches('.* Contracts')
-        && (
-          isAdmin()
-          || (effectiveContractKeyLower() != '' && contractCollection.lower() == (effectiveContractKeyLower() + ' contracts')
-              // Prevent non-admin ownership transfer via updates.
-              && request.resource.data.get('owner', resource.data.get('owner', '')) == resource.data.get('owner', ''))
-        );
-
-      allow delete: if signedIn() && isAdmin();
+        && isAdmin();
     }
 
     // ============================================================
@@ -236,22 +214,19 @@ service cloud.firestore {
     match /JobWork/{jobId} {
       allow read, write, delete: if signedIn() && isAdmin();
 
-      // Tech reads jobs assigned to them (AssignedTechKey canonical; AssignedTech legacy)
       allow read: if isTech() && (
         resource.data.get('AssignedTechKey', '').lower() == effectiveContractKeyLower()
         || resource.data.get('AssignedTech', '').lower() == effectiveContractKeyLower()
       );
 
-      // Tech can create only for themselves
       allow create: if isTech()
         && request.resource.data.get('AssignedTechKey', '').lower() == effectiveContractKeyLower();
 
-      // Tech can update their own jobs, but cannot reassign
       allow update: if isTech()
         && request.resource.data.get('AssignedTechKey', '').lower() == effectiveContractKeyLower()
         && (
-          resource.data.get('AssignedTechKey', '').lower() == '' ||
-          resource.data.get('AssignedTechKey', '').lower() == request.resource.data.get('AssignedTechKey', '').lower()
+          resource.data.get('AssignedTechKey', '').lower() == ''
+          || resource.data.get('AssignedTechKey', '').lower() == request.resource.data.get('AssignedTechKey', '').lower()
         );
     }
 
@@ -276,19 +251,14 @@ service cloud.firestore {
     // Leads
     // ============================================================
     match /Leads/{leadId} {
-      // Admin full
       allow read, write, delete: if signedIn() && isAdmin();
 
-      // Tech read: added-by or assigned-tech
       allow read: if isTech() && (
         resource.data.get('Added By', '').lower() == effectiveContractKeyLower()
         || resource.data.get('Assigned Tech', '').lower() == effectiveContractKeyLower()
       );
 
-      // Any signed-in user can create leads
       allow create: if signedIn();
-
-      // Tech updates allowed (tighten later if desired)
       allow update: if isTech();
     }
 
