@@ -1,4 +1,4 @@
-# GRPC (GRPest Control) – Field Operations Platform
+# Pestcontrolos Android App – Field Operations Platform
 
 This repository contains a full‑featured **field operations app** for the GRPest Control company. It is built in **Java** for Android and backed by **Firebase** (Authentication, Firestore, Storage) with optional **Cloud Functions** and **LLM APIs**. The primary goal is to streamline field work such as scheduling, contracts, jobs, reports, messaging and leads while giving admins and technicians tailored tools and in‑app notifications.
 
