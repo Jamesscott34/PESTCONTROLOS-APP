@@ -37,6 +37,7 @@ private Button buttonCreateJob, buttonViewJob, buttonCreateManagmentJob, buttonV
 protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_jobs_selection);
+    if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
     db = FirebaseFirestore.getInstance();
 
@@ -47,7 +48,16 @@ protected void onCreate(Bundle savedInstanceState) {
 
     // Set the welcome message
     TextView welcomeTextView = findViewById(R.id.welcomeTextView);
-    welcomeTextView.setText("Welcome, " + userName + "!");
+    if (welcomeTextView != null) {
+        welcomeTextView.setText("Welcome, " + userName + "!");
+    }
+    SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+        if (welcomeTextView == null) return;
+        String name = SessionManager.getName(this);
+        if (name != null && !name.trim().isEmpty()) {
+            welcomeTextView.setText("Welcome, " + name.trim() + "!");
+        }
+    }));
 
     // Ensure USER_NAME is valid
     if (userName == null || userName.trim().isEmpty()) {

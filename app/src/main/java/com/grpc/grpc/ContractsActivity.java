@@ -20,7 +20,7 @@
  * 2. BEHINDS LIST GENERATION
  *    - Automated identification of overdue contracts
  *    - PDF report generation for overdue services
- *    - Special handling for user 004 (dual collection access)
+ *    - Special handling for admin/oversight access
  *    - Professional formatting with company branding
  * 
  * 3. CONTRACT VIEWING & SEARCH
@@ -50,7 +50,7 @@
  * 
  * USER ROLES & PERMISSIONS:
  * - Technicians: Manage their own contracts and generate behinds lists
- * - User 004: Access to multiple contract collections
+ * - Admin users: Access to multiple contract collections
  * - Administrators: Full contract management and reporting access
  * - All users: Contract viewing and basic management capabilities
  * 
@@ -120,6 +120,7 @@ public class ContractsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_contract_selection);
+        if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
         // ============================================================================
         // FIREBASE INITIALIZATION
@@ -218,6 +219,13 @@ public class ContractsActivity extends AppCompatActivity {
         android.widget.TextView welcomeTextView = findViewById(R.id.welcomeTextView);
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
+            SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+                if (welcomeTextView == null) return;
+                String name = SessionManager.getName(this);
+                if (name != null && !name.trim().isEmpty()) {
+                    welcomeTextView.setText("Welcome, " + name.trim() + "!");
+                }
+            }));
         }
     }
 
@@ -266,36 +274,50 @@ public class ContractsActivity extends AppCompatActivity {
         // Show loading message
         Toast.makeText(this, "Generating behinds list...", Toast.LENGTH_SHORT).show();
 
-        if ("004".equals(StaffDirectory.getUserId(userName))) {
-            generateBehindsListForKristine();
-        } else {
-            String tableName = userName + " Contracts";
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            if (SessionManager.seesAllJobs(this)) {
+                generateBehindsListForAdmin();
+            } else {
+                // Use ContractKey from users/{StaffID} when available (via StaffDirectory cache).
+                String ownerId = StaffDirectory.getUserId(userName);
+                String tableName = ownerId != null ? StaffDirectory.getContractsCollectionName(ownerId) : (userName + " Contracts");
+                final String ownerLabel = ownerId != null ? StaffDirectory.getContractsCollectionName(ownerId).replace(" Contracts", "") : userName;
 
-            db.collection(tableName).get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    List<Map<String, Object>> contractsList = new ArrayList<>();
-                    for (QueryDocumentSnapshot document : task.getResult()) {
-                        Map<String, Object> contract = document.getData();
-                        contract.put("documentId", document.getId());
-                        contract.put("owner", userName);
-                        contractsList.add(contract);
+                db.collection(tableName).get().addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<Map<String, Object>> contractsList = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Map<String, Object> contract = document.getData();
+                            contract.put("documentId", document.getId());
+                            contract.put("owner", ownerLabel);
+                            contractsList.add(contract);
+                        }
+                        // Move heavy processing to background thread
+                        new ProcessContractsAsyncTask().execute(contractsList, ownerLabel);
+                    } else {
+                        Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
-                    // Move heavy processing to background thread
-                    new ProcessContractsAsyncTask().execute(contractsList, userName);
-                } else {
-                    Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+                });
+            }
+        }));
     }
 
     /**
-     * Generates separate behinds list PDFs per contract technician when user is 004.
+     * Generates separate behinds list PDFs per contract owner when user is admin/oversight.
      */
-    private void generateBehindsListForKristine() {
-        String[] contractCollections = new String[StaffDirectory.CONTRACT_TECHNICIAN_IDS.length];
-        for (int i = 0; i < StaffDirectory.CONTRACT_TECHNICIAN_IDS.length; i++)
-            contractCollections[i] = StaffDirectory.getContractsCollectionName(StaffDirectory.CONTRACT_TECHNICIAN_IDS[i]);
+    private void generateBehindsListForAdmin() {
+        java.util.List<String> contractCollectionsList = new java.util.ArrayList<>();
+        try {
+            for (StaffDirectory.StaffProfile p : StaffDirectory.getCachedStaffProfiles()) {
+                if (p == null) continue;
+                String ck = p.contractKey != null ? p.contractKey.trim() : "";
+                if (!ck.isEmpty()) contractCollectionsList.add(ck + " Contracts");
+            }
+        } catch (Exception ignored) {}
+        if (contractCollectionsList.isEmpty() && userName != null && !userName.trim().isEmpty()) {
+            contractCollectionsList.add(userName.trim() + " Contracts");
+        }
+        String[] contractCollections = contractCollectionsList.toArray(new String[0]);
         Map<String, List<Map<String, Object>>> technicianContracts = new HashMap<>();
         int[] loadedCount = {0};
 
@@ -336,36 +358,49 @@ public class ContractsActivity extends AppCompatActivity {
         // Show loading message
         Toast.makeText(this, "Generating due list...", Toast.LENGTH_SHORT).show();
 
-        if ("004".equals(StaffDirectory.getUserId(userName))) {
-            generateDueListForKristine();
-        } else {
-            String tableName = userName + " Contracts";
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            if (SessionManager.seesAllJobs(this)) {
+                generateDueListForAdmin();
+            } else {
+                String ownerId = StaffDirectory.getUserId(userName);
+                String tableName = ownerId != null ? StaffDirectory.getContractsCollectionName(ownerId) : (userName + " Contracts");
+                final String ownerLabel = ownerId != null ? StaffDirectory.getContractsCollectionName(ownerId).replace(" Contracts", "") : userName;
 
-            db.collection(tableName).get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    List<Map<String, Object>> contractsList = new ArrayList<>();
-                    for (QueryDocumentSnapshot document : task.getResult()) {
-                        Map<String, Object> contract = document.getData();
-                        contract.put("documentId", document.getId());
-                        contract.put("owner", userName);
-                        contractsList.add(contract);
+                db.collection(tableName).get().addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<Map<String, Object>> contractsList = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Map<String, Object> contract = document.getData();
+                            contract.put("documentId", document.getId());
+                            contract.put("owner", ownerLabel);
+                            contractsList.add(contract);
+                        }
+                        // Move heavy processing to background thread
+                        new ProcessDueContractsAsyncTask().execute(contractsList, ownerLabel);
+                    } else {
+                        Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
-                    // Move heavy processing to background thread
-                    new ProcessDueContractsAsyncTask().execute(contractsList, userName);
-                } else {
-                    Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+                });
+            }
+        }));
     }
 
     /**
-     * Generates separate due list PDFs per contract technician when user is 004.
+     * Generates separate due list PDFs per contract owner when user is admin/oversight.
      */
-    private void generateDueListForKristine() {
-        String[] contractCollections = new String[StaffDirectory.CONTRACT_TECHNICIAN_IDS.length];
-        for (int i = 0; i < StaffDirectory.CONTRACT_TECHNICIAN_IDS.length; i++)
-            contractCollections[i] = StaffDirectory.getContractsCollectionName(StaffDirectory.CONTRACT_TECHNICIAN_IDS[i]);
+    private void generateDueListForAdmin() {
+        java.util.List<String> contractCollectionsList = new java.util.ArrayList<>();
+        try {
+            for (StaffDirectory.StaffProfile p : StaffDirectory.getCachedStaffProfiles()) {
+                if (p == null) continue;
+                String ck = p.contractKey != null ? p.contractKey.trim() : "";
+                if (!ck.isEmpty()) contractCollectionsList.add(ck + " Contracts");
+            }
+        } catch (Exception ignored) {}
+        if (contractCollectionsList.isEmpty() && userName != null && !userName.trim().isEmpty()) {
+            contractCollectionsList.add(userName.trim() + " Contracts");
+        }
+        String[] contractCollections = contractCollectionsList.toArray(new String[0]);
         Map<String, List<Map<String, Object>>> technicianContracts = new HashMap<>();
         int[] loadedCount = {0};
 
@@ -481,7 +516,7 @@ public class ContractsActivity extends AppCompatActivity {
         try {
             Uri fileUri = FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     file
             );
 
@@ -504,7 +539,7 @@ public class ContractsActivity extends AppCompatActivity {
         try {
             Uri fileUri = FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     file
             );
 

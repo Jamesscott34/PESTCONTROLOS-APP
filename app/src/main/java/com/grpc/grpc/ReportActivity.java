@@ -140,6 +140,9 @@ public class ReportActivity extends AppCompatActivity {
     private GestureDetectorCompat gestureDetector;
     private static final int SWIPE_THRESHOLD = 50;
     private static final int SWIPE_VELOCITY_THRESHOLD = 50;
+    /** Only allow swipe navigation when gesture starts near screen edges (reduces accidental swipes while editing). */
+    private int swipeEdgeWidthPx;
+    private boolean swipeNavEligible;
 
     // ============================================================================
     // ACTION BUTTONS - User interface controls
@@ -203,6 +206,12 @@ public class ReportActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_report);
 
+        // Offline app: using "My Template" (custom template) requires demo sign-up or latest offline app
+        if (BuildConfig.IS_OFFLINE && getIntent().getBooleanExtra("USE_MY_TEMPLATE", false)) {
+            OfflineTrialHelper.openWebsiteAndFinish(this, getString(R.string.main_website_url), getString(R.string.offline_custom_template_blocked));
+            return;
+        }
+
         // ============================================================================
         // USER AUTHENTICATION & VALIDATION
         // ============================================================================
@@ -239,6 +248,23 @@ public class ReportActivity extends AppCompatActivity {
         // ============================================================================
         
         initializeInputFields();
+
+        // Auto-fill technician name where possible (manual override preserved)
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            try {
+                if (techInput != null) {
+                    android.widget.EditText et = techInput.getEditText();
+                    String existing = et != null && et.getText() != null ? et.getText().toString().trim() : "";
+                    if (existing.isEmpty()) {
+                        String name = SessionManager.getName(this);
+                        if (name == null || name.trim().isEmpty()) name = userName;
+                        if (et != null) et.setText(name);
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }));
+
         initializeButtons();
         setupPdfTemplateSectionVisibility();
         applyCreateCustomReportIntent();
@@ -251,6 +277,10 @@ public class ReportActivity extends AppCompatActivity {
         
         // Initialize gesture detector for swipe navigation
         initializeGestureDetector();
+
+        // Swipe nav: require edge-start to avoid accidental navigation while typing/scrolling
+        float density = getResources().getDisplayMetrics().density;
+        swipeEdgeWidthPx = (int) (24f * density);
 
         // ============================================================================
         // INITIALIZE AI AND VOICE FEATURES
@@ -369,6 +399,10 @@ public class ReportActivity extends AppCompatActivity {
                     float diffY = e2.getY() - e1.getY();
                     
                     if (Math.abs(diffX) > Math.abs(diffY)) {
+                        // Prevent accidental left/right navigation while editing a report.
+                        if (HorizontalSwipeGuard.shouldBlock(ReportActivity.this)) {
+                            return false;
+                        }
                         if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                             if (diffX > 0) {
                                 // Swipe right - open MainActivity
@@ -402,8 +436,27 @@ public class ReportActivity extends AppCompatActivity {
      */
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
-        if (gestureDetector.onTouchEvent(event)) {
-            return true;
+        try {
+            if (event != null) {
+                int action = event.getActionMasked();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    // If user is editing (focused input or any typed content), disable left/right swipe nav.
+                    if (HorizontalSwipeGuard.shouldBlock(this)) {
+                        swipeNavEligible = false;
+                        return super.dispatchTouchEvent(event);
+                    }
+                    float x = event.getX();
+                    int w = getWindow() != null && getWindow().getDecorView() != null ? getWindow().getDecorView().getWidth() : 0;
+                    swipeNavEligible = (w > 0) && (x <= swipeEdgeWidthPx || x >= (w - swipeEdgeWidthPx));
+                }
+                if (swipeNavEligible && gestureDetector != null && gestureDetector.onTouchEvent(event)) {
+                    return true;
+                }
+                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    swipeNavEligible = false;
+                }
+            }
+        } catch (Exception ignored) {
         }
         return super.dispatchTouchEvent(event);
     }
@@ -468,6 +521,14 @@ public class ReportActivity extends AppCompatActivity {
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
             Log.d("ReportActivity", "Welcome message set for user: " + userName);
+            SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+                if (welcomeTextView == null) return;
+                String name = SessionManager.getName(this);
+                if (name != null && !name.trim().isEmpty()) {
+                    welcomeTextView.setText("Welcome, " + name.trim() + "!");
+                    Log.d("ReportActivity", "Welcome message set from profile Name: " + name);
+                }
+            }));
         } else {
             Log.e("ReportActivity", "welcomeTextView is NULL! Check XML ID.");
         }
@@ -497,6 +558,28 @@ public class ReportActivity extends AppCompatActivity {
                 startActivity(intent);
             });
         }
+
+        // General Quotation (catalog-driven from sales.json per flavor)
+        Button generalQuotationButton = findViewById(R.id.generalQuotationButton);
+        if (generalQuotationButton != null) {
+            generalQuotationButton.setOnClickListener(v -> {
+                Intent intent = new Intent(ReportActivity.this, GeneralQuotationFromCatalogActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                if (nameInput != null && nameInput.getEditText() != null) {
+                    String name = nameInput.getEditText().getText() != null ? nameInput.getEditText().getText().toString().trim() : "";
+                    if (!name.isEmpty()) intent.putExtra("PREFILL_CUSTOMER_NAME", name);
+                }
+                if (addressInput != null && addressInput.getEditText() != null) {
+                    String addr = addressInput.getEditText().getText() != null ? addressInput.getEditText().getText().toString().trim() : "";
+                    if (!addr.isEmpty()) intent.putExtra("PREFILL_CUSTOMER_ADDRESS", addr);
+                }
+                if (dateInput != null && dateInput.getText() != null) {
+                    String dt = dateInput.getText().toString().trim();
+                    if (!dt.isEmpty()) intent.putExtra("PREFILL_DATE", dt);
+                }
+                startActivity(intent);
+            });
+        }
         
         // Back button - returns to previous screen
         backButton.setOnClickListener(v -> {
@@ -509,13 +592,9 @@ public class ReportActivity extends AppCompatActivity {
         // Image selection button - opens image picker
         selectImageButton.setOnClickListener(v -> openImageSelector());
         
-        // AI Fix button - same rule as Upload to Firebase: only when logged in and not Offline User
+        // AI Fix button: temporarily hidden for all users (backend logic retained)
         if (aiFixButton != null) {
-            boolean showAIFix = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
-            if (showAIFix) {
-                aiFixButton.setVisibility(View.VISIBLE);
-                aiFixButton.setOnClickListener(v -> showAIFixFieldPicker());
-            }
+            aiFixButton.setVisibility(View.GONE);
         }
         
 
@@ -969,7 +1048,11 @@ public class ReportActivity extends AppCompatActivity {
         for (File f : files) {
             if (f.lastModified() > latestFile.lastModified()) latestFile = f;
         }
-        Uri uri = androidx.core.content.FileProvider.getUriForFile(this, "com.grpc.grpc.fileprovider", latestFile);
+        Uri uri = androidx.core.content.FileProvider.getUriForFile(
+                this,
+                BuildConfig.APPLICATION_ID + ".fileprovider",
+                latestFile
+        );
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/pdf");
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -1006,7 +1089,7 @@ public class ReportActivity extends AppCompatActivity {
 
             Uri fileUri = androidx.core.content.FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     latestFile
             );
 
@@ -1890,14 +1973,8 @@ public class ReportActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // AI Fix: same rule as Upload to Firebase (logged in and not Offline User)
-        if (aiFixButton != null) {
-            boolean showAIFix = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
-            aiFixButton.setVisibility(showAIFix ? View.VISIBLE : View.GONE);
-            if (showAIFix && !aiFixButton.hasOnClickListeners()) {
-                aiFixButton.setOnClickListener(v -> showAIFixFieldPicker());
-            }
-        }
+        // AI Fix: temporarily hidden for all users (backend logic retained)
+        if (aiFixButton != null) aiFixButton.setVisibility(View.GONE);
     }
     
     /**

@@ -157,13 +157,15 @@ public class WorkViewActivity extends AppCompatActivity {
             "16:30 - 17:30"
     };
 
-    private static final String[] TECHNICIAN_IDS = StaffDirectory.ORDERED_USER_IDS;
+    // Dynamic staff list is fetched from Firestore when needed (no hardcoded staff IDs/names).
+    private static final String[] TECHNICIAN_IDS = new String[0];
 
     /** Prevents double-tap on Mark as Done (idempotent save). */
     private final Set<String> markDoneInProgress = new HashSet<>();
 
     private boolean canManageOtherWorkViews() {
-        return StaffDirectory.seesAllJobsUserId(StaffDirectory.getUserId(userName));
+        SessionManager.ensureLoaded(this, null);
+        return SessionManager.seesAllJobs(this);
     }
 
     /**
@@ -175,6 +177,7 @@ public class WorkViewActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_work_view);
+        if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
         // ============================================================================
         // FIREBASE INITIALIZATION
@@ -194,6 +197,10 @@ public class WorkViewActivity extends AppCompatActivity {
             Toast.makeText(this, "User not set. Please log in again.", Toast.LENGTH_SHORT).show();
             finish();
             return;
+        }
+        // Normalize ContractKey to capital so "james" -> "James" and contract collection "James Contracts" loads
+        if (!userName.matches("\\d{3}") && !userName.contains(" ")) {
+            userName = StaffDirectory.capitalizeContractKey(userName);
         }
         ActiveUserContext.setActiveUserName(this, userName);
         Log.d("WorkViewActivity", "WorkViewActivity created with user: " + userName);
@@ -338,19 +345,29 @@ public class WorkViewActivity extends AppCompatActivity {
         TextView welcomeTextView = findViewById(R.id.welcomeTextView);
         if (welcomeTextView != null) {
             welcomeTextView.setText("Work View - " + userName);
+            SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+                if (welcomeTextView == null) return;
+                String name = SessionManager.getName(this);
+                if (name != null && !name.trim().isEmpty()) {
+                    welcomeTextView.setText("Work View - " + name.trim());
+                }
+            }));
         }
     }
 
     /**
-     * Get the user-specific collection name for Firebase
-     * Creates separate collections for each user (e.g., "james_workview", "ian_workview")
+     * Get the user-specific WorkView collection name for Firebase.
+     * Contract/WorkView convention: use ContractKey (not full name). Collection name is
+     * lowercase(ContractKey) + "_workview" (e.g. "user_a_workview"). Contracts use
+     * getContractsCollectionNameFromAnyKey (e.g. "User_A Contracts" with capital C).
      */
     private String getUserWorkViewCollection() {
         return getCollectionForUser(userName);
     }
 
+    /** WorkView collection = lowercase(ContractKey) + "_workview". */
     private String getCollectionForUser(String user) {
-        return user.toLowerCase(Locale.getDefault()) + "_workview";
+        return user != null ? user.trim().toLowerCase(Locale.getDefault()) + "_workview" : "_workview";
     }
 
     private String getCollectionForEvent(WorkEvent event) {
@@ -469,7 +486,7 @@ public class WorkViewActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         String dateString = sdf.format(date);
 
-        // Users 002 and 004 see a combined calendar for all technicians
+        // Admin/oversight users see a combined calendar for all technicians
         if (canManageOtherWorkViews()) {
             loadEventsForDateAllUsers(dateString);
             return;
@@ -519,53 +536,68 @@ public class WorkViewActivity extends AppCompatActivity {
      * Load events for a specific date across all technicians (combined view)
      */
     private void loadEventsForDateAllUsers(String dateString) {
-        List<WorkEvent> allEvents = new ArrayList<>();
-        final int[] completed = {0};
+        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+            List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
+            if (opts.isEmpty()) {
+                // Fallback: show only the current user's calendar (avoids stale/hardcoded identity).
+                opts = new ArrayList<>();
+                String me = SessionManager.getContractKey(this);
+                if (me == null || me.trim().isEmpty()) me = userName;
+                if (me == null) me = "";
+                me = me.trim();
+                if (!me.isEmpty()) {
+                    opts.add(new StaffDirectory.OwnerOption("", me, me));
+                }
+            }
 
-        for (String techId : TECHNICIAN_IDS) {
-            String tech = StaffDirectory.getFallbackDisplayName(techId);
-            String collection = getCollectionForUser(tech);
-            db.collection(collection)
-              .whereEqualTo("date", dateString)
-              .get()
-              .addOnSuccessListener(queryDocumentSnapshots -> {
-                  for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                      WorkEvent event = document.toObject(WorkEvent.class);
-                      if (event != null) {
-                          event.setId(document.getId());
-                          if (event.getUserName() == null || event.getUserName().trim().isEmpty()) {
-                              event.setUserName(tech);
-                          }
-                          allEvents.add(event);
-                      }
-                  }
+            List<WorkEvent> allEvents = new ArrayList<>();
+            final int expected = opts.size();
+            final int[] completed = {0};
 
-                  completed[0]++;
-                  if (completed[0] == TECHNICIAN_IDS.length) {
-                      // Sort events by time
-                      allEvents.sort((e1, e2) -> e1.getTime().compareTo(e2.getTime()));
-
-                      if (isDailyView) {
-                          createTimeSlotViews();
-                          updateTimeSlotsWithEvents(allEvents);
-                      } else {
-                          eventsAdapter.updateEvents(allEvents);
-                      }
-                  }
-              })
-              .addOnFailureListener(e -> {
-                  Log.e("WorkViewActivity", "Error loading events for " + tech + ": " + e.getMessage());
-                  completed[0]++;
-                  if (completed[0] == TECHNICIAN_IDS.length) {
-                      if (isDailyView) {
-                          createTimeSlotViews();
-                          updateTimeSlotsWithEvents(allEvents);
-                      } else {
-                          eventsAdapter.updateEvents(allEvents);
-                      }
-                  }
-              });
-        }
+            for (StaffDirectory.OwnerOption o : opts) {
+                String tech = o != null ? o.ownerKey : "";
+                if (tech == null) tech = "";
+                final String techFinal = tech;
+                String collection = getCollectionForUser(techFinal);
+                db.collection(collection)
+                        .whereEqualTo("date", dateString)
+                        .get()
+                        .addOnSuccessListener(queryDocumentSnapshots -> {
+                            for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                                WorkEvent event = document.toObject(WorkEvent.class);
+                                if (event != null) {
+                                    event.setId(document.getId());
+                                    if (event.getUserName() == null || event.getUserName().trim().isEmpty()) {
+                                        event.setUserName(techFinal);
+                                    }
+                                    allEvents.add(event);
+                                }
+                            }
+                            completed[0]++;
+                            if (completed[0] >= expected) {
+                                allEvents.sort((e1, e2) -> e1.getTime().compareTo(e2.getTime()));
+                                if (isDailyView) {
+                                    createTimeSlotViews();
+                                    updateTimeSlotsWithEvents(allEvents);
+                                } else {
+                                    eventsAdapter.updateEvents(allEvents);
+                                }
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e("WorkViewActivity", "Error loading events for " + techFinal + ": " + e.getMessage());
+                            completed[0]++;
+                            if (completed[0] >= expected) {
+                                if (isDailyView) {
+                                    createTimeSlotViews();
+                                    updateTimeSlotsWithEvents(allEvents);
+                                } else {
+                                    eventsAdapter.updateEvents(allEvents);
+                                }
+                            }
+                        });
+            }
+        }));
     }
 
     /**
@@ -632,8 +664,8 @@ public class WorkViewActivity extends AppCompatActivity {
      */
     private void showAddContractDialog() {
         if (canManageOtherWorkViews()) {
-            // Users 002 and 004 can access all contract technicians' calendars
-            showKristineContractSelectionDialog();
+            // Admin/oversight users can access all technicians' calendars
+            showAdminContractSelectionDialog();
         } else {
             // Regular users can only access their own contracts
             showUserContractSelectionDialog(userName);
@@ -644,7 +676,8 @@ public class WorkViewActivity extends AppCompatActivity {
      * Show contract selection dialog for regular users
      */
     private void showUserContractSelectionDialog(String user) {
-        String collectionName = user + " Contracts";
+        // Contract collections are keyed by users/{StaffID}.ContractKey
+        String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(user);
         
         db.collection(collectionName).get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
@@ -742,25 +775,30 @@ public class WorkViewActivity extends AppCompatActivity {
     /**
      * Show contract selection dialog for oversight users (can add to any contract technician)
      */
-    private void showKristineContractSelectionDialog() {
-        String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
-        String[] users = StaffDirectory.getDisplayNamesForIds(ids);
-        new AlertDialog.Builder(this)
-            .setTitle("Select User's Contracts")
-            .setItems(users, (dialog, which) -> {
-                String selectedUser = users[which];
-                showUserContractSelectionDialog(selectedUser);
-            })
-            .show();
+    private void showAdminContractSelectionDialog() {
+        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+            List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
+            String[] displayLabels = new String[opts.size()];
+            String[] ownerKeys = new String[opts.size()];
+            for (int i = 0; i < opts.size(); i++) {
+                StaffDirectory.OwnerOption o = opts.get(i);
+                displayLabels[i] = o != null ? o.display : "";
+                ownerKeys[i] = o != null ? o.ownerKey : "";
+            }
+            new AlertDialog.Builder(this)
+                    .setTitle("Select User's Contracts")
+                    .setItems(displayLabels, (dialog, which) -> showUserContractSelectionDialog(ownerKeys[which]))
+                    .show();
+        }));
     }
 
     /**
-     * Show time selection dialog with user selection for Kristine
+     * Show time selection dialog with user selection for admins
      */
     private void showTimeSelectionDialog(String eventType, String eventId, String eventName) {
         if (canManageOtherWorkViews()) {
             // Oversight users can select which user's work view to add the event to
-            showKristineUserSelectionDialog(eventType, eventId, eventName);
+            showAdminUserSelectionDialog(eventType, eventId, eventName);
         } else {
             // Regular users add to their own work view
             showTimeSlotsDialog(eventType, eventId, eventName, userName);
@@ -770,16 +808,21 @@ public class WorkViewActivity extends AppCompatActivity {
     /**
      * Show user selection dialog for oversight users
      */
-    private void showKristineUserSelectionDialog(String eventType, String eventId, String eventName) {
-        String[] ids = StaffDirectory.ORDERED_USER_IDS;
-        String[] users = StaffDirectory.getDisplayNamesForIds(ids);
-        new AlertDialog.Builder(this)
-            .setTitle("Select User's Work View")
-            .setItems(users, (dialog, which) -> {
-                String selectedUser = users[which];
-                showTimeSlotsDialog(eventType, eventId, eventName, selectedUser);
-            })
-            .show();
+    private void showAdminUserSelectionDialog(String eventType, String eventId, String eventName) {
+        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+            List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
+            String[] displayLabels = new String[opts.size()];
+            String[] ownerKeys = new String[opts.size()];
+            for (int i = 0; i < opts.size(); i++) {
+                StaffDirectory.OwnerOption o = opts.get(i);
+                displayLabels[i] = o != null ? o.display : "";
+                ownerKeys[i] = o != null ? o.ownerKey : "";
+            }
+            new AlertDialog.Builder(this)
+                    .setTitle("Select User's Work View")
+                    .setItems(displayLabels, (dialog, which) -> showTimeSlotsDialog(eventType, eventId, eventName, ownerKeys[which]))
+                    .show();
+        }));
     }
 
     /**
@@ -823,27 +866,43 @@ public class WorkViewActivity extends AppCompatActivity {
     /** Show user selection then open AddJobFromCalendarActivity (New job). */
     private void showAddNewJobDialog() {
         if (canManageOtherWorkViews()) {
-            String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
-            String[] users = StaffDirectory.getDisplayNamesForIds(ids);
-            new AlertDialog.Builder(this)
-                .setTitle("Assign Job To")
-                .setItems(users, (d, which) -> openAddJobActivity(users[which]))
-                .show();
+            StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+                List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
+                String[] displayLabels = new String[opts.size()];
+                String[] ownerKeys = new String[opts.size()];
+                for (int i = 0; i < opts.size(); i++) {
+                    StaffDirectory.OwnerOption o = opts.get(i);
+                    displayLabels[i] = o != null ? o.display : "";
+                    ownerKeys[i] = o != null ? o.ownerKey : "";
+                }
+                new AlertDialog.Builder(this)
+                        .setTitle("Assign Job To")
+                        .setItems(displayLabels, (d, which) -> openAddJobActivity(ownerKeys[which]))
+                        .show();
+            }));
         } else {
             openAddJobActivity(userName);
         }
     }
 
-    /** Load jobs from JobWork and show selection. 002/004: all jobs. 003: only assigned. */
+    /** Load jobs from JobWork and show selection (role-gated). */
     private void showAddExistingJobDialog(String timeSlot) {
         String targetUser = userName;
         if (canManageOtherWorkViews()) {
-            String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
-            String[] users = StaffDirectory.getDisplayNamesForIds(ids);
-            new AlertDialog.Builder(this)
-                .setTitle("Whose jobs to add?")
-                .setItems(users, (d, which) -> loadJobsAndShowSelection(users[which], timeSlot))
-                .show();
+            StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+                List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
+                String[] displayLabels = new String[opts.size()];
+                String[] ownerKeys = new String[opts.size()];
+                for (int i = 0; i < opts.size(); i++) {
+                    StaffDirectory.OwnerOption o = opts.get(i);
+                    displayLabels[i] = o != null ? o.display : "";
+                    ownerKeys[i] = o != null ? o.ownerKey : "";
+                }
+                new AlertDialog.Builder(this)
+                        .setTitle("Whose jobs to add?")
+                        .setItems(displayLabels, (d, which) -> loadJobsAndShowSelection(ownerKeys[which], timeSlot))
+                        .show();
+            }));
         } else {
             loadJobsAndShowSelection(targetUser, timeSlot);
         }
@@ -1030,7 +1089,7 @@ public class WorkViewActivity extends AppCompatActivity {
         // Add address information based on event type
         if ("contract".equals(eventType)) {
             // For contracts, get address from contract data
-            String collectionName = targetUser + " Contracts";
+            String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(targetUser);
             db.collection(collectionName).document(eventId)
               .get()
               .addOnSuccessListener(documentSnapshot -> {
@@ -1074,7 +1133,7 @@ public class WorkViewActivity extends AppCompatActivity {
         event.put("createdAt", new Date());
 
         if ("contract".equals(eventType)) {
-            String collectionName = targetUser + " Contracts";
+            String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(targetUser);
             db.collection(collectionName).document(eventId)
                     .get()
                     .addOnSuccessListener(documentSnapshot -> {
@@ -1142,7 +1201,7 @@ public class WorkViewActivity extends AppCompatActivity {
      */
     private void writeInAppWorkViewUpdateIfNeeded(String workViewDocId, Map<String, Object> event) {
         try {
-            if (!canManageOtherWorkViews()) return; // only 002, 004
+            if (!canManageOtherWorkViews()) return;
             if (event == null) return;
 
             String targetUser = asString(event.get("userName"));
@@ -1418,7 +1477,7 @@ public class WorkViewActivity extends AppCompatActivity {
         if (isContract) {
             // Update contract in assigned user's collection by contract ID; use batch with work view update.
             String contractOwner = event.getUserName() != null ? event.getUserName() : userName;
-            String contractCollection = contractOwner + " Contracts";
+            String contractCollection = StaffDirectory.getContractsCollectionNameFromAnyKey(contractOwner);
             db.collection(contractCollection).document(event.getEventId()).get()
                 .addOnSuccessListener(contractSnap -> {
                     if (!contractSnap.exists()) {
@@ -1977,7 +2036,7 @@ public class WorkViewActivity extends AppCompatActivity {
      */
     private void updateContractLastVisitAndRemove(WorkEvent event) {
         String contractOwner = event.getUserName() != null ? event.getUserName() : userName;
-        String contractCollection = contractOwner + " Contracts";
+        String contractCollection = StaffDirectory.getContractsCollectionNameFromAnyKey(contractOwner);
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
         sdf.setTimeZone(TimeZone.getTimeZone("Europe/Dublin"));
         String today = sdf.format(new Date());
@@ -2306,7 +2365,7 @@ public class WorkViewActivity extends AppCompatActivity {
      */
     private void showAddContractDialogForTime(String timeSlot) {
         if (canManageOtherWorkViews()) {
-            showKristineContractSelectionDialogForTime(timeSlot);
+            showAdminContractSelectionDialogForTime(timeSlot);
         } else {
             showUserContractSelectionDialogForTime(userName, timeSlot);
         }
@@ -2316,7 +2375,7 @@ public class WorkViewActivity extends AppCompatActivity {
      * Show contract selection dialog for regular users with time
      */
     private void showUserContractSelectionDialogForTime(String user, String timeSlot) {
-        String collectionName = user + " Contracts";
+        String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(user);
         
         db.collection(collectionName).get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
@@ -2352,16 +2411,19 @@ public class WorkViewActivity extends AppCompatActivity {
     /**
      * Show contract selection dialog for oversight users with time (contract technicians only)
      */
-    private void showKristineContractSelectionDialogForTime(String timeSlot) {
-        String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
-        String[] users = StaffDirectory.getDisplayNamesForIds(ids);
-        new AlertDialog.Builder(this)
-            .setTitle("Select User's Contracts for " + formatSlotRange(timeSlot))
-            .setItems(users, (dialog, which) -> {
-                String selectedUser = users[which];
-                showUserContractSelectionDialogForTime(selectedUser, timeSlot);
-            })
-            .show();
+    private void showAdminContractSelectionDialogForTime(String timeSlot) {
+        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+            List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
+            String[] users = new String[opts.size()];
+            for (int i = 0; i < opts.size(); i++) {
+                StaffDirectory.OwnerOption o = opts.get(i);
+                users[i] = o != null ? o.ownerKey : "";
+            }
+            new AlertDialog.Builder(this)
+                    .setTitle("Select User's Contracts for " + formatSlotRange(timeSlot))
+                    .setItems(users, (dialog, which) -> showUserContractSelectionDialogForTime(users[which], timeSlot))
+                    .show();
+        }));
     }
 
     /**
@@ -2435,12 +2497,20 @@ public class WorkViewActivity extends AppCompatActivity {
             .setItems(new String[]{"New", "Old"}, (dialog, which) -> {
                 if (which == 0) {
                     if (canManageOtherWorkViews()) {
-                        String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
-                        String[] users = StaffDirectory.getDisplayNamesForIds(ids);
-                        new AlertDialog.Builder(this)
-                            .setTitle("Assign Job To (" + formatSlotRange(timeSlot) + ")")
-                            .setItems(users, (d, w) -> openAddJobActivityForTime(users[w], timeSlot))
-                            .show();
+                        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+                            List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
+                            String[] displayLabels = new String[opts.size()];
+                            String[] ownerKeys = new String[opts.size()];
+                            for (int i = 0; i < opts.size(); i++) {
+                                StaffDirectory.OwnerOption o = opts.get(i);
+                                displayLabels[i] = o != null ? o.display : "";
+                                ownerKeys[i] = o != null ? o.ownerKey : "";
+                            }
+                            new AlertDialog.Builder(this)
+                                    .setTitle("Assign Job To (" + formatSlotRange(timeSlot) + ")")
+                                    .setItems(displayLabels, (d, w) -> openAddJobActivityForTime(ownerKeys[w], timeSlot))
+                                    .show();
+                        }));
                     } else {
                         openAddJobActivityForTime(userName, timeSlot);
                     }
@@ -2677,18 +2747,18 @@ public class WorkViewActivity extends AppCompatActivity {
         if (user == null) {
             return MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, 0);
         }
-        switch (user.toLowerCase(Locale.getDefault())) {
-            case "ian":
-                return android.graphics.Color.parseColor("#FB8C00"); // Orange
-            case "dean":
-                return android.graphics.Color.parseColor("#1E88E5"); // Blue
-            case "james":
-                return android.graphics.Color.parseColor("#43A047"); // Green
-            case "kristine":
-                return android.graphics.Color.parseColor("#8E24AA"); // Purple
-            default:
-                return MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, 0);
-        }
+        final int[] palette = new int[] {
+                android.graphics.Color.parseColor("#FB8C00"), // Orange
+                android.graphics.Color.parseColor("#1E88E5"), // Blue
+                android.graphics.Color.parseColor("#43A047"), // Green
+                android.graphics.Color.parseColor("#8E24AA"), // Purple
+                android.graphics.Color.parseColor("#F4511E"), // Deep Orange
+                android.graphics.Color.parseColor("#3949AB")  // Indigo
+        };
+        String key = user.trim().toLowerCase(Locale.getDefault());
+        if (key.isEmpty()) return MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, 0);
+        int idx = Math.abs(key.hashCode()) % palette.length;
+        return palette[idx];
     }
 
     /**
@@ -2766,7 +2836,7 @@ public class WorkViewActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
         String today = sdf.format(new Date());
         
-        String collectionName = userName + " Contracts";
+        String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(userName);
         
         Map<String, Object> updates = new HashMap<>();
         updates.put("lastVisit", today);

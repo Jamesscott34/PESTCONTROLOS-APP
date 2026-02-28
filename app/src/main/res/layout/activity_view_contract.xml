@@ -84,7 +84,7 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Technician selector (James, Ian, Kristine can choose whose contracts to view) -->
+    <!-- Technician selector (admin/oversight can choose whose contracts to view) -->
     <LinearLayout
         android:id="@+id/technicianSelectorLayout"
         android:layout_width="match_parent"

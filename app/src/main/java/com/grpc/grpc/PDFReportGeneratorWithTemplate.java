@@ -267,7 +267,7 @@ public class PDFReportGeneratorWithTemplate {
                 }
 
                 String footerStr = settings.getFooterText();
-                if (footerStr == null || footerStr.trim().isEmpty()) footerStr = "Created by reporting system";
+                if (footerStr == null || footerStr.trim().isEmpty()) footerStr = TenantBranding.defaultFooterText(context);
                 Paragraph footer = new Paragraph(footerStr.trim())
                         .setFontSize(12).setTextAlignment(TextAlignment.CENTER)
                         .setFixedPosition(pageWidth / 2 - 150, 20, 300);

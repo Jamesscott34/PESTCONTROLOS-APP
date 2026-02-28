@@ -152,7 +152,7 @@ public class PDFReportGenerator {
             document.add(logo);
 
             // Adding a title to the report
-            Paragraph title = new Paragraph("Good Riddance Pest Control Report")
+            Paragraph title = new Paragraph(TenantBranding.reportTitle(context))
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(18)
                     .setBold()
@@ -322,7 +322,7 @@ public class PDFReportGenerator {
                 doc.add(watermark);
 
                 // Adding footer text
-                Paragraph footer = new Paragraph("Good Riddance Pest Control -- www.grpestcontrol.ie")
+                Paragraph footer = new Paragraph(TenantBranding.footerCompanyWebsiteLine(context))
                         .setFontSize(12)
                         .setTextAlignment(TextAlignment.CENTER)
                         .setFixedPosition(pageWidth / 2 - 150, 20, 300);

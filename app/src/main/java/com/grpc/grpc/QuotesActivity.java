@@ -40,13 +40,14 @@ public class QuotesActivity extends AppCompatActivity {
 
         // Set the welcome message
         TextView welcomeTextView = findViewById(R.id.welcomeTextView);
-        welcomeTextView.setText("Welcome, " + userName + "!");
+        welcomeTextView.setText("Contract Quotations");
 
         // Initialize buttons
         Button button8ptContact = findViewById(R.id.button8ptContact);
         Button button6ptContract = findViewById(R.id.button6ptContract);
         Button button4ptContract = findViewById(R.id.button4ptContract);
         Button button12ptContract = findViewById(R.id.button12ptContract);
+        Button buttonCustomQuote = findViewById(R.id.buttonCustomQuote);
 
         // Open General8ptActivity
         button8ptContact.setOnClickListener(view -> {
@@ -75,5 +76,14 @@ public class QuotesActivity extends AppCompatActivity {
             intent.putExtra("USER_NAME", userName);
             startActivity(intent);
         });
+
+        // Custom Quote (moved from Create Report hub into Contract Quotations)
+        if (buttonCustomQuote != null) {
+            buttonCustomQuote.setOnClickListener(view -> {
+                Intent intent = new Intent(QuotesActivity.this, CreateReportActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
+            });
+        }
     }
 }

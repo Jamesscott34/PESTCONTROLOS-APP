@@ -1,529 +1,293 @@
-# GRPC (GRPest Control) - Reporting System
+# GRPC (GRPest Control) – Field Operations Platform
 
-This repository contains a production-style Android application used by GRPest Control staff to manage **contracts**, **jobs**, **work scheduling**, **reports**, **messaging**, **leads/commission**, and **in-app notifications**, backed by **Firebase (Firestore + Storage)**. **Cloud Functions are optional** for automation (cleanup/schedules). **LLM APIs** (Groq / Hugging Face) power in-app AI Chat and report polish (AI Fix); keys are maintained by admin via app settings.
+This repository contains a full‑featured **field operations app** for the GRPest Control company. It is built in **Java** for Android and backed by **Firebase** (Authentication, Firestore, Storage) with optional **Cloud Functions** and **LLM APIs**. The primary goal is to streamline field work such as scheduling, contracts, jobs, reports, messaging and leads while giving admins and technicians tailored tools and in‑app notifications.
 
-The solution is intentionally designed around **in-app notifications only** (no FCM push notifications and no Android system notifications) to keep notification delivery consistent and fully under application control.
-
-For the **full architecture overview** (platform stack, data flow, key workflows, multi-company options, and offline PDF template), see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+This document replaces the original README and is intended to be read by developers, maintainers and power users. It covers **every major feature**, explains the **user model**, summarises how to set up and operate the app, and highlights the **security considerations** you should be aware of. For a technical overview of the platform architecture, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ---
 
-## Contents
+## Architecture overview
 
-- [Key capabilities](#key-capabilities)
-  - [Login and offline mode](#login-and-offline-mode)
-  - [AI features (Chat &amp; AI Fix)](#ai-features-chat--ai-fix)
-- [Roles and user model](#roles-and-user-model)
-- [How to use the app (by user)](#how-to-use-the-app-by-user)
-- [Technology stack](#technology-stack)
-- [Repository layout](#repository-layout)
-- [Architecture (PDF reporting and offline template)](#architecture-pdf-reporting-and-offline-template)
-- [Setup (end-to-end)](#setup-end-to-end)
-  - [Prerequisites](#prerequisites)
-  - [Package name / applicationId changes](#package-name--applicationid-changes)
-  - [Firebase setup (Android + Console)](#firebase-setup-android--console)
-  - [Firestore rules + collections](#firestore-rules--collections)
-  - [Storage layout for reports](#storage-layout-for-reports)
-  - [Environment variables &amp; build configuration](#environment-variables--build-configuration)
-  - [Cloud Functions (optional automation)](#cloud-functions-optional-automation)
-- [Operational behavior](#operational-behavior)
-  - [In-app notifications model](#in-app-notifications-model)
-  - [Work reminders](#work-reminders)
-- [Branding](#branding)
-- [Support](#support)
-- [Security and repository hygiene](#security-and-repository-hygiene)
-- [Troubleshooting](#troubleshooting)
+The app runs on the device and talks to Firebase (Auth, Firestore, Storage, optional Cloud Functions, App Check) and to external AI providers (Groq, Hugging Face). The diagram below summarises the main components.
+
+![GRPC component diagram](grpc_architecture_component_diagram.png)
+
+*Component diagram (PNG in repo root). Mermaid source: [docs/component_diagram.mmd](docs/component_diagram.mmd).*
+
+The same diagram in Mermaid (renders on GitHub/GitLab and in many Markdown viewers):
+
+```mermaid
+flowchart LR
+  subgraph Device[Android device]
+    A[Android app (Java)\nActivities + Workers + Widget]
+    L[(Local storage)\nSharedPreferences + app files]
+    WM[WorkManager\nreminders + periodic tasks]
+    SR[SpeechRecognizer + TTS]
+  end
+
+  subgraph Firebase[Firebase backend]
+    AUTH[Auth\nemail/password]
+    FS[Firestore\nusers, jobs, contracts, leads,\nmessages, notifications]
+    ST[Storage\nReportsYY/... PDFs]
+    FN[Cloud Functions (callable)\nadmin key updates etc]
+    AC[App Check\n(should be Play Integrity in prod)]
+  end
+
+  subgraph AI[External AI providers]
+    G[Groq\nOpenAI-compatible Chat Completions]
+    HF[Hugging Face Router\nOpenAI-compatible Chat Completions]
+  end
+
+  A --> AUTH
+  A --> FS
+  A --> ST
+  A --> FN
+  A --> AC
+
+  A --> G
+  A --> HF
+
+  A --> L
+  A --> WM
+  A --> SR
+```
+
+For sequence diagrams (login, report generation, AI chat) and more detail, see **[ARCHITECTURE.md](ARCHITECTURE.md)** and [docs/README.md](docs/README.md).
 
 ---
 
-## Key capabilities
+## Key Capabilities
 
-### Login and offline mode
+The GRPC app is designed to handle everything a pest‑control operation needs in the field. Below is a high‑level summary of the core modules. Individual activities are described in the architecture document.
 
-- **Firebase login:** Email/password sign-in via Firebase Authentication; user name derived from email and passed to Main Activity.
-- **Offline login:** On the login screen, **"Offline login"** lets you use the app without Firebase. You enter as **"Offline User"**. The **main menu shows only Create Report, View Reports, and Logout**; all other buttons (Notifications, Work View, Contracts, etc.) are hidden. In **View Reports**, the **Stored Reports** option is hidden for the offline user.
-- When **logged in** (Firebase Auth), the **Create Report** screen hides the PDF template section (Use GRPC Template / Use My Template and PDF Template Settings); reports always use the GRPC template. When **not logged in** (offline), that section is shown so you can choose GRPC or My Template and open PDF Template Settings.
+### Authentication and Offline Mode
 
-### Work View (schedule)
+- **Firebase Authentication** — users sign in with email/password. On successful login the session is managed by a central `SessionManager` which loads the user’s staff profile, role and permissions from Firestore.
+- **Offline login** — from the login screen you can enter “Offline User” mode. In this mode no Firebase services are used and only a limited set of features are available (create reports, view reports and logout). Offline users cannot upload reports to Firebase or access notifications, jobs, contracts, leads or messaging.
+- **Role‑aware UI** — all screens respect the logged‑in user’s role. Admins can assign work, view multiple calendars and edit contracts/jobs. Technicians can perform work and generate reports but cannot delete jobs or contracts. See **Roles and user model** for details.
 
-- **Calendar-first scheduling** for technician field work.
-- **Daily view** with fixed time slots (08:00–17:30, 30‑minute intervals) and a fast “tap a slot to add” workflow.
-- **Calendar view** for browsing and jumping to dates.
-- **Event types**: jobs, contracts, and follow‑ups (role dependent).
-- **Completion flows**:
-  - Confirmation prompt when marking routines/visits done.
-  - Contract “last visit” updates and schedule cleanup for completed items.
-- **Multi-user oversight**:
-  - Regular technicians primarily manage their own calendar.
-  - **Users 002 and 004** can view and manage multiple technicians’ work views (combined calendar behavior).
-- **In-app reminders** (no system notifications):
-  - WorkManager schedules an **in-app notification record** ~30 minutes before scheduled events.
-  - Reminders are de‑duplicated and cancelled when events are completed/rescheduled.
-- **WorkView: custom times and drag-and-drop**
-  - **Create with custom duration:** Add Job/Contract/Follow‑up via Work View. When the time dialog opens, choose **“Custom time…”**. Enter start (e.g. 08:30 or 0830) and end (e.g. 15:00 or 1500) → event is created as 08:30–15:00.
-  - **Adjust an existing event:** Tap the event → **Edit Time**. Change start and optionally end (e.g. 09:30–14:30) and save; duration is preserved if you only change one.
-  - **Move an event (drag-and-drop):** In daily view, long‑press an event, drag it to another time slot bar, and release. Start time snaps to that slot; duration is preserved if the event had an end time.
-- **Work View home screen widget:** A home screen widget shows **Work View** title, today’s date, and the **next 3 jobs** (time, name, address). Tap opens Work View. Data is cached when you open Work View so the widget can show today’s jobs even after logout. The widget layout **must not** use ImageView, drawable, or PNG references (RemoteViews restrictions). If the widget does not display, see **`app/src/main/assets/WIDGET_TROUBLESHOOTING.md`**.
+### Scheduling (Work View)
+
+- **Calendar view** — a daily schedule shows fixed half‑hour slots from 08:00–17:30. Technicians can tap a slot to add a job, contract visit or follow‑up.
+- **Event types and colours** — jobs, contracts and follow‑ups are differentiated by colour and labelled clearly.
+- **Custom times and durations** — when creating or editing an event you can specify a custom start and end (e.g. 08:30–15:00). Editing preserves the existing duration unless both start and end are changed.
+- **Drag‑and‑drop** — long‑press an event in the daily view and drag it to another slot to move it. The start time snaps to the new slot and the duration stays the same.
+- **Combined calendars** — admins can view other technicians’ schedules (all technicians appear on one calendar). This is useful for dispatch and office coordination.
+- **Work reminders** — the app does not use Android/FCM push notifications. Instead a `WorkManager` schedules in‑app reminders about 30 minutes before an event. Reminders are cancelled if the event is completed or rescheduled, preventing duplicate alerts.
+- **Home‑screen widget** — a simple widget displays today’s date and the next three jobs. Data is cached locally when Work View is opened so the widget works even after logout. See `app/src/main/assets/WIDGET_TROUBLESHOOTING.md` for help.
 
 ### Contracts
 
-- Contracts are stored per technician in Firestore collections named `"[User] Contracts"` (e.g. per user ID).
-- **Search + status highlighting**:
-  - “Behind / Due / Up‑to‑date” counters and filtering.
-  - Visual status cues to help prioritise visits.
-- **Actions**:
-  - Open an address directly in **Google Maps**.
-  - Update visits / mark done where permitted.
-- **Contract reports by year**:
-  - “View Reports” prompts for a year and searches within `ReportsYY` (e.g., `Reports26`) in Firebase Storage.
-  - Matching is flexible (case/spacing/underscore tolerant).
-- **Role-aware assignment**:
-  - Admin users (002, 004) can add contracts to another technician’s list (and the assigned technician receives an in‑app notification record).
+- **Technician‑scoped collections** — contracts are stored in Firestore collections named `"{ContractKey} Contracts"`, where `ContractKey` comes from `users/{StaffID}.ContractKey`. This design keeps documents stable even if login usernames change.
+- **Search and status counters** — quickly filter contracts as “Behind”, “Due” or “Up‑to‑date” to prioritise your visits.
+- **Actions** — open the customer address in Google Maps, update a visit as done, or create a report directly from a contract entry. Admin users can assign a contract to another technician (which triggers an in‑app notification to the assigned user).
+- **Year‑based report browsing** — contract reports are stored under `ReportsYY/` in Firebase Storage. When viewing reports the user selects the year, and the app lists matching PDFs (ignoring case/spaces/underscores). Offline users can browse local reports only.
 
-### Jobs
+### Jobs and Follow‑ups
 
-- **Service job creation + assignment** via Firestore `JobWork`.
-- **Job lifecycle management**:
-  - View job details (customer/contact/address/issue).
-  - Acceptance/completion flows and follow‑up scheduling.
-  - Payment capture fields and operational notes (where enabled in screens).
-- **Work View integration**:
-  - Create jobs directly from the calendar and automatically add them to the assigned technician’s work view.
-- **Management tasks**:
-  - Higher-level admin tasks are tracked in `ManagmentJobs` with their own view/edit flows.
+- **Job creation and assignment** — new service jobs can be added via the Jobs screen or directly from the calendar. Admins choose the technician from a dropdown; the assigned technician receives an in‑app notification.
+- **Job lifecycle** — technicians can accept jobs, view customer details, update progress and schedule follow‑ups. Completion prompts update the calendar and remove future reminders.
+- **Follow‑ups** — dedicated screens let you schedule and complete follow‑ups. These appear alongside other events in Work View.
+- **Management jobs** — a separate “Management Jobs” section tracks office/administrative tasks. Admins can create and complete these jobs independently of technician work.
 
-### Reports (PDF)
+### Reports and Action Forms (PDF)
 
-- **PDF generation** across multiple operational templates (iText):
-  - General service reports
-  - Rodent reports (Initial / Routine / Call‑Out / External flows)
-  - ERA documents (Toxic / Non‑Toxic)
-- **File compression**: All generated PDFs (Action Forms, Create Report, custom templates) are **automatically compressed** for smaller file size (no user option).
-- **Create Report (quotation)**:
-  - **Password protection**: An optional checkbox “Password protect PDF” lets you set an owner password; the PDF is then encrypted (viewing/printing allowed; editing requires the password).
-- **Storage model**:
-  - Reports are organized in Firebase Storage under year folders like `ReportsYY/` (optionally with month subfolders).
-  - Reports can also be generated/stored locally under the app’s external files directories (e.g. quotes, service agreements).
-- **Viewing and sharing**:
-  - Browse stored report lists, download/share PDFs.
-  - Contract-specific search is scoped by year folder for speed and organisation.
-- **Offline PDF template (Create Report)**:
-  - On the **Report selection** screen: **"Custom Report (PDF Template)"** opens **PDF Template Settings**; **"Create Custom Report"** opens the Create Report form with a choice of **Default** or **Select template…** (saved templates). The Create Report screen does not show the PDF Template radio block; only the report form and template choice.
-  - **Named templates:** In PDF Template Settings you enter a **template name** and tap **"Save template settings"** to save the current setup (main header, logo, watermark, header blocks) as a named template; the form is then **cleared** and the cleared state is saved, so the next time you open PDF Template Settings or create a new template you start with empty fields. **"View templates"** lists saved templates; tap **"Use"** to open Create Report with that template, or **Delete** (with confirmation) to remove one.
-  - On the **Create Report** screen (when not logged in) you can choose **Use GRPC Template** or **Use My Template**, and open PDF Template Settings. **When logged in**, the PDF template section is **hidden**; reports always use the GRPC template.
-  - **PDF Template Settings**: **Main header** (e.g. company name) and **main header colour** (Blue, Black, Dark Gray, Red, Green); logo; watermark (on/off, text or image); and an ordered list of header blocks (text with style H1/H2/BODY or image). All settings and named templates are stored **locally** (SharedPreferences + files in `pdf_template/`); no Firebase. Fully offline.
-  - **My Template PDF layout:** At the top, **logo first** (same size as GRPC: 200×200), then **main header** text in the chosen colour. If no logo is selected, nothing is shown for the logo. Header blocks appear only in the body; watermark and footer use only the user’s content (no default watermark when disabled); footer text is **"Created by reporting system"**.
-  - Body layout (margins, fonts, sections, table, footer, page numbers) is identical to the GRPC template in both modes; only the header area and watermark differ when using My Template. If no images are selected for the report, no image section or placeholder is added to the PDF.
-  - **After saving a report:** A “Report Saved Successfully!” dialog offers **View**, **Share**, and (when **logged in**) **Upload to Firebase**. Tapping outside the dialog dismisses it. **Offline users** do not see the Upload to Firebase option in this dialog or in View Reports (file options).
+- **Flexible PDF generation** — the app uses iText to generate PDFs. Users can choose from several built‑in templates: service reports (rodent initial, routine, call‑out, external), general reports (4pt/6pt/8pt/12pt), action forms, quotations (general and bird), and service agreements. Reports always include the business logo and compress automatically to reduce file size.
+- **Password protection** — a “Password protect PDF” checkbox encrypts the PDF with an owner password, allowing viewing/printing but requiring the password for editing.
+- **Signatures and images** — technicians and customers can capture signatures via a dedicated screen. Images can be attached and embedded in the PDF if present.
+- **Offline templates (“My Template”)** — when logged out, users can build custom headers with their own logo, header text, watermark and header blocks. Named templates are stored locally (`pdf_template/` via SharedPreferences) and can be selected later. Logged‑in users always use the default GRPC template for consistency.
 
-### Quotations & service documents
+### Quotations and Service Documents
 
-- **Quotation generation**:
-  - Point-based quotations (4pt/6pt/8pt/12pt).
-  - General quotations and Bird quotations with line items.
-  - Professional formatting with VAT/line totals and consistent branding.
-- **Bird quotation**:
-  - **30% deposit option**: A checkbox “30% deposit due before job (uncheck for total payment only)” controls the PDF: when **checked**, the PDF shows 30% due before the job and the remaining amount; when **unchecked**, only the total payment is shown.
-  - **Email and number**: Company email and mobile on the Bird quotation are loaded from the **users database** (Firestore) for the logged-in user; they are not typed manually (add/update them in the users/staff data if missing).
-- **Service agreements**:
-  - Create and view service agreements with signature fields and stored PDFs.
+- **General quotations** — generate quotes based on 4, 6, 8 or 12 line items with VAT and totals. Users enter line items and the app calculates totals automatically.
+- **Bird quotations** — tailor quotes for bird control jobs with an optional 30 % deposit. Company contact information (email and mobile) is pulled from the staff profile, not typed manually.
+- **Service agreements** — create service contracts with signature fields and save them as PDFs. These can be uploaded to Firebase Storage or kept locally.
 
-### Leads & commission
+### Leads and Commission
 
-- Lead capture and tracking in Firestore `Leads` with commission calculations and invoice/payment status fields.
-- **Mark as paid** and **Add/Edit materials** are restricted to admins only (user IDs 001, 002, 004). User 003 can view leads assigned to them but cannot mark invoices as paid or edit materials cost.
-- Admin-side edit flows can trigger in-app notifications to the affected technician (commission change audit trail behavior).
+- **Lead capture** — record potential customer leads in `Leads`. Each lead tracks commission values, invoice numbers, payment status and materials cost.
+- **Role‑based editing** — admins can mark invoices as paid and update materials cost. Technicians can add and view leads assigned to them but cannot mark invoices paid or edit materials.
+- **Notifications** — edits to leads can trigger an in‑app notification to the responsible technician, maintaining an audit trail.
 
-### Action Forms (password-protected PDFs)
+### Messaging and Notifications
 
-- Generate **password-protected Action Form PDFs** (owner-password protected for editing restrictions) using iText.
-- **File compression**: All Action Form PDFs are written with **full compression** (smaller file size).
-- Optional **password protection** via a checkbox; when enabled, a dialog prompts for an owner password (required to edit the PDF).
-- Optional inclusion of **technician and customer signatures**.
-- Optional attachment of images to the PDF.
+- **1:1 and group chat** — conversations are stored in Firestore with conversation IDs derived from participant ContractKeys (e.g. direct chats and a shared `group` channel). Messages can be marked urgent; non‑urgent messages expire automatically via Cloud Functions (optional).
+- **In‑app notifications** — the app has its own notification inbox per staff member (`notifications/{StaffID}/items`). Important actions like job assignment, contract assignment and lead updates fan out to admins for oversight. There are no system/FCM notifications or status‑bar alerts — everything stays inside the app.
+- **Unread indicators** — the home screen shows unread counts for notifications and messages. Users can clear or delete notifications individually.
+- **Deep linking** — tapping a notification opens the relevant screen (Work View, Contracts, Jobs, Messaging) with context about the event.
 
-### Signature capture
+### Location Sharing (admin only)
 
-- Dedicated signature capture screen for technician/customer signatures.
-- Saves signatures as PNGs under app external storage and returns URIs to calling workflows (and/or embeds in generated PDFs).
+- **Periodic updates** — when location permissions are granted, each device publishes its last known GPS position to Firestore every 15 minutes via `LastLocationUpdateWorker`. A companion cleanup worker deletes stale locations after 30 minutes.
+- **Offline cache** — the last known location is cached locally in SharedPreferences so admins can view it offline when needed.
+- **Access control** — only users with admin/oversight role have a UI to view staff locations. Firestore rules should restrict reads to authorised admins.
 
-### Messaging
+### Global Search (admin only)
 
-- In-app conversations backed by Firestore:
-  - 1:1 chats use conversation IDs like `james_ian`
-  - A shared `group` conversation exists for team messages
-- **Retention**:
-  - Non-urgent messages are auto-deleted after ~30 minutes (optional automation via Cloud Functions).
-  - Urgent messages can be retained (per-message flag).
+- A dedicated search screen lets authorised admins search across jobs, contracts, leads and reports from a single interface. Results show the entity type and link to the appropriate activity. This feature is limited to admin accounts because it touches multiple collections.
 
-### AI (Chat & report polish)
+### Environment Risk Assessment (ERA)
 
-- **AI Chat**:
-  - In-app chat powered by **Hugging Face** (via HF Router) or **Groq**; the app uses Groq if a Groq key is set, otherwise the Hugging Face key.
-  - API keys are stored in Firestore at `AI-Chat/AI-API`: field **KEY** (Hugging Face) and **key-grog** (Groq). Only user 001 can update these via Settings (Update Hugging Face Key / Update Groq Key).
-  - Replies are shown as plain text (no markdown tables/headings); long replies supported (e.g. max 2048 tokens).
-- **AI Fix** — rewrites text in **Create Report** and **Action Form** (logged-in users only):
-  - The **AI Fix** button is **only visible when the user is logged in** (Firebase Auth). **Offline users do not see** the AI Fix button.
-  - When a logged-in user taps AI Fix, a dialog asks **which fields to update**: **Create Report** — Site Inspection and/or Recommendations; **Action Form** — Service Report and/or Recommendations. Only the selected fields are sent to the API and updated.
-  - Text is made professional, grammatically correct, and free of asterisks or filler; a few sentences may be added where appropriate.
-  - AI Fix uses the same Firestore API keys as AI Chat (KEY or key-grog). If no key is set, the app prompts that the admin must set one in AI Chat settings.
+- Field technicians can perform **Toxic** or **Non‑Toxic ERA** assessments. An `EnvironmentSelectionActivity` collects the user’s name and launches either `ToxicERAActivity` or `NonToxERAActivity`. Each activity guides the technician through the respective risk‑assessment checklist and generates a PDF when complete.
 
-### In-app notifications (no push)
+### AI Features (Chat & AI Fix)
 
-- Notification history is stored in Firestore under `notifications/{user}/items`.
-- Home screen shows unread indicators for notifications/messages.
-- Notifications can be deleted individually or cleared.
-- Tapping a notification deep-links into the relevant screen (Work View / Contracts / Jobs / Messaging) and can open location context (Maps).
-- **Design principle**: notifications are intentionally **in-app only** (no Android status-bar notifications, no FCM push requirement for core flows).
-
-### Dark Mode
-
-- Theme-aware UI using Material DayNight and attribute-based colors (`?android:attr/colorBackground`, `?attr/colorSurface`, `?android:attr/textColorPrimary/Secondary`) so screens render correctly in Light/Dark modes.
-- Layouts avoid hardcoded white/black and instead use theme surfaces/“on-surface” text, with consistent button styling.
-
-### AI features (Chat & AI Fix)
-
-- **AI Chat**  
-  In-app chat backed by AI (Hugging Face–style or Groq). Replies are plain text, no markdown. API keys are stored in Firestore at `AI-Chat/AI-API`:
-  - **KEY** — Hugging Face token (see [Hugging Face tokens](https://huggingface.co/settings/tokens)).
-  - **key-grog** — Groq API key (see [Groq Console](https://console.groq.com)).  
-  If **key-grog** is set, the app uses Groq; otherwise it uses the Hugging Face key. Only user 001 can update these keys (via Settings in the app; Cloud Functions enforce admin-only writes).
-- **AI Fix button**  
-  Shown **only when the user is logged in** (offline users do not see it). In **Create Report** and **Action Form**:
-  - Tap “✏️ AI Fix” to open a dialog: **choose which fields to update** (Create Report: Site Inspection and/or Recommendations; Action Form: Service Report and/or Recommendations). Only the selected fields are polished.
-  - Text is made professional, grammatical, no asterisks/filler; a few sentences may be added where appropriate.  
-  Uses the same Firestore API key as AI Chat (KEY or key-grog). The button is disabled until content exists in the relevant fields.
+- **In‑app AI chat** — an assistant chat uses either the Groq API or the Hugging Face API depending on which key is set. A super admin updates the API keys in `AI-Chat/AI-API` in Firestore (fields `KEY` and `key-grog`). Replies are plain text (no markdown) and support long messages.
+- **AI Fix** — in Create Report and Action Form screens a ✏️ AI Fix button appears for logged‑in users. Users choose which fields to polish (site inspection, recommendations, service report, etc.) and the selected text is rewritten to be professional and free of filler. Offline users do not see this button.
 
 ---
 
-## Roles and user model
+## Roles and User Model
 
-This app is role-aware and uses **user IDs** (001, 002, …) for permission checks; display names are still used in the UI and in Firestore (e.g. “Added By”, “AssignedTech”).
+User identity and permissions are controlled via Firestore:
 
-- **User IDs** (match Firestore `users` collection): **001**, **002**, **003**, **004** (extensible). Display names and contact details are loaded from the database.
-- **Admins / oversight**: **001**, **002**, **004**
-  - Can assign work to other technicians (jobs/contracts).
-  - Can delete contracts and jobs.
-  - Receive oversight notifications for certain actions (e.g. when 003 adds contracts).
-- **Technician**: **003**
-  - Can complete work, create reports, and add contracts to their own list.
-  - **Cannot delete contracts or jobs** (the app will prompt to contact an administrator).
-  - Can delete local reports (with an extra “uploaded to Firebase?” confirmation).
+| Field                 | Description                                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **StaffID**           | Human‑readable ID (001, 002, 003, 004, etc.). Used as the document key in `users/{StaffID}`.                                                |
+| **Role**              | Normalised to `super_admin`, `admin`, or `tech` from Firestore. Drives RBAC; no hardcoded staff IDs in app logic.                           |
+| **Name/Email/Number** | Loaded into the app for display and used on quotations and service agreements.                                                              |
+| **ContractKey**       | Stable key used to name per‑technician contract collections (`"{ContractKey} Contracts"`) and for spinners, messaging and assignments.      |
+| **Can* flags**        | Optional boolean flags for fine‑grained permissions (e.g. create reports, manage leads).                                                  |
 
-Notes:
+On login, the app resolves **UID → StaffID** (via `users/{uid}` or email match), then loads **users/{StaffID}** and populates `SessionManager` with Role, ContractKey and permissions. ContractKey is the internal identifier for assignments and collections; display names come from Firestore for UI only.
 
-- Contracts are stored per technician in collections like `User Contracts`
-- Work View events are stored per technician in collections like `user_workview` etc.
-- Notifications are stored in Firestore under `notifications/{user}/items`.
+Typical assignments (your Firestore data may differ):
 
----
+- **super_admin** — full access to all features, including global search, location sharing and API key management.
+- **admin** — can assign work, manage contracts and jobs, update commissions, and view multiple calendars. They also receive oversight notifications.
+- **tech** — can view their own work, create and upload reports, and manage their own contracts. They cannot delete jobs or contracts and have limited edit rights in leads/commission.
 
-## How to use the app (by user)
-
-### (Admin / Oversight)
-
-- **Assign jobs**:
-  - Use Jobs → Add Job (Job Work) and select the assigned technician from the dropdown.
-  - The assigned technician receives an **in-app notification**.
-- **Assign contracts**:
-  - Use Contracts → Add Contract.
-  - Use the Assign-to dropdown (per technician) to put the contract into the correct technician’s list.
-  - The assigned technician receives an **in-app notification**.
-- **Work View management**:
-  - Use Work View to schedule jobs/contracts and mark them complete.
-  - Reminders are scheduled ~30 minutes before scheduled jobs/contracts.
-- **Admin-only actions**:
-  - Delete/edit contracts.
-  - Delete jobs (Job Work and Management Jobs).
-- **Where to check activity**:
-  - Notifications screen (in-app history).
-  - Messaging (1:1 and group chat).
-- **Commission / Leads** (users 002, 004):
-  - Generate Lead / View Leads to manage commission tracking and invoice status.
-  - Lead updates can notify the assigned technician.
-
-### (Admin / Owner)
-
-- Everything in Ian’s section, plus:
-  - **James-only features (currently)**:
-    - **Global Search** (search across Jobs/Contracts/Leads/Reports in one place).
-- **Commission / Leads**:
-  - Generate Lead / View Leads to manage commission tracking and invoice status.
-  - Lead updates can notify the assigned technician.
-
-### (Admin / Office)
-
-- **Assign jobs** (Job Work / Management Jobs) using the dropdown to avoid typos.
-- **Assign contracts** via the Assign-to dropdown.
-- **Oversight workflows**:
-  - Use Notifications to review what was assigned/changed.
-  - Use Leads to track invoice status, materials cost, and commission.
-- **Admin-only actions**:
-  - Delete/edit contracts.
-  - Delete jobs.
-
-### (Technician)
-
-- **Daily workflow**:
-  - Work View is your schedule. Use it to see today’s work and upcoming jobs/contracts.
-  - Tap events to open details, open Maps, and create reports when needed.
-- **Job Work**:
-  - Review jobs assigned to you.
-  - Accept jobs, add addresses if required, and create reports.
-- **Contracts**:
-  - Add contracts to your own list.
-  - Mark visits done and keep last/next visit accurate.
-- **Reports**:
-  - Create and upload PDFs.
-  - You can delete local reports, but the app will ask you to confirm you uploaded to Firebase first.
-- **Restrictions**:
-  - You **cannot delete** contracts or jobs. If you try, you’ll see:
-    - “To delete a contract get in touch with an administrator.”
-    - “To delete a job get in touch with an administrator.”
+The offline user does not correspond to a Firestore profile. The app restricts the UI and stores data locally only.
 
 ---
 
-## Technology stack
+## How to Use the App (By Role)
 
-- **Android**: Java, XML layouts, AppCompat, RecyclerView, etc.
-- **Firebase**:
-  - **Firestore**: primary database (contracts, jobs, leads, messages, notifications, workview).
-  - **Storage**: PDF report storage (`ReportsYY/...`).
-  - **Cloud Functions (Node.js)**: optional automation (cleanup/schedules).
-- **PDF**: iText (report generation; full compression for Action Forms and Create Report quotation PDFs; optional encryption for Action Forms and Create Report).
+### Admin / Oversight
+
+1. **Assign jobs** via Jobs → Add Job. Pick the technician from the dropdown. A notification is written to both the technician and to admin inboxes.
+2. **Assign contracts** via Contracts → Add Contract. Select the assignee. A notification is triggered.
+3. **Manage schedules** in Work View. Admins can open any technician’s calendar, drag events, set custom times and mark visits done. Reminders for technicians are scheduled automatically.
+4. **View notifications and messages** to stay informed. The Notifications screen lists all events relevant to your team.
+5. **Manage leads/commission** via Generate Lead / View Leads. Mark invoices as paid and update materials cost.
+
+### Admin / Owner (super_admin)
+
+In addition to the above, the owner (super_admin role) can:
+
+1. **Perform global searches** across jobs, contracts, leads and reports.
+2. **View staff locations** via the Location Finder.
+3. **Update AI API keys** in Settings (fields `KEY` and `key-grog` under `AI-Chat/AI-API`).
+
+### Technician
+
+1. **Check Work View daily** to see scheduled jobs, contract visits and follow‑ups. Tap events for details, open addresses in Maps and mark work complete.
+2. **Use Jobs** to review jobs assigned to you. Accept jobs, add addresses where missing and create reports.
+3. **Manage contracts** assigned to you. You can add contracts to your own list, search for contract reports by year and mark visits done.
+4. **Generate reports and action forms.** Fill out the forms, optionally set a password and upload the resulting PDF. If working offline, save the PDF locally and upload it later from the Stored Reports screen.
+5. **Send and receive messages** via the chat screens. Use the group chat for general communication and direct chats for 1:1 conversations.
+
+Technicians do **not** have the ability to delete jobs or contracts. The app will prompt them to contact an administrator if they attempt to do so.
 
 ---
 
-## Repository layout
+## Technology Stack
+
+| Layer              | Details                                                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Client**         | Android (Java), XML layouts, RecyclerView, WorkManager, Material components.                                                     |
+| **Data & Auth**    | Firebase Authentication, Firestore for data, Firebase Storage for PDFs and attachments.                                           |
+| **PDF generation** | [iText](https://itextpdf.com/) for all report types, with automatic compression and optional owner‑password encryption.         |
+| **Automation**     | Optional Node.js Cloud Functions for scheduled cleanup (e.g. message retention) and other tasks.                                 |
+| **AI Integration** | External LLM providers (Groq or Hugging Face) accessed via HTTP calls. API keys are stored in Firestore and updated via the app. |
+
+---
+
+## Repository Layout
 
 ```
 grpc/
-├── app/                         # Android app module
-├── functions/                   # Firebase Cloud Functions (Node.js)
-├── gradle.properties.template   # Template for build-time env variables
-├── build-with-env.bat           # Windows build helper
-├── build-with-env.sh            # Linux/macOS build helper
-├── setup-env.bat                # Windows env setup helper
-├── setup-env.sh                 # Linux/macOS env setup helper
-└── .gitignore                   # Secret/build artifact exclusions
+├── app/                         # Android app module (production)
+├── docs/                        # Architecture diagram source (Mermaid)
+├── functions/                   # Firebase Cloud Functions (optional automation)
+├── src/demo/                    # Demo flavour (separate Firebase project)
+├── gradle.properties.template   # Template for environment configuration
+├── build-with-env scripts       # Helpers to build with different envs (Windows & *nix)
+└── .gitignore                   # Prevents committing secrets and build artifacts
 ```
 
----
-
-## Architecture (PDF reporting and offline template)
-
-This section details the PDF report and **offline template** behaviour. For the full platform architecture (stack, data flow, workflows, multi-company options), see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
-
-- **Create Report (GRPC template)**  
-  `ReportActivity` collects form data and, on save, calls `PDFReportGenerator.generatePDFReport(...)`. That method creates the PDF with a fixed logo (drawable), title “Good Riddance Pest Control Report”, and body built by `PDFReportGenerator.addReportBodyToDocument(...)`. A page event handler (`PdfWatermarkAndFooterHandler`) adds the default watermark and footer on every page. Images are added only when the user has selected at least one image (no placeholder when none are selected).
-
-- **Offline PDF template (My Template)**  
-  The same Create Report screen offers a template selector: **Use GRPC Template** or **Use My Template** (when not logged in). Template preferences are stored locally via `PdfTemplateStorage` (SharedPreferences + JSON for header blocks; logo and watermark image files in `context.getFilesDir()/pdf_template/`). The **PDF Template Settings** screen (`PdfTemplateSettingsActivity`) lets users set **main header** text and **main header colour** (Blue, Black, Dark Gray, Red, Green), logo, enable/configure watermark (text or image), and add/remove/reorder header blocks (text with style H1/H2/BODY or image). **Save template settings** saves the current setup as a named template, then **clears all fields** and persists that cleared state so the next time the user opens PDF Template Settings or creates a new template, the form is empty.
-
-- **PDF generation flow**  
-  When the user saves a report, `ReportActivity` either uses a selected saved template (when launched from View Templates → Use, via `EXTRA_TEMPLATE_ID`) or loads `PdfTemplateSettings` from `PdfTemplateStorage` and sets `templateSelection` from the radio choice (GRPC vs MY_TEMPLATE). It then calls `PDFReportGeneratorWithTemplate.generatePdf(..., settings)`. All PDFs are auto-compressed.
-  - If **GRPC**: `PDFReportGeneratorWithTemplate` delegates to `PDFReportGenerator.generatePDFReport(...)` with no other changes.
-  - If **MY_TEMPLATE**: `PDFReportGeneratorWithTemplate` creates the writer/document, registers a custom page handler (`CustomWatermarkAndFooterHandler`) for watermark and footer. The **custom header** is: **logo first** (same size as GRPC: 200×200, centre; nothing if no logo path), then **main header** paragraph (user text in chosen colour). Header blocks (text/image) are only in the body, not at the very top. Watermark uses only the user’s text or image when enabled; no default when disabled. Footer text is **"Created by reporting system"**. Then `PDFReportGenerator.addReportBodyToDocument(...)` is called so the body layout is identical to the GRPC report.
-
-- **Named templates:** In PDF Template Settings, **Save template settings** saves the current setup as a named template and clears the form; **View templates** lists them (with **Delete** + confirm); **Use** opens Create Report with that template applied. All PDFs are **auto-compressed** (no checkbox).
-
-- **Key classes**  
-  - `PdfTemplateSettings` — POJO: templateSelection, mainHeaderText, mainHeaderColorHex, logoPath, watermark (enabled, type, text, imagePath), list of `HeaderBlock` (blockType, textStyle, text, imagePath).  
-  - `SavedTemplate` — Named template (id, name, mainHeaderText, mainHeaderColorHex, logoPath, watermark*, headerBlocks); `toPdfTemplateSettings()` for generation.  
-  - `PdfTemplateStorage` — Loads/saves settings; saved templates list (loadSavedTemplates, addSavedTemplate, getSavedTemplateById); SharedPreferences + JSON.  
-  - `PDFReportGenerator` — existing: `generatePDFReport(...)` (unchanged), `addReportBodyToDocument(document, content, context, imageUris)` (body + optional image section).  
-  - `PDFReportGeneratorWithTemplate` — `generatePdf(..., settings)`: GRPC path → existing generator; MY_TEMPLATE path → logo (200×200) then main header, custom watermark/footer, same body; auto-compress.  
-  - `PdfTemplateSettingsActivity` — UI for main header + colour, logo, watermark, header blocks; template name; Save template settings; View templates.  
-  - `ViewTemplatesActivity` — Lists saved templates; Use → ReportActivity with EXTRA_TEMPLATE_ID; Delete with confirmation.
+The **demo** flavour uses its own `google-services.json` and package name (`com.grpc.grpc.demo`) for demonstration purposes. Do not use the demo configuration for production.
 
 ---
 
-## Setup (end-to-end)
+## Setup (End‑to‑End)
 
-### Prerequisites
+### 1. Prerequisites
 
-- Android Studio (latest stable recommended)
-- JDK (Android Studio embedded JDK is fine)
-- A Firebase project with:
-  - Firestore enabled
-  - Storage enabled
-- Cloud Functions enabled (optional, for automation)
-- Firebase CLI (for deploying functions)
+- Android Studio (latest stable)
+- JDK (bundled with Android Studio)
+- A Firebase project with Firestore and Storage enabled
+- [Firebase CLI](https://firebase.google.com/docs/cli) if you intend to deploy functions
 
----
+### 2. Package Name / Application ID
 
-### Package name / applicationId changes
+If you need to change the package from `com.grpc.grpc` to something else:
 
-If you need to rename from `com.grpc.grpc`:
+1. In Android Studio, use **Refactor → Rename** on the Java package. Update the `applicationId` in `app/build.gradle.kts` and rebuild.
+2. Register the new package in Firebase Console and download a fresh `google-services.json`. Place it in the appropriate module’s root (e.g. `app/` or the demo flavour folder).
 
-- Use Android Studio: **Refactor → Rename** on the Java/Kotlin package.
-- Update `applicationId` in `app/build.gradle.kts` if you change the package.
-- Update `AndroidManifest.xml` references if your tooling doesn’t do it automatically.
-- Rebuild and verify the app launches.
+### 3. Firebase Setup
 
-Important: your Firebase Android app registration must match the final package name.
+1. Create/select your project in Firebase Console.
+2. Add an **Android app** with the correct package name. Download the generated `google-services.json` and place it in the module’s root.
+3. Enable Firestore and Storage. Create the year‑based root folders in Storage (`Reports25/`, `Reports26/`, etc.) and any contract collections you plan to use (e.g. `"James Contracts"` or per‑ContractKey as in your `users` docs).
 
----
+### 4. Firestore Rules
 
-### Firebase setup (Android + Console)
-
-1. In Firebase Console, create/select your project.
-2. Add an **Android app** in Firebase:
-   - Package name must match your app’s `applicationId`.
-3. Download `google-services.json`.
-4. Place it at:
-   - `app/google-services.json`
-
-`google-services.json` is intentionally ignored by git.
-
----
-
-### Firestore rules + collections
-
-#### Fixing “Access Denied” when viewing contracts
-
-If your Firestore rules block access to the `"[User] Contracts"` collections, you can fix it in Firebase Console:
-
-- Firebase Console → **Firestore Database** → **Rules**
-
-**Development-only permissive rules (NOT for production):**
+Development rules can be permissive while building, but you **must** harden them for production. A baseline rule set might look like:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    // Contract collections per technician
+    match /{contractCollection}/{document=**} {
+      allow read, write: if request.auth != null && contractCollection.matches('.* Contracts');
     }
+    // In‑app notifications
+    match /notifications/{staffId}/items/{itemId} {
+      allow read, write: if request.auth != null && request.auth.uid == staffId;
+    }
+    // Leads, jobs, messages etc. should each have their own scoped rules based on staff ID and role
   }
 }
 ```
 
-**Production baseline suggestion (adjust to your auth model):**
+Never leave the default “allow read, write: if true” rules in production. Limit writes to appropriate roles and collections, and use `request.auth.token` to enforce role‑based access.
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{userName} Contracts/{document} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}
-```
+### 5. Storage Layout
 
-If collections do not exist yet, create them manually (at minimum create the `"[User] Contracts"` collections) and add a test document.
+Create year‑based folders such as `Reports25/`, `Reports26/`, etc. Within each year you may organise PDFs directly under the root or into monthly subfolders (January, February, …). The app will only search within the selected year and matches PDFs by contract name.
 
----
+### 6. Environment Variables & Build Configuration
 
-### Storage layout for reports
-
-Contract report viewing expects year-based root folders in Firebase Storage:
-
-- `Reports25/`
-- `Reports26/`
-- `Reports27/`
-- …
-
-Each `ReportsYY` folder may contain PDFs directly or be organized into month subfolders:
-
-```
-Reports26/
-  January/
-    <contract-name>_....pdf
-  February/
-    <contract-name>_....pdf
-  <contract-name>_....pdf
-```
-
-The “View Reports” action:
-
-- prompts for **year**, then
-- searches only inside the selected `ReportsYY` folder,
-- matching is flexible (ignores case/spaces/underscores).
-
----
-
-### Environment variables & build configuration
-
-This project supports build-time configuration via **Gradle properties → BuildConfig** (see `AppConfig.java`).
-
-#### Key files
-
-- `gradle.properties.template` (start here)
-- `gradle.properties` (**not committed**; ignored by git)
-- `app/build.gradle.kts` (defines BuildConfig fields)
-- `AppConfig.java` (central accessors)
-
-#### Quick start (recommended scripts)
-
-Windows examples:
-
-```batch
-:: Production
-build-with-env.bat -e production -v 1.0.0
-
-:: Development
-build-with-env.bat -e development -f my-dev-project
-
-:: Staging
-build-with-env.bat -e staging -v 1.1.0 -f staging-project
-```
-
-Linux/macOS examples:
-
-```bash
-./build-with-env.sh -e production -v 1.0.0
-./build-with-env.sh -e development -f my-dev-project
-./build-with-env.sh -e staging -v 1.1.0 -f staging-project
-```
-
-#### Manual configuration
-
-1) Run setup script (creates a local `gradle.properties` from the template):
-
-```bash
-setup-env.bat
-# or
-./setup-env.sh
-```
-
-2) Edit `gradle.properties` as needed (examples):
+Use the provided `gradle.properties.template` to create a local `gradle.properties` file. Fields include:
 
 ```properties
-# Firebase Configuration
 FIREBASE_PROJECT_ID=your-project-id
 FIREBASE_API_KEY=your-api-key
 FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
-
-# API Configuration (if used)
-API_BASE_URL=https://your-api-url.com
-APP_ENVIRONMENT=production
-
-# Default credentials (optional/offline flows)
-DEFAULT_USER_EMAIL=
-DEFAULT_USER_PASSWORD=
+API_BASE_URL=https://your-backend-url (if you add custom APIs)
+APP_ENVIRONMENT=production|staging|development
+DEFAULT_USER_EMAIL=optional-email-for-offline-mode
+DEFAULT_USER_PASSWORD=optional-password-for-offline-mode
 ```
 
-3) Build:
+Run `setup-env.sh` (Linux/macOS) or `setup-env.bat` (Windows) to generate `gradle.properties` from the template. The build scripts `build-with-env.sh` and `build-with-env.bat` wrap `./gradlew assemble...` to embed environment variables at build time.
 
-```bash
-./gradlew assembleDebug
-./gradlew assembleRelease
-```
+### 7. Cloud Functions (Optional)
 
-Important: environment variables are embedded at build time; changing them requires rebuilding the APK.
-
----
-
-### Cloud Functions (optional automation)
-
-Functions live in `functions/` and implement:
-
-- scheduled cleanup (e.g. message retention)
-- other server-side automation you may choose to enable
-
-Typical deployment:
+The `functions/` directory contains optional Node.js Cloud Functions for scheduled cleanup and future automation. To deploy them:
 
 ```bash
 cd functions
@@ -531,88 +295,58 @@ npm install
 firebase deploy --only functions
 ```
 
-This repository uses **in-app only notifications**; FCM push sends are intentionally disabled.
-
-Important: **in-app notification records are written by the Android client** (Firestore writes to `notifications/{user}/items`).
-Some function triggers that previously wrote the same records are intentionally disabled to avoid duplicates.
+These functions clean up non‑urgent messages after a timeout and can be extended to run other server‑side tasks. Note that the app itself writes notifications directly; avoid duplicating the writes in functions.
 
 ---
 
-## Operational behavior
+## Operational Behaviour
 
-### Work reminders
-
-Push/system reminders are disabled by design. Any reminder behavior should be implemented as **in-app only** signals.
+- **In‑app only notifications** — the app does not integrate with Google/Apple push notifications. All reminders and alerts are internal to the app and persist even if the user logs out and back in, as long as they remain logged in with the same account.
+- **Message retention** — optional Cloud Functions delete non‑urgent messages after about 30 minutes. If this function is not deployed, messages will remain in Firestore until manually cleaned up.
+- **Data synchronisation** — the app uses Firestore’s offline capabilities, but persistent local storage is not encrypted. See the security section for recommendations on encrypting local caches.
+- **Logout and cache** — on logout the app clears session data, staff caches, work view cache, widget cache and location cache so the next user on the same device does not see the previous user’s identity or lists.
 
 ---
 
-## Security and repository hygiene
+## Security and Repository Hygiene
 
-Do **not** commit:
+Working with customer data, location information and AI services demands careful attention to security. Here are the key practices you should follow:
 
-- `app/google-services.json`
-- service account credentials (`service_account.json`, `*service_account*.json`)
-- keystores/signing files (`*.jks`, `*.keystore`, `signing.properties`, etc.)
-- `.env` files, `gradle.properties`, or any secrets
-- build outputs (`app/build/`, `*.apk`, `*.aab`)
-
-The included `.gitignore` is configured to prevent this. If sensitive files were committed previously, remove them from git history and rotate the secrets.
+1. **Do not commit secrets** — never commit `google-services.json`, `service_account.json`, API keys or keystore files. Use `.gitignore` to exclude these files and store them securely outside version control. The `service_account.json` present in some historical branches should be removed immediately and the key rotated.
+2. **Harden Firestore rules** — restrict access based on authenticated user ID and role. Technicians should only read/write their own contracts, jobs, notifications and messages. Admins may need cross‑user access, but this should be explicit in the rules. Test rules thoroughly using the Firebase emulator.
+3. **Limit API key exposure** — store LLM API keys in Firestore under `AI-Chat/AI-API` and ensure that only super_admin (or authorised admin) can read or write them. Do not include keys in code or configuration files.
+4. **Encrypt local data** — reports saved offline and cached location data are stored in clear text. Use Android’s [EncryptedFile](https://developer.android.com/training/data-storage/encrypt) or SQLCipher to encrypt sensitive files and SharedPreferences. At minimum, restrict file access to your app’s private storage.
+5. **Enforce TLS** — Android enforces HTTPS by default for Firebase. If you add custom APIs, configure a [Network Security Config](https://developer.android.com/training/articles/security-config) that disallows clear‑text HTTP.
+6. **Use strong authentication** — encourage strong passwords for Firebase Auth and consider enabling [multi‑factor authentication](https://firebase.google.com/docs/auth/android/mfa) for admin accounts.
+7. **Validate user input** — all text fields (especially report forms and messaging) should be validated and sanitised to prevent injection or malicious content. File names used for PDF generation should be normalised to avoid path traversal.
+8. **Remove debug logs in production** — do not log sensitive information (email addresses, phone numbers, GPS coordinates). Use ProGuard/R8 to obfuscate your code and minimise attack surface.
+9. **Rotate credentials periodically** — especially LLM API keys and service accounts. Provide an admin screen for rotating keys without redeploying the app.
+10. **Review third‑party dependencies** — ensure that libraries used for PDF generation and messaging are kept up to date. For example, iText versions prior to 2.x are AGPL; verify licensing and update accordingly.
 
 ---
 
 ## Troubleshooting
 
-### “Access denied” in Contracts
+### Contracts “Access Denied”
 
-- Confirm Firestore rules allow reads for `"[User] Contracts"` collections.
-- Confirm collection names match exactly: `[User] Contracts` per technician (e.g. from StaffDirectory.getContractsCollectionName(id)).
+- Confirm that the Firestore rules allow reads/writes for `"{ContractKey} Contracts"` collections. If the collections do not exist yet, create them manually in Firestore and add a test document.
 
 ### “No reports found”
 
-- Confirm Storage has the year folders (`Reports25`, `Reports26`, …).
-- Confirm filenames contain the contract name (matching ignores spaces/underscores/case).
+- Check that your Storage bucket contains folders for the selected year (`Reports25`, `Reports26`, …). PDF names must include the contract name. The matching algorithm ignores case, spaces and underscores.
 
 ### Notifications not appearing
 
-- Confirm Firestore writes are succeeding to `notifications/{user}/items`.
-- Confirm you’re not expecting push/system notifications (this app uses in-app only).
+- Verify that the device is logged in and that Firestore writes to `notifications/{StaffID}/items` are succeeding. Remember that this app does **not** integrate with FCM push notifications — all notifications are in‑app only.
 
-### Environment variables not updating
+### Spinner shows wrong or duplicate names
 
-- Values are embedded at build time. Run `./gradlew clean` and rebuild the APK after changing `gradle.properties`.
-
-### Work View widget blank or not updating
-
-- See **`app/src/main/assets/WIDGET_TROUBLESHOOTING.md`**. In short: do not add drawables/PNG to the widget layout; open Work View once to populate the cache; remove and re-add the widget to force an update; check Logcat for tag `WorkViewWidget` if the widget fails to update.
-
----
-
-## Branding
-
-### App logo
-
-- **Android UI logo**: `app/src/main/res/drawable/logo.png`
-  - Used on the **Login** screen and next to the **Welcome** text on the Home screen.
-  - Recommended: square-ish PNG, at least \(200 \times 200\) px, transparent background if possible.
-
-### App name / colors
-
-- **App name and text**: `app/src/main/res/values/strings.xml`
-- **Brand colors**: `app/src/main/res/values/colors.xml` and `app/src/main/res/values-night/colors.xml`
-- **Theme**: `app/src/main/res/values/themes.xml` and `app/src/main/res/values-night/themes.xml`
+- Staff lists (e.g. Assigned Technician, Select User’s Contracts) are loaded from Firestore `users` and deduplicated by ContractKey. Ensure `users/{StaffID}` documents have a valid `ContractKey` and optional `Name` for display. Clear app data or log out and back in to refresh caches.
 
 ---
 
 ## Support
 
-If you need help setting up or operating this app:
+For questions, please contact the maintainer or open an issue in the associated repository. Remember to provide device logs (with sensitive data removed) and describe the steps to reproduce your issue.
 
-- **Best place to start**: check `README.md` → **Setup**, **Troubleshooting**, and **Branding**
-- **Bug reports**: include
-  - the screen name + steps to reproduce
-  - what you expected vs what happened
-  - device + Android version
-  - relevant Firestore document IDs (if applicable)
-  - logs (Android Studio Logcat) with any errors
-
-If you’re sharing this repo with third parties, ensure `google-services.json`, keystores, and any secrets remain **out of git**.
+The staff CRM/portal that shares this Firebase backend is hosted at [https://grpcstaff.ie](https://grpcstaff.ie) (and [https://www.grpcstaff.ie](https://www.grpcstaff.ie)).

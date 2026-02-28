@@ -36,11 +36,11 @@
     <!-- Network state access for offline/online mode detection -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
-    <!-- Location (for James-only location finder; tech devices publish last known location) -->
+    <!-- Location (for admin location finder; tech devices publish last known location) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     
-    <!-- External storage access for saving reports and documents locally -->
+    <!-- External storage: save reports locally; read for viewing reports on device (incl. offline flavor) -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     
@@ -70,9 +70,9 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@drawable/bk"
-        android:label="GRPC"
-        android:roundIcon="@drawable/bk"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Grpc"
         tools:targetApi="31">
@@ -100,13 +100,13 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
-        <!-- James-only (for now): Global search entry point -->
+        <!-- Admin-only (for now): Global search entry point -->
         <activity
             android:name=".SearchActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
-        <!-- James-only: view last known technician locations -->
+        <!-- Admin-only: view last known technician locations -->
         <activity
             android:name=".LocationFinderActivity"
             android:windowSoftInputMode="adjustResize"
@@ -436,6 +436,11 @@
         <activity android:name=".GeneralQuotationActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
+        <!-- General Quotation from catalog (sales.json per flavor) -->
+        <activity android:name=".GeneralQuotationFromCatalogActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
 
         <!-- ============================================================================
              ENVIRONMENTAL RISK ASSESSMENT (ERA) ACTIVITIES

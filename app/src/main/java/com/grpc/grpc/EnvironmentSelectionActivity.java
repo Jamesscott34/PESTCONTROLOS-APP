@@ -46,7 +46,16 @@ public class EnvironmentSelectionActivity extends AppCompatActivity {
 
         // Initialize the welcome TextView
         welcomeTextView = findViewById(R.id.welcomeTextView);
-        welcomeTextView.setText("Welcome, " + userName + "!");
+        if (welcomeTextView != null) {
+            welcomeTextView.setText("Welcome, " + userName + "!");
+        }
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            if (welcomeTextView == null) return;
+            String name = SessionManager.getName(this);
+            if (name != null && !name.trim().isEmpty()) {
+                welcomeTextView.setText("Welcome, " + name.trim() + "!");
+            }
+        }));
 
         ToxicButton = findViewById(R.id.ToxicButton);
         NonToxButton = findViewById(R.id.NonToxButton);

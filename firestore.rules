@@ -2,24 +2,380 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // OpenRouter API key: AI-Chat/AI-API, field KEY. Any logged-in user can read (app retrieves key for chat).
-    // Only James can update (via Update API Key in app → callable writes).
+    // ============================================================
+    // Identity model (supports BOTH Android app + CRM website)
+    //
+    // - Android app:
+    //   - users/{uid} stores StaffID mapping (UID -> 3-digit StaffID)
+    //   - users/{StaffID} is authoritative profile (Role, ContractKey, Can* flags)
+    //
+    // - CRM website (legacy):
+    //   - users/{uid} stores role + contractKey (and may NOT have StaffID)
+    //
+    // These helpers compute "effective" role/contractKey from either shape.
+    // ============================================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function uidDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+    function hasUidDoc() {
+      return signedIn() && exists(uidDocPath());
+    }
+    function uidDoc() {
+      return hasUidDoc() ? get(uidDocPath()).data : null;
+    }
+
+    function isStaffId(id) {
+      return id != null && id.matches('\\d{3}');
+    }
+
+    // From users/{uid} mapping doc (Android) if present
+    function myStaffId() {
+      return hasUidDoc()
+        ? (uidDoc().StaffID != null ? uidDoc().StaffID : uidDoc().staffId)
+        : null;
+    }
+
+    // From users/{uid} (CRM) if present
+    function uidRoleLower() {
+      return hasUidDoc()
+        ? (uidDoc().role != null ? uidDoc().role.lower()
+            : (uidDoc().Role != null ? uidDoc().Role.lower() : ''))
+        : '';
+    }
+    function uidContractKeyLower() {
+      return hasUidDoc()
+        ? (uidDoc().contractKey != null ? uidDoc().contractKey.lower()
+            : (uidDoc().ContractKey != null ? uidDoc().ContractKey.lower() : ''))
+        : '';
+    }
+
+    // From users/{StaffID} authoritative profile (Android) if mapping exists
+    function staffProfilePath(staffId) {
+      return /databases/$(database)/documents/users/$(staffId);
+    }
+    function hasMyStaffProfile() {
+      return signedIn() && isStaffId(myStaffId()) && exists(staffProfilePath(myStaffId()));
+    }
+    function myStaffProfile() {
+      return hasMyStaffProfile() ? get(staffProfilePath(myStaffId())).data : null;
+    }
+    function staffRoleLower() {
+      return hasMyStaffProfile()
+        ? (myStaffProfile().Role != null ? myStaffProfile().Role.lower()
+            : (myStaffProfile().role != null ? myStaffProfile().role.lower() : ''))
+        : '';
+    }
+    function staffContractKeyLower() {
+      return hasMyStaffProfile()
+        ? (myStaffProfile().ContractKey != null ? myStaffProfile().ContractKey.lower()
+            : (myStaffProfile().contractKey != null ? myStaffProfile().contractKey.lower() : ''))
+        : '';
+    }
+
+    // "Effective" values: prefer CRM uid fields; fall back to staff profile.
+    function effectiveRoleLower() {
+      return uidRoleLower() != '' ? uidRoleLower() : staffRoleLower();
+    }
+    function effectiveContractKeyLower() {
+      return uidContractKeyLower() != '' ? uidContractKeyLower() : staffContractKeyLower();
+    }
+
+    function isAdminStaffId() {
+      // Legacy-safe admin IDs for Android app gating.
+      return signedIn() && myStaffId() in ['001', '002', '004'];
+    }
+    function isAdmin() {
+      // Support both:
+      // - Android: StaffID list + Role in staff profile
+      // - CRM: role stored directly on users/{uid}
+      //
+      // Note: your existing CRM rules treated 'kristine' as admin-equivalent; preserved.
+      return signedIn() && (
+        isAdminStaffId()
+        || effectiveRoleLower() in ['admin', 'super_admin', 'kristine']
+      );
+    }
+    function isSuperAdmin() {
+      // Android hard guarantee: StaffID 001.
+      // CRM fallback: role field.
+      return signedIn() && (myStaffId() == '001' || effectiveRoleLower() == 'super_admin');
+    }
+    function isTech() {
+      return signedIn() && effectiveRoleLower() == 'tech';
+    }
+
+    // When Android seeds missing Can* flags on first login, allow a user to update ONLY these
+    // boolean keys on their own users/{StaffID} doc (no Role/ContractKey/Name edits).
+    function selfCanFlagWriteOnly() {
+      return signedIn()
+        && request.resource != null
+        && resource != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'CanAccessCommission',
+          'CanHardPressContracts',
+          'CanLocationFinder',
+          'CanMarkPaidLeads',
+          'CanSearch',
+          'SeesAllJobs'
+        ]);
+    }
+
+    // ============================================================
+    // AI keys (read-only from clients)
+    // ============================================================
     match /AI-Chat/AI-API {
-      allow read: if request.auth != null;
+      allow read: if signedIn();
       allow write: if false;
     }
 
-    // Allow access to all contract collections
-    match /{collection} {
-      allow read, write: if true;
+    // ============================================================
+    // staff/{staffId} (CRM compatibility)
+    // ============================================================
+    match /staff/{staffId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
     }
 
-    match /{contractCollection} {
-      allow read, write: if contractCollection.matches('.* Contracts');
+    // ============================================================
+    // users/{uid} + users/{StaffID} (dual-purpose collection)
+    // ============================================================
+    match /users/{userId} {
+      // Own UID doc (CRM + Android mapping doc) — self read/write
+      allow read, write: if signedIn() && request.auth.uid == userId;
+
+      // Admin can read any user doc (CRM needs this for user admin UI).
+      allow read: if signedIn() && isAdmin();
+
+      // Staff profile docs (3-digit StaffIDs)
+      //
+      // NOTE: During first login, the app may not have created users/{uid}.StaffID yet.
+      // SessionManager will temporarily resolve StaffID by email and read users/{StaffID}.
+      // Allow that single staff doc read by matching the Firebase Auth email to the staff profile Email.
+      allow read: if signedIn() && isStaffId(userId) && (
+        userId == myStaffId()
+        || isAdmin()
+        || (
+          request.auth.token.email != null
+          && (
+            (resource.data.Email != null && resource.data.Email.lower() == request.auth.token.email.lower())
+            || (resource.data.email != null && resource.data.email.lower() == request.auth.token.email.lower())
+          )
+        )
+      );
+
+      // Admin manages staff profiles.
+      allow create, delete, update: if signedIn() && isStaffId(userId) && isAdmin();
+
+      // Self: Can* seeding only on own staff profile.
+      allow update: if signedIn() && isStaffId(userId) && userId == myStaffId() && selfCanFlagWriteOnly();
     }
 
-    match /{collection}/{document=**} {
-      allow read, write: if true;
+    // ============================================================
+    // notifications/{StaffID}/items/*
+    //
+    // - Android app stores notifications per StaffID.
+    // - Admin visibility is done via fan-out writes to admin inboxes.
+    // ============================================================
+    match /notifications/{staffId}/items/{itemId} {
+      // Read:
+      // - user reads own inbox
+      // - admins may read any inbox (CRM-friendly; app doesn't require this)
+      allow read: if signedIn() && (staffId == myStaffId() || isAdmin());
+
+      // Writes:
+      // - user writes own inbox
+      // - any signed-in user may write into admin inboxes (fan-out)
+      // - admins may write anywhere (e.g., commission update notifying technician)
+      allow create, update, delete: if signedIn()
+        && (
+          staffId == myStaffId()
+          || staffId in ['001', '002', '004']
+          || isAdmin()
+        );
+    }
+
+    // ============================================================
+    // Contracts collections: "{ContractKey} Contracts"
+    // ============================================================
+    match /{contractCollection}/{contractId} {
+      allow read: if signedIn()
+        && contractCollection.matches('.* Contracts')
+        && (
+          isAdmin()
+          || (effectiveContractKeyLower() != '' && contractCollection.lower() == (effectiveContractKeyLower() + ' contracts'))
+        );
+
+      // Create/update allowed for own contract collection; delete admin-only.
+      allow create: if signedIn()
+        && contractCollection.matches('.* Contracts')
+        && (
+          isAdmin()
+          || (effectiveContractKeyLower() != '' && contractCollection.lower() == (effectiveContractKeyLower() + ' contracts'))
+        );
+
+      allow update: if signedIn()
+        && contractCollection.matches('.* Contracts')
+        && (
+          isAdmin()
+          || (effectiveContractKeyLower() != '' && contractCollection.lower() == (effectiveContractKeyLower() + ' contracts')
+              // Prevent non-admin ownership transfer via updates.
+              && request.resource.data.get('owner', resource.data.get('owner', '')) == resource.data.get('owner', ''))
+        );
+
+      allow delete: if signedIn() && isAdmin();
+    }
+
+    // ============================================================
+    // JobWork
+    // ============================================================
+    match /JobWork/{jobId} {
+      allow read, write, delete: if signedIn() && isAdmin();
+
+      // Tech reads jobs assigned to them (AssignedTechKey canonical; AssignedTech legacy)
+      allow read: if isTech() && (
+        resource.data.get('AssignedTechKey', '').lower() == effectiveContractKeyLower()
+        || resource.data.get('AssignedTech', '').lower() == effectiveContractKeyLower()
+      );
+
+      // Tech can create only for themselves
+      allow create: if isTech()
+        && request.resource.data.get('AssignedTechKey', '').lower() == effectiveContractKeyLower();
+
+      // Tech can update their own jobs, but cannot reassign
+      allow update: if isTech()
+        && request.resource.data.get('AssignedTechKey', '').lower() == effectiveContractKeyLower()
+        && (
+          resource.data.get('AssignedTechKey', '').lower() == '' ||
+          resource.data.get('AssignedTechKey', '').lower() == request.resource.data.get('AssignedTechKey', '').lower()
+        );
+    }
+
+    // ============================================================
+    // ManagmentJobs
+    // ============================================================
+    match /ManagmentJobs/{jobId} {
+      allow read, write, delete: if signedIn() && isAdmin();
+
+      allow read, update: if isTech() && (
+        resource.data.get('AssignedTo', '').lower() == effectiveContractKeyLower()
+        || resource.data.get('AssignedTech', '').lower() == effectiveContractKeyLower()
+      );
+
+      allow create: if isTech() && (
+        request.resource.data.get('AssignedTo', '').lower() == effectiveContractKeyLower()
+        || request.resource.data.get('AssignedTech', '').lower() == effectiveContractKeyLower()
+      );
+    }
+
+    // ============================================================
+    // Leads
+    // ============================================================
+    match /Leads/{leadId} {
+      // Admin full
+      allow read, write, delete: if signedIn() && isAdmin();
+
+      // Tech read: added-by or assigned-tech
+      allow read: if isTech() && (
+        resource.data.get('Added By', '').lower() == effectiveContractKeyLower()
+        || resource.data.get('Assigned Tech', '').lower() == effectiveContractKeyLower()
+      );
+
+      // Any signed-in user can create leads
+      allow create: if signedIn();
+
+      // Tech updates allowed (tighten later if desired)
+      allow update: if isTech();
+    }
+
+    // ============================================================
+    // WorkView calendars: "{contractKey}_workview" (e.g., james_workview)
+    // ============================================================
+    match /{workviewCollection}/{eventId} {
+      allow read, write, delete: if signedIn()
+        && workviewCollection.matches('.*_workview')
+        && (
+          isAdmin()
+          || (effectiveContractKeyLower() != '' && workviewCollection.lower() == (effectiveContractKeyLower() + '_workview'))
+        );
+    }
+
+    // ============================================================
+    // sharedAccounts (Google tokens): super_admin only
+    // ============================================================
+    match /sharedAccounts/{accountId} {
+      allow read, write: if signedIn() && isSuperAdmin();
+    }
+
+    // ============================================================
+    // emailHistory: written by Functions; admins read
+    // ============================================================
+    match /emailHistory/{docId} {
+      allow read: if signedIn() && isAdmin();
+      allow write: if false;
+    }
+
+    // ============================================================
+    // rateLimits: server-only
+    // ============================================================
+    match /rateLimits/{docId} {
+      allow read, write: if false;
+    }
+
+    // ============================================================
+    // storage_metadata
+    // ============================================================
+    match /storage_metadata/{docId} {
+      allow read: if signedIn();
+      allow write: if signedIn() && isAdmin();
+    }
+
+    // ============================================================
+    // reports (Firestore reports if used)
+    // ============================================================
+    match /reports/{reportId} {
+      allow read, write: if signedIn() && isAdmin();
+    }
+
+    // ============================================================
+    // customers + generic contracts (CRM compatibility)
+    // ============================================================
+    match /customers/{customerId} {
+      allow read, write: if signedIn() && isAdmin();
+    }
+    match /contracts/{contractId} {
+      allow read, write: if signedIn() && isAdmin();
+    }
+
+    // ============================================================
+    // jobs (generic collection)
+    // ============================================================
+    match /jobs/{jobId} {
+      allow read, write, delete: if signedIn() && isAdmin();
+      allow read, update: if isTech() && resource.data.assignedToUserId == request.auth.uid;
+    }
+
+    // ============================================================
+    // Quotes + requests (CRM compatibility)
+    // ============================================================
+    match /quotes/{quoteId} {
+      allow read: if signedIn();
+      allow write: if signedIn() && isAdmin();
+    }
+    match /requests/{requestId} {
+      allow read, write: if signedIn() && isAdmin();
+      allow create: if true;
+    }
+
+    // ============================================================
+    // Default deny
+    // ============================================================
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
-} 
+}

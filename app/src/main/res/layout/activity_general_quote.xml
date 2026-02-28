@@ -1,30 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
     android:paddingTop="?attr/actionBarSize"
-    android:background="?android:attr/colorBackground">
+    android:background="?android:attr/colorBackground"
+    android:fillViewport="true"
+    android:scrollbars="vertical"
+    android:fitsSystemWindows="true">
 
-    <!-- Centered content -->
     <LinearLayout
         android:id="@+id/quotesMenuContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:gravity="center_horizontal">
 
         <TextView
             android:id="@+id/welcomeTextView"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Welcome, User!"
+            android:text="Contract Quotations"
             android:textSize="24sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -33,35 +30,56 @@
 
         <Button
             android:id="@+id/button8ptContact"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="8pt Contact"
+            android:minHeight="56dp"
+            android:text="8pt Contract"
             android:textSize="16sp"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="10dp" />
 
         <Button
             android:id="@+id/button6ptContract"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:minHeight="56dp"
             android:text="6pt Contract"
             android:textSize="16sp"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="10dp" />
 
         <Button
             android:id="@+id/button4ptContract"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:minHeight="56dp"
             android:text="4pt Contract"
             android:textSize="16sp"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="10dp" />
 
         <Button
             android:id="@+id/button12ptContract"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:minHeight="56dp"
             android:text="12pt Contract"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/divider_outline" />
+
+        <Button
+            android:id="@+id/buttonCustomQuote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="Custom Quote"
+            android:textSize="16sp"
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="?attr/colorSecondary"
+            android:textColor="?attr/colorOnSecondary" />
 
     </LinearLayout>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

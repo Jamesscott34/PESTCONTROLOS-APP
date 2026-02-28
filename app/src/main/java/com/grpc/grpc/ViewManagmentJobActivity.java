@@ -601,15 +601,11 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
 
     private void deleteJob(String documentId) {
         if (!canDeleteJobs()) {
-            if ("003".equals(userId)) {
-                new AlertDialog.Builder(this)
-                        .setTitle("Permission required")
-                        .setMessage("To delete a job get in touch with an administrator.")
-                        .setPositiveButton("OK", null)
-                        .show();
-            } else {
-                Toast.makeText(this, "You do not have permission to delete jobs.", Toast.LENGTH_SHORT).show();
-            }
+            new AlertDialog.Builder(this)
+                    .setTitle("Permission required")
+                    .setMessage("To delete a job get in touch with an administrator.")
+                    .setPositiveButton("OK", null)
+                    .show();
             return;
         }
         db.collection("ManagmentJobs").document(documentId).delete();
@@ -617,7 +613,8 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
     }
 
     private boolean canDeleteJobs() {
-        return StaffDirectory.isAdminUserId(userId);
+        SessionManager.ensureLoaded(this, null);
+        return SessionManager.isAdmin(this);
     }
 
     private void updateStatistics(int total, int completed, int pending) {

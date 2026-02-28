@@ -37,7 +37,7 @@ import java.util.Map;
  * - Categorizes leads as paid or unpaid based on invoice status
  * - Allows marking invoices as paid with an automatic timestamp
  * - Supports editing materials cost and recalculating commission for jobs
- * - Enables lead deletion for admin users (James, Ian, Kristine)
+ * - Enables lead deletion for admin users (role-based)
  * - Provides an intuitive UI with click and long-press options for lead management
  *
  * Author: GRPC
@@ -54,7 +54,7 @@ public class ViewLeadsActivity extends AppCompatActivity {
     private FirebaseFirestore db;
 
     private String userName;
-    private String userId; // 001, 002, 003, 004 from StaffDirectory
+    private String userId; // StaffID (3 digits) when available
     private int total = 0, paid = 0, unpaid = 0;
 
     @Override
@@ -176,9 +176,10 @@ public class ViewLeadsActivity extends AppCompatActivity {
                             Map<String, Object> lead = document.getData();
                             lead.put("documentId", document.getId());
 
-                            // Admins (001, 002, 003) see all; others see only leads they added (Added By matches userName)
+                            // RBAC: admins see all; others see only leads they added (Added By matches userName)
                             String addedBy = (String) lead.get("Added By");
-                            if (StaffDirectory.isAdminUserId(userId) || (addedBy != null && addedBy.equalsIgnoreCase(userName))) {
+                            SessionManager.ensureLoaded(this, null);
+                            if (SessionManager.isAdmin(this) || (addedBy != null && addedBy.equalsIgnoreCase(userName))) {
                                 allLeads.add(lead);
 
                                 // Update counts
@@ -259,11 +260,12 @@ public class ViewLeadsActivity extends AppCompatActivity {
 
         leadDetails.setText(leadInfo);
 
-        // Mark as Paid / Edit Materials: 001, 002, 003 only
-        boolean canMarkPaidOrEditMaterials = StaffDirectory.canMarkPaidLeadsUserId(userId);
+        // Mark as Paid / Edit Materials: RBAC (admin by default; can be overridden by staff profile flags)
+        SessionManager.ensureLoaded(this, null);
+        boolean canMarkPaidOrEditMaterials = SessionManager.canMarkPaidLeads(this);
         leadBox.setOnClickListener(v -> {
             if (!canMarkPaidOrEditMaterials) {
-                Toast.makeText(this, "Only James, Ian, or Kristine can mark as paid or edit materials.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "You do not have permission to mark as paid or edit materials.", Toast.LENGTH_SHORT).show();
                 return;
             }
             AlertDialog.Builder optionsDialog = new AlertDialog.Builder(this);
@@ -284,10 +286,9 @@ public class ViewLeadsActivity extends AppCompatActivity {
             optionsDialog.show();
         });
 
-
-        // Long press: Delete — admins 001, 002, 003 only
+        // Long press: Delete — RBAC (admin)
         leadBox.setOnLongClickListener(v -> {
-            if (StaffDirectory.isAdminUserId(userId)) {
+            if (SessionManager.isAdmin(this)) {
                 new AlertDialog.Builder(this)
                         .setTitle("Delete Lead")
                         .setMessage("Are you sure you want to delete this lead?")

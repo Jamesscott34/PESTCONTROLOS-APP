@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ViewGroup;
@@ -40,6 +41,7 @@ public class NotificationsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notifications);
+        if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.isEmpty()) {
@@ -56,6 +58,11 @@ public class NotificationsActivity extends AppCompatActivity {
         emptyText = findViewById(R.id.emptyText);
         deleteAllButton = findViewById(R.id.deleteAllButton);
 
+        Button settingsButton = findViewById(R.id.settingsButton);
+        if (settingsButton != null) {
+            settingsButton.setOnClickListener(v -> openNotificationSettings());
+        }
+
         if (deleteAllButton != null) {
             deleteAllButton.setOnClickListener(v -> confirmDeleteAll());
         }
@@ -71,6 +78,28 @@ public class NotificationsActivity extends AppCompatActivity {
         loadNotifications();
     }
 
+    private void openNotificationSettings() {
+        try {
+            Intent intent;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+            } else {
+                intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        .setData(Uri.parse("package:" + getPackageName()));
+            }
+            startActivity(intent);
+        } catch (Exception e) {
+            try {
+                Intent fallback = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        .setData(Uri.parse("package:" + getPackageName()));
+                startActivity(fallback);
+            } catch (Exception ignored) {
+                Toast.makeText(this, "Could not open notification settings.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     private void confirmDeleteAll() {
         new AlertDialog.Builder(this)
                 .setTitle("Delete All Notifications")
@@ -81,122 +110,132 @@ public class NotificationsActivity extends AppCompatActivity {
     }
 
     private void deleteAllNotifications() {
-        String userKey = userName.trim().toLowerCase();
-        db.collection("notifications")
-                .document(userKey)
-                .collection("items")
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    if (snapshot == null || snapshot.isEmpty()) {
-                        Toast.makeText(this, "No notifications to delete.", Toast.LENGTH_SHORT).show();
-                        loadNotifications();
-                        return;
-                    }
-                    WriteBatch batch = db.batch();
-                    for (QueryDocumentSnapshot doc : snapshot) {
-                        batch.delete(doc.getReference());
-                    }
-                    batch.commit()
-                            .addOnSuccessListener(v -> {
-                                Toast.makeText(this, "Notifications deleted.", Toast.LENGTH_SHORT).show();
-                                loadNotifications();
-                            })
-                            .addOnFailureListener(e -> Toast.makeText(this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            String staffId = session != null ? session.staffId : "";
+            String userKey = !TextUtils.isEmpty(staffId) ? staffId : NotificationUtils.resolveNotificationRecipientKey(userName);
+            if (TextUtils.isEmpty(userKey)) return;
+
+            db.collection("notifications")
+                    .document(userKey)
+                    .collection("items")
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        if (snapshot == null || snapshot.isEmpty()) {
+                            Toast.makeText(this, "No notifications to delete.", Toast.LENGTH_SHORT).show();
+                            loadNotifications();
+                            return;
+                        }
+                        WriteBatch batch = db.batch();
+                        for (QueryDocumentSnapshot doc : snapshot) {
+                            batch.delete(doc.getReference());
+                        }
+                        batch.commit()
+                                .addOnSuccessListener(v -> {
+                                    Toast.makeText(this, "Notifications deleted.", Toast.LENGTH_SHORT).show();
+                                    loadNotifications();
+                                })
+                                .addOnFailureListener(e -> Toast.makeText(this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    })
+                    .addOnFailureListener(e -> Toast.makeText(this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        }));
     }
 
     private void loadNotifications() {
-        String userKey = userName.trim().toLowerCase();
-        db.collection("notifications")
-                .document(userKey)
-                .collection("items")
-                .orderBy("timestamp", Query.Direction.DESCENDING)
-                .limit(50)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    notificationsContainer.removeAllViews();
-                    if (snapshot.isEmpty()) {
-                        emptyText.setVisibility(android.view.View.VISIBLE);
-                        if (deleteAllButton != null) deleteAllButton.setEnabled(false);
-                        return;
-                    }
-                    emptyText.setVisibility(android.view.View.GONE);
-                    if (deleteAllButton != null) deleteAllButton.setEnabled(true);
-                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            String staffId = session != null ? session.staffId : "";
+            String userKey = !TextUtils.isEmpty(staffId) ? staffId : NotificationUtils.resolveNotificationRecipientKey(userName);
+            if (TextUtils.isEmpty(userKey)) return;
 
-                    // Mark all unread items as read (so home screen badge clears after viewing)
-                    WriteBatch batch = db.batch();
-                    boolean hasUnreadToUpdate = false;
+            db.collection("notifications")
+                    .document(userKey)
+                    .collection("items")
+                    .orderBy("timestamp", Query.Direction.DESCENDING)
+                    .limit(50)
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        notificationsContainer.removeAllViews();
+                        if (snapshot.isEmpty()) {
+                            emptyText.setVisibility(android.view.View.VISIBLE);
+                            if (deleteAllButton != null) deleteAllButton.setEnabled(false);
+                            return;
+                        }
+                        emptyText.setVisibility(android.view.View.GONE);
+                        if (deleteAllButton != null) deleteAllButton.setEnabled(true);
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
 
-                    for (QueryDocumentSnapshot doc : snapshot) {
-                        String title = doc.getString("title");
-                        String body = doc.getString("body");
-                        String type = doc.getString("type");
-                        Object dataObj = doc.get("data");
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> data = dataObj instanceof Map ? (Map<String, Object>) dataObj : null;
-                        Object ts = doc.get("timestamp");
-                        String timeStr = ts instanceof com.google.firebase.Timestamp
-                                ? sdf.format(((com.google.firebase.Timestamp) ts).toDate())
-                                : "Recently";
+                        // Mark all unread items as read (so home screen badge clears after viewing)
+                        WriteBatch batch = db.batch();
+                        boolean hasUnreadToUpdate = false;
 
-                        Boolean read = doc.getBoolean("read");
-                        if (read == null || !read) {
-                            hasUnreadToUpdate = true;
-                            batch.update(doc.getReference(), "read", true);
+                        for (QueryDocumentSnapshot doc : snapshot) {
+                            String title = doc.getString("title");
+                            String body = doc.getString("body");
+                            String type = doc.getString("type");
+                            Object dataObj = doc.get("data");
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> data = dataObj instanceof Map ? (Map<String, Object>) dataObj : null;
+                            Object ts = doc.get("timestamp");
+                            String timeStr = ts instanceof com.google.firebase.Timestamp
+                                    ? sdf.format(((com.google.firebase.Timestamp) ts).toDate())
+                                    : "Recently";
+
+                            Boolean read = doc.getBoolean("read");
+                            if (read == null || !read) {
+                                hasUnreadToUpdate = true;
+                                batch.update(doc.getReference(), "read", true);
+                            }
+
+                            LinearLayout card = new LinearLayout(this);
+                            card.setOrientation(LinearLayout.VERTICAL);
+                            card.setPadding(24, 16, 24, 16);
+                            card.setBackgroundResource(R.drawable.surface_frame);
+                            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                            params.setMargins(0, 0, 0, 12);
+                            card.setLayoutParams(params);
+
+                            TextView titleView = new TextView(this);
+                            titleView.setText(title != null ? title : "Notification");
+                            titleView.setTextSize(16);
+                            titleView.setTypeface(null, android.graphics.Typeface.BOLD);
+                            card.addView(titleView);
+
+                            TextView bodyView = new TextView(this);
+                            bodyView.setText(body != null ? body : "");
+                            bodyView.setTextSize(14);
+                            bodyView.setPadding(0, 4, 0, 0);
+                            card.addView(bodyView);
+
+                            TextView timeView = new TextView(this);
+                            timeView.setText(timeStr);
+                            timeView.setTextSize(12);
+                            timeView.setPadding(0, 4, 0, 0);
+                            timeView.setTextColor(MaterialColors.getColor(timeView, com.google.android.material.R.attr.colorOnSurface));
+                            card.addView(timeView);
+
+                            // Tap to open where the notification "lives" in the app (messages / work view / contracts / jobs)
+                            card.setOnClickListener(v -> openDestinationForNotification(type, data));
+
+                            // Long-press: actions (open location, delete)
+                            card.setOnLongClickListener(v -> {
+                                showNotificationActions(doc, type, data);
+                                return true;
+                            });
+
+                            notificationsContainer.addView(card);
                         }
 
-                        LinearLayout card = new LinearLayout(this);
-                        card.setOrientation(LinearLayout.VERTICAL);
-                        card.setPadding(24, 16, 24, 16);
-                        card.setBackgroundResource(R.drawable.surface_frame);
-                        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                        params.setMargins(0, 0, 0, 12);
-                        card.setLayoutParams(params);
-
-                        TextView titleView = new TextView(this);
-                        titleView.setText(title != null ? title : "Notification");
-                        titleView.setTextSize(16);
-                        titleView.setTypeface(null, android.graphics.Typeface.BOLD);
-                        card.addView(titleView);
-
-                        TextView bodyView = new TextView(this);
-                        bodyView.setText(body != null ? body : "");
-                        bodyView.setTextSize(14);
-                        bodyView.setPadding(0, 4, 0, 0);
-                        card.addView(bodyView);
-
-                        TextView timeView = new TextView(this);
-                        timeView.setText(timeStr);
-                        timeView.setTextSize(12);
-                        timeView.setPadding(0, 4, 0, 0);
-                        timeView.setTextColor(MaterialColors.getColor(timeView, com.google.android.material.R.attr.colorOnSurface));
-                        card.addView(timeView);
-
-                        // Tap to open where the notification "lives" in the app (messages / work view / contracts / jobs)
-                        card.setOnClickListener(v -> openDestinationForNotification(type, data));
-
-                        // Long-press: actions (open location, delete)
-                        card.setOnLongClickListener(v -> {
-                            showNotificationActions(doc, type, data);
-                            return true;
-                        });
-
-                        notificationsContainer.addView(card);
-                    }
-
-                    if (hasUnreadToUpdate) {
-                        batch.commit();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("NotificationsActivity", "Error loading notifications", e);
-                    emptyText.setText("Could not load notifications.");
-                    emptyText.setVisibility(android.view.View.VISIBLE);
-                    if (deleteAllButton != null) deleteAllButton.setEnabled(false);
-                });
+                        if (hasUnreadToUpdate) {
+                            batch.commit();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("NotificationsActivity", "Error loading notifications", e);
+                        emptyText.setText("Could not load notifications.");
+                        emptyText.setVisibility(android.view.View.VISIBLE);
+                        if (deleteAllButton != null) deleteAllButton.setEnabled(false);
+                    });
+        }));
     }
 
     private void confirmDeleteOne(QueryDocumentSnapshot doc) {
@@ -364,7 +403,8 @@ public class NotificationsActivity extends AppCompatActivity {
             String contractUser = asString(data.get("userName"));
             if (TextUtils.isEmpty(contractUser)) contractUser = userName;
             if (!TextUtils.isEmpty(contractId) && !TextUtils.isEmpty(contractUser)) {
-                db.collection(contractUser + " Contracts").document(contractId).get()
+                String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(contractUser);
+                db.collection(collectionName).document(contractId).get()
                         .addOnSuccessListener(ds -> {
                             String addr = ds.getString("address");
                             if (!TextUtils.isEmpty(addr)) openMaps(addr);

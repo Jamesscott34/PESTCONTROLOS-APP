@@ -17,17 +17,25 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Location sharing helper:
- * - Every technician device publishes last-known location every 30 minutes (best effort).
- * - Location records expire: cleanup deletes a location doc after 15 minutes.
- * - James-only UI can read Firestore + local cache for offline access.
+ * - Every technician device publishes last-known location every 15 minutes (best effort).
+ * - Location records expire: cleanup deletes a location doc after 30 minutes.
+ * - Admin/oversight UI can read Firestore + local cache for offline access.
  */
 public final class LocationSharing {
     private LocationSharing() {}
 
     public static final String COLLECTION_LAST_LOCATIONS = "last_locations";
 
-    // SharedPreferences cache (used by James-only location finder; also safe for any client)
+    // SharedPreferences cache (used by location finder; also safe for any client)
     private static final String PREFS = "GRPC_LAST_LOC_CACHE";
+
+    /** Clears local location cache (required on logout/shared devices). */
+    public static void clearLocalCache(Context context) {
+        if (context == null) return;
+        try {
+            context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply();
+        } catch (Exception ignored) {}
+    }
 
     public static boolean hasLocationPermission(Context context) {
         if (context == null) return false;
@@ -51,20 +59,20 @@ public final class LocationSharing {
                         .build())
                 .build();
 
-        // Update: every 30 minutes
+        // Update: every 15 minutes (WorkManager minimum)
         PeriodicWorkRequest updateWork = new PeriodicWorkRequest.Builder(
                 LastLocationUpdateWorker.class,
-                30, TimeUnit.MINUTES
+                15, TimeUnit.MINUTES
         )
                 .setInputData(new androidx.work.Data.Builder()
                         .putString(LastLocationUpdateWorker.KEY_USER_NAME, userName)
                         .build())
                 .build();
 
-        // Cleanup: every 15 minutes (deletes docs older than 15 minutes)
+        // Cleanup: every 30 minutes (deletes docs older than 30 minutes)
         PeriodicWorkRequest cleanupWork = new PeriodicWorkRequest.Builder(
                 LastLocationCleanupWorker.class,
-                15, TimeUnit.MINUTES
+                30, TimeUnit.MINUTES
         )
                 .setInputData(new androidx.work.Data.Builder()
                         .putString(LastLocationCleanupWorker.KEY_USER_NAME, userName)

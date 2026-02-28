@@ -27,7 +27,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 /**
  * Global Search entry point:
- * James-only (for now): unified results list across Jobs/Contracts/Leads/Reports.
+ * Role-gated (admin-only for now): unified results list across Jobs/Contracts/Leads/Reports.
  * Kept low-risk: taps open the existing module screens, optionally with the correct contract owner selected.
  */
 public class SearchActivity extends AppCompatActivity {
@@ -57,15 +57,16 @@ public class SearchActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
+        if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
         userName = getIntent().getStringExtra("USER_NAME");
         if (TextUtils.isEmpty(userName)) {
             userName = getSharedPreferences("GRPC", MODE_PRIVATE).getString("USER_NAME", "User");
         }
 
-        // 001 (James) only
-        String userId = StaffDirectory.getUserId(userName);
-        if (TextUtils.isEmpty(userName) || !StaffDirectory.isJamesUserId(userId)) {
+        // Central RBAC
+        SessionManager.ensureLoaded(this, null);
+        if (TextUtils.isEmpty(userName) || !SessionManager.canSearch(this)) {
             android.widget.Toast.makeText(this, "Access denied.", android.widget.Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -276,7 +277,7 @@ public class SearchActivity extends AppCompatActivity {
         }
 
         void run() {
-            // Jobs (same visibility rules as ViewJobActivity: James sees only assigned jobs)
+            // Jobs (same visibility rules as ViewJobActivity)
             pending++;
             Query jq = db.collection("JobWork").whereEqualTo("AssignedTech", userName);
             jq.get().addOnCompleteListener(t -> {
@@ -301,11 +302,22 @@ public class SearchActivity extends AppCompatActivity {
                 doneOne();
             });
 
-            // Contracts across owners (so results are real). Click will open correct owner in spinner.
-            String[] owners = new String[] {"James", "Ian", "Dean", "Kristine"};
-            for (String owner : owners) {
+            // Contracts across owners (keyed by ContractKey from users/{StaffID}.ContractKey).
+            java.util.List<String> ownerKeys = new java.util.ArrayList<>();
+            try {
+                for (StaffDirectory.StaffProfile p : StaffDirectory.getCachedStaffProfiles()) {
+                    if (p == null) continue;
+                    String ck = p.contractKey != null ? p.contractKey.trim() : "";
+                    if (!ck.isEmpty()) ownerKeys.add(ck);
+                }
+            } catch (Exception ignored) {}
+            if (ownerKeys.isEmpty() && userName != null && !userName.trim().isEmpty()) {
+                ownerKeys.add(userName.trim());
+            }
+            for (String ownerKey : ownerKeys) {
                 pending++;
-                db.collection(owner + " Contracts").get().addOnCompleteListener(t -> {
+                String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(ownerKey);
+                db.collection(collectionName).get().addOnCompleteListener(t -> {
                     if (t.isSuccessful() && t.getResult() != null) {
                         for (QueryDocumentSnapshot ds : t.getResult()) {
                             if (ds == null) continue;
@@ -315,8 +327,8 @@ public class SearchActivity extends AppCompatActivity {
                             String email = asLower(ds.getString("email"));
                             if (matchesAny(name, address, contact, email)) {
                                 String title = safeOne(ds.getString("name"), "Contract");
-                                String sub = "Contracts • " + owner + " • " + safeOne(ds.getString("address"), "No address");
-                                contracts.add(GlobalSearchItem.result(GlobalSearchKind.CONTRACT, title, sub, owner));
+                                String sub = "Contracts • " + ownerKey + " • " + safeOne(ds.getString("address"), "No address");
+                                contracts.add(GlobalSearchItem.result(GlobalSearchKind.CONTRACT, title, sub, ownerKey));
                                 if (contracts.size() >= MAX_RESULTS_PER_SECTION) break;
                             }
                         }
@@ -325,7 +337,7 @@ public class SearchActivity extends AppCompatActivity {
                 });
             }
 
-            // Leads (James sees all)
+            // Leads
             pending++;
             db.collection("Leads").get().addOnCompleteListener(t -> {
                 if (!t.isSuccessful() || t.getResult() == null) {

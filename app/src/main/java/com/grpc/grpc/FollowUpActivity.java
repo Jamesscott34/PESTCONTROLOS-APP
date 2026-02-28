@@ -196,7 +196,7 @@ public class FollowUpActivity extends AppCompatActivity {
             document.add(logo);
 
             // Add title to the report
-            Paragraph title = new Paragraph("Good Riddance Pest Control Follow-Up Report")
+            Paragraph title = new Paragraph(TenantBranding.companyName(this) + " Follow-Up Report")
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(20)
                     .setBold()
@@ -262,7 +262,7 @@ public class FollowUpActivity extends AppCompatActivity {
             }
 
             // Add footer to the last page
-            document.add(new Paragraph("Good Riddance Pest Control - www.grpestcontrol.ie")
+            document.add(new Paragraph(TenantBranding.companyWebsiteLineDash(this))
                     .setFontSize(12)
                     .setTextAlignment(TextAlignment.CENTER));
 

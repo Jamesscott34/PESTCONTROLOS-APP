@@ -69,6 +69,29 @@
         android:textColor="?android:attr/textColorPrimary"
         android:textColorHint="?android:attr/textColorSecondary" />
 
+    <EditText
+        android:id="@+id/annualServiceFeeInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Annual Service Fee (€)"
+        android:layout_marginBottom="16dp"
+        android:padding="12dp"
+        android:inputType="numberDecimal"
+        android:background="@drawable/edit_text_border"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary" />
+
+    <CheckBox
+        android:id="@+id/passwordProtectCheckbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="Password protect PDF (require password to edit)"
+        android:textSize="14sp"
+        android:checked="false"
+        android:textColor="?android:attr/textColorPrimary" />
+
     <!-- Generate PDF Button -->
     <Button
         android:id="@+id/generatePdfButton"

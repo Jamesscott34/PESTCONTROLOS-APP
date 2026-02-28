@@ -135,8 +135,8 @@ public class BehindsListViewActivity extends AppCompatActivity {
     /**
      * Extracts technician name from a behinds/due list PDF filename.
      * Examples:
-     *  - BehindsList_Ian_01-01-2025.pdf   -> Ian
-     *  - James_Due_list_01-01-2025.pdf    -> James
+     *  - BehindsList_<TECH>_<DATE>.pdf
+     *  - <TECH>_Due_list_<DATE>.pdf
      */
     private String extractTechnicianName(File file) {
         if (file == null) return "Unknown";
@@ -225,7 +225,7 @@ public class BehindsListViewActivity extends AppCompatActivity {
         try {
             Uri fileUri = FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     file
             );
 
@@ -263,7 +263,7 @@ public class BehindsListViewActivity extends AppCompatActivity {
         try {
             Uri fileUri = FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     file
             );
 

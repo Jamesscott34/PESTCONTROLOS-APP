@@ -8,7 +8,9 @@ import android.text.TextUtils;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.firestore.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,7 +37,8 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
     private Button submitButton;
     private FirebaseFirestore db;
     private String userName,  custName,  custContact, issueDetailsText; // Stores values for WhatsApp
-    private static final String[] TECHNICIAN_IDS = StaffDirectory.ORDERED_USER_IDS;
+    private List<StaffDirectory.OwnerOption> techOptions = new ArrayList<>();
+    private String[] techOptionKeys = new String[0]; // ContractKey values for spinner storage
 
     /**
      * Initializes the activity, retrieves user information, and sets up UI elements.
@@ -71,20 +74,33 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
         }
 
         if (techNameSpinner != null) {
-            String[] names = StaffDirectory.getDisplayNamesForIds(TECHNICIAN_IDS);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, names);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"Loading..."});
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             techNameSpinner.setAdapter(adapter);
-            // Default selection = current user if present
-            int sel = 0;
-            String userId = StaffDirectory.getUserId(userName);
-            for (int i = 0; i < TECHNICIAN_IDS.length; i++) {
-                if (TECHNICIAN_IDS[i].equals(userId)) {
-                    sel = i;
-                    break;
+
+            StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+                techOptions = options != null ? options : new ArrayList<>();
+                techOptionKeys = new String[techOptions.size()];
+                String[] display = new String[techOptions.size()];
+                for (int i = 0; i < techOptions.size(); i++) {
+                    StaffDirectory.OwnerOption o = techOptions.get(i);
+                    techOptionKeys[i] = o != null ? o.ownerKey : "";
+                    display[i] = o != null ? o.display : ""; // ContractKey
                 }
-            }
-            techNameSpinner.setSelection(sel);
+                ArrayAdapter<String> a = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, display);
+                a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                techNameSpinner.setAdapter(a);
+
+                int sel = 0;
+                String currentKey = SessionManager.getContractKey(this);
+                if (currentKey == null || currentKey.trim().isEmpty()) currentKey = userName;
+                if (currentKey != null) {
+                    for (int i = 0; i < techOptionKeys.length; i++) {
+                        if (currentKey.equalsIgnoreCase(techOptionKeys[i])) { sel = i; break; }
+                    }
+                }
+                techNameSpinner.setSelection(sel);
+            }));
         }
 
         submitButton.setOnClickListener(v -> validateAndSubmitJob());
@@ -95,22 +111,26 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
      * If valid, the job is submitted to Firestore.
      */
     private void validateAndSubmitJob() {
-        String name = "";
-        if (techNameSpinner != null && techNameSpinner.getSelectedItem() != null) {
-            name = String.valueOf(techNameSpinner.getSelectedItem()).trim();
+        String techKey = "";
+        if (techNameSpinner != null) {
+            int pos = techNameSpinner.getSelectedItemPosition();
+            if (pos >= 0 && pos < techOptionKeys.length) {
+                techKey = techOptionKeys[pos] != null ? techOptionKeys[pos].trim() : "";
+            } else if (techNameSpinner.getSelectedItem() != null) {
+                techKey = String.valueOf(techNameSpinner.getSelectedItem()).trim();
+            }
         }
         custName = customerName.getText().toString().trim();
         custContact = formatIrishMobile(customerContact.getText().toString().trim());
         issueDetailsText = issueDetails.getText().toString().trim();
 
-        if (TextUtils.isEmpty(name) || TextUtils.isEmpty(custName) ||
+        if (TextUtils.isEmpty(techKey) || TextUtils.isEmpty(custName) ||
                 TextUtils.isEmpty(custContact) || TextUtils.isEmpty(issueDetailsText)) {
             Toast.makeText(this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // techMobileNumber removed from here
-        addJobToFirestore(name, custName, custContact, issueDetailsText);
+        addJobToFirestore(techKey, custName, custContact, issueDetailsText);
     }
 
     /**
@@ -150,9 +170,7 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
     private void writeInAppManagementJobNotifications(String jobId, String customerName, String assignedTech, String createdBy) {
         try {
             String creator = (createdBy != null && !createdBy.trim().isEmpty()) ? createdBy.trim() : "";
-            String creatorLower = creator.toLowerCase(java.util.Locale.getDefault());
             String tech = assignedTech != null ? assignedTech.trim() : "";
-            String techLower = tech.toLowerCase(java.util.Locale.getDefault());
 
             Map<String, Object> data = new HashMap<>();
             data.put("managementJobId", jobId);
@@ -161,7 +179,7 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
             data.put("createdBy", creator);
             data.put("type", "management");
 
-            if (!techLower.isEmpty() && (creatorLower.isEmpty() || !techLower.equals(creatorLower))) {
+            if (!tech.isEmpty() && (creator.isEmpty() || !tech.equalsIgnoreCase(creator))) {
                 NotificationUtils.writeInAppNotification(
                         tech,
                         "management_assign_" + jobId,

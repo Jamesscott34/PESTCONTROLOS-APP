@@ -35,6 +35,7 @@ public class BirdQuotationActivity extends AppCompatActivity {
     private EditText itemDescriptionInput, itemPriceInput;
     private Button addItemButton, generatePdfButton;
     private CheckBox check30PercentDeposit;
+    private CheckBox passwordProtectCheckbox;
 
     private String userName;
 
@@ -74,25 +75,30 @@ public class BirdQuotationActivity extends AppCompatActivity {
         addItemButton = findViewById(R.id.addItemButton);
         generatePdfButton = findViewById(R.id.generatePdfButton);
         check30PercentDeposit = findViewById(R.id.check30PercentDeposit);
+        passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
 
-        // Load email and number from users database (Firestore)
-        StaffDirectory.fetchByUserName(this, userName, profile -> {
-            runOnUiThread(() -> {
-                if (profile != null) {
-                    if (userEmailInput != null && profile.email != null && !profile.email.isEmpty())
-                        userEmailInput.setText(profile.email);
-                    if (mobileNumberInput != null && profile.mobile != null && !profile.mobile.isEmpty())
-                        mobileNumberInput.setText(profile.mobile);
-                    if (userEmailInput != null && userEmailInput.getText().toString().trim().isEmpty())
-                        userEmailInput.setHint("Email (from users DB)");
-                    if (mobileNumberInput != null && mobileNumberInput.getText().toString().trim().isEmpty())
-                        mobileNumberInput.setHint("Number (from users DB)");
-                }
-            });
-        });
+        // Load email and number from centralized session (Firestore users/{StaffID})
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            String email = SessionManager.getEmail(this);
+            String mobile = SessionManager.getNumber(this);
+            if (userEmailInput != null && email != null && !email.trim().isEmpty())
+                userEmailInput.setText(email.trim());
+            if (mobileNumberInput != null && mobile != null && !mobile.trim().isEmpty())
+                mobileNumberInput.setText(mobile.trim());
+            if (userEmailInput != null && userEmailInput.getText().toString().trim().isEmpty())
+                userEmailInput.setHint("Email (from session)");
+            if (mobileNumberInput != null && mobileNumberInput.getText().toString().trim().isEmpty())
+                mobileNumberInput.setHint("Number (from session)");
+        }));
 
         addItemButton.setOnClickListener(v -> addItem());
-        generatePdfButton.setOnClickListener(v -> generatePdf());
+        generatePdfButton.setOnClickListener(v -> {
+            if (passwordProtectCheckbox != null && passwordProtectCheckbox.isChecked()) {
+                PdfPasswordPrompt.prompt(this, password -> generatePdf(password));
+            } else {
+                generatePdf(null);
+            }
+        });
     }
 
     /**
@@ -130,7 +136,7 @@ public class BirdQuotationActivity extends AppCompatActivity {
      * Validates required fields, including email and mobile number format.
      * Calls the BirdQuotationPDFGenerator to create the file.
      */
-    private void generatePdf() {
+    private void generatePdf(String ownerPassword) {
         String address = addressInput.getText().toString().trim();
         String quoteDescription = quoteDescriptionInput.getText().toString().trim();
         String userEmail = userEmailInput.getText().toString().trim();
@@ -159,6 +165,7 @@ public class BirdQuotationActivity extends AppCompatActivity {
                 userEmail,
                 mobileNumber,
                 include30PercentDeposit,
+                ownerPassword,
                 this
         );
 

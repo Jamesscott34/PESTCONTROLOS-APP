@@ -1,66 +1,89 @@
-# Android/IntelliJ
+# =============================================================================
+# Android / Gradle
+# =============================================================================
 *.iml
-.gradle
-/local.properties
+.gradle/
+build/
+app/build/
+**/build/
+local.properties
+.externalNativeBuild/
+.cxx/
+
+# Build outputs and APKs (do not commit)
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+app/release/
+app/debug/
+app/grpc/release/
+app/grpc/debug/
+app/demo/release/
+app/demo/debug/
+app/offline/release/
+app/offline/debug/
+**/output-metadata.json
+captures/
+*.apks
+
+# =============================================================================
+# IDE – IntelliJ / Android Studio
+# =============================================================================
+.idea/
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+*.ipr
+*.iws
+out/
 
-# Firebase and sensitive files
+# =============================================================================
+# Firebase / Google Services (never commit – all flavors: grpc, demo, offline)
+# =============================================================================
+# Main and per-flavor: app/, app/src/grpc/, app/src/demo/, app/src/offline/
 **/google-services.json
+**/GoogleServices.json
+**/firebase_options.json
+**/GoogleService-Info.plist
 app/service_account.json
 service_account.json
 **/*service_account*.json
 firebase-debug.log
-functions/.runtimeconfig.json
+firestore-debug.log
+ui-debug.log
 .firebase/
+*.firebaserc
+functions/.runtimeconfig.json
+functions/.env
+functions/.env.*
 
-# Environment Variables and Configuration
+# =============================================================================
+# Environment and secrets (never commit)
+# =============================================================================
 .env
 .env.*
+!.env.example
+*.env
 gradle.properties
+gradle.properties.backup
 local.gradle.properties
 production.gradle.properties
 development.gradle.properties
 staging.gradle.properties
-*.env
 config.properties
 secrets.properties
+*.secret
+*.secrets
+# Safe to commit: gradle.properties.template
 
-# Firebase Functions
-functions/node_modules/
-functions/lib/
-functions/.env
-functions/.env.*
-
-# General Node.js
-node_modules/
-
-# Release and debug folders
-app/release/
-app/debug/
-
-# Build outputs and APKs
-app/build/
-app/build/outputs/
-*.apk
-*.aab
-*.ap_
-*.dex
-*.class
-
-
-
-# Keystore and signing files
+# =============================================================================
+# Keystore and signing (never commit)
+# =============================================================================
 *.keystore
 *.jks
 *.pem
@@ -70,70 +93,81 @@ app/build/outputs/
 *.pfx
 signing.properties
 keystore.properties
+key.properties
+upload_keystore*
+play-app-signing*
+**/release-signing.properties
 
-# Android Studio / Gradle user-specific
-**/.idea/
-**/*.iml
+# =============================================================================
+# OAuth / API keys / app credentials (never commit)
+# =============================================================================
+**/credentials.json
+**/res/raw/credentials.json
+**/client_secret*.json
+**/client_id*.json
+**/*-secret*.json
+**/*-credentials*.json
+**/api_keys.xml
+**/res/values/api_keys.xml
+**/res/values/keys.xml
+**/google_maps_api.xml
+**/secrets.xml
+
+# =============================================================================
+# Local / dev / config (do not commit)
+# =============================================================================
 **/local.properties
-**/.gradle/
-
-# macOS / Windows junk
-.DS_Store
-Thumbs.db
-
-# Firebase emulator/cache logs
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-
-# Logs and temporary files
-*.log
-*.tmp
-*.bak
-*.swp
-*.swo
-*~
-
-# Java heap dumps (e.g. from Android Studio / debugger)
-java_pid12148.hprof
-java_pid*.hprof
-*.hprof
-
-# IDE and editor files
-.vscode/
-.idea/
-*.iml
-.DS_Store
-Thumbs.db
-
-# Database files (for local development)
+env/
+environments/
+config/
+secrets/
+credentials/
 *.db
 *.sqlite
 *.sqlite3
 UserDatabase
 UserDatabase.*
 
-# Backup and cache files
-*.backup
-*.cache
+# =============================================================================
+# Firebase Functions
+# =============================================================================
+functions/node_modules/
+functions/lib/
+
+# =============================================================================
+# General / OS / temp
+# =============================================================================
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
 .cache/
 backup/
+*.orig
 
-# Environment-specific files
-env/
-environments/
-config/
-secrets/
-credentials/
+# =============================================================================
+# Debug / diagnostics (do not commit)
+# =============================================================================
+*.hprof
+java_pid*.hprof
+lint-report*
+test-results/
 
-# Documentation with sensitive info
+# =============================================================================
+# Local docs with sensitive info
+# =============================================================================
 README.local.md
 SETUP.local.md
 CONFIG.local.md
+*.local.md
 
-# OAuth / app credentials (do not commit)
-**/credentials.json
-**/res/raw/credentials.json
-app/src/main/res/raw/credentials.json
-**/client_secret*.json
-**/client_id*.json
+# =============================================================================
+# Editor / Cursor (optional)
+# =============================================================================
+.vscode/
+.cursor/

@@ -62,6 +62,15 @@ public class BirdQuotationPDFGenerator {
             String address, String quoteDescription,
             List<String> descriptions, List<Double> lineTotals,
             String userEmail, String mobileNumber, boolean include30PercentDeposit, Context context) {
+        return generateBirdQuotation(address, quoteDescription, descriptions, lineTotals, userEmail, mobileNumber, include30PercentDeposit, null, context);
+    }
+
+    public static File generateBirdQuotation(
+            String address, String quoteDescription,
+            List<String> descriptions, List<Double> lineTotals,
+            String userEmail, String mobileNumber, boolean include30PercentDeposit,
+            String ownerPassword,
+            Context context) {
 
         File quotesFolder = new File(context.getExternalFilesDir(null), "GRPEST_QUOTES");
         if (!quotesFolder.exists() && !quotesFolder.mkdirs()) {
@@ -80,7 +89,18 @@ public class BirdQuotationPDFGenerator {
 
         double grandTotal = 0;
 
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile));
+        WriterProperties writerProperties = new WriterProperties();
+        writerProperties.setFullCompressionMode(true);
+        if (ownerPassword != null && !ownerPassword.trim().isEmpty()) {
+            writerProperties.setStandardEncryption(
+                    null,
+                    ownerPassword.trim().getBytes(),
+                    EncryptionConstants.ALLOW_PRINTING | EncryptionConstants.ALLOW_COPY,
+                    EncryptionConstants.ENCRYPTION_AES_128
+            );
+        }
+
+        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile), writerProperties);
              PdfDocument pdfDocument = new PdfDocument(writer);
              Document document = new Document(pdfDocument)) {
 
@@ -97,10 +117,10 @@ public class BirdQuotationPDFGenerator {
             Table headerTable = new Table(headerWidths).setWidth(UnitValue.createPercentValue(100));
             Cell leftCell = new Cell().setBorder(Border.NO_BORDER);
             leftCell.add(logo);
-            leftCell.add(new Paragraph("\nGood Riddance Pest Control").setBold().setFontSize(16));
+            leftCell.add(new Paragraph("\n" + TenantBranding.companyName(context)).setBold().setFontSize(16));
             leftCell.add(new Paragraph("Mobile: " + mobileNumber).setFontSize(14));
             leftCell.add(new Paragraph("Email: " + userEmail).setFontSize(14));
-            leftCell.add(new Paragraph("Website: grpestcontrol.ie").setFontSize(14));
+            leftCell.add(new Paragraph("Website: " + TenantBranding.companyWebsiteShort(context)).setFontSize(14));
             headerTable.addCell(leftCell);
 
             Cell rightCell = new Cell().setBorder(Border.NO_BORDER);

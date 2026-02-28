@@ -23,12 +23,11 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * User 001 only: shows each tech's last known location and opens it in Maps.
+ * Admin-only: shows each tech's last known location and opens it in Maps.
  * Works offline using a small local SharedPreferences cache.
  */
 public class LocationFinderActivity extends AppCompatActivity {
-
-    private static final String[] TECH_IDS = StaffDirectory.ORDERED_USER_IDS;
+    private java.util.List<StaffDirectory.OwnerOption> techOptions = new java.util.ArrayList<>();
 
     private String userName;
     private LinearLayout container;
@@ -38,14 +37,15 @@ public class LocationFinderActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_location_finder);
+        if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
         userName = getIntent().getStringExtra("USER_NAME");
         if (TextUtils.isEmpty(userName)) {
             userName = getSharedPreferences("GRPC", MODE_PRIVATE).getString("USER_NAME", "User");
         }
 
-        String userId = StaffDirectory.getUserId(userName);
-        if (!StaffDirectory.isJamesUserId(userId)) {
+        SessionManager.ensureLoaded(this, null);
+        if (!SessionManager.canUseLocationFinder(this)) {
             Toast.makeText(this, "Access denied.", Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -57,16 +57,24 @@ public class LocationFinderActivity extends AppCompatActivity {
         Button back = findViewById(R.id.locationFinderBackButton);
         if (back != null) back.setOnClickListener(v -> finish());
 
-        buildTechRows();
-        attachFirestoreListeners();
+        loadTechListAndBuildUi();
+    }
+
+    private void loadTechListAndBuildUi() {
+        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+            techOptions = options != null ? options : new java.util.ArrayList<>();
+            buildTechRows();
+            attachFirestoreListeners();
+        }));
     }
 
     private void buildTechRows() {
-        if (container == null || TECH_IDS == null) return;
+        if (container == null) return;
         container.removeAllViews();
 
-        for (String techId : TECH_IDS) {
-            String tech = StaffDirectory.getFallbackDisplayName(techId);
+        for (StaffDirectory.OwnerOption opt : techOptions) {
+            String tech = opt != null ? opt.ownerKey : "";
+            if (TextUtils.isEmpty(tech)) continue;
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
             card.setPadding(24, 16, 24, 16);
@@ -112,9 +120,10 @@ public class LocationFinderActivity extends AppCompatActivity {
     }
 
     private void attachFirestoreListeners() {
-        if (db == null || TECH_IDS == null) return;
-        for (String techId : TECH_IDS) {
-            String tech = StaffDirectory.getFallbackDisplayName(techId);
+        if (db == null || techOptions == null) return;
+        for (StaffDirectory.OwnerOption opt : techOptions) {
+            String tech = opt != null ? opt.ownerKey : "";
+            if (TextUtils.isEmpty(tech)) continue;
             final String techKey = LocationSharing.userKey(tech);
             if (techKey.isEmpty()) continue;
 

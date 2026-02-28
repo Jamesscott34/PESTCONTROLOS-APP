@@ -157,6 +157,17 @@
                     android:text="12 Part" />
             </LinearLayout>
 
+            <CheckBox
+                android:id="@+id/passwordProtectCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"
+                android:text="Password protect PDF (require password to edit)"
+                android:textSize="14sp"
+                android:checked="false"
+                android:textColor="?android:attr/textColorPrimary" />
+
             <!-- Generate PDF Button -->
             <Button
                 android:id="@+id/btnGeneratePdf"

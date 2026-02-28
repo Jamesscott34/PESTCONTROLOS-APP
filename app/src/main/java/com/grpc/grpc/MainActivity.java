@@ -91,7 +91,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
  * - External API integrations (WhatsApp, Maps)
  * 
  * USER ROLES & PERMISSIONS:
- * - Admin users (001, 002, 004): Full access to all features
+ * - Admin users: Full access to all features
  * - Technicians: Job assignment, report generation, customer management
  * - Sales Staff: Lead management, quotation generation, commission tracking
  * 
@@ -166,42 +166,65 @@ public class MainActivity extends AppCompatActivity {
         // Extract user information from intent
         userEmail = getIntent().getStringExtra("USER_EMAIL");
         String intentUserName = getIntent().getStringExtra("USER_NAME");
+        boolean offlineMode = BuildConfig.IS_OFFLINE || getIntent().getBooleanExtra("OFFLINE_MODE", false);
 
-        // Set user name from intent extras or extract from email
-        if (intentUserName != null && !intentUserName.isEmpty()) {
-            // Username passed from swipe navigation
-            userName = intentUserName;
-            Log.d("MainActivity", "Username from intent: " + userName);
-        } else if (userEmail != null && !userEmail.isEmpty()) {
-            // Extract name from email address (e.g. user from user@domain)
-            userName = extractNameFromEmail(userEmail);
-            Log.d("MainActivity", "Username extracted from email: " + userName);
+        // Offline flavor: no login; use fixed "Offline" user and skip Firestore/session.
+        if (offlineMode) {
+            userName = (intentUserName != null && !intentUserName.isEmpty()) ? intentUserName : "Offline";
+            ActiveUserContext.setActiveUser(this, userName, "");
+            Log.d("MainActivity", "Offline mode – username: " + userName);
         } else {
-            // Default fallback - try saved preference (single source of truth; swipe never loses context)
-            userName = ActiveUserContext.getActiveUserName(this, "User");
-            Log.d("MainActivity", "Using saved/default username: " + userName);
+            // Internal identity MUST be ContractKey (derived from authenticated user), never a display name.
+            if (intentUserName != null && !intentUserName.isEmpty()) {
+                userName = intentUserName;
+                Log.d("MainActivity", "Username from intent: " + userName);
+            } else {
+                userName = ActiveUserContext.getActiveUserName(this, "User");
+                Log.d("MainActivity", "Using saved/default username: " + userName);
+            }
         }
-        // Persist logged-in identity for other screens
-        ActiveUserContext.setActiveUser(this, userName, userEmail != null ? userEmail : "");
 
-        // Load staff names and numbers from Firestore (users) so reports/WhatsApp use DB data
-        StaffDirectory.refreshFromFirestore(this);
+        // Central identity + RBAC (skip for offline – no Firestore).
+        if (!offlineMode) {
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            String ck = SessionManager.getContractKey(MainActivity.this);
+            if (ck != null && !ck.trim().isEmpty()) {
+                userName = StaffDirectory.capitalizeContractKey(ck.trim());
+            } else {
+                // No ContractKey in Firestore: use StaffID so contracts/workview collections resolve (e.g. "001 Contracts").
+                String sid = SessionManager.getStaffId(MainActivity.this);
+                if (sid != null && !sid.trim().isEmpty()) {
+                    userName = sid.trim();
+                }
+            }
+            ActiveUserContext.setActiveUser(MainActivity.this, userName, userEmail != null ? userEmail : "");
 
-        // Location sharing: schedule background workers (best effort)
-        LocationSharing.ensureScheduled(this, userName);
+            // Demo: record per-user first launch (for DemoRelease + DemoDaysNumber); then apply visibility if profile closed
+            final SessionManager.Session loadedSession = session;
+            runOnUiThread(() -> {
+                if (loadedSession != null && loadedSession.staffId != null && !loadedSession.staffId.isEmpty()) {
+                    DemoFirebaseExpiryHelper.recordDemoLaunchIfNeeded(MainActivity.this, loadedSession.staffId);
+                }
+                applyDemoExpiredVisibility();
+            });
 
-        // WorkView popup reminders (local only): schedule for this user
-        WorkViewPopupReminderScheduler.scheduleUpcomingForUser(this, userName);
+            // Load staff names/keys from Firestore (users) so dropdowns/WhatsApp use DB data
+            StaffDirectory.refreshFromFirestore(MainActivity.this);
 
-        // First login every 24h: auto-generate behinds + due PDFs for this user, then in-app notify
-        DailyContractPdfHelper.scheduleDailyPdfIfNeeded(this, userName);
+            // Location sharing + reminders must be scoped to ContractKey (userName)
+            LocationSharing.ensureScheduled(MainActivity.this, userName);
+            WorkViewPopupReminderScheduler.scheduleUpcomingForUser(MainActivity.this, userName);
+            DailyContractPdfHelper.scheduleDailyPdfIfNeeded(MainActivity.this, userName);
+        }));
+        }
 
         // Request location permission once so technicians can publish their last location.
         // If denied, the location system will simply have no data.
         maybeRequestLocationPermission();
 
-        // Log online mode status
-        Log.d("MainActivity", "Running in ONLINE MODE - Full functionality");
+        // Log online/offline mode
+        if (offlineMode) Log.d("MainActivity", "Running in OFFLINE MODE - Create Report / View Reports only");
+        else Log.d("MainActivity", "Running in ONLINE MODE - Full functionality");
 
         // Set up welcome message with user's name
         welcomeTextView = findViewById(R.id.welcomeTextView);
@@ -212,6 +235,14 @@ public class MainActivity extends AppCompatActivity {
         
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
+            SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+                if (welcomeTextView == null) return;
+                String name = SessionManager.getName(this);
+                if (name != null && !name.trim().isEmpty()) {
+                    welcomeTextView.setText("Welcome, " + name.trim() + "!");
+                    Log.d("MainActivity", "Welcome message set from profile Name: " + name);
+                }
+            }));
             Log.d("MainActivity", "Welcome message set for user: " + userName);
         } else {
             Log.e("MainActivity", "welcomeTextView is NULL! Check XML ID.");
@@ -222,34 +253,43 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize all navigation buttons
         initializeButtons();
+
+        // Temporary UI changes / moved features:
+        // - General Quotes, Service Agreements, and ERA now live under Create Report section.
+        // - AI Chat is temporarily hidden for all users.
+        if (quotesButton != null) quotesButton.setVisibility(View.GONE);
+        if (ServiceAgreementButton != null) ServiceAgreementButton.setVisibility(View.GONE);
+        if (EnviromentButton != null) EnviromentButton.setVisibility(View.GONE);
+        if (ChatButton != null) ChatButton.setVisibility(View.GONE);
         
         // Set up click listeners for all buttons
         setupButtonClickListeners();
 
         // Offline user: show only Create Report, View Reports, and Logout
         applyOfflineUserVisibility();
-        
+
+        // Offline trial: record first launch so we can redirect after OFFLINE_TRIAL_DAYS (demo + offline)
+        OfflineTrialHelper.recordLaunchIfNeeded(this);
+
         // Initialize gesture detector for swipe navigation
         initializeGestureDetector();
 
-        db = FirebaseFirestore.getInstance();
-        
-        // Initialize Firebase operations on background thread
-        new Thread(() -> {
-            // IMPORTANT: Do NOT use the "all" topic (it causes everyone to receive broadcasts).
-            // Unsubscribe to clean up older installs that previously subscribed.
-            FirebaseMessaging.getInstance().unsubscribeFromTopic("all");
-            // In-app only notifications: unsubscribe from personal topic too (no push notifications)
-            if (userName != null && !userName.trim().isEmpty()) {
-                FirebaseMessaging.getInstance().unsubscribeFromTopic(userName.toLowerCase());
-            }
-        }).start();
+        // Offline flavor: no Firebase – no Firestore or Messaging access
+        if (!BuildConfig.IS_OFFLINE) {
+            db = FirebaseFirestore.getInstance();
+            new Thread(() -> {
+                FirebaseMessaging.getInstance().unsubscribeFromTopic("all");
+                if (userName != null && !userName.trim().isEmpty()) {
+                    FirebaseMessaging.getInstance().unsubscribeFromTopic(userName.toLowerCase());
+                }
+            }).start();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Re-check whenever user returns to home screen
+        applyDemoExpiredVisibility();
         checkHomeUnreadIndicators();
     }
 
@@ -259,27 +299,36 @@ public class MainActivity extends AppCompatActivity {
      * - Messaging: checks latest chat messages vs per-conversation last-seen timestamp
      */
     private void checkHomeUnreadIndicators() {
+        if (BuildConfig.IS_OFFLINE || (userName != null && (userName.equals("Offline") || userName.equals("Offline User")))) return;
+        if (DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this)) return;
         if (userName == null || userName.trim().isEmpty() || db == null) return;
         checkUnreadNotifications();
         checkUnreadMessages();
     }
 
     private void checkUnreadNotifications() {
-        final String userKey = userName.trim().toLowerCase();
-        db.collection("notifications")
-                .document(userKey)
-                .collection("items")
-                .whereEqualTo("read", false)
-                .limit(1)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    boolean hasUnread = snapshot != null && !snapshot.isEmpty();
-                    updateHomeButtonBadge(NotificationsButton, "Notifications", hasUnread,
-                            "HAS_UNREAD_NOTIF", "You have new notifications — tap Notifications");
-                })
-                .addOnFailureListener(e -> {
-                    // Fail silently; don't block home screen
-                });
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            String staffId = session != null ? session.staffId : "";
+            final String userKey = (staffId != null && !staffId.trim().isEmpty())
+                    ? staffId.trim()
+                    : NotificationUtils.resolveNotificationRecipientKey(userName);
+            if (userKey == null || userKey.trim().isEmpty()) return;
+
+            db.collection("notifications")
+                    .document(userKey)
+                    .collection("items")
+                    .whereEqualTo("read", false)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        boolean hasUnread = snapshot != null && !snapshot.isEmpty();
+                        updateHomeButtonBadge(NotificationsButton, "Notifications", hasUnread,
+                                "HAS_UNREAD_NOTIF", "You have new notifications — tap Notifications");
+                    })
+                    .addOnFailureListener(e -> {
+                        // Fail silently; don't block home screen
+                    });
+        }));
     }
 
     private void checkUnreadMessages() {
@@ -290,11 +339,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         java.util.ArrayList<String> convIds = new java.util.ArrayList<>();
-        for (String id : StaffDirectory.ORDERED_USER_IDS) {
-            String other = StaffDirectory.getUserNameKey(id);
-            if (other == null || other.equalsIgnoreCase(userName)) continue;
-            convIds.add(MessagingConversationsActivity.getConversationId(userName, other));
-        }
+        try {
+            for (StaffDirectory.StaffProfile p : StaffDirectory.getCachedStaffProfiles()) {
+                if (p == null) continue;
+                String other = (p.contractKey != null && !p.contractKey.trim().isEmpty())
+                        ? p.contractKey.trim()
+                        : StaffDirectory.getUserNameKey(p.id);
+                if (other == null || other.trim().isEmpty() || other.equalsIgnoreCase(userName)) continue;
+                convIds.add(MessagingConversationsActivity.getConversationId(userName, other));
+            }
+        } catch (Exception ignored) {}
         convIds.add("group");
 
         final boolean[] anyUnread = {false};
@@ -463,12 +517,11 @@ public class MainActivity extends AppCompatActivity {
             NotificationsButton.setOnClickListener(view -> openActivity(NotificationsActivity.class));
         }
 
-        // Global search: user 001 only
+        // Global search: super admin only
         if (SearchButton != null) {
-            String userId = StaffDirectory.getUserId(userName);
-            boolean isSearchUser = StaffDirectory.isJamesUserId(userId);
-            SearchButton.setVisibility(isSearchUser ? View.VISIBLE : View.GONE);
-            if (isSearchUser) {
+            boolean canSearch = SessionManager.canSearch(this);
+            SearchButton.setVisibility(canSearch ? View.VISIBLE : View.GONE);
+            if (canSearch) {
                 SearchButton.setOnClickListener(v -> {
                     Intent intent = new Intent(MainActivity.this, SearchActivity.class);
                     intent.putExtra("USER_NAME", userName);
@@ -479,7 +532,11 @@ public class MainActivity extends AppCompatActivity {
 
         // Company website access
         if (WebsiteButton != null) {
-            WebsiteButton.setOnClickListener(view -> openWebsite());
+            boolean showPortal = getResources().getBoolean(R.bool.show_grpcstaff_portal);
+            WebsiteButton.setVisibility(showPortal ? View.VISIBLE : View.GONE);
+            if (showPortal) {
+                WebsiteButton.setOnClickListener(view -> openWebsite());
+            }
         }
 
         // Report generation and management
@@ -508,10 +565,9 @@ public class MainActivity extends AppCompatActivity {
             quotesButton.setOnClickListener(view -> openActivity(QuotesActivity.class));
         }
 
-        // Commission / Leads: 001, 002, 003, 004
+        // Commission / Leads: role-based access
         if (CommisionButton != null) {
-            String userId = StaffDirectory.getUserId(userName);
-            boolean canAccessCommission = StaffDirectory.canAccessCommissionLeadsUserId(userId);
+            boolean canAccessCommission = SessionManager.canAccessCommissionLeads(this);
             CommisionButton.setVisibility(canAccessCommission ? View.VISIBLE : View.GONE);
             if (canAccessCommission) {
                 CommisionButton.setOnClickListener(view -> openActivity(LeadsSelectionActivity.class));
@@ -544,12 +600,11 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Location Finder: user 001 only
+        // Location Finder: super admin only
         if (LocationFinderButton != null) {
-            String userId = StaffDirectory.getUserId(userName);
-            boolean isLocationUser = StaffDirectory.isJamesUserId(userId);
-            LocationFinderButton.setVisibility(isLocationUser ? View.VISIBLE : View.GONE);
-            if (isLocationUser) {
+            boolean canLocation = SessionManager.canUseLocationFinder(this);
+            LocationFinderButton.setVisibility(canLocation ? View.VISIBLE : View.GONE);
+            if (canLocation) {
                 LocationFinderButton.setOnClickListener(v -> {
                     Intent intent = new Intent(MainActivity.this, LocationFinderActivity.class);
                     intent.putExtra("USER_NAME", userName);
@@ -586,7 +641,15 @@ public class MainActivity extends AppCompatActivity {
                 // Stop per-user background workers
                 LocationSharing.cancelScheduled(MainActivity.this, userName);
 
-                getSharedPreferences("GRPC", MODE_PRIVATE).edit().remove("USER_NAME").apply();
+                // Clear app session caches (prevents cross-user RBAC leaks on shared devices)
+                try { SessionManager.clear(MainActivity.this); } catch (Exception ignored) {}
+                try { ActiveUserContext.clear(MainActivity.this); } catch (Exception ignored) {}
+                try { StaffDirectory.clearCache(); } catch (Exception ignored) {}
+                try { WorkViewLocalEventStore.clearAll(MainActivity.this); } catch (Exception ignored) {}
+                try { WorkViewWidgetHelper.clearWidgetCache(MainActivity.this); } catch (Exception ignored) {}
+                try { LocationSharing.clearLocalCache(MainActivity.this); } catch (Exception ignored) {}
+                try { com.google.firebase.auth.FirebaseAuth.getInstance().signOut(); } catch (Exception ignored) {}
+
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
@@ -612,10 +675,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * For offline user, show only Create Report, View Reports, and Logout; hide all other buttons.
+     * For offline flavor / offline user: show only Create Report, View Reports, and Exit; hide all other buttons.
      */
     private void applyOfflineUserVisibility() {
-        if (userName == null || !userName.equals("Offline User")) return;
+        boolean isOffline = BuildConfig.IS_OFFLINE
+                || (userName != null && (userName.equals("Offline") || userName.equals("Offline User")));
+        if (!isOffline) return;
+
         if (NotificationsButton != null) NotificationsButton.setVisibility(View.GONE);
         if (SearchButton != null) SearchButton.setVisibility(View.GONE);
         if (WorkViewButton != null) WorkViewButton.setVisibility(View.GONE);
@@ -627,10 +693,43 @@ public class MainActivity extends AppCompatActivity {
         if (JobButton != null) JobButton.setVisibility(View.GONE);
         if (EnviromentButton != null) EnviromentButton.setVisibility(View.GONE);
         if (InstantMessage != null) InstantMessage.setVisibility(View.GONE);
-        if (WebsiteButton != null) WebsiteButton.setVisibility(View.GONE);
+        // Keep Visit website visible for offline (opens pestcontrolos.ie)
         if (HelpButton != null) HelpButton.setVisibility(View.GONE);
         if (ChatButton != null) ChatButton.setVisibility(View.GONE);
-        // Keep visible: reportButton (Create Report), reportViewButton (View Reports), logoutButton (Logout)
+        // Keep visible: reportButton (Create Report), reportViewButton (View Reports), logoutButton (Exit)
+        if (logoutButton != null) {
+            logoutButton.setText(getString(R.string.exit_button_offline));
+            logoutButton.setOnClickListener(v -> finish());
+        }
+        // Offline: show website button as "Get update" so users can download new APK or sign up for demo
+        if (WebsiteButton != null) {
+            WebsiteButton.setVisibility(View.VISIBLE);
+            WebsiteButton.setText(getString(R.string.get_update_button));
+            WebsiteButton.setOnClickListener(v -> openWebsite());
+        }
+    }
+
+    /**
+     * Demo only: after DEMO_FIREBASE_EXPIRY_DAYS, hide Firebase access for admin/tech; super_admin keeps full access.
+     * Does nothing for grpc or offline.
+     */
+    private void applyDemoExpiredVisibility() {
+        if (!BuildConfig.IS_DEMO || !DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this)) return;
+
+        if (NotificationsButton != null) NotificationsButton.setVisibility(View.GONE);
+        if (SearchButton != null) SearchButton.setVisibility(View.GONE);
+        if (WorkViewButton != null) WorkViewButton.setVisibility(View.GONE);
+        if (LocationFinderButton != null) LocationFinderButton.setVisibility(View.GONE);
+        if (contractsButton != null) contractsButton.setVisibility(View.GONE);
+        if (quotesButton != null) quotesButton.setVisibility(View.GONE);
+        if (ServiceAgreementButton != null) ServiceAgreementButton.setVisibility(View.GONE);
+        if (CommisionButton != null) CommisionButton.setVisibility(View.GONE);
+        if (JobButton != null) JobButton.setVisibility(View.GONE);
+        if (EnviromentButton != null) EnviromentButton.setVisibility(View.GONE);
+        if (InstantMessage != null) InstantMessage.setVisibility(View.GONE);
+        if (HelpButton != null) HelpButton.setVisibility(View.GONE);
+        if (ChatButton != null) ChatButton.setVisibility(View.GONE);
+        if (welcomeTextView != null) welcomeTextView.setText(getString(R.string.demo_expired_message));
     }
 
     /**
@@ -651,8 +750,11 @@ public class MainActivity extends AppCompatActivity {
      * Provides quick access to company information and resources
      */
     private void openWebsite() {
-        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://grpcstaff.com"));
-        startActivity(browserIntent);
+        String url = getString(R.string.main_website_url);
+        if (url == null || url.trim().isEmpty()) url = "https://www.grpcstaff.ie";
+        url = url.trim();
+        if (!url.startsWith("http://") && !url.startsWith("https://")) url = "https://" + url;
+        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
     }
 
     /**

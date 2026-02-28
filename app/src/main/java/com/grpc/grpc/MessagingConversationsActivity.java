@@ -22,14 +22,13 @@ import java.util.Map;
  * MessagingConversationsActivity
  *
  * WhatsApp-style conversation list. Users can tap to open:
- * - Individual chats: Ian, Kristine, Dean
+ * - Individual chats with staff
  * - Group chat: All users
  *
  * Author: GRPC
  */
 public class MessagingConversationsActivity extends AppCompatActivity {
 
-    private static final String[] ALL_USERS = {"James", "Ian", "Kristine", "Dean"};
     private static final String GROUP_ID = "group";
 
     private static final String PREFS_NAME = "GRPC";
@@ -37,6 +36,7 @@ public class MessagingConversationsActivity extends AppCompatActivity {
 
     private ListView conversationsListView;
     private String userName;
+    private List<StaffDirectory.OwnerOption> allUserOptions = new ArrayList<>();
     private List<ConversationItem> conversationItems;
     private ConversationListAdapter adapter;
     private FirebaseFirestore db;
@@ -45,6 +45,7 @@ public class MessagingConversationsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_messaging_conversations);
+        if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.isEmpty()) {
@@ -57,7 +58,7 @@ public class MessagingConversationsActivity extends AppCompatActivity {
         conversationsListView = findViewById(R.id.conversationsListView);
         Button backButton = findViewById(R.id.backButton);
 
-        conversationItems = buildConversationListWithUnreadPlaceholder();
+        conversationItems = new ArrayList<>();
         adapter = new ConversationListAdapter(this, conversationItems);
         conversationsListView.setAdapter(adapter);
 
@@ -68,7 +69,7 @@ public class MessagingConversationsActivity extends AppCompatActivity {
 
         backButton.setOnClickListener(v -> finish());
 
-        loadUnreadStatesAndRefreshList();
+        loadUsersAndRefreshList();
     }
 
     @Override
@@ -82,16 +83,36 @@ public class MessagingConversationsActivity extends AppCompatActivity {
 
     /**
      * Build list with hasUnread=false; unread state is filled in by loadUnreadStatesAndRefreshList().
+     * Uses ownerKey (ContractKey or StaffID when no ContractKey) for conversation ID; display = ContractKey or user's Name when no ContractKey.
      */
     private List<ConversationItem> buildConversationListWithUnreadPlaceholder() {
         List<ConversationItem> items = new ArrayList<>();
-        for (String user : ALL_USERS) {
-            if (user.equalsIgnoreCase(userName)) continue;
-            String convId = getConversationId(userName, user);
-            items.add(new ConversationItem(convId, user, "💬", "Chat with " + user, false));
+        String me = userName != null ? userName.trim().toLowerCase() : "";
+        for (StaffDirectory.OwnerOption o : allUserOptions) {
+            if (o == null) continue;
+            String key = o.ownerKey != null ? o.ownerKey.trim() : "";
+            if (key.isEmpty() || key.equalsIgnoreCase(me)) continue;
+            String convId = getConversationId(userName, key);
+            String displayName = (o.display != null && !o.display.trim().isEmpty()) ? o.display.trim() : key;
+            items.add(new ConversationItem(convId, displayName, "💬", "Chat with " + displayName, false));
         }
         items.add(new ConversationItem(GROUP_ID, "Group", "👥", "Group chat with everyone", false));
         return items;
+    }
+
+    private void loadUsersAndRefreshList() {
+        // Messages: include all users; use Name when no ContractKey (fetchOwnerOptionsForMessaging).
+        StaffDirectory.fetchOwnerOptionsForMessaging(this, options -> runOnUiThread(() -> {
+            allUserOptions.clear();
+            if (options != null) {
+                for (StaffDirectory.OwnerOption o : options) {
+                    if (o == null) continue;
+                    String key = o.ownerKey != null ? o.ownerKey.trim() : "";
+                    if (!key.isEmpty()) allUserOptions.add(o);
+                }
+            }
+            loadUnreadStatesAndRefreshList();
+        }));
     }
 
     /**
@@ -160,9 +181,18 @@ public class MessagingConversationsActivity extends AppCompatActivity {
      * Get consistent conversation ID for 1:1 chat (sorted names).
      */
     public static String getConversationId(String user1, String user2) {
-        String[] names = {user1, user2};
+        String[] names = {sanitizeConversationPart(user1), sanitizeConversationPart(user2)};
         Arrays.sort(names, String.CASE_INSENSITIVE_ORDER);
-        return names[0].toLowerCase() + "_" + names[1].toLowerCase();
+        return names[0] + "_" + names[1];
+    }
+
+    private static String sanitizeConversationPart(String v) {
+        if (v == null) return "";
+        String s = v.trim().toLowerCase();
+        // Firestore doc ids can contain spaces, but keeping them normalized avoids accidental duplicates.
+        s = s.replaceAll("\\s+", "_");
+        s = s.replace("/", "_");
+        return s;
     }
 
     private void openChat(String conversationId, String displayName) {

@@ -13,13 +13,15 @@ android {
         applicationId = "com.grpc.grpc"
         minSdk = 27
         targetSdk = 35
-        versionCode = 3
-        versionName = "2.1"
+        versionCode = 4
+        versionName = "2.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
-        // Enable BuildConfig generation
+        // Enable BuildConfig generation (flavor buildConfigField overrides these per variant)
         buildConfigField("boolean", "DEBUG", "true")
+        buildConfigField("boolean", "IS_OFFLINE", "false")
+        buildConfigField("boolean", "IS_DEMO", "false")
     }
 
     buildTypes {
@@ -35,6 +37,7 @@ android {
             buildConfigField("String", "FIREBASE_API_KEY", "\"${project.findProperty("FIREBASE_API_KEY") ?: ""}\"")
             buildConfigField("String", "APP_ENVIRONMENT", "\"production\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.grpcstaff.com\"")
+            signingConfig = signingConfigs.getByName("debug")
         }
         
         debug {
@@ -43,6 +46,41 @@ android {
             buildConfigField("String", "FIREBASE_API_KEY", "\"${project.findProperty("FIREBASE_API_KEY") ?: ""}\"")
             buildConfigField("String", "APP_ENVIRONMENT", "\"development\"")
             buildConfigField("String", "API_BASE_URL", "\"https://dev-api.grpcstaff.com\"")
+        }
+    }
+
+    // Build-time tenant selection (no runtime switching).
+    // GRPC flavor keeps the existing production applicationId unchanged.
+    flavorDimensions += "tenant"
+    productFlavors {
+        create("grpc") {
+            dimension = "tenant"
+            buildConfigField("boolean", "IS_OFFLINE", "false")
+            buildConfigField("boolean", "IS_DEMO", "false")
+            buildConfigField("int", "OFFLINE_TRIAL_DAYS", "0")
+            buildConfigField("int", "DEMO_FIREBASE_EXPIRY_DAYS", "0")
+            buildConfigField("int", "MAX_SAVED_TEMPLATES", "0")  // 0 = no limit
+            // Intentionally no applicationIdSuffix/versionNameSuffix to preserve production identity.
+        }
+        create("demo") {
+            dimension = "tenant"
+            applicationIdSuffix = ".demo"
+            versionNameSuffix = "-demo"
+            buildConfigField("boolean", "IS_OFFLINE", "false")
+            buildConfigField("boolean", "IS_DEMO", "true")
+            buildConfigField("int", "OFFLINE_TRIAL_DAYS", "30")   // Trial redirect affects demo + offline, not grpc
+            buildConfigField("int", "DEMO_FIREBASE_EXPIRY_DAYS", "30")  // After N days Firebase closed to admin/tech; super_admin only
+            buildConfigField("int", "MAX_SAVED_TEMPLATES", "3")  // Demo/offline template limit
+        }
+        create("offline") {
+            dimension = "tenant"
+            applicationIdSuffix = ".offline"
+            versionNameSuffix = "-offline"
+            buildConfigField("boolean", "IS_OFFLINE", "true")
+            buildConfigField("boolean", "IS_DEMO", "false")
+            buildConfigField("int", "OFFLINE_TRIAL_DAYS", "30")
+            buildConfigField("int", "DEMO_FIREBASE_EXPIRY_DAYS", "0")
+            buildConfigField("int", "MAX_SAVED_TEMPLATES", "3")
         }
     }
     compileOptions {

@@ -11,8 +11,10 @@ import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
+import com.itextpdf.kernel.pdf.EncryptionConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.WriterProperties;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.element.Image;
@@ -56,6 +58,15 @@ public class ServiceAgreementGenerator {
                                                   String name, String address, String email, String phone, String vat,
                                                   String technicianName, String grpcOffice, double price,
                                                   int visits) {
+        return generateServiceAgreement(context, name, address, email, phone, vat, technicianName, grpcOffice, price, visits, null);
+    }
+
+    @SuppressLint("DefaultLocale")
+    public static String generateServiceAgreement(Context context,
+                                                  String name, String address, String email, String phone, String vat,
+                                                  String technicianName, String grpcOffice, double price,
+                                                  int visits,
+                                                  String ownerPassword) {
 
         File serviceAgreementsFolder = new File(context.getExternalFilesDir(null), "ServiceAgreements");
         if (!serviceAgreementsFolder.exists() && !serviceAgreementsFolder.mkdirs()) {
@@ -67,7 +78,18 @@ public class ServiceAgreementGenerator {
         File pdfFile = new File(serviceAgreementsFolder, pdfFileName);
         String pdfPath = pdfFile.getAbsolutePath();
 
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile));
+        WriterProperties writerProperties = new WriterProperties();
+        writerProperties.setFullCompressionMode(true);
+        if (ownerPassword != null && !ownerPassword.trim().isEmpty()) {
+            writerProperties.setStandardEncryption(
+                    null,
+                    ownerPassword.trim().getBytes(),
+                    EncryptionConstants.ALLOW_PRINTING | EncryptionConstants.ALLOW_COPY,
+                    EncryptionConstants.ENCRYPTION_AES_128
+            );
+        }
+
+        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile), writerProperties);
              PdfDocument pdfDocument = new PdfDocument(writer);
              Document document = new Document(pdfDocument)) {
 
@@ -161,11 +183,11 @@ public class ServiceAgreementGenerator {
 
 // Service Declaration - Full Width Paragraph
             document.add(new Paragraph(
-                    "Good Riddance Pest Control (GRPC) is dedicated to delivering comprehensive, reliable, and high-standard pest management solutions "
+                    context.getString(R.string.pdf_company_name_with_abbrev) + " is dedicated to delivering comprehensive, reliable, and high-standard pest management solutions "
                             + "tailored to the specific needs of the client. Our qualified and certified technicians will conduct " + visits + " scheduled service visits per year, "
                             + "ensuring proactive prevention, early detection, and swift corrective actions to maintain a pest-free environment.\n\n"
 
-                            + "GRPC’s approach is based on the principles of Integrated Pest Management (IPM), prioritizing environmentally responsible, science-backed, and industry-compliant "
+                            + TenantBranding.companyAbbrev(context) + "’s approach is based on the principles of Integrated Pest Management (IPM), prioritizing environmentally responsible, science-backed, and industry-compliant "
                             + "pest control strategies. We utilize a combination of preventive measures, advanced treatment techniques, and thorough site assessments to safeguard "
                             + "your premises against pest infestations.\n\n"
 

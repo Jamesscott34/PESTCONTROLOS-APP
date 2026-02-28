@@ -84,17 +84,6 @@ public class InAppReminderWorker extends Worker {
             String dedupeId = ("reminder_" + eventDocId + "_" + expectedDate + "_" + expectedTime)
                     .replaceAll("[^a-zA-Z0-9_\\-]", "_");
 
-            String userLower = userName.toLowerCase();
-            DocumentReference notifRef = db.collection("notifications")
-                    .document(userLower)
-                    .collection("items")
-                    .document(dedupeId);
-
-            DocumentSnapshot existing = Tasks.await(notifRef.get(), 10, TimeUnit.SECONDS);
-            if (existing != null && existing.exists()) {
-                return Result.success();
-            }
-
             String title = "⏰ Upcoming Work";
             String body = (TextUtils.isEmpty(eventName) ? "You have an upcoming event" : eventName)
                     + (TextUtils.isEmpty(expectedTime) ? "" : (" at " + expectedTime));
@@ -109,15 +98,8 @@ public class InAppReminderWorker extends Worker {
             data.put("eventAddress", eventAddress);
             data.put("type", "workview_update");  // reuse in-app deep links
 
-            Map<String, Object> notif = new HashMap<>();
-            notif.put("title", title);
-            notif.put("body", body);
-            notif.put("type", "workview_update");
-            notif.put("data", data);
-            notif.put("timestamp", FieldValue.serverTimestamp());
-            notif.put("read", false);
-
-            Tasks.await(notifRef.set(notif), 10, TimeUnit.SECONDS);
+            // Deterministic docId makes this idempotent; no need to pre-read.
+            NotificationUtils.writeInAppNotification(userName, dedupeId, title, body, "workview_update", data);
             return Result.success();
         } catch (Exception e) {
             // transient: retry

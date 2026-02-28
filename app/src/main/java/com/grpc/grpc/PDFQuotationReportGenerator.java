@@ -50,8 +50,20 @@ public class PDFQuotationReportGenerator {
             String quoteNumber, String address, String quoteDescription,
             List<String> descriptions, List<Double> lineTotals,
             String userEmail, String mobileNumber, Context context) {
-        return generateQuotationReport(quoteNumber, address, quoteDescription,
-                descriptions, lineTotals, userEmail, mobileNumber, null, context);
+        return generateQuotationReport(
+                quoteNumber,
+                null,
+                null,
+                address,
+                quoteDescription,
+                descriptions,
+                lineTotals,
+                userEmail,
+                mobileNumber,
+                null,
+                true,
+                context
+        );
     }
 
     /**
@@ -62,6 +74,43 @@ public class PDFQuotationReportGenerator {
             String quoteNumber, String address, String quoteDescription,
             List<String> descriptions, List<Double> lineTotals,
             String userEmail, String mobileNumber, String ownerPassword, Context context) {
+        return generateQuotationReport(
+                quoteNumber,
+                null,
+                null,
+                address,
+                quoteDescription,
+                descriptions,
+                lineTotals,
+                userEmail,
+                mobileNumber,
+                ownerPassword,
+                true,
+                context
+        );
+    }
+
+    /**
+     * New overload: include Customer/Company details (name + address) separately from premises address.
+     *
+     * @param companyName Customer/company name (optional)
+     * @param companyAddress Customer/company address (optional)
+     * @param premisesAddress Service/premises address (optional)
+     * @param saveToDb If true, inserts quote into local DB. Set false if caller already saved.
+     */
+    public static File generateQuotationReport(
+            String quoteNumber,
+            String companyName,
+            String companyAddress,
+            String premisesAddress,
+            String quoteDescription,
+            List<String> descriptions,
+            List<Double> lineTotals,
+            String userEmail,
+            String mobileNumber,
+            String ownerPassword,
+            boolean saveToDb,
+            Context context) {
 
         File quotesFolder = new File(context.getExternalFilesDir(null), "GRPEST_QUOTES");
 
@@ -103,20 +152,29 @@ public class PDFQuotationReportGenerator {
             // Left Section: Logo and Company Info
             Cell leftCell = new Cell().setBorder(Border.NO_BORDER);
             leftCell.add(logo);
-            leftCell.add(new Paragraph("\nGood Riddance Pest Control").setBold().setFontSize(16));
+            leftCell.add(new Paragraph("\n" + TenantBranding.companyName(context)).setBold().setFontSize(16));
             leftCell.add(new Paragraph("Mobile: " + mobileNumber).setFontSize(14));
             leftCell.add(new Paragraph("Email: " + userEmail).setFontSize(14));
-            leftCell.add(new Paragraph("Website: grpestcontrol.ie").setFontSize(14));
+            leftCell.add(new Paragraph("Website: " + TenantBranding.companyWebsiteShort(context)).setFontSize(14));
             headerTable.addCell(leftCell);
 
-            // Right Section: Date, Quote Number, and Customer Info
+            // Right Section: Date, Quote Validity, and Customer Info
             SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
             String currentDate = sdf.format(new Date());
             Cell rightCell = new Cell().setBorder(Border.NO_BORDER);
             rightCell.add(new Paragraph("Date: " + currentDate).setFontSize(14).setBold());
             rightCell.add(new Paragraph("Quote Valid for 30 Days").setFontSize(12).setItalic());
-            rightCell.add(new Paragraph("\nCustomer Address:").setBold());
-            rightCell.add(new Paragraph(address).setFontSize(14));
+            rightCell.add(new Paragraph("\nCustomer:").setBold());
+            if (companyName != null && !companyName.trim().isEmpty()) {
+                rightCell.add(new Paragraph(companyName.trim()).setFontSize(14));
+            }
+            if (companyAddress != null && !companyAddress.trim().isEmpty()) {
+                rightCell.add(new Paragraph(companyAddress.trim()).setFontSize(14));
+            }
+            if (premisesAddress != null && !premisesAddress.trim().isEmpty()) {
+                rightCell.add(new Paragraph("\nPremises Address:").setBold());
+                rightCell.add(new Paragraph(premisesAddress.trim()).setFontSize(14));
+            }
             headerTable.addCell(rightCell);
 
             document.add(headerTable);
@@ -168,17 +226,19 @@ public class PDFQuotationReportGenerator {
             document.add(new Paragraph("Total Payment Due: €" + String.format("%.2f", (firstQuarterPayment + additionalLineItemsTotal)))
                     .setFontSize(14).setBold());
 
-            // ✅ Save the quote data to the database before closing the document
-            ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(context);
-            dbHelper.insertQuote(
-                    quoteNumber,
-                    currentDate,
-                    address,
-                    quoteDescription,
-                    grandTotal,
-                    userEmail,
-                    mobileNumber,
-                    true);
+            // ✅ Save the quote data to the database before closing the document (optional; callers may already save)
+            if (saveToDb) {
+                ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(context);
+                dbHelper.insertQuote(
+                        quoteNumber,
+                        currentDate,
+                        premisesAddress != null ? premisesAddress : "",
+                        quoteDescription,
+                        grandTotal,
+                        userEmail,
+                        mobileNumber,
+                        true);
+            }
 
             // ✅ Close the document after successful data saving
             document.close();

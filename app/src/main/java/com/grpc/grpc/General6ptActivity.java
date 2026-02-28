@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -14,8 +15,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
+import com.itextpdf.kernel.pdf.EncryptionConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.WriterProperties;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.element.Cell;
@@ -55,6 +58,9 @@ import java.util.Random;
 
 public class General6ptActivity extends AppCompatActivity {
 
+    private static final String PREF_KEY_ANNUAL_FEE = "CONTRACT_QUOTE_ANNUAL_FEE_6PT";
+    private static final double DEFAULT_ANNUAL_FEE = 600.0;
+
     private String userName;
     private String userEmail;
     private String userMobile;
@@ -64,6 +70,8 @@ public class General6ptActivity extends AppCompatActivity {
     private EditText companyNameInput;
     private EditText companyAddressInput;
     private EditText companyContactInput;
+    private EditText annualServiceFeeInput;
+    private CheckBox passwordProtectCheckbox;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,39 +87,57 @@ public class General6ptActivity extends AppCompatActivity {
         staffDisplayName = userName;
         staffTitle = "";
 
-        // Fetch Email/Name/Title from Firebase by username -> ID
-        StaffDirectory.fetchByUserName(this, userName, profile -> {
-            if (profile == null) return;
-            if (profile.email != null && !profile.email.isEmpty()) userEmail = profile.email;
-            if (profile.mobile != null && !profile.mobile.isEmpty()) userMobile = profile.mobile;
-            if (profile.name != null && !profile.name.isEmpty()) staffDisplayName = profile.name;
-            if (profile.title != null && !profile.title.isEmpty()) staffTitle = profile.title;
+        // Fetch Email/Name/Title from centralized session (users/{StaffID})
+        SessionManager.ensureLoaded(this, session -> {
+            String email = SessionManager.getEmail(this);
+            String mobile = SessionManager.getNumber(this);
+            String name = SessionManager.getName(this);
+            String title = SessionManager.getTitle(this);
+            if (email != null && !email.isEmpty()) userEmail = email;
+            if (mobile != null && !mobile.isEmpty()) userMobile = mobile;
+            if (name != null && !name.isEmpty()) staffDisplayName = name;
+            if (title != null && !title.isEmpty()) staffTitle = title;
         });
 
         // Display welcome message
         TextView welcomeTextView = findViewById(R.id.welcomeTextView);
-        welcomeTextView.setText("Welcome, " + userName + "!");
+        if (welcomeTextView != null) {
+            welcomeTextView.setText("Welcome, " + userName + "!");
+        }
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            if (welcomeTextView == null) return;
+            String name = SessionManager.getName(this);
+            if (name != null && !name.trim().isEmpty()) {
+                welcomeTextView.setText("Welcome, " + name.trim() + "!");
+            }
+        }));
 
         // Input fields for company details
         companyNameInput = findViewById(R.id.companyNameInput);
         companyAddressInput = findViewById(R.id.companyAddressInput);
         companyContactInput = findViewById(R.id.companyContactInput);
+        annualServiceFeeInput = findViewById(R.id.annualServiceFeeInput);
+        passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
+
+        // Allow a custom price (persisted per device)
+        if (annualServiceFeeInput != null) {
+            String saved = getSharedPreferences("GRPC", MODE_PRIVATE)
+                    .getString(PREF_KEY_ANNUAL_FEE, String.valueOf(DEFAULT_ANNUAL_FEE));
+            annualServiceFeeInput.setText(saved);
+        }
 
         // Generate PDF button
         Button generatePdfButton = findViewById(R.id.generatePdfButton);
-        generatePdfButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                generateQuote(); // Keep the existing functionality
-                Intent intent = new Intent(General6ptActivity.this, QuotationViewActivity.class); // Adjust MainActivity if necessary
-                intent.putExtra("USER_NAME", userName); // Pass the userName to the next activity
-                startActivity(intent); // Navigate to MainActivity
-                finish(); // Close the current activity
+        generatePdfButton.setOnClickListener(v -> {
+            if (passwordProtectCheckbox != null && passwordProtectCheckbox.isChecked()) {
+                PdfPasswordPrompt.prompt(this, pw -> generateQuote(pw));
+            } else {
+                generateQuote(null);
             }
         });
     }
 
-    private void generateQuote() {
+    private void generateQuote(String ownerPassword) {
         if (userEmail == null || userEmail.trim().isEmpty()) {
             Toast.makeText(this, "Loading your profile email from Firebase. Please try again in a moment.", Toast.LENGTH_SHORT).show();
             return;
@@ -119,11 +145,25 @@ public class General6ptActivity extends AppCompatActivity {
         String companyName = companyNameInput.getText().toString().trim();
         String companyAddress = companyAddressInput.getText().toString().trim();
         String companyContact = companyContactInput.getText().toString().trim();
+        String annualFeeStr = annualServiceFeeInput != null ? annualServiceFeeInput.getText().toString().trim() : "";
 
         if (companyName.isEmpty() || companyAddress.isEmpty() || companyContact.isEmpty()) {
             Toast.makeText(this, "Please fill in all company details", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        double annualFee = DEFAULT_ANNUAL_FEE;
+        if (!annualFeeStr.isEmpty()) {
+            try {
+                annualFee = Double.parseDouble(annualFeeStr);
+            } catch (NumberFormatException e) {
+                Toast.makeText(this, "Invalid annual service fee", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+        getSharedPreferences("GRPC", MODE_PRIVATE).edit()
+                .putString(PREF_KEY_ANNUAL_FEE, String.valueOf(annualFee))
+                .apply();
 
         // Generate a random 4-digit quote number
         String quoteNumber = String.format("%04d", new Random().nextInt(10000));
@@ -137,7 +177,7 @@ public class General6ptActivity extends AppCompatActivity {
                 "This fee covers a comprehensive yearly pest control program tailored to your site’s unique requirements. " +
                 "Our service includes regular inspections, proactive treatments, and ongoing monitoring to ensure a pest-free environment. " +
                 "We utilize advanced methods and eco-friendly solutions to deliver effective and sustainable pest management results.");
-        lineTotals.add(600.0);
+        lineTotals.add(annualFee);
 
         descriptions.add("Internal Monitors Placement and Maintenance:\n" +
                 "Our skilled technicians will strategically place internal monitors on-site, targeting high-risk areas to detect pest activity. " +
@@ -195,7 +235,8 @@ public class General6ptActivity extends AppCompatActivity {
                 staffTitle,                      // Staff title (from Firebase)
                 companyName,                     // Company name
                 companyContact,                  // Company contact
-                General6ptActivity.this          // Explicitly pass the activity as Context
+                General6ptActivity.this,         // Explicitly pass the activity as Context
+                ownerPassword
         );
 
         if (pdfFile != null) {
@@ -226,6 +267,16 @@ public class General6ptActivity extends AppCompatActivity {
             String userEmail, String mobileNumber,
             String staffName, String staffTitle,
             String companyName, String companyContact, Context context) {
+        return generateQuotationReport(fileName, address, quoteDescription, descriptions, lineTotals, userEmail, mobileNumber, staffName, staffTitle, companyName, companyContact, context, null);
+    }
+
+    public static File generateQuotationReport(
+            String fileName, String address, String quoteDescription,
+            List<String> descriptions, List<Double> lineTotals,
+            String userEmail, String mobileNumber,
+            String staffName, String staffTitle,
+            String companyName, String companyContact, Context context,
+            String ownerPassword) {
 
         File quotesFolder = new File(context.getExternalFilesDir(null), "GRPEST_QUOTES");
 
@@ -236,7 +287,18 @@ public class General6ptActivity extends AppCompatActivity {
 
         File pdfFile = new File(quotesFolder, fileName + ".pdf");
 
-        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile));
+        WriterProperties writerProperties = new WriterProperties();
+        writerProperties.setFullCompressionMode(true);
+        if (ownerPassword != null && !ownerPassword.trim().isEmpty()) {
+            writerProperties.setStandardEncryption(
+                    null,
+                    ownerPassword.trim().getBytes(),
+                    EncryptionConstants.ALLOW_PRINTING | EncryptionConstants.ALLOW_COPY,
+                    EncryptionConstants.ENCRYPTION_AES_128
+            );
+        }
+
+        try (PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile), writerProperties);
              PdfDocument pdfDocument = new PdfDocument(writer);
              Document document = new Document(pdfDocument)) {
 
@@ -254,14 +316,14 @@ public class General6ptActivity extends AppCompatActivity {
             // Left Section: Logo and Company Info
             Cell leftCell = new Cell().setBorder(Border.NO_BORDER);
             leftCell.add(logo);
-            leftCell.add(new Paragraph("\nGood Riddance Pest Control").setBold().setFontSize(16));
+            leftCell.add(new Paragraph("\n" + TenantBranding.companyName(context)).setBold().setFontSize(16));
             leftCell.add(new Paragraph("Name: " + (staffName != null && !staffName.isEmpty() ? staffName : "")).setFontSize(12));
             if (staffTitle != null && !staffTitle.isEmpty()) {
                 leftCell.add(new Paragraph("Title: " + staffTitle).setFontSize(12));
             }
             leftCell.add(new Paragraph("Mobile: " + mobileNumber).setFontSize(12));
             leftCell.add(new Paragraph("Email: " + userEmail).setFontSize(12));
-            leftCell.add(new Paragraph("Website: grpestcontrol.ie").setFontSize(12));
+            leftCell.add(new Paragraph("Website: " + TenantBranding.companyWebsiteShort(context)).setFontSize(12));
             headerTable.addCell(leftCell);
 
             // Right Section: Date, Quote Info, and Company Info

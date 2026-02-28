@@ -208,19 +208,9 @@ public class ActionFormActivity extends AppCompatActivity {
             finish();
         });
         selectImageButton.setOnClickListener(v -> openImageSelector());
-        // AI Fix: same rule as Upload to Firebase (logged in and not Offline User)
+        // AI Fix: temporarily hidden for all users (backend logic retained)
         if (aiFixButton != null) {
-            boolean showAIFix = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
-            if (showAIFix) {
-                aiFixButton.setVisibility(View.VISIBLE);
-                aiFixButton.setOnClickListener(v -> {
-                    if (!lastAIResponse.isEmpty()) {
-                        readAIResponseBack();
-                    } else {
-                        showAIFixFieldPicker();
-                    }
-                });
-            }
+            aiFixButton.setVisibility(View.GONE);
         }
         readBackButton.setOnClickListener(v -> readFormBack());
         
@@ -250,6 +240,13 @@ public class ActionFormActivity extends AppCompatActivity {
         android.widget.TextView welcomeTextView = findViewById(R.id.welcomeTextView);
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
+            SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+                if (welcomeTextView == null) return;
+                String name = SessionManager.getName(this);
+                if (name != null && !name.trim().isEmpty()) {
+                    welcomeTextView.setText("Welcome, " + name.trim() + "!");
+                }
+            }));
         }
     }
 
@@ -897,7 +894,7 @@ public class ActionFormActivity extends AppCompatActivity {
 
             Uri fileUri = androidx.core.content.FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     latestFile
             );
 
@@ -1293,17 +1290,8 @@ public class ActionFormActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // AI Fix: same rule as Upload to Firebase (logged in and not Offline User)
-        if (aiFixButton != null) {
-            boolean showAIFix = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
-            aiFixButton.setVisibility(showAIFix ? View.VISIBLE : View.GONE);
-            if (showAIFix && !aiFixButton.hasOnClickListeners()) {
-                aiFixButton.setOnClickListener(v -> {
-                    if (!lastAIResponse.isEmpty()) readAIResponseBack();
-                    else showAIFixFieldPicker();
-                });
-            }
-        }
+        // AI Fix: temporarily hidden for all users (backend logic retained)
+        if (aiFixButton != null) aiFixButton.setVisibility(View.GONE);
     }
 
     @Override

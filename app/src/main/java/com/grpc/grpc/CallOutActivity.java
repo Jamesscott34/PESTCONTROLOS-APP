@@ -237,7 +237,7 @@ public class CallOutActivity extends AppCompatActivity {
             document.add(logo);
 
             // Adding Report Title
-            Paragraph title = new Paragraph("Good Riddance Pest Control Report")
+            Paragraph title = new Paragraph(TenantBranding.reportTitle(context))
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(20)
                     .setBold()

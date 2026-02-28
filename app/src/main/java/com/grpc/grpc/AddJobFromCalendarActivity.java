@@ -135,7 +135,7 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
     /**
      * In-app notification history (NOT system push):
      * - Always notify the assigned technician (if different from creator)
-     * - If creator is 001 or 003, also notify oversight users (002, 004)
+     * - Admin fan-out is handled centrally by NotificationUtils
      */
     private void writeInAppJobNotifications(String jobId, String customerName, String assignedTech, String createdBy) {
         try {
@@ -163,18 +163,6 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
                         "jobwork",
                         data
                 );
-            }
-
-            // 2) Oversight notifications when 001 or 003 adds job
-            String creatorId = StaffDirectory.getUserId(creator);
-            if ("001".equals(creatorId) || "003".equals(creatorId)) {
-                String title = "🚐 New Job Added";
-                String body = creator + " added a Service job for " + customerName + " (assigned to " + tech + ")";
-                for (String oversightId : StaffDirectory.JOB_OVERSIGHT_USER_IDS) {
-                    String key = StaffDirectory.getUserNameKey(oversightId);
-                    if (key != null)
-                        NotificationUtils.writeInAppNotification(key, "jobwork_added_" + key + "_" + jobId, title, body, "jobwork", data);
-                }
             }
         } catch (Exception ignored) {
             // Never block job creation on notification write

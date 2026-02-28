@@ -58,12 +58,13 @@ public class StoredReportsActivity extends AppCompatActivity {
         if (userName == null) {
             userName = "Unknown";
         }
-        // Offline User must not view Firebase folders (same rule as hiding Stored Reports button)
-        if ("Offline User".equals(userName)) {
+        // Offline flavor / offline user: no access to Firebase Storage
+        if (BuildConfig.IS_OFFLINE || "Offline".equals(userName) || "Offline User".equals(userName)) {
             Toast.makeText(this, "Stored Reports is not available in offline mode.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
+        if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
         folderRecyclerView = findViewById(R.id.folderRecyclerView);
         folderRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -247,33 +248,35 @@ public class StoredReportsActivity extends AppCompatActivity {
     }
 
     /**
-     * Shows file options dialog (View/Delete/Rename for user 001 only)
+     * Shows file options dialog (View/Delete/Rename for super admin only)
      */
     private void showFileOptions(String folderPath, String fileName) {
-        String userId = StaffDirectory.getUserId(userName);
-        if (StaffDirectory.isJamesUserId(userId)) {
-            // User 001 can view, delete, or rename files
-            String[] options = {"View", "Delete", "Rename"};
-            new AlertDialog.Builder(this)
-                .setTitle("File Options")
-                .setItems(options, (dialog, which) -> {
-                    switch (which) {
-                        case 0:
-                            viewFile(folderPath, fileName);
-                            break;
-                        case 1:
-                            deleteFile(folderPath, fileName);
-                            break;
-                        case 2:
-                            renameFile(folderPath, fileName);
-                            break;
-                    }
-                })
-                .show();
-        } else {
-            // Other users can only view files
-            viewFile(folderPath, fileName);
-        }
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            boolean isSuperAdmin = session != null && session.isSuperAdmin;
+            if (isSuperAdmin) {
+                // Super admin can view, delete, or rename files
+                String[] options = {"View", "Delete", "Rename"};
+                new AlertDialog.Builder(this)
+                        .setTitle("File Options")
+                        .setItems(options, (dialog, which) -> {
+                            switch (which) {
+                                case 0:
+                                    viewFile(folderPath, fileName);
+                                    break;
+                                case 1:
+                                    deleteFile(folderPath, fileName);
+                                    break;
+                                case 2:
+                                    renameFile(folderPath, fileName);
+                                    break;
+                            }
+                        })
+                        .show();
+            } else {
+                // Other users can only view files
+                viewFile(folderPath, fileName);
+            }
+        }));
     }
 
     /**

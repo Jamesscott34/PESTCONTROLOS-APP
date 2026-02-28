@@ -257,7 +257,7 @@ public class ERAViewActivity extends AppCompatActivity {
             ArrayList<Uri> uris = new ArrayList<>();
             for (File f : files) {
                 if (f == null) continue;
-                Uri fileUri = FileProvider.getUriForFile(this, "com.grpc.grpc.fileprovider", f);
+                Uri fileUri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".fileprovider", f);
                 uris.add(fileUri);
             }
             if (uris.isEmpty()) return;
@@ -337,7 +337,7 @@ public class ERAViewActivity extends AppCompatActivity {
         try {
             Uri fileUri = FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     file
             );
 
@@ -377,7 +377,7 @@ public class ERAViewActivity extends AppCompatActivity {
         try {
             Uri fileUri = FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     file
             );
 

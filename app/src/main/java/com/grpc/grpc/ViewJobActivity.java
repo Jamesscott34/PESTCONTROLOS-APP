@@ -109,7 +109,7 @@ public class ViewJobActivity extends AppCompatActivity {
     private List<Map<String, Object>> allJobs = new ArrayList<>();
     private FirebaseFirestore db;
     private String userName;
-    private String userId; // 001, 002, 003, 004
+    private String userId; // StaffID (3 digits) when available
     private String initialSearchQuery;
     private int total = 0, completed = 0, pending = 0;
 
@@ -206,8 +206,9 @@ public class ViewJobActivity extends AppCompatActivity {
 
     private void loadAllJobs() {
         com.google.firebase.firestore.Query baseQuery = db.collection("JobWork");
-        // 002, 004 see all jobs; 001, 003 see only their assigned jobs
-        if (!StaffDirectory.seesAllJobsUserId(userId)) {
+        // RBAC: admins (or flag) see all jobs; tech see only assigned jobs
+        SessionManager.ensureLoaded(this, null);
+        if (!SessionManager.seesAllJobs(this)) {
             baseQuery = baseQuery.whereEqualTo("AssignedTech", userName);
         }
         baseQuery.addSnapshotListener((snapshots, error) -> {
@@ -959,15 +960,11 @@ public class ViewJobActivity extends AppCompatActivity {
 
     private void deleteJob(String documentId) {
         if (!canDeleteJobs()) {
-            if ("003".equals(userId)) {
-                new AlertDialog.Builder(this)
-                        .setTitle("Permission required")
-                        .setMessage("To delete a job get in touch with an administrator.")
-                        .setPositiveButton("OK", null)
-                        .show();
-            } else {
-                Toast.makeText(this, "You do not have permission to delete jobs.", Toast.LENGTH_SHORT).show();
-            }
+            new AlertDialog.Builder(this)
+                    .setTitle("Permission required")
+                    .setMessage("To delete a job get in touch with an administrator.")
+                    .setPositiveButton("OK", null)
+                    .show();
             return;
         }
         db.collection("JobWork").document(documentId).delete();
@@ -975,7 +972,8 @@ public class ViewJobActivity extends AppCompatActivity {
     }
 
     private boolean canDeleteJobs() {
-        return StaffDirectory.isAdminUserId(userId);
+        SessionManager.ensureLoaded(this, null);
+        return SessionManager.isAdmin(this);
     }
 
     private void updateStatistics(int total, int completed, int pending) {

@@ -59,7 +59,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Main header (e.g. Good Riddance Pest Control)"
+            android:text="@string/pdf_template_main_header_hint"
             android:textSize="14sp"
             android:textStyle="bold"
             android:layout_marginTop="16dp"
@@ -218,7 +218,7 @@
             android:id="@+id/footerTextInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Leave blank for default: Created by reporting system"
+            android:hint="@string/pdf_template_footer_hint"
             android:inputType="text"
             android:layout_marginTop="4dp"
             android:padding="12dp"

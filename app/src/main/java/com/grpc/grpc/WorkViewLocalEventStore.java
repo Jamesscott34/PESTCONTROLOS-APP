@@ -77,6 +77,14 @@ public final class WorkViewLocalEventStore {
         prefs(context).edit().remove(key(currentUserName, eventId)).apply();
     }
 
+    /** Clears all cached WorkView reminder data (required on logout/shared devices). */
+    public static void clearAll(Context context) {
+        if (context == null) return;
+        try {
+            prefs(context).edit().clear().apply();
+        } catch (Exception ignored) {}
+    }
+
     public static boolean shouldShowPopup(Context context,
                                          String currentUserName,
                                          String eventId,

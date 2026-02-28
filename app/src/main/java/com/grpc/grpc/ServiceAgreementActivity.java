@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -36,6 +37,7 @@ public class ServiceAgreementActivity extends AppCompatActivity {
     private EditText etCustomerName, etCustomerAddress, etCustomerEmail, etCustomerPhone, etVatNumber, etGrpcOffice;
     private TextView welcomeTextView;
     private int selectedVisitsPerYear = 8; // Default visits
+    private CheckBox passwordProtectCheckbox;
 
     private String userName;
 
@@ -59,6 +61,13 @@ public class ServiceAgreementActivity extends AppCompatActivity {
         welcomeTextView = findViewById(R.id.welcomeTextView);
         if (welcomeTextView != null) {
             welcomeTextView.setText("Welcome, " + userName + "!");
+            SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+                if (welcomeTextView == null) return;
+                String name = SessionManager.getName(this);
+                if (name != null && !name.trim().isEmpty()) {
+                    welcomeTextView.setText("Welcome, " + name.trim() + "!");
+                }
+            }));
         } else {
             Log.e("ServiceAgreementActivity", "welcomeTextView is NULL! Check XML ID.");
         }
@@ -75,13 +84,20 @@ public class ServiceAgreementActivity extends AppCompatActivity {
         Button btnAgreement8 = findViewById(R.id.btnAgreement8);
         Button btnAgreement12 = findViewById(R.id.btnAgreement12);
         Button btnGeneratePdf = findViewById(R.id.btnGeneratePdf);
+        passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
 
         btnAgreement4.setOnClickListener(v -> selectVisitsPerYear(4));
         btnAgreement6.setOnClickListener(v -> selectVisitsPerYear(6));
         btnAgreement8.setOnClickListener(v -> selectVisitsPerYear(8));
         btnAgreement12.setOnClickListener(v -> selectVisitsPerYear(12));
 
-        btnGeneratePdf.setOnClickListener(v -> generatePdf());
+        btnGeneratePdf.setOnClickListener(v -> {
+            if (passwordProtectCheckbox != null && passwordProtectCheckbox.isChecked()) {
+                PdfPasswordPrompt.prompt(this, pw -> generatePdf(pw));
+            } else {
+                generatePdf(null);
+            }
+        });
     }
 
     private void selectVisitsPerYear(int visits) {
@@ -89,7 +105,7 @@ public class ServiceAgreementActivity extends AppCompatActivity {
         Toast.makeText(this, visits + " Visits Per Year Selected", Toast.LENGTH_SHORT).show();
     }
 
-    private void generatePdf() {
+    private void generatePdf(String ownerPassword) {
         Log.d("ServiceAgreementActivity", "Generating PDF for: " + userName);
 
         String name = etCustomerName.getText().toString();
@@ -138,7 +154,8 @@ public class ServiceAgreementActivity extends AppCompatActivity {
                 userName, // Technician name
                 grpcOffice,
                 totalPriceWithVat, // Now includes VAT
-                selectedVisitsPerYear
+                selectedVisitsPerYear,
+                ownerPassword
         );
 
         if (pdfPath != null) {

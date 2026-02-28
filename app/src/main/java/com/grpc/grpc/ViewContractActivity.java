@@ -90,11 +90,11 @@ import java.util.Collections;
  * 6. BEHINDS LIST MANAGEMENT
  *    - Automatic overdue contract detection
  *    - PDF generation for behinds list reports
- *    - Special handling for user 004 (dual collection access)
+ *    - Special handling for admin/oversight access
  *    - Contract-specific report viewing
  * 
  * USER ROLES & PERMISSIONS:
- * - Admin users (001, 002, 004): Full contract management
+ * - Admin users: Full contract management
  * - Technicians: View and update their assigned contracts
  * - Sales Staff: View contract information and generate reports
  * 
@@ -124,6 +124,9 @@ public class ViewContractActivity extends AppCompatActivity {
 
     /** IDs for technician spinner; set in initializeUIComponents. */
     private String[] technicianIdsForSpinner;
+    private static final String TECH_ID_ALL = "ALL";
+    /** Dynamic staff list for dropdowns (display uses ContractKey). */
+    private List<StaffDirectory.OwnerOption> staffOptionsForSpinner = new ArrayList<>();
     /** All contracts loaded for the selected technician (for search filtering). */
     private List<Map<String, Object>> allLoadedContracts = new ArrayList<>();
     
@@ -132,7 +135,7 @@ public class ViewContractActivity extends AppCompatActivity {
     
     // Current user information for permissions and data filtering
     private String userName;
-    private String userId; // 001, 002, 003, 004 from StaffDirectory
+    private String userId; // StaffID (3 digits) when available
     // In-memory list of contracts currently displayed (for export to PDF)
     private List<Map<String, Object>> currentDisplayedContracts = new ArrayList<>();
     private GestureDetectorCompat gestureDetector;
@@ -153,6 +156,7 @@ public class ViewContractActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_contract);
+        if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
         // Initialize Firebase with authentication
         FirebaseHelper.initialize();
@@ -163,8 +167,19 @@ public class ViewContractActivity extends AppCompatActivity {
         FirebaseHelper.testConnection();
         
         userName = getIntent().getStringExtra("USER_NAME");
+        // Resolve to ContractKey or StaffID when missing so contract collection is stable (never full name).
+        if (userName == null || userName.isEmpty()) {
+            String ck = SessionManager.getContractKey(this);
+            if (ck != null && !ck.trim().isEmpty()) {
+                userName = StaffDirectory.capitalizeContractKey(ck.trim());
+            } else {
+                String sid = SessionManager.getStaffId(this);
+                if (sid != null && !sid.trim().isEmpty()) userName = sid;
+            }
+        } else if (!userName.matches("\\d{3}") && !userName.contains(" ")) {
+            userName = StaffDirectory.capitalizeContractKey(userName.trim());
+        }
         userId = userName != null ? StaffDirectory.getUserId(userName) : null;
-
         if (userName == null || userName.isEmpty()) {
             Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
             finish();
@@ -175,6 +190,16 @@ public class ViewContractActivity extends AppCompatActivity {
         // Initialize UI components
         initializeUIComponents();
 
+        // Resolve RBAC + authoritative StaffID, then apply access rules and load contracts.
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            String staffId = SessionManager.getStaffId(this);
+            if (staffId != null && !staffId.trim().isEmpty()) {
+                userId = staffId.trim();
+            }
+            applyTechnicianSelectorState();
+            loadInitialContractsWithOverrides();
+        }));
+
         // Optional: pre-fill search from global Search screen
         String initialQuery = getIntent().getStringExtra(SearchActivity.EXTRA_SEARCH_QUERY);
         if (initialQuery != null && !initialQuery.trim().isEmpty() && searchBar != null) {
@@ -182,23 +207,9 @@ public class ViewContractActivity extends AppCompatActivity {
             searchBar.setSelection(searchBar.getText().length());
         }
 
-        // Optional: select a specific technician (used by user 001 global search results)
-        String techOverride = getIntent().getStringExtra(EXTRA_TECHNICIAN_OVERRIDE);
-        if (canSelectTechnician() && technicianSpinner != null && techOverride != null && !techOverride.trim().isEmpty()) {
-            String overrideId = StaffDirectory.getUserId(techOverride.trim());
-            if (overrideId != null) trySelectTechnicianInSpinnerById(overrideId);
-        }
-        
-        // Load contracts from Firebase based on user permissions
-        if (canSelectTechnician() && technicianIdsForSpinner != null && technicianSpinner != null) {
-            int pos = technicianSpinner.getSelectedItemPosition();
-            if (pos >= 0 && pos < technicianIdsForSpinner.length)
-                loadContractsForTechnicianById(technicianIdsForSpinner[pos]);
-            else
-                loadContractsForTechnicianById(userId);
-        } else {
-            loadContracts();
-        }
+        // Apply current (possibly cached) RBAC state immediately too (avoids blank UI if cached).
+        applyTechnicianSelectorState();
+        loadInitialContractsWithOverrides();
         
         // Set up navigation and search functionality
         setupNavigationAndSearch();
@@ -258,9 +269,10 @@ public class ViewContractActivity extends AppCompatActivity {
         return super.dispatchTouchEvent(event);
     }
 
-    /** 001, 002, 004 can select which technician's contracts to view. */
+    /** RBAC: admins can select which technician's contracts to view. */
     private boolean canSelectTechnician() {
-        return StaffDirectory.isAdminUserId(userId);
+        SessionManager.ensureLoaded(this, null);
+        return SessionManager.isAdmin(this);
     }
 
     /**
@@ -273,17 +285,49 @@ public class ViewContractActivity extends AppCompatActivity {
         technicianSpinner = findViewById(R.id.technicianSpinner);
         backButton = findViewById(R.id.backButton);
         exportPdfButton = findViewById(R.id.exportPdfButton);
+        if (technicianSelectorLayout != null) technicianSelectorLayout.setVisibility(android.view.View.GONE);
+    }
 
-        if (canSelectTechnician()) {
-            technicianSelectorLayout.setVisibility(android.view.View.VISIBLE);
-            technicianIdsForSpinner = "004".equals(userId) ? StaffDirectory.ORDERED_USER_IDS : StaffDirectory.CONTRACT_TECHNICIAN_IDS;
-            String[] options = StaffDirectory.getDisplayNamesForIds(technicianIdsForSpinner);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, options);
+    private void applyTechnicianSelectorState() {
+        if (technicianSelectorLayout == null || technicianSpinner == null) return;
+
+        boolean isAdmin = canSelectTechnician();
+        technicianSelectorLayout.setVisibility(isAdmin ? android.view.View.VISIBLE : android.view.View.GONE);
+
+        if (!isAdmin) {
+            technicianIdsForSpinner = null;
+            staffOptionsForSpinner = new ArrayList<>();
+            return;
+        }
+
+        // Admins: dropdown should be driven by Firestore users/{StaffID} and show ContractKey.
+        ArrayAdapter<String> loading = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"Loading..."});
+        loading.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        technicianSpinner.setAdapter(loading);
+
+        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+            staffOptionsForSpinner = options != null ? options : new ArrayList<>();
+            int n = staffOptionsForSpinner.size();
+            String[] display = new String[n + 1];
+            technicianIdsForSpinner = new String[n + 1];
+            for (int i = 0; i < n; i++) {
+                StaffDirectory.OwnerOption o = staffOptionsForSpinner.get(i);
+                display[i] = (o != null && o.display != null) ? o.display : "";
+                // Spinner stored value: ContractKey (contracts/workview use ContractKey)
+                technicianIdsForSpinner[i] = (o != null && o.ownerKey != null) ? o.ownerKey : "";
+            }
+            display[n] = "All";
+            technicianIdsForSpinner[n] = TECH_ID_ALL;
+
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, display);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             technicianSpinner.setAdapter(adapter);
-            int defaultIndex = 0;
-            for (int i = 0; i < technicianIdsForSpinner.length; i++) {
-                if (technicianIdsForSpinner[i].equals(userId)) {
+
+            int defaultIndex = n; // default to All
+            String me = SessionManager.getContractKey(this);
+            if (me == null || me.trim().isEmpty()) me = userName;
+            for (int i = 0; i < n; i++) {
+                if (technicianIdsForSpinner[i] != null && me != null && technicianIdsForSpinner[i].equalsIgnoreCase(me)) {
                     defaultIndex = i;
                     break;
                 }
@@ -292,12 +336,52 @@ public class ViewContractActivity extends AppCompatActivity {
             technicianSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
-                    if (technicianIdsForSpinner != null && position >= 0 && position < technicianIdsForSpinner.length)
-                        loadContractsForTechnicianById(technicianIdsForSpinner[position]);
+                    if (technicianIdsForSpinner == null || position < 0 || position >= technicianIdsForSpinner.length) return;
+                    loadContractsForSelection(technicianIdsForSpinner[position]);
                 }
+
                 @Override
                 public void onNothingSelected(AdapterView<?> parent) {}
             });
+        }));
+    }
+
+    private void loadInitialContractsWithOverrides() {
+        // Optional: select a specific technician (used by global search results)
+        String techOverride = getIntent().getStringExtra(EXTRA_TECHNICIAN_OVERRIDE);
+        if (canSelectTechnician() && technicianSpinner != null && techOverride != null && !techOverride.trim().isEmpty()) {
+            String overrideKey = techOverride.trim();
+            if (staffOptionsForSpinner != null) {
+                // Try matching by display label too.
+                for (StaffDirectory.OwnerOption o : staffOptionsForSpinner) {
+                    if (o != null && o.display != null && o.display.equalsIgnoreCase(overrideKey) && o.ownerKey != null) {
+                        overrideKey = o.ownerKey.trim();
+                        break;
+                    }
+                }
+            }
+            if (!overrideKey.trim().isEmpty()) {
+                trySelectTechnicianInSpinnerById(overrideKey);
+                return;
+            }
+        }
+
+        if (canSelectTechnician() && technicianIdsForSpinner != null && technicianSpinner != null) {
+            int pos = technicianSpinner.getSelectedItemPosition();
+            if (pos >= 0 && pos < technicianIdsForSpinner.length) {
+                loadContractsForSelection(technicianIdsForSpinner[pos]);
+                return;
+            }
+        }
+        // Tech/non-admin: load only their own contracts collection
+        loadContractsForSelection(userId);
+    }
+
+    private void loadContractsForSelection(String techIdOrAll) {
+        if (TECH_ID_ALL.equals(techIdOrAll)) {
+            loadAllTechniciansContractsForDisplay();
+        } else {
+            loadContractsForTechnicianById(techIdOrAll);
         }
     }
 
@@ -306,7 +390,7 @@ public class ViewContractActivity extends AppCompatActivity {
         for (int i = 0; i < technicianIdsForSpinner.length; i++) {
             if (techId.equals(technicianIdsForSpinner[i])) {
                 technicianSpinner.setSelection(i);
-                loadContractsForTechnicianById(techId);
+                loadContractsForSelection(techId);
                 return;
             }
         }
@@ -344,27 +428,29 @@ public class ViewContractActivity extends AppCompatActivity {
         });
     }
 
-    /** Load contracts for a single technician by ID (001, 002, 003, 004). */
+    /** Load contracts for a single contract owner (ContractKey or StaffID). */
     private void loadContractsForTechnicianById(String techId) {
-        String collectionName = StaffDirectory.getContractsCollectionName(techId);
-        String ownerName = StaffDirectory.getFallbackDisplayName(techId);
-        Log.d("ViewContractActivity", "Loading contracts for technician id: " + techId);
+        String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(techId);
+        String ownerName = collectionName.replace(" Contracts", "");
+        Log.d("ViewContractActivity", "Loading contracts for owner: " + techId);
 
         db.collection(collectionName).get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 allLoadedContracts = new ArrayList<>();
-                for (QueryDocumentSnapshot document : task.getResult()) {
-                    Map<String, Object> contract = document.getData();
-                    contract.put("documentId", document.getId());
-                    contract.put("owner", ownerName);
-                    allLoadedContracts.add(contract);
+                if (task.getResult() != null) {
+                    for (QueryDocumentSnapshot document : task.getResult()) {
+                        Map<String, Object> contract = document.getData();
+                        contract.put("documentId", document.getId());
+                        contract.put("owner", ownerName);
+                        allLoadedContracts.add(contract);
+                    }
                 }
                 Log.d("ViewContractActivity", "Loaded " + allLoadedContracts.size() + " contracts from " + collectionName);
                 sendDailyBehindSummaryIfNeeded(ownerName, allLoadedContracts);
                 applySearchAndDisplay();
             } else {
-                Log.e("ViewContractActivity", "Failed to load " + collectionName + ": " + task.getException().getMessage());
-                Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                Log.e("ViewContractActivity", "Failed to load " + collectionName + ": " + (task.getException() != null ? task.getException().getMessage() : ""));
+                Toast.makeText(this, "Failed to load contracts.", Toast.LENGTH_LONG).show();
                 allLoadedContracts = new ArrayList<>();
                 applySearchAndDisplay();
             }
@@ -394,43 +480,113 @@ public class ViewContractActivity extends AppCompatActivity {
         handleContractsData(filtered);
     }
 
+    /** Admin "All": loads contracts from all technician collections (ContractKey-based) and merges. */
+    private void loadAllTechniciansContractsForDisplay() {
+        String[] ids = getAllStaffIdsForContracts();
+        if (ids == null || ids.length == 0) {
+            allLoadedContracts = new ArrayList<>();
+            applySearchAndDisplay();
+            return;
+        }
+
+        Log.d("ViewContractActivity", "Loading ALL contracts for admin view");
+        final List<Map<String, Object>> merged = Collections.synchronizedList(new ArrayList<>());
+        final int[] remaining = new int[] { ids.length };
+
+        for (String id : ids) {
+            if (id == null || id.trim().isEmpty()) {
+                remaining[0]--;
+                if (remaining[0] <= 0) {
+                    allLoadedContracts = new ArrayList<>(merged);
+                    applySearchAndDisplay();
+                }
+                continue;
+            }
+            String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(id.trim());
+            String ownerName = collectionName.replace(" Contracts", "");
+            db.collection(collectionName).get().addOnCompleteListener(task -> {
+                try {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Map<String, Object> contract = document.getData();
+                            contract.put("documentId", document.getId());
+                            contract.put("owner", ownerName);
+                            merged.add(contract);
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.w("ViewContractActivity", "Error merging contracts for " + collectionName + ": " + e.getMessage());
+                } finally {
+                    remaining[0]--;
+                    if (remaining[0] <= 0) {
+                        allLoadedContracts = new ArrayList<>(merged);
+                        applySearchAndDisplay();
+                    }
+                }
+            });
+        }
+    }
+
+    private String[] getAllStaffIdsForContracts() {
+        try {
+            if (staffOptionsForSpinner != null && !staffOptionsForSpinner.isEmpty()) {
+                String[] ids = new String[staffOptionsForSpinner.size()];
+                for (int i = 0; i < staffOptionsForSpinner.size(); i++) {
+                    StaffDirectory.OwnerOption o = staffOptionsForSpinner.get(i);
+                    ids[i] = o != null ? o.ownerKey : "";
+                }
+                return ids;
+            }
+        } catch (Exception ignored) {}
+        try {
+            java.util.List<StaffDirectory.StaffProfile> profiles = StaffDirectory.getCachedStaffProfiles();
+            java.util.ArrayList<String> ids = new java.util.ArrayList<>();
+            for (StaffDirectory.StaffProfile p : profiles) {
+                if (p == null) continue;
+                String ck = p.contractKey != null ? p.contractKey.trim() : "";
+                if (!ck.isEmpty()) ids.add(ck);
+            }
+            return ids.toArray(new String[0]);
+        } catch (Exception ignored) {}
+        return new String[0];
+    }
+
     private void loadContracts() {
         Log.d("ViewContractActivity", "Loading contracts for user id: " + userId);
         if (canSelectTechnician()) {
             int pos = technicianSpinner != null ? technicianSpinner.getSelectedItemPosition() : 0;
             if (technicianIdsForSpinner != null && pos >= 0 && pos < technicianIdsForSpinner.length)
-                loadContractsForTechnicianById(technicianIdsForSpinner[pos]);
-            else if (userId != null)
-                loadContractsForTechnicianById(userId);
+                loadContractsForSelection(technicianIdsForSpinner[pos]);
+            else if (userName != null && !userName.trim().isEmpty())
+                loadContractsForSelection(userName.trim());
         } else {
-            String tableName = StaffDirectory.getContractsCollectionName(userId);
+            String tableName = StaffDirectory.getContractsCollectionNameFromAnyKey(userName);
             Log.d("ViewContractActivity", "Loading collection: " + tableName);
-            final String ownerName = StaffDirectory.getFallbackDisplayName(userId);
+            final String ownerName = tableName.replace(" Contracts", "");
 
             db.collection(tableName).get().addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     allLoadedContracts = new ArrayList<>();
-                    for (QueryDocumentSnapshot document : task.getResult()) {
-                        Map<String, Object> contract = document.getData();
-                        contract.put("documentId", document.getId());
-                        contract.put("owner", ownerName);
-                        allLoadedContracts.add(contract);
+                    if (task.getResult() != null) {
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Map<String, Object> contract = document.getData();
+                            contract.put("documentId", document.getId());
+                            contract.put("owner", ownerName);
+                            allLoadedContracts.add(contract);
+                        }
                     }
                     Log.d("ViewContractActivity", "Successfully loaded " + allLoadedContracts.size() + " contracts");
                     sendDailyBehindSummaryIfNeeded(ownerName, allLoadedContracts);
                     applySearchAndDisplay();
                 } else {
-                    Log.e("ViewContractActivity", "Failed to load contracts: " + task.getException().getMessage());
-                    
-                    // Check if it's a permissions issue
-                    if (task.getException().getMessage().contains("permission") || 
-                        task.getException().getMessage().contains("denied")) {
-                        Toast.makeText(this, "Access denied. Please check Firebase permissions or contact admin.", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                    Log.e("ViewContractActivity", "Failed to load contracts: " + (task.getException() != null ? task.getException().getMessage() : ""));
+                    if (task.getException() != null && task.getException().getMessage() != null) {
+                        if (task.getException().getMessage().toLowerCase().contains("permission") || task.getException().getMessage().toLowerCase().contains("denied")) {
+                            Toast.makeText(this, "Access denied. Please check Firebase permissions or contact admin.", Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        }
                     }
-                    
-                    // Show empty state
                     allLoadedContracts = new ArrayList<>();
                     applySearchAndDisplay();
                 }
@@ -630,20 +786,13 @@ public class ViewContractActivity extends AppCompatActivity {
             showContractOptions(contract, lastVisit, documentId);
         });
 
-        // Long Click Listener for Edit/Delete Dialog — admins 001, 002, 003
+        // Long Click Listener for Edit/Delete Dialog — RBAC (admin / permission flag)
         contractBox.setOnLongClickListener(v -> {
-            if (StaffDirectory.isAdminUserId(userId)) {
+            SessionManager.ensureLoaded(this, null);
+            if (SessionManager.canHardPressContracts(this) || SessionManager.isAdmin(this)) {
                 showEditOrDeleteDialog(documentId, contract);
             } else {
-                if ("003".equals(userId)) { // 003
-                    new AlertDialog.Builder(this)
-                            .setTitle("Permission required")
-                            .setMessage("To delete a contract get in touch with an administrator.")
-                            .setPositiveButton("OK", null)
-                            .show();
-                } else {
-                    Toast.makeText(this, "You do not have permission to edit or delete this contract.", Toast.LENGTH_SHORT).show();
-                }
+                Toast.makeText(this, "You do not have permission to edit or delete this contract.", Toast.LENGTH_SHORT).show();
             }
             return true; // Indicate that the long press was handled
         });
@@ -846,8 +995,9 @@ public class ViewContractActivity extends AppCompatActivity {
 
 
     private void showEditOrDeleteDialog(String documentId, Map<String, Object> contract) {
-        // Only user 001 can edit or delete contracts
-        if (!StaffDirectory.isJamesUserId(userId)) {
+        // RBAC: admin-level can edit/delete contracts (fine-grained: CanHardPressContracts can override)
+        SessionManager.ensureLoaded(this, null);
+        if (!(SessionManager.isAdmin(this) || SessionManager.canHardPressContracts(this))) {
             new AlertDialog.Builder(this)
                     .setTitle("Permission required")
                     .setMessage("Only an administrator can edit or delete contracts. Contact the office if you need changes.")
@@ -947,8 +1097,9 @@ public class ViewContractActivity extends AppCompatActivity {
 
     private void transferContractToNewOwner(String currentOwner, String newOwner, String documentId,
                                             String name, String address, String email, String contact, String visits, String lastVisit) {
-        String currentCollection = currentOwner + " Contracts";
-        String newCollection = newOwner + " Contracts";
+        String currentCollection = StaffDirectory.getContractsCollectionNameFromAnyKey(currentOwner);
+        String newCollection = StaffDirectory.getContractsCollectionNameFromAnyKey(newOwner);
+        String newOwnerKey = newCollection.replace(" Contracts", "");
 
         // Remove the contract from the current owner's collection
         db.collection(currentCollection).document(documentId).delete().addOnSuccessListener(aVoid -> {
@@ -959,7 +1110,7 @@ public class ViewContractActivity extends AppCompatActivity {
             newContract.put("email", email);
             newContract.put("contact", contact);
             newContract.put("visits", visits);
-            newContract.put("owner", newOwner);
+            newContract.put("owner", newOwnerKey);
 
             // Preserve last visit and recalculate next visit based on visits
             newContract.put("lastVisit", lastVisit);
@@ -970,7 +1121,7 @@ public class ViewContractActivity extends AppCompatActivity {
             newContract.put("nextVisit", calculatedNext);
 
             db.collection(newCollection).add(newContract).addOnSuccessListener(documentReference -> {
-                Toast.makeText(this, "Contract transferred to " + newOwner + ".", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Contract transferred to " + newOwnerKey + ".", Toast.LENGTH_SHORT).show();
                 loadContracts(); // Refresh contracts list
             }).addOnFailureListener(e -> {
                 Toast.makeText(this, "Failed to add contract to new owner: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -1241,7 +1392,7 @@ public class ViewContractActivity extends AppCompatActivity {
 
 
     private void updateVisitDates(String owner, String documentId, String lastVisit, String visits) {
-        String tableName = owner + " Contracts";
+        String tableName = StaffDirectory.getContractsCollectionNameFromAnyKey(owner);
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("lastVisit", lastVisit);
@@ -1289,9 +1440,9 @@ public class ViewContractActivity extends AppCompatActivity {
 
 
 
-    /** Updates a field in the contract. Uses the contract's owner collection so 001 can edit other technicians' contracts. */
+    /** Updates a field in the contract. Uses the contract's owner collection so admins can edit other technicians' contracts. */
     private void updateContractField(String owner, String documentId, String field, String newValue) {
-        String tableName = owner + " Contracts";
+        String tableName = StaffDirectory.getContractsCollectionNameFromAnyKey(owner);
 
         // Validate the 'Visits' field to ensure it's a valid single- or double-digit number
         if (field.equalsIgnoreCase("visits")) {
@@ -1319,9 +1470,9 @@ public class ViewContractActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to update contract: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
-    /** Deletes the contract from the owner's collection. Only user 001 can trigger this. */
+    /** Deletes the contract from the owner's collection. Only super admin can trigger this. */
     private void deleteContract(String owner, String documentId) {
-        String tableName = owner + " Contracts";
+        String tableName = StaffDirectory.getContractsCollectionNameFromAnyKey(owner);
         db.collection(tableName).document(documentId)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
@@ -1338,8 +1489,11 @@ public class ViewContractActivity extends AppCompatActivity {
      */
     private void exportContractsToPDF() {
         try {
-            // User 002 loads by choice from Firestore; others need current list
-            if (!"002".equals(userId) && (currentDisplayedContracts == null || currentDisplayedContracts.isEmpty())) {
+            SessionManager.ensureLoaded(this, null);
+            boolean isAdmin = SessionManager.isAdmin(this);
+
+            // Admins can load/export by choice from Firestore; others need current list
+            if (!isAdmin && (currentDisplayedContracts == null || currentDisplayedContracts.isEmpty())) {
                 Toast.makeText(this, "No contracts to export.", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -1349,11 +1503,17 @@ public class ViewContractActivity extends AppCompatActivity {
                 return;
             }
 
-            if ("002".equals(userId)) {
+            if (isAdmin) {
                 showExportChoiceDialog();
                 return;
             }
-            if ("004".equals(userId)) {
+            // Non-admin: export only currently displayed list
+            if (currentDisplayedContracts == null || currentDisplayedContracts.isEmpty()) {
+                Toast.makeText(this, "No contracts to export.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (SessionManager.seesAllJobs(this)) {
                 if (currentDisplayedContracts == null || currentDisplayedContracts.isEmpty()) {
                     Toast.makeText(this, "No contracts to export.", Toast.LENGTH_SHORT).show();
                     return;
@@ -1388,11 +1548,7 @@ public class ViewContractActivity extends AppCompatActivity {
 
                 showContractsPdfOptionsForUser004(ownerPdfs);
             } else {
-                if (currentDisplayedContracts == null || currentDisplayedContracts.isEmpty()) {
-                    Toast.makeText(this, "No contracts to export.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                String title = StaffDirectory.getContractsCollectionName(userId);
+                String title = StaffDirectory.getContractsCollectionNameFromAnyKey(userName);
                 File pdfFile = ContractListPDFGenerator.generateContractsListPDF(title, currentDisplayedContracts, this);
                 if (pdfFile == null) {
                     Toast.makeText(this, "Failed to generate contracts PDF.", Toast.LENGTH_SHORT).show();
@@ -1407,28 +1563,39 @@ public class ViewContractActivity extends AppCompatActivity {
     }
 
     private void showExportChoiceDialog() {
-        String[] names = StaffDirectory.getDisplayNamesForIds(StaffDirectory.CONTRACT_TECHNICIAN_IDS);
-        final String[] options = new String[names.length + 1];
-        System.arraycopy(names, 0, options, 0, names.length);
-        options[names.length] = "All";
-        final String[] ids = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
-        new AlertDialog.Builder(this)
-                .setTitle("Export contracts to PDF")
-                .setMessage("Whose contracts do you want to export?")
-                .setItems(options, (dialog, which) -> {
-                    if (which < ids.length) {
-                        loadTechnicianContractsAndExportPdfById(ids[which]);
-                    } else {
-                        loadAllTechniciansContractsAndExportPdf();
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+        // Dynamic staff list (ContractKey) for export dialog too.
+        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+            List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
+            String[] display = new String[opts.size() + 1];
+            String[] ids = new String[opts.size() + 1];
+            for (int i = 0; i < opts.size(); i++) {
+                StaffDirectory.OwnerOption o = opts.get(i);
+                display[i] = (o != null && o.display != null) ? o.display : "";
+                ids[i] = (o != null && o.ownerKey != null) ? o.ownerKey : "";
+            }
+            display[opts.size()] = "All";
+            ids[opts.size()] = TECH_ID_ALL;
+
+            new AlertDialog.Builder(this)
+                    .setTitle("Export contracts to PDF")
+                    .setMessage("Whose contracts do you want to export?")
+                    .setItems(display, (dialog, which) -> {
+                        if (which >= 0 && which < ids.length) {
+                            if (TECH_ID_ALL.equals(ids[which])) {
+                                loadAllTechniciansContractsAndExportPdf();
+                            } else {
+                                loadTechnicianContractsAndExportPdfById(ids[which]);
+                            }
+                        }
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        }));
     }
 
     private void loadTechnicianContractsAndExportPdfById(String techId) {
-        String collectionName = StaffDirectory.getContractsCollectionName(techId);
-        String ownerName = StaffDirectory.getFallbackDisplayName(techId);
+        String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(techId);
+        String ownerName = collectionName.replace(" Contracts", "");
         db.collection(collectionName).get().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
                 Toast.makeText(this, "Failed to load " + collectionName + ": " + (task.getException() != null ? task.getException().getMessage() : ""), Toast.LENGTH_SHORT).show();
@@ -1453,12 +1620,12 @@ public class ViewContractActivity extends AppCompatActivity {
     }
 
     private void loadAllTechniciansContractsAndExportPdf() {
-        String[] techIds = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
+        String[] techIds = getAllStaffIdsForContracts();
         List<Map<String, Object>> allContracts = Collections.synchronizedList(new ArrayList<>());
         final int[] completed = {0};
         for (String techId : techIds) {
             String collectionName = StaffDirectory.getContractsCollectionName(techId);
-            String ownerName = StaffDirectory.getFallbackDisplayName(techId);
+            String ownerName = collectionName.replace(" Contracts", "");
             db.collection(collectionName).get().addOnCompleteListener(task -> {
                 if (task.isSuccessful() && task.getResult() != null) {
                     for (QueryDocumentSnapshot doc : task.getResult()) {
@@ -1469,7 +1636,7 @@ public class ViewContractActivity extends AppCompatActivity {
                     }
                 }
                 completed[0]++;
-                if (completed[0] == 3) {
+                if (completed[0] == techIds.length) {
                     runOnUiThread(() -> {
                         File pdf = ContractListPDFGenerator.generateContractsListPDF("All Contracts", allContracts, this);
                         if (pdf != null) {
@@ -1496,7 +1663,7 @@ public class ViewContractActivity extends AppCompatActivity {
         try {
             Uri fileUri = FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     file
             );
 
@@ -1514,7 +1681,7 @@ public class ViewContractActivity extends AppCompatActivity {
         try {
             Uri fileUri = FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     file
             );
 
@@ -1530,7 +1697,7 @@ public class ViewContractActivity extends AppCompatActivity {
     }
 
     /**
-     * For user 004, allow choosing which PDF to open/share: per-technician or All.
+     * Admin export: allow choosing which PDF to open/share: per-technician or All.
      */
     private void showContractsPdfOptionsForUser004(Map<String, File> ownerPdfs) {
         List<String> owners = new ArrayList<>(ownerPdfs.keySet());

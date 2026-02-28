@@ -80,7 +80,7 @@ public class ToxicERAPDFGenerator {
 
 // Add Title
             // Adding a title to the report
-            Paragraph title = new Paragraph("GRPC Environmental Risk Assessment")
+            Paragraph title = new Paragraph(TenantBranding.eraTitle(context))
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(18)
                     .setBold()
@@ -96,7 +96,7 @@ public class ToxicERAPDFGenerator {
 
 // Left Column - Company Details
             Cell companyDetails = new Cell()
-                    .add(new Paragraph("Company Name: Good Riddance Pest Control").setBold())
+                    .add(new Paragraph("Company Name: " + TenantBranding.companyName(context)).setBold())
                     .add(new Paragraph("Address: 35 Limekiln Green,\n Walkinstown,Dublin 12,\n D12V6Y2"))
                     .add(new Paragraph("Date: " + date))
                     .setBorder(Border.NO_BORDER)
@@ -128,7 +128,7 @@ public class ToxicERAPDFGenerator {
             addSection(document, "1. Purpose",
                     "This environmental risk assessment provides an overview of the potential risks associated with rodenticide use and outlines best practices " +
                             "to minimize harm to non-target species and the surrounding environment. While an environmental risk assessment is not a CRRU requirement " +
-                            "set by the Department of Agriculture, Good Riddance Pest Control is committed to responsible pest management.");
+                            "set by the Department of Agriculture, " + TenantBranding.companyName(context) + " is committed to responsible pest management.");
 
             addSection(document, "2. Environmental Considerations",
                     "Rodenticides are an essential tool for controlling rat populations, particularly in external environments. However, they must be used carefully " +
@@ -176,7 +176,7 @@ public class ToxicERAPDFGenerator {
                             "- Use trapping methods where feasible, particularly in sensitive environmental areas.");
 
             addSection(document, "4. Conclusion",
-                    "Good Riddance Pest Control is committed to responsible rodenticide use, ensuring effective pest control while minimizing environmental impact. " +
+                    TenantBranding.companyName(context) + " is committed to responsible rodenticide use, ensuring effective pest control while minimizing environmental impact. " +
                             "By following secure baiting practices, selecting appropriate rodenticides, and implementing IPM strategies, we help protect non-target species and reduce ecological risks.\n\n" +
                             "This assessment serves as a general guideline and should be adapted to specific site conditions as needed.");
 

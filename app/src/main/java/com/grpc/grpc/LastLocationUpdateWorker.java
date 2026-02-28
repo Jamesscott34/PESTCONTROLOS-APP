@@ -67,7 +67,7 @@ public class LastLocationUpdateWorker extends Worker {
                     .document(userKey)
                     .set(update, com.google.firebase.firestore.SetOptions.merge());
 
-            // Cache (helps James offline)
+            // Cache (helps when offline)
             try {
                 JSONObject json = new JSONObject();
                 json.put("userKey", userKey);

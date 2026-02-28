@@ -229,9 +229,9 @@ public class ReportDatabaseHelper extends SQLiteOpenHelper {
         db.close();
 
         if (result == -1) {
-            Toast.makeText(context, "Error inserting bird quote.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Error inserting quotation.", Toast.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(context, "Bird quote saved successfully!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Quotation saved successfully!", Toast.LENGTH_SHORT).show();
         }
     }
 

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
+    <!-- App-specific external files (e.g. GRPEST REPORTS) – used for viewing/sharing reports on device -->
+    <external-files-path name="app_external_files" path="."/>
     <external-path name="external_files" path="."/>
     <external-path name="external_storage_root" path="."/>
 </paths>

@@ -33,13 +33,13 @@ import java.util.Map;
  * This activity allows users to generate and manage leads for pest control services.
  * Users can input premise details, price quoted, and select a reason for the lead.
  * The commission is automatically calculated for contracts, and leads are stored in Firestore.
- * If the user is 004, they can assign the lead to another user.
+ * Admin users can assign the lead to another user.
  *
  * Features:
  * - Input validation for premise name, address, and price quoted
  * - Automatic commission calculation for contracts (10% of quoted price)
  * - Firebase Firestore integration for storing lead details
- * - Allows user 004 to assign leads to other users
+ * - Allows admins to assign leads to other users
  * - Supports lead categorization based on "Job" or "Contract"
  * - Provides user-friendly alerts and error handling
  *
@@ -77,7 +77,16 @@ public class GenerateLeadsActivity extends AppCompatActivity {
 
         // Initialize UI elements
         TextView welcomeTextView = findViewById(R.id.welcomeTextView);
-        welcomeTextView.setText("Welcome, " + userName + "!");
+        if (welcomeTextView != null) {
+            welcomeTextView.setText("Welcome, " + userName + "!");
+        }
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            if (welcomeTextView == null) return;
+            String name = SessionManager.getName(this);
+            if (name != null && !name.trim().isEmpty()) {
+                welcomeTextView.setText("Welcome, " + name.trim() + "!");
+            }
+        }));
         premiseNameEditText = findViewById(R.id.premiseNameEditText);
         premiseAddressEditText = findViewById(R.id.premiseAddressEditText);
         priceQuotedEditText = findViewById(R.id.priceQuotedEditText);
@@ -179,8 +188,7 @@ public class GenerateLeadsActivity extends AppCompatActivity {
         CollectionReference leadsCollection = db.collection("Leads");
         leadsCollection.add(createLeadObject(premiseName, premiseAddress, priceQuoted, commission, date, reason, addedBy, createdBy))
                 .addOnSuccessListener(documentReference -> {
-                    String createdById = StaffDirectory.getUserId(createdBy);
-                    if ("001".equals(createdById) || "003".equals(createdById)) {
+                    if (commission > 0) {
                         notifyOversightLeadAdded(createdBy, premiseName, documentReference.getId(), commission);
                     }
                     Toast.makeText(this, "Lead added successfully", Toast.LENGTH_SHORT).show();
@@ -216,45 +224,39 @@ public class GenerateLeadsActivity extends AppCompatActivity {
 
         double commission = "Contract".equalsIgnoreCase(selectedReason) ? priceQuoted * 0.10 : 0.0;
 
-        if ("004".equals(StaffDirectory.getUserId(userName))) {
+        SessionManager.ensureLoaded(this, null);
+        if (SessionManager.isAdmin(this)) {
             showAssignToDialog(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason);
         } else {
             saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason, userName, userName);
         }
     }
 
-    // Show assign-to dialog for user 004
+    // Show assign-to dialog for admins (ContractKey-driven, no free-text names)
     private void showAssignToDialog(String premiseName, String premiseAddress, double priceQuoted, double commission, String date, String reason) {
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-        dialogBuilder.setTitle("Assign Lead");
-
-        // Input field for assigning the lead
-        final EditText input = new EditText(this);
-        input.setHint("Enter name to assign lead to");
-        dialogBuilder.setView(input);
-
-        dialogBuilder.setPositiveButton("Assign", null);
-
-        dialogBuilder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-
-        AlertDialog dialog = dialogBuilder.create();
-
-        dialog.setOnShowListener(dialogInterface -> {
-            Button assignButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            assignButton.setOnClickListener(v -> {
-                String assignedTo = input.getText().toString().trim();
-
-                if (assignedTo.isEmpty()) {
-                    Toast.makeText(this, "You must provide a name to assign the lead.", Toast.LENGTH_SHORT).show();
-                } else {
-                    // Save the lead with the assigned name
-                    saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, date, reason, assignedTo, userName);
-                    dialog.dismiss();
-                }
-            });
-        });
-
-        dialog.show();
+        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+            java.util.List<StaffDirectory.OwnerOption> opts = options != null ? options : new java.util.ArrayList<>();
+            if (opts.isEmpty()) {
+                Toast.makeText(this, "No staff list available. Please try again.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            final String[] display = new String[opts.size()];
+            final String[] keys = new String[opts.size()];
+            for (int i = 0; i < opts.size(); i++) {
+                StaffDirectory.OwnerOption o = opts.get(i);
+                display[i] = o != null && o.display != null ? o.display : "";
+                keys[i] = o != null && o.ownerKey != null ? o.ownerKey : "";
+            }
+            new AlertDialog.Builder(this)
+                    .setTitle("Assign Lead")
+                    .setItems(display, (dialog, which) -> {
+                        if (which >= 0 && which < keys.length && keys[which] != null && !keys[which].trim().isEmpty()) {
+                            saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, date, reason, keys[which].trim(), userName);
+                        }
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        }));
     }
 
 
@@ -271,11 +273,9 @@ public class GenerateLeadsActivity extends AppCompatActivity {
         return lead;
     }
 
-    /** Notify oversight user (002) when 001 or 003 adds a lead with commission. */
+    /** Write lead notification (admin fan-out handled by NotificationUtils). */
     private void notifyOversightLeadAdded(String createdBy, String premiseName, String leadId, double commission) {
         try {
-            String oversightKey = StaffDirectory.getUserNameKey(StaffDirectory.LEAD_OVERSIGHT_USER_ID);
-            if (oversightKey == null) return;
             String title = "Lead added with commission";
             String body = createdBy + " added a lead: " + (premiseName != null ? premiseName : "Unknown")
                     + (commission > 0 ? " (Commission: €" + String.format(Locale.getDefault(), "%.2f", commission) + ")" : "");
@@ -284,7 +284,8 @@ public class GenerateLeadsActivity extends AppCompatActivity {
             data.put("premiseName", premiseName);
             data.put("createdBy", createdBy);
             String docId = "lead_added_" + leadId + "_" + System.currentTimeMillis();
-            NotificationUtils.writeInAppNotification(oversightKey, docId, title, body, "lead_update", data);
+            String recipient = createdBy != null ? createdBy : "";
+            NotificationUtils.writeInAppNotification(recipient, docId, title, body, "lead_update", data);
         } catch (Exception ignored) {
         }
     }

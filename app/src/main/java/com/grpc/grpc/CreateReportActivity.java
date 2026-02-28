@@ -34,6 +34,7 @@ import java.util.List;
 
 public class CreateReportActivity extends AppCompatActivity {
 
+    private EditText companyNameInput, companyAddressInput;
     private EditText dateInput, addressInput, quoteDescriptionInput, emailInput, mobileNumberInput;
     private LinearLayout lineItemsContainer;
     private Button addLineItemButton, generateQuoteButton, backButton;
@@ -71,6 +72,8 @@ public class CreateReportActivity extends AppCompatActivity {
         String address = getIntent().getStringExtra("ADDRESS");
 
         // Initialize UI components
+        companyNameInput = findViewById(R.id.companyNameInput);
+        companyAddressInput = findViewById(R.id.companyAddressInput);
         dateInput = findViewById(R.id.dateInput);
         addressInput = findViewById(R.id.addressInput);
         quoteDescriptionInput = findViewById(R.id.quoteDescriptionInput);
@@ -82,16 +85,41 @@ public class CreateReportActivity extends AppCompatActivity {
         backButton = findViewById(R.id.backButton);
         passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
 
+        // Auto-fill Email/Mobile from centralized session (manual override preserved)
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            try {
+                if (emailInput != null) {
+                    String existing = emailInput.getText() != null ? emailInput.getText().toString().trim() : "";
+                    String emailFromSession = SessionManager.getEmail(this);
+                    if (existing.isEmpty() && emailFromSession != null && !emailFromSession.trim().isEmpty()) {
+                        emailInput.setText(emailFromSession.trim());
+                    }
+                }
+                if (mobileNumberInput != null) {
+                    String existing = mobileNumberInput.getText() != null ? mobileNumberInput.getText().toString().trim() : "";
+                    String mobileFromSession = SessionManager.getNumber(this);
+                    if (existing.isEmpty() && mobileFromSession != null && !mobileFromSession.trim().isEmpty()) {
+                        mobileNumberInput.setText(mobileFromSession.trim());
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }));
+
         // Auto-generate quote number
         EditText quoteNumberInput = findViewById(R.id.quoteNumberInput);
         quoteNumberInput.setText(String.valueOf(quoteNumberCounter));
 
         // Auto-fill company name and address if provided
         if (companyName != null && !companyName.isEmpty() && !companyName.equals("N/A")) {
-            quoteDescriptionInput.setText(companyName);
+            if (companyNameInput != null) companyNameInput.setText(companyName);
         }
         if (address != null && !address.isEmpty() && !address.equals("N/A")) {
-            addressInput.setText(address);
+            // Default to Company Address (top field) and also fill premises address if empty
+            if (companyAddressInput != null) companyAddressInput.setText(address);
+            if (addressInput != null && addressInput.getText().toString().trim().isEmpty()) {
+                addressInput.setText(address);
+            }
         }
 
         // Button Click Listeners
@@ -194,6 +222,8 @@ public class CreateReportActivity extends AppCompatActivity {
         String address = addressInput.getText().toString().trim();
         String quoteDescription = quoteDescriptionInput.getText().toString().trim();
         String quoteNumber = String.valueOf(quoteNumberCounter);
+        String customerCompanyName = companyNameInput != null ? companyNameInput.getText().toString().trim() : "";
+        String customerCompanyAddress = companyAddressInput != null ? companyAddressInput.getText().toString().trim() : "";
 
         // Collect line items from the dynamic fields
         List<String> descriptions = new ArrayList<>();
@@ -224,8 +254,8 @@ public class CreateReportActivity extends AppCompatActivity {
 
         // Generate the PDF (compressed; optional password)
         PDFQuotationReportGenerator.generateQuotationReport(
-                quoteNumber, address, quoteDescription,
-                descriptions, lineTotals, userEmail, mobileNumber, ownerPassword, this);
+                quoteNumber, customerCompanyName, customerCompanyAddress, address, quoteDescription,
+                descriptions, lineTotals, userEmail, mobileNumber, ownerPassword, false, this);
 
         Toast.makeText(this, "Report Generated Successfully!", Toast.LENGTH_SHORT).show();
         quoteNumberCounter++;

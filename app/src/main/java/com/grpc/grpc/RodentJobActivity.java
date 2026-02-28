@@ -220,7 +220,7 @@ public class RodentJobActivity extends AppCompatActivity {
         document.add(logo);
 
         // Add Report Title
-        document.add(new Paragraph("Good Riddance Pest Control Report")
+        document.add(new Paragraph(TenantBranding.reportTitle(context))
                 .setTextAlignment(TextAlignment.CENTER)
                 .setFontSize(16)
                 .setBold()

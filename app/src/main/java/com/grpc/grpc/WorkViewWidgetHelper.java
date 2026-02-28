@@ -113,6 +113,14 @@ public final class WorkViewWidgetHelper {
         return context.getApplicationContext().getSharedPreferences(PREFS_WIDGET_CACHE, Context.MODE_PRIVATE);
     }
 
+    /** Clears widget cache (required on logout/shared devices). */
+    public static void clearWidgetCache(Context context) {
+        if (context == null) return;
+        try {
+            widgetCachePrefs(context).edit().clear().apply();
+        } catch (Exception ignored) {}
+    }
+
     private static String todayYyyyMmDd() {
         return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
     }

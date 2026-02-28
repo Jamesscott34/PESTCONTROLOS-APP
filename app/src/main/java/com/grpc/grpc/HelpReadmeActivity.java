@@ -30,7 +30,7 @@ public class HelpReadmeActivity extends AppCompatActivity {
         if (currentUser == null || currentUser.trim().isEmpty()) {
             currentUser = getSharedPreferences("GRPC", MODE_PRIVATE).getString("USER_NAME", "User");
         }
-        final String currentUserKey = normalizeUserKey(currentUser);
+        final String currentUserFinal = currentUser;
 
         Button backButton = findViewById(R.id.helpBackButton);
         if (backButton != null) {
@@ -38,41 +38,14 @@ public class HelpReadmeActivity extends AppCompatActivity {
         }
 
         // Role-aware help: only show the current user's content.
-        // User 001 can preview roles for contract technicians.
+        // Super admin can preview help content by role.
         LinearLayout roleRow = findViewById(R.id.helpRoleRow);
         Spinner roleSpinner = findViewById(R.id.helpRoleSpinner);
+        LinearLayout section8 = findViewById(R.id.section8);
+        if (roleRow != null) roleRow.setVisibility(View.GONE);
+        if (section8 != null) section8.setVisibility(View.GONE);
 
-        String currentUserId = StaffDirectory.getUserId(currentUserKey);
-        if (StaffDirectory.isJamesUserId(currentUserId) && roleRow != null && roleSpinner != null) {
-            roleRow.setVisibility(View.VISIBLE);
-            final String[] displayNames = StaffDirectory.getDisplayNamesForIds(StaffDirectory.CONTRACT_TECHNICIAN_IDS);
-            final String[] keys = new String[StaffDirectory.CONTRACT_TECHNICIAN_IDS.length];
-            for (int i = 0; i < keys.length; i++)
-                keys[i] = StaffDirectory.getUserNameKey(StaffDirectory.CONTRACT_TECHNICIAN_IDS[i]);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, displayNames);
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            roleSpinner.setAdapter(adapter);
-            roleSpinner.setSelection(0);
-
-            applyRoleContent(keys.length > 0 ? keys[0] : "");
-            roleSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    if (position >= 0 && position < keys.length && keys[position] != null)
-                        applyRoleContent(keys[position]);
-                }
-
-                @Override
-                public void onNothingSelected(AdapterView<?> parent) {
-                    if (keys.length > 0) applyRoleContent(keys[0]);
-                }
-            });
-        } else {
-            if (roleRow != null) roleRow.setVisibility(View.GONE);
-            applyRoleContent(currentUserKey);
-        }
-
-        // Set up expandable sections
+        // Set up expandable sections (static wiring)
         setupSectionToggle(R.id.section1Header, R.id.section1Content);
         setupSectionToggle(R.id.section2Header, R.id.section2Content);
         setupSectionToggle(R.id.section3Header, R.id.section3Content);
@@ -81,55 +54,72 @@ public class HelpReadmeActivity extends AppCompatActivity {
         setupSectionToggle(R.id.section6Header, R.id.section6Content);
         setupSectionToggle(R.id.section7Header, R.id.section7Content);
 
-        // Admin-only section 8: visible only for user 001
-        LinearLayout section8 = findViewById(R.id.section8);
-        if (section8 != null && currentUser != null && !currentUser.trim().isEmpty()) {
-            StaffDirectory.fetchByUserName(this, currentUser, profile -> {
-                runOnUiThread(() -> {
-                    if (section8 != null && profile != null && StaffDirectory.ADMIN_USER_ID.equals(profile.id)) {
-                        section8.setVisibility(View.VISIBLE);
-                        setupSectionToggle(R.id.section8Header, R.id.section8Content);
-                    }
-                });
-            });
-        }
+        // Load RBAC before deciding super_admin UI.
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            boolean isSuperAdmin = session != null && session.isSuperAdmin;
+
+            if (isSuperAdmin && roleRow != null && roleSpinner != null) {
+                roleRow.setVisibility(View.VISIBLE);
+                // Super admin can preview help content by ROLE (no hardcoded staff names).
+                final String[] displayNames = new String[]{"Admin view", "Technician view"};
+                final String[] roleKeys = new String[]{"admin", "tech"};
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, displayNames);
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    roleSpinner.setAdapter(adapter);
+                    roleSpinner.setSelection(0);
+
+                    applyRoleContent(roleKeys[0]);
+                    roleSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            if (position >= 0 && position < roleKeys.length && roleKeys[position] != null)
+                                applyRoleContent(roleKeys[position]);
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+                            applyRoleContent(roleKeys[0]);
+                        }
+                    });
+            } else {
+                if (roleRow != null) roleRow.setVisibility(View.GONE);
+                // Non-super-admin: show role-appropriate help.
+                String roleKey = (session != null && session.isAdmin) ? "admin" : "tech";
+                applyRoleContent(roleKey);
+            }
+
+            // Admin-only section 8: visible only for super_admin
+            if (section8 != null && currentUserFinal != null && !currentUserFinal.trim().isEmpty()) {
+                if (isSuperAdmin) {
+                    section8.setVisibility(View.VISIBLE);
+                    setupSectionToggle(R.id.section8Header, R.id.section8Content);
+                } else {
+                    section8.setVisibility(View.GONE);
+                }
+            }
+        }));
     }
 
-    private void applyRoleContent(String userKey) {
-        // Default to self-only behavior; unknown users get a generic view (no other-role details).
+    private void applyRoleContent(String roleKey) {
+        // Role-based help content (no staff-name-driven logic).
         int s1, s2, s3, s4, s5, s6, s7;
-        if ("james".equals(userKey)) {
-            s1 = R.string.help_section1_james;
-            s2 = R.string.help_section2_james;
-            s3 = R.string.help_section3_james;
-            s4 = R.string.help_section4_james;
-            s5 = R.string.help_section5_james;
-            s6 = R.string.help_section6_james;
-            s7 = R.string.help_section7_james;
-        } else if ("ian".equals(userKey)) {
-            s1 = R.string.help_section1_ian;
-            s2 = R.string.help_section2_ian;
-            s3 = R.string.help_section3_ian;
-            s4 = R.string.help_section4_ian;
-            s5 = R.string.help_section5_ian;
-            s6 = R.string.help_section6_ian;
-            s7 = R.string.help_section7_ian;
-        } else if ("dean".equals(userKey)) {
-            s1 = R.string.help_section1_dean;
-            s2 = R.string.help_section2_dean;
-            s3 = R.string.help_section3_dean;
-            s4 = R.string.help_section4_dean;
-            s5 = R.string.help_section5_dean;
-            s6 = R.string.help_section6_dean;
-            s7 = R.string.help_section7_dean;
-        } else if ("kristine".equals(userKey)) {
-            s1 = R.string.help_section1_kristine;
-            s2 = R.string.help_section2_kristine;
-            s3 = R.string.help_section3_kristine;
-            s4 = R.string.help_section4_kristine;
-            s5 = R.string.help_section5_kristine;
-            s6 = R.string.help_section6_kristine;
-            s7 = R.string.help_section7_kristine;
+        String rk = (roleKey != null ? roleKey.trim().toLowerCase(Locale.getDefault()) : "");
+        if ("admin".equals(rk) || "super_admin".equals(rk)) {
+            s1 = R.string.help_section1_admin;
+            s2 = R.string.help_section2_admin;
+            s3 = R.string.help_section3_admin;
+            s4 = R.string.help_section4_admin;
+            s5 = R.string.help_section5_admin;
+            s6 = R.string.help_section6_admin;
+            s7 = R.string.help_section7_admin;
+        } else if ("tech".equals(rk)) {
+            s1 = R.string.help_section1_tech;
+            s2 = R.string.help_section2_tech;
+            s3 = R.string.help_section3_tech;
+            s4 = R.string.help_section4_tech;
+            s5 = R.string.help_section5_tech;
+            s6 = R.string.help_section6_tech;
+            s7 = R.string.help_section7_tech;
         } else {
             s1 = R.string.help_section1_generic;
             s2 = R.string.help_section2_generic;
@@ -152,12 +142,6 @@ public class HelpReadmeActivity extends AppCompatActivity {
     private void setTextIfPresent(int viewId, int stringRes) {
         TextView tv = findViewById(viewId);
         if (tv != null) tv.setText(stringRes);
-    }
-
-    private static String normalizeUserKey(String s) {
-        String k = (s == null ? "" : s.trim().toLowerCase(Locale.getDefault()));
-        if ("kristen".equals(k)) return "kristine";
-        return k;
     }
 
     /**

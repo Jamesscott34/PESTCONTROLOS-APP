@@ -15,7 +15,8 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:padding="16dp">
 
         <!-- ✅ Moved inside LinearLayout -->
         <View
@@ -63,6 +64,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="phone"
+            android:layout_marginBottom="12dp"
             android:padding="12dp"
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
@@ -74,6 +76,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textEmailAddress"
+            android:layout_marginBottom="12dp"
             android:padding="12dp"
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
@@ -85,6 +88,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:enabled="false"
+            android:layout_marginBottom="12dp"
+            android:padding="12dp"
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
@@ -96,6 +101,7 @@
             android:layout_height="wrap_content"
             android:inputType="textMultiLine"
             android:minLines="2"
+            android:layout_marginBottom="12dp"
             android:padding="12dp"
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
@@ -108,30 +114,31 @@
             android:layout_height="wrap_content"
             android:inputType="textMultiLine"
             android:minLines="2"
+            android:layout_marginBottom="12dp"
             android:padding="12dp"
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Line items"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="6dp"
+            android:textColor="?android:attr/textColorPrimary" />
 
         <LinearLayout
             android:id="@+id/lineItemsContainer"
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
             android:background="?attr/colorSurface" />
 
-        <Button
-            android:id="@+id/addLineItemButton"
-            android:text="Add Line Item"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="?attr/colorSurface"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary" />
-
-        <!-- Password protect PDF (same as Action Form) -->
+        <!-- Options -->
         <CheckBox
             android:id="@+id/passwordProtectCheckbox"
             android:layout_width="match_parent"
@@ -145,24 +152,32 @@
             android:textColor="?android:attr/textColorPrimary" />
 
         <Button
-            android:id="@+id/generateQuoteButton"
-            android:text="Generate Quote PDF"
+            android:id="@+id/addLineItemButton"
+            android:text="ADD LINE ITEM"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="?attr/colorSurface"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary" />
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
+
+        <Button
+            android:id="@+id/generateQuoteButton"
+            android:text="GENERATE QUOTE PDF"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
         <Button
             android:id="@+id/backButton"
-            android:text="Return to Main"
+            android:text="RETURN TO MAIN"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="?attr/colorSurface"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary" />
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
         <EditText
             android:id="@+id/quoteNumberInput"

@@ -241,8 +241,8 @@ public class ReportViewActivity extends AppCompatActivity {
      * @param file The selected report file.
      */
     private void showSinglePressOptions(File file) {
-        // Same rule as stored reports: hide Upload to Firebase for Offline User
-        boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
+        // Offline flavor: no Firebase access; hide Upload everywhere for offline
+        boolean showUpload = !BuildConfig.IS_OFFLINE && FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
         CharSequence[] items = showUpload
                 ? new CharSequence[]{"View", "Edit", "Share", "Rename", "Delete", "Upload to Firebase"}
                 : new CharSequence[]{"View", "Edit", "Share", "Rename", "Delete"};
@@ -288,8 +288,8 @@ public class ReportViewActivity extends AppCompatActivity {
      * @param file The selected report file.
      */
     private void showLongPressOptions(File file) {
-        // Same rule as stored reports: hide Upload to Firebase for Offline User
-        boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
+        // Offline flavor: no Firebase access
+        boolean showUpload = !BuildConfig.IS_OFFLINE && FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
         CharSequence[] items = showUpload
                 ? new CharSequence[]{"Share", "Delete", "Rename", "Upload to Firebase"}
                 : new CharSequence[]{"Share", "Delete", "Rename"};
@@ -316,6 +316,7 @@ public class ReportViewActivity extends AppCompatActivity {
      * @param file The file to be uploaded.
      */
     private void showFolderSelectionDialog(File file) {
+        if (BuildConfig.IS_OFFLINE) return;
         FirebaseStorage storage = FirebaseStorage.getInstance();
         StorageReference storageRef = storage.getReference();
 
@@ -399,6 +400,7 @@ public class ReportViewActivity extends AppCompatActivity {
      * @param originalFileName The original name of the file.
      */
     private void uploadFileToFirebase(Uri fileUri, String folderPath, String originalFileName) {
+        if (BuildConfig.IS_OFFLINE) return;
         if (fileUri == null || folderPath == null || originalFileName == null) {
             Toast.makeText(this, "Invalid file or folder selection.", Toast.LENGTH_SHORT).show();
             return;
@@ -446,7 +448,7 @@ public class ReportViewActivity extends AppCompatActivity {
         try {
             Uri fileUri = FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     file
             );
 
@@ -535,7 +537,7 @@ public class ReportViewActivity extends AppCompatActivity {
             java.util.ArrayList<Uri> uris = new java.util.ArrayList<>();
             for (File f : files) {
                 if (f == null) continue;
-                Uri fileUri = FileProvider.getUriForFile(this, "com.grpc.grpc.fileprovider", f);
+                Uri fileUri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".fileprovider", f);
                 uris.add(fileUri);
             }
             if (uris.isEmpty()) return;
@@ -563,9 +565,10 @@ public class ReportViewActivity extends AppCompatActivity {
 
     private void confirmDeleteMultiple(List<File> files) {
         if (files == null || files.isEmpty()) return;
-        boolean isDean = "Dean".equalsIgnoreCase(userName);
+        SessionManager.ensureLoaded(this, null);
+        boolean showUploadPrompt = !SessionManager.isAdmin(this);
         String message = "Delete " + files.size() + " selected file(s)?";
-        if (isDean) {
+        if (showUploadPrompt) {
             message = "Have you added/uploaded these report(s) to Firebase before deleting?\n\n" + message;
         }
         new AlertDialog.Builder(this)
@@ -627,7 +630,7 @@ public class ReportViewActivity extends AppCompatActivity {
         try {
             Uri fileUri = FileProvider.getUriForFile(
                     this,
-                    "com.grpc.grpc.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
                     file
             );
 
@@ -716,7 +719,7 @@ public class ReportViewActivity extends AppCompatActivity {
             document.add(logo);
 
             // Add a title below the logo
-            document.add(new Paragraph("Good Riddance Pest Control Report")
+            document.add(new Paragraph(TenantBranding.reportTitle(this))
                     .setFontSize(18)
                     .setBold()
                     .setFontColor(com.itextpdf.kernel.colors.ColorConstants.BLUE)
@@ -742,7 +745,7 @@ public class ReportViewActivity extends AppCompatActivity {
             }
 
             // Add footer to the new page
-            document.add(new Paragraph("Good Riddance Pest Control - www.grpestcontrol.ie")
+            document.add(new Paragraph(TenantBranding.companyWebsiteLineDash(this))
                     .setFontSize(12)
                     .setTextAlignment(TextAlignment.CENTER));
 

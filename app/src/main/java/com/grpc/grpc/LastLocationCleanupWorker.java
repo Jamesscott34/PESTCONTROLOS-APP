@@ -16,7 +16,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 public class LastLocationCleanupWorker extends Worker {
     public static final String KEY_USER_NAME = "USER_NAME";
 
-    private static final long EXPIRE_MS = 15L * 60L * 1000L;
+    private static final long EXPIRE_MS = 30L * 60L * 1000L;
 
     public LastLocationCleanupWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);

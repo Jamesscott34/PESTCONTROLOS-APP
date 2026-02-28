@@ -82,6 +82,17 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pdf_template_settings);
 
+        // Offline app: custom templates require signing up for demo or downloading the latest offline app
+        if (BuildConfig.IS_OFFLINE) {
+            OfflineTrialHelper.openWebsiteAndFinish(this, getString(R.string.main_website_url), getString(R.string.offline_custom_template_blocked));
+            return;
+        }
+
+        // Demo/other: trial redirect after N days
+        if (OfflineTrialHelper.openWebsiteIfExpired(this, getString(R.string.main_website_url), getString(R.string.offline_trial_redirect_message))) {
+            return;
+        }
+
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.isEmpty()) userName = "Offline User";
         storage = new PdfTemplateStorage(this);
@@ -109,7 +120,7 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
         findViewById(R.id.useDefaultLogoButton).setOnClickListener(v -> {
             settings.setLogoPath(PdfTemplateSettings.USE_DEFAULT_LOGO);
             bindLogo();
-            Toast.makeText(this, "Using default logo (same as GRPC PDF).", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Using default logo (" + TenantBranding.companyAbbrev(this) + ").", Toast.LENGTH_SHORT).show();
         });
         findViewById(R.id.chooseWatermarkImageButton).setOnClickListener(v -> openImagePicker(pickWatermarkImageLauncher));
         findViewById(R.id.addHeaderBlockButton).setOnClickListener(v -> addHeaderBlockRow());
@@ -181,7 +192,7 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
         if (path != null && !path.isEmpty()) {
             logoPathLabel.setVisibility(android.view.View.VISIBLE);
             if (PdfTemplateSettings.USE_DEFAULT_LOGO.equals(path)) {
-                logoPathLabel.setText("Default logo (GRPC)");
+                logoPathLabel.setText("Default logo (" + TenantBranding.companyAbbrev(this) + ")");
             } else {
                 logoPathLabel.setText(new File(path).getName());
             }
@@ -463,7 +474,11 @@ public class PdfTemplateSettingsActivity extends AppCompatActivity {
         storage.save(settings);
         SavedTemplate t = buildSavedTemplateFromUi();
         t.setName(name);
-        storage.addOrUpdateSavedTemplate(userName, t);
+        boolean saved = storage.addOrUpdateSavedTemplate(userName, t);
+        if (!saved) {
+            Toast.makeText(this, getString(R.string.template_limit_reached), Toast.LENGTH_LONG).show();
+            return;
+        }
         Toast.makeText(this, "Template \"" + name + "\" saved. Use View templates to use it.", Toast.LENGTH_SHORT).show();
 
         clearAllFields();

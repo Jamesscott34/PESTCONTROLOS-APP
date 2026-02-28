@@ -77,7 +77,7 @@ public class NonToxERAPDFGenerator {
 
 
             // Adding a title to the report
-            Paragraph title = new Paragraph("GRPC Environmental Risk Assessment")
+            Paragraph title = new Paragraph(TenantBranding.eraTitle(context))
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(18)
                     .setBold()
@@ -94,7 +94,7 @@ public class NonToxERAPDFGenerator {
 
 // Left Column - Company Details
             Cell companyDetails = new Cell()
-                    .add(new Paragraph("Company Name:\n Good Riddance Pest Control").setBold())
+                    .add(new Paragraph("Company Name:\n " + TenantBranding.companyName(context)).setBold())
                     .add(new Paragraph("Address: 35 Limekiln Green,\n Walkinstown,Dublin 12,\n D12V6Y2\n"))
                     .add(new Paragraph("Date:\n " + date))
                     .setBorder(Border.NO_BORDER)
@@ -171,7 +171,7 @@ public class NonToxERAPDFGenerator {
                             "- Advise clients on proper waste management to prevent rodent attraction.");
 
             addSection(document, "4. Conclusion",
-                    "Good Riddance Pest Control uses non-toxic bait as a key tool in rodent monitoring, ensuring environmentally responsible pest management. " +
+                    TenantBranding.companyName(context) + " uses non-toxic bait as a key tool in rodent monitoring, ensuring environmentally responsible pest management. " +
                             "While non-toxic bait does not pose a poisoning risk, proper placement, monitoring, and disposal are essential to prevent unintended impacts on wildlife and the environment.\n\n" +
                             "This assessment provides a general guideline and should be adapted based on site-specific conditions.");
 

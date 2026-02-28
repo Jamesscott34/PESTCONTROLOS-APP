@@ -26,7 +26,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class ReportSelectionActivity extends AppCompatActivity {
 
-    private Button createReportButton, createQuotationButton, createBirdQuotationButton, buttonCreateGeneralQuotation,buttonGenericReport, buttonActionForm;
+    private Button createReportButton, createQuotationButton, createBirdQuotationButton,
+            buttonCreateGeneralQuotation, buttonGeneralQuotationCatalog, buttonGenericReport, buttonActionForm,
+            buttonServiceAgreements, buttonEra;
     private TextView welcomeTextView;
     private String userName;
 
@@ -36,20 +38,39 @@ public class ReportSelectionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_report_selection);
 
+        // Offline trial: after N days, open website instead of Create Report hub
+        if (OfflineTrialHelper.openWebsiteIfExpired(this, getString(R.string.main_website_url), getString(R.string.offline_trial_redirect_message))) {
+            return;
+        }
+
         // Retrieve the username from the intent
         userName = getIntent().getStringExtra("USER_NAME");
 
         // Initialize the welcome TextView and set the welcome message
         welcomeTextView = findViewById(R.id.welcomeTextView);
-        welcomeTextView.setText("Welcome, " + userName + "!");
+        if (welcomeTextView != null) {
+            welcomeTextView.setText("Welcome!");
+        }
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            if (welcomeTextView == null) return;
+            String name = SessionManager.getName(this);
+            if (name != null && !name.trim().isEmpty()) {
+                welcomeTextView.setText("Welcome, " + name.trim() + "!");
+            } else {
+                welcomeTextView.setText("Welcome, " + userName + "!");
+            }
+        }));
 
         // Initialize buttons
         createReportButton = findViewById(R.id.buttonCreateReport);
         createQuotationButton = findViewById(R.id.buttonCreateQuotation);
         createBirdQuotationButton = findViewById(R.id.buttonCreateBirdQuotation);
         buttonCreateGeneralQuotation = findViewById(R.id.buttonCreateGeneralQuotation);
+        buttonGeneralQuotationCatalog = findViewById(R.id.buttonGeneralQuotationCatalog);
         buttonGenericReport = findViewById(R.id.buttonGenericReport);
         buttonActionForm = findViewById(R.id.buttonActionForm);
+        buttonServiceAgreements = findViewById(R.id.buttonServiceAgreements);
+        buttonEra = findViewById(R.id.buttonEra);
 
         // Navigate to ReportActivity
         createReportButton.setOnClickListener(v -> {
@@ -58,9 +79,9 @@ public class ReportSelectionActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // Navigate to CreateReportActivity
+        // Navigate to Contract Quotations (4/6/8/12 + Custom Quote)
         createQuotationButton.setOnClickListener(v -> {
-            Intent intent = new Intent(this, CreateReportActivity.class);
+            Intent intent = new Intent(this, QuotesActivity.class);
             intent.putExtra("USER_NAME", userName); // Pass username
             startActivity(intent);
         });
@@ -72,13 +93,22 @@ public class ReportSelectionActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // Navigate to GeneralQuotationActivity
+        // Navigate to GeneralQuotationActivity (Generic Quote - multi-line custom)
         buttonCreateGeneralQuotation.setOnClickListener(v -> {
             Intent intent = new Intent(this, GeneralQuotationActivity.class);
-            intent.putExtra("USER_NAME", userName); // Pass username
+            intent.putExtra("USER_NAME", userName);
             startActivity(intent);
-
         });
+
+        // Navigate to General Quotation (catalog-driven from sales.json)
+        if (buttonGeneralQuotationCatalog != null) {
+            buttonGeneralQuotationCatalog.setOnClickListener(v -> {
+                Intent intent = new Intent(this, GeneralQuotationFromCatalogActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
+            });
+        }
+
         // Navigate to GenericReportActivity
         buttonGenericReport.setOnClickListener(v -> {
             Intent intent = new Intent(this, GeneralReportActivity.class);
@@ -94,6 +124,24 @@ public class ReportSelectionActivity extends AppCompatActivity {
             startActivity(intent);
 
         });
+
+        // Service Agreements (moved from main screen into Create Report section)
+        if (buttonServiceAgreements != null) {
+            buttonServiceAgreements.setOnClickListener(v -> {
+                Intent intent = new Intent(this, ServiceAgreementActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
+            });
+        }
+
+        // ERA (moved from main screen into Create Report section)
+        if (buttonEra != null) {
+            buttonEra.setOnClickListener(v -> {
+                Intent intent = new Intent(this, EnvironmentSelectionActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
+            });
+        }
 
         // Custom Report: open PDF Template Settings (logo, watermark, header blocks)
         Button buttonCustomReport = findViewById(R.id.buttonCustomReport);

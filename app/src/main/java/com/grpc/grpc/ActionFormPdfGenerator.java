@@ -153,7 +153,7 @@ public class ActionFormPdfGenerator {
             document.add(logo);
 
             // Adding a title to the report (smaller for single page)
-            Paragraph title = new Paragraph("Good Riddance Pest Control - Action Form")
+            Paragraph title = new Paragraph(TenantBranding.companyName(context) + " - " + TenantBranding.actionFormTitle(context))
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(14)
                     .setBold()

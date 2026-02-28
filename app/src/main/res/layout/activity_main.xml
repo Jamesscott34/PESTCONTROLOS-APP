@@ -160,7 +160,7 @@
                 android:text="Work View"
                 android:layout_marginBottom="@dimen/button_spacing" />
 
-            <!-- James-only: technician last location finder -->
+            <!-- Admin-only: technician last location finder -->
             <Button
                 android:id="@+id/LocationFinderButton"
                 android:layout_width="match_parent"
@@ -266,8 +266,7 @@
                 android:id="@+id/WebsiteButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Visit GRPC Staff"
-                android:onClick="WorkWebsite"
+                android:text="@string/website_button_text"
                 android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- In-app help / README -->

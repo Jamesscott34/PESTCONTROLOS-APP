@@ -18,7 +18,7 @@
         android:layout_marginBottom="12dp"
         android:textColor="?android:attr/textColorPrimary" />
 
-    <!-- James-only: preview help text for other users -->
+    <!-- Admin-only: preview help text for other roles -->
     <LinearLayout
         android:id="@+id/helpRoleRow"
         android:layout_width="match_parent"
@@ -266,7 +266,7 @@
                     android:text="@string/help_section7" />
             </LinearLayout>
 
-            <!-- Section 8: Admin-only (user 001 in users) - AI Chat API Key -->
+            <!-- Section 8: Admin-only - AI Chat API Key -->
             <LinearLayout
                 android:id="@+id/section8"
                 android:layout_width="match_parent"

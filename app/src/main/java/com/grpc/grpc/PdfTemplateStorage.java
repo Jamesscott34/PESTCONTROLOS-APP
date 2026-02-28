@@ -32,15 +32,22 @@ public class PdfTemplateStorage {
     private static final String KEY_SAVED_TEMPLATES = "saved_templates";
 
     private final SharedPreferences prefs;
+    private final Context appContext;
 
     public PdfTemplateStorage(Context context) {
-        prefs = context.getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        appContext = context.getApplicationContext();
+        prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
     public PdfTemplateSettings load() {
         PdfTemplateSettings s = new PdfTemplateSettings();
         s.setTemplateSelection(prefs.getString(KEY_TEMPLATE_SELECTION, PdfTemplateSettings.GRPC));
-        s.setMainHeaderText(prefs.getString(KEY_MAIN_HEADER_TEXT, ""));
+        // Flavor-aware default: only apply if key has never been set before.
+        // If a user explicitly saved an empty header, preserve that exact behavior.
+        String defaultHeader = (appContext != null) ? appContext.getString(R.string.pdf_company_name) : "";
+        s.setMainHeaderText(prefs.contains(KEY_MAIN_HEADER_TEXT)
+                ? prefs.getString(KEY_MAIN_HEADER_TEXT, "")
+                : defaultHeader);
         s.setMainHeaderColorHex(prefs.getString(KEY_MAIN_HEADER_COLOR, "#0000FF"));
         s.setHeaderSize(prefs.getString(KEY_HEADER_SIZE, PdfTemplateSettings.HEADER_SIZE_DEFAULT));
         s.setBodyTextSize(prefs.getString(KEY_BODY_TEXT_SIZE, PdfTemplateSettings.BODY_TEXT_SIZE_DEFAULT));
@@ -152,21 +159,28 @@ public class PdfTemplateStorage {
         prefs.edit().putString(keyForUser(userName), serializeSavedTemplates(list)).apply();
     }
 
-    public void addSavedTemplate(String userName, SavedTemplate t) {
-        if (t == null) return;
+    /**
+     * @return true if the template was added, false if at limit (demo/offline MAX_SAVED_TEMPLATES).
+     */
+    public boolean addSavedTemplate(String userName, SavedTemplate t) {
+        if (t == null) return false;
         if (userName == null) userName = "Offline User";
-        if (t.getId() == null || t.getId().isEmpty()) t.setId(java.util.UUID.randomUUID().toString());
         List<SavedTemplate> list = loadSavedTemplates(userName);
+        int max = BuildConfig.MAX_SAVED_TEMPLATES;
+        if (max > 0 && list.size() >= max) return false;
+        if (t.getId() == null || t.getId().isEmpty()) t.setId(java.util.UUID.randomUUID().toString());
         list.add(t);
         saveSavedTemplates(userName, list);
+        return true;
     }
 
     /**
      * If a template with the same name (case-insensitive) exists, update it with the new content (keeping the existing id).
-     * Otherwise add as a new template.
+     * Otherwise add as a new template. Demo/offline: may fail if at MAX_SAVED_TEMPLATES.
+     * @return true if saved (added or updated), false if at limit and would have added new.
      */
-    public void addOrUpdateSavedTemplate(String userName, SavedTemplate t) {
-        if (t == null) return;
+    public boolean addOrUpdateSavedTemplate(String userName, SavedTemplate t) {
+        if (t == null) return false;
         if (userName == null) userName = "Offline User";
         String nameTrim = t.getName() != null ? t.getName().trim() : "";
         List<SavedTemplate> list = loadSavedTemplates(userName);
@@ -176,10 +190,10 @@ public class PdfTemplateStorage {
                 t.setId(existing.getId());
                 list.set(i, t);
                 saveSavedTemplates(userName, list);
-                return;
+                return true;
             }
         }
-        addSavedTemplate(userName, t);
+        return addSavedTemplate(userName, t);
     }
 
     public SavedTemplate getSavedTemplateById(String userName, String id) {

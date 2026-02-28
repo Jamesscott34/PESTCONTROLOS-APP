@@ -40,8 +40,26 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        // Offline flavor: no login – go straight to MainActivity with Create Report / View Reports only.
+        if (BuildConfig.IS_OFFLINE) {
+            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+            intent.putExtra("USER_NAME", "Offline");
+            intent.putExtra("OFFLINE_MODE", true);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
+
+        // Safety: clear any prior cached session so shared devices never reuse old RBAC/StaffID.
+        try { SessionManager.clear(this); } catch (Exception ignored) {}
+        try { ActiveUserContext.clear(this); } catch (Exception ignored) {}
+        try { StaffDirectory.clearCache(); } catch (Exception ignored) {}
+        try { WorkViewLocalEventStore.clearAll(this); } catch (Exception ignored) {}
+        try { WorkViewWidgetHelper.clearWidgetCache(this); } catch (Exception ignored) {}
+        try { LocationSharing.clearLocalCache(this); } catch (Exception ignored) {}
 
         // Logo (prefer assets/logo.png, fallback to drawable)
         ImageView loginLogo = findViewById(R.id.loginLogo);
@@ -71,11 +89,25 @@ public class LoginActivity extends AppCompatActivity {
                             // Display a welcome message
                             Toast.makeText(LoginActivity.this, "Welcome " + userName + "!", Toast.LENGTH_LONG).show();
 
-                            // Navigate to the main activity and pass the email
-                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                            intent.putExtra("USER_EMAIL", email); // Pass email as extra
-                            startActivity(intent);
-                            finish();
+                            // Ensure RBAC session is loaded for this Firebase user BEFORE showing UI.
+                            SessionManager.ensureLoaded(LoginActivity.this, session -> runOnUiThread(() -> {
+                                if (session == null) {
+                                    Toast.makeText(LoginActivity.this, "Login succeeded, but profile could not be loaded. Please try again.", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                                intent.putExtra("USER_EMAIL", email); // Pass email as extra
+                                // Critical: use ContractKey when set, else StaffID so contracts/workview use a stable key (never full name). Capitalize so "james" -> "James" to match Firestore collection names.
+                                String contractKey = SessionManager.getContractKey(LoginActivity.this);
+                                String staffId = SessionManager.getStaffId(LoginActivity.this);
+                                if (contractKey != null && !contractKey.trim().isEmpty()) {
+                                    intent.putExtra("USER_NAME", StaffDirectory.capitalizeContractKey(contractKey.trim()));
+                                } else if (staffId != null && !staffId.trim().isEmpty()) {
+                                    intent.putExtra("USER_NAME", staffId.trim());
+                                }
+                                startActivity(intent);
+                                finish();
+                            }));
                         } else {
                             Toast.makeText(LoginActivity.this, "Login Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                         }

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Patterns;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -35,6 +36,7 @@ public class GeneralQuotationActivity extends AppCompatActivity {
     private EditText addressInput, quoteDescriptionInput, userEmailInput, mobileNumberInput;
     private EditText itemDescriptionInput, itemPriceInput;
     private Button addItemButton, generatePdfButton;
+    private CheckBox passwordProtectCheckbox;
 
     private String userName;
 
@@ -63,12 +65,19 @@ public class GeneralQuotationActivity extends AppCompatActivity {
         itemPriceInput = findViewById(R.id.itemPriceInput);
         addItemButton = findViewById(R.id.addItemButton);
         generatePdfButton = findViewById(R.id.generatePdfButton);
+        passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
 
         // Add Item Button Listener
         addItemButton.setOnClickListener(v -> addItem());
 
         // Generate PDF Button Listener
-        generatePdfButton.setOnClickListener(v -> generatePdf());
+        generatePdfButton.setOnClickListener(v -> {
+            if (passwordProtectCheckbox != null && passwordProtectCheckbox.isChecked()) {
+                PdfPasswordPrompt.prompt(this, pw -> generatePdf(pw));
+            } else {
+                generatePdf(null);
+            }
+        });
     }
 
     /**
@@ -103,7 +112,7 @@ public class GeneralQuotationActivity extends AppCompatActivity {
     /**
      * Generates a PDF for the quotation.
      */
-    private void generatePdf() {
+    private void generatePdf(String ownerPassword) {
         String address = addressInput.getText().toString().trim();
         String quoteDescription = quoteDescriptionInput.getText().toString().trim();
         String userEmail = userEmailInput.getText().toString().trim();
@@ -138,6 +147,7 @@ public class GeneralQuotationActivity extends AppCompatActivity {
                 lineTotals,
                 userEmail,
                 mobileNumber,
+                ownerPassword,
                 this
         );
 

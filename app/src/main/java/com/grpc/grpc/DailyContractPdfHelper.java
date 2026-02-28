@@ -28,16 +28,13 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * On first login every 24 hours: automatically generate behinds list and due list PDFs
- * for the logged-in user (002, 001, 003) and notify them in-app. For user 004,
- * generates PDFs for 002, 001, 003 and notifies 004.
+ * for the logged-in user and notify them in-app. Admin/oversight users may generate combined PDFs.
  */
 public final class DailyContractPdfHelper {
 
     private static final String PREFS_NAME = "GRPC";
     private static final String PREFIX_LAST_RUN = "DAILY_PDF_LAST_";
     private static final long INTERVAL_MS = 24 * 60 * 60 * 1000L;
-
-    private static final String[] TECHNICIAN_IDS_FOR_COMBINED = StaffDirectory.CONTRACT_TECHNICIAN_IDS;
 
     /**
      * Call from MainActivity after user is set. Schedules a check: if last run was more than 24h ago
@@ -62,17 +59,30 @@ public final class DailyContractPdfHelper {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         List<String> techniciansToRun = new ArrayList<>();
 
-        String userId = StaffDirectory.getUserId(userName);
-        // 002, 004 get combined PDFs; 001, 003 get own only.
-        if (StaffDirectory.seesAllJobsUserId(userId)) {
-            for (String techId : TECHNICIAN_IDS_FOR_COMBINED) {
-                techniciansToRun.add(StaffDirectory.getFallbackDisplayName(techId));
+        // RBAC:
+        // - Admin (or SeesAllJobs flag) gets combined PDFs.
+        // - Tech gets own only.
+        SessionManager.ensureLoaded(context, null);
+        if (SessionManager.seesAllJobs(context)) {
+            try {
+                for (StaffDirectory.StaffProfile p : StaffDirectory.getCachedStaffProfiles()) {
+                    if (p == null) continue;
+                    String ck = p.contractKey != null ? p.contractKey.trim() : "";
+                    if (!ck.isEmpty()) techniciansToRun.add(ck);
+                }
+            } catch (Exception ignored) {}
+            if (techniciansToRun.isEmpty()) {
+                // Fallback: don't guess other technicians; run only for the current user.
+                techniciansToRun.add(userName);
             }
-        } else if ("001".equals(userId) || "003".equals(userId)) {
-            techniciansToRun.add(userName);
         } else {
-            prefs.edit().putLong(prefsKey, runTime).apply();
-            return; // Only auto-run for known user IDs
+            // Use current user's StaffID -> ContractKey when possible.
+            String staffId = SessionManager.getStaffId(context);
+            if (staffId != null && !staffId.trim().isEmpty()) {
+                techniciansToRun.add(StaffDirectory.getContractsCollectionName(staffId).replace(" Contracts", ""));
+            } else {
+                techniciansToRun.add(userName);
+            }
         }
 
         List<String> generatedFor = new ArrayList<>();
@@ -130,7 +140,7 @@ public final class DailyContractPdfHelper {
         data.put("source", "daily_pdf");
         data.put("technicians", generatedFor.isEmpty() ? "" : String.join(", ", generatedFor));
 
-        String userKey = userName.trim().toLowerCase(Locale.getDefault());
+        String userKey = NotificationUtils.resolveNotificationRecipientKey(userName);
         if (!userKey.isEmpty()) {
             String docId = "daily_pdf_" + runTime;
             Map<String, Object> notif = new HashMap<>();

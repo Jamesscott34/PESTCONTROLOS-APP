@@ -13,9 +13,8 @@
     <LinearLayout
         android:orientation="vertical"
         android:padding="16dp"
-        android:gravity="center"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
 
         <!-- Spacer must be inside the LinearLayout -->
         <View
@@ -128,12 +127,29 @@
             android:id="@+id/addItemButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Add Line Item" />
+            android:layout_marginBottom="8dp"
+            android:text="ADD LINE ITEM"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
+
+        <CheckBox
+            android:id="@+id/passwordProtectCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
+            android:text="Password protect PDF (require password to edit)"
+            android:textSize="14sp"
+            android:checked="false"
+            android:textColor="?android:attr/textColorPrimary" />
 
         <Button
             android:id="@+id/generatePdfButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Generate Quotation PDF" />
+            android:layout_marginBottom="8dp"
+            android:text="GENERATE QUOTATION PDF"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
     </LinearLayout>
 </ScrollView>

@@ -167,6 +167,13 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
         holder.selectCheckbox.setChecked(isSelected);
         holder.itemView.setActivated(isSelected);
 
+        // Important: users often tap the checkbox itself when multi-select is active.
+        // If we don't handle checkbox clicks, it can visually toggle without updating selectedPaths,
+        // causing "multi-select deletes only 1" because only the long-pressed item is truly selected.
+        holder.selectCheckbox.setOnClickListener(selectionMode
+                ? v -> onReportClickListener.onReportClick(reportFile)
+                : null);
+
         // Set click listener for opening the report
         holder.itemView.setOnClickListener(v -> onReportClickListener.onReportClick(reportFile));
 

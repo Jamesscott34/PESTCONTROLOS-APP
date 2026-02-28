@@ -83,6 +83,15 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Client &amp; Visit"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp"
+                android:textColor="?android:attr/textColorPrimary" />
+
             <!-- Input field for property name -->
             <com.grpc.grpc.DictateEditText
                 android:id="@+id/nameInput"
@@ -115,6 +124,16 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"/>
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Service report"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="6dp"
+                android:textColor="?android:attr/textColorPrimary" />
+
             <!-- Site inspection -->
             <com.grpc.grpc.DictateEditText
                 android:id="@+id/siteInspectionInput"
@@ -128,6 +147,16 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Next steps"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="6dp"
+                android:textColor="?android:attr/textColorPrimary" />
 
             <!-- Prep steps -->
             <com.grpc.grpc.DictateEditText
@@ -160,6 +189,19 @@
             android:orientation="vertical"
             android:visibility="gone"
             android:layout_marginBottom="8dp" />
+
+        <!-- Password protect PDF (same as Action Form) -->
+        <CheckBox
+            android:id="@+id/passwordProtectCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:padding="12dp"
+            android:text="Password protect PDF (require password to edit)"
+            android:textSize="14sp"
+            android:checked="false"
+            android:textColor="?android:attr/textColorPrimary" />
 
         <!-- Image button -->
         <Button
@@ -233,18 +275,15 @@
                 android:textColor="?attr/colorOnSecondary" />
         </LinearLayout>
 
-        <!-- Password protect PDF (same as Action Form) -->
-        <CheckBox
-            android:id="@+id/passwordProtectCheckbox"
+        <!-- General Quotation (catalog-driven) -->
+        <Button
+            android:id="@+id/generalQuotationButton"
+            android:text="@string/general_quotation_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp"
-            android:padding="12dp"
-            android:text="Password protect PDF (require password to edit)"
-            android:textSize="14sp"
-            android:checked="false"
-            android:textColor="?android:attr/textColorPrimary" />
+            android:layout_marginTop="8dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
         <!-- Save button -->
         <Button

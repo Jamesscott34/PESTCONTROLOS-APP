@@ -37,6 +37,7 @@ public class LeadsSelectionActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_leads_selection);
+        if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
         userName = getIntent().getStringExtra("USER_NAME");
         if (userName == null || userName.trim().isEmpty()) {
@@ -45,7 +46,16 @@ public class LeadsSelectionActivity extends AppCompatActivity {
 
         // Initialize the welcome TextView
         welcomeTextView = findViewById(R.id.welcomeTextView);
-        welcomeTextView.setText("Welcome, " + userName + "!");
+        if (welcomeTextView != null) {
+            welcomeTextView.setText("Welcome, " + userName + "!");
+        }
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            if (welcomeTextView == null) return;
+            String name = SessionManager.getName(this);
+            if (name != null && !name.trim().isEmpty()) {
+                welcomeTextView.setText("Welcome, " + name.trim() + "!");
+            }
+        }));
 
         GenerateLeadsButton = findViewById(R.id.GenerateLeadsButton);
         ViewLeadButton = findViewById(R.id.ViewLeadButton);

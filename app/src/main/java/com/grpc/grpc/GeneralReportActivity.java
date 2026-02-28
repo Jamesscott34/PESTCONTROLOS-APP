@@ -151,6 +151,10 @@ public class GeneralReportActivity extends AppCompatActivity {
                     Log.d("GeneralReportActivity", "Swipe detected - diffX: " + diffX + ", diffY: " + diffY + ", velocityX: " + velocityX);
                     
                     if (Math.abs(diffX) > Math.abs(diffY)) {
+                        // Prevent accidental left/right navigation while a form on this screen has input focus/text.
+                        if (HorizontalSwipeGuard.shouldBlock(GeneralReportActivity.this)) {
+                            return false;
+                        }
                         if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                             if (diffX > 0) {
                                 // Swipe right - open ReportActivity

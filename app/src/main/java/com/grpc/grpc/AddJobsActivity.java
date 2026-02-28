@@ -7,7 +7,9 @@ import android.text.TextUtils;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.firestore.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,7 +36,8 @@ public class AddJobsActivity extends AppCompatActivity {
     private Button submitButton;
     private FirebaseFirestore db;
     private String userName,  custName, custEmail, custContact, issueDetailsText; // Stores values for WhatsApp
-    private static final String[] TECHNICIAN_IDS = StaffDirectory.ORDERED_USER_IDS;
+    private List<StaffDirectory.OwnerOption> techOptions = new ArrayList<>();
+    private String[] techOptionKeys = new String[0]; // ContractKey values for spinner storage
 
     /**
      * Initializes the activity, retrieves user information, and sets up UI elements.
@@ -68,19 +71,33 @@ public class AddJobsActivity extends AppCompatActivity {
         }
 
         if (techNameSpinner != null) {
-            String[] names = StaffDirectory.getDisplayNamesForIds(TECHNICIAN_IDS);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, names);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"Loading..."});
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             techNameSpinner.setAdapter(adapter);
-            String userId = StaffDirectory.getUserId(userName);
-            int sel = 0;
-            for (int i = 0; i < TECHNICIAN_IDS.length; i++) {
-                if (TECHNICIAN_IDS[i].equals(userId)) {
-                    sel = i;
-                    break;
+
+            StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+                techOptions = options != null ? options : new ArrayList<>();
+                techOptionKeys = new String[techOptions.size()];
+                String[] display = new String[techOptions.size()];
+                for (int i = 0; i < techOptions.size(); i++) {
+                    StaffDirectory.OwnerOption o = techOptions.get(i);
+                    techOptionKeys[i] = o != null ? o.ownerKey : "";
+                    display[i] = o != null ? o.display : ""; // ContractKey
                 }
-            }
-            techNameSpinner.setSelection(sel);
+                ArrayAdapter<String> a = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, display);
+                a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                techNameSpinner.setAdapter(a);
+
+                String currentKey = SessionManager.getContractKey(this);
+                if (currentKey == null || currentKey.trim().isEmpty()) currentKey = userName;
+                int sel = 0;
+                if (currentKey != null) {
+                    for (int i = 0; i < techOptionKeys.length; i++) {
+                        if (currentKey.equalsIgnoreCase(techOptionKeys[i])) { sel = i; break; }
+                    }
+                }
+                techNameSpinner.setSelection(sel);
+            }));
         }
 
         submitButton.setOnClickListener(v -> validateAndSubmitJob());
@@ -91,18 +108,21 @@ public class AddJobsActivity extends AppCompatActivity {
      * If valid, the job is submitted to Firestore.
      */
     private void validateAndSubmitJob() {
-        String name = "";
+        String techKey = "";
         if (techNameSpinner != null) {
             int pos = techNameSpinner.getSelectedItemPosition();
-            if (pos >= 0 && pos < TECHNICIAN_IDS.length)
-                name = StaffDirectory.getFallbackDisplayName(TECHNICIAN_IDS[pos]);
+            if (pos >= 0 && pos < techOptionKeys.length) {
+                techKey = techOptionKeys[pos] != null ? techOptionKeys[pos].trim() : "";
+            } else if (techNameSpinner.getSelectedItem() != null) {
+                techKey = String.valueOf(techNameSpinner.getSelectedItem()).trim();
+            }
         }
         custName = customerName.getText().toString().trim();
         custEmail = customerEmail.getText().toString().trim();
         custContact = formatIrishMobile(customerContact.getText().toString().trim());
         issueDetailsText = issueDetails.getText().toString().trim();
 
-        if (TextUtils.isEmpty(name) || TextUtils.isEmpty(custName) ||
+        if (TextUtils.isEmpty(techKey) || TextUtils.isEmpty(custName) ||
                 TextUtils.isEmpty(custContact) || TextUtils.isEmpty(issueDetailsText)) {
             Toast.makeText(this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
             return;
@@ -110,8 +130,7 @@ public class AddJobsActivity extends AppCompatActivity {
 
         custEmail = custEmail.isEmpty() ? "N/A" : custEmail; // Default value if empty
 
-        // No techMobile passed here anymore
-        addJobToFirestore(name, custName, custEmail, custContact, issueDetailsText);
+        addJobToFirestore(techKey, custName, custEmail, custContact, issueDetailsText);
     }
 
     /**
@@ -149,14 +168,12 @@ public class AddJobsActivity extends AppCompatActivity {
     /**
      * In-app notification history (NOT system push):
      * - Always notify the assigned technician (if different from creator)
-     * - If creator is 001 or 003, also notify oversight users (002, 004)
+     * - Admins receive a fan-out copy via NotificationUtils (derived from Firestore roles)
      */
     private void writeInAppJobNotifications(String jobId, String customerName, String assignedTech, String createdBy) {
         try {
             String creator = (createdBy != null && !createdBy.trim().isEmpty()) ? createdBy.trim() : "";
-            String creatorLower = creator.toLowerCase(java.util.Locale.getDefault());
             String tech = assignedTech != null ? assignedTech.trim() : "";
-            String techLower = tech.toLowerCase(java.util.Locale.getDefault());
 
             java.util.Map<String, Object> data = new java.util.HashMap<>();
             data.put("jobId", jobId);
@@ -166,26 +183,17 @@ public class AddJobsActivity extends AppCompatActivity {
             data.put("createdBy", creator);
             data.put("type", "jobwork");
 
-            if (!techLower.isEmpty() && (creatorLower.isEmpty() || !techLower.equals(creatorLower))) {
+            String creatorKey = creator;
+            String techKey = tech;
+            if (!techKey.isEmpty() && (creatorKey.isEmpty() || !techKey.equalsIgnoreCase(creatorKey))) {
                 NotificationUtils.writeInAppNotification(
-                        tech,
+                        techKey,
                         "jobwork_assign_" + jobId,
                         "🚐 New Job Assignment",
                         "Service job for " + customerName + " assigned to you",
                         "jobwork",
                         data
                 );
-            }
-
-            String creatorId = StaffDirectory.getUserId(creator);
-            if ("001".equals(creatorId) || "003".equals(creatorId)) {
-                String title = "🚐 New Job Added";
-                String body = creator + " added a Service job for " + customerName + " (assigned to " + tech + ")";
-                for (String oversightId : StaffDirectory.JOB_OVERSIGHT_USER_IDS) {
-                    String key = StaffDirectory.getUserNameKey(oversightId);
-                    if (key != null)
-                        NotificationUtils.writeInAppNotification(key, "jobwork_added_" + key + "_" + jobId, title, body, "jobwork", data);
-                }
             }
         } catch (Exception ignored) {
         }

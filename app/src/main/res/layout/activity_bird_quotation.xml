@@ -107,6 +107,25 @@
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
+        <!-- Options -->
+        <CheckBox
+            android:id="@+id/check30PercentDeposit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="30% deposit due before job (uncheck for total payment only)"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp" />
+
+        <CheckBox
+            android:id="@+id/passwordProtectCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Password protect PDF (require password to edit)"
+            android:textSize="14sp"
+            android:checked="false"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="12dp" />
+
         <Button
             android:id="@+id/addItemButton"
             android:layout_width="match_parent"
@@ -114,14 +133,6 @@
             android:text="Add Line Item"
             android:backgroundTint="?attr/colorSecondary"
             android:textColor="?attr/colorOnSecondary"
-            android:layout_marginBottom="8dp" />
-
-        <CheckBox
-            android:id="@+id/check30PercentDeposit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="30% deposit due before job (uncheck for total payment only)"
-            android:textColor="?android:attr/textColorPrimary"
             android:layout_marginBottom="8dp" />
 
         <Button

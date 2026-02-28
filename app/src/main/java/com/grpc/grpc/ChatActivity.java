@@ -111,20 +111,16 @@ public class ChatActivity extends AppCompatActivity {
         initializeViews();
         setupClickListeners();
 
-        // Admin = user 001 in users collection. Fetch and compare email to current user.
+        // Admin-only settings are driven by the authenticated user's role (no hardcoded StaffIDs).
         if (chatAdminSettingsButton != null) {
             chatAdminSettingsButton.setVisibility(View.GONE);
             chatAdminSettingsButton.setOnClickListener(v -> showUpdateApiKeyDialog());
-            String currentEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-            StaffDirectory.fetchById(this, StaffDirectory.ADMIN_USER_ID, profile -> {
-                mainHandler.post(() -> {
-                    isAdmin = profile != null && profile.email != null
-                            && profile.email.trim().equalsIgnoreCase(currentEmail != null ? currentEmail.trim() : "");
-                    if (chatAdminSettingsButton != null) {
-                        chatAdminSettingsButton.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
-                    }
-                });
-            });
+            SessionManager.ensureLoaded(this, session -> mainHandler.post(() -> {
+                isAdmin = session != null && session.isSuperAdmin;
+                if (chatAdminSettingsButton != null) {
+                    chatAdminSettingsButton.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+                }
+            }));
         }
 
         // Add initial mode message based on current mode
@@ -284,7 +280,7 @@ public class ChatActivity extends AppCompatActivity {
         isWaitingForAI = true;
         addMessage("🤖 AI is thinking...", false);
 
-        // Keys in Firestore AI-Chat/AI-API: KEY (Hugging Face), key-grog (Groq). Prefer Grok if key-grog set, else HF. James can update either via settings.
+        // Keys in Firestore AI-Chat/AI-API: KEY (Hugging Face), key-grog (Groq). Prefer Groq if key-grog set, else HF. Super admin can update via settings.
         FirebaseFirestore.getInstance().document("AI-Chat/AI-API").get()
                 .addOnSuccessListener(this, docSnap -> {
                     if (docSnap == null || !docSnap.exists()) {
