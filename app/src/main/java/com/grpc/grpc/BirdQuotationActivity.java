@@ -1,13 +1,19 @@
 package com.grpc.grpc;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,16 +37,26 @@ import java.util.List;
 
 public class BirdQuotationActivity extends AppCompatActivity {
 
+    private EditText companyNameInput;
     private EditText addressInput, quoteDescriptionInput, userEmailInput, mobileNumberInput;
     private EditText itemDescriptionInput, itemPriceInput;
-    private Button addItemButton, generatePdfButton;
-    private CheckBox check30PercentDeposit;
+    private Button addItemButton, generatePdfButton, selectImageButton;
+    private CheckBox checkDeposit30;
+    private CheckBox checkDeposit50;
     private CheckBox passwordProtectCheckbox;
+    private RadioGroup vatRadioGroup;
+    private RadioButton vat13Radio;
+    private RadioButton vat23Radio;
+    private RecyclerView materialsRecyclerView;
+    private Button addMaterialButton;
+    private BirdMaterialsAdapter materialsAdapter;
 
     private String userName;
 
     private final List<String> descriptions = new ArrayList<>();
     private final List<Double> lineTotals = new ArrayList<>();
+    private final List<BirdMaterialItem> materials = new ArrayList<>();
+    private final List<Uri> selectedImageUris = new ArrayList<>();
 
     /**
      * Initializes the activity, retrieves the username from intent,
@@ -66,6 +82,7 @@ public class BirdQuotationActivity extends AppCompatActivity {
         }
 
         // Initialize inputs
+        companyNameInput = findViewById(R.id.companyNameInput);
         addressInput = findViewById(R.id.addressInput);
         quoteDescriptionInput = findViewById(R.id.quoteDescriptionInput);
         userEmailInput = findViewById(R.id.userEmailInput);
@@ -74,8 +91,33 @@ public class BirdQuotationActivity extends AppCompatActivity {
         itemPriceInput = findViewById(R.id.itemPriceInput);
         addItemButton = findViewById(R.id.addItemButton);
         generatePdfButton = findViewById(R.id.generatePdfButton);
-        check30PercentDeposit = findViewById(R.id.check30PercentDeposit);
+        selectImageButton = findViewById(R.id.selectImageButton);
+        checkDeposit30 = findViewById(R.id.check30PercentDeposit);
+        checkDeposit50 = findViewById(R.id.check50PercentDeposit);
         passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
+
+        // 30% and 50% deposit are mutually exclusive: either one or none
+        if (checkDeposit30 != null) {
+            checkDeposit30.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked && checkDeposit50 != null) checkDeposit50.setChecked(false);
+            });
+        }
+        if (checkDeposit50 != null) {
+            checkDeposit50.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked && checkDeposit30 != null) checkDeposit30.setChecked(false);
+            });
+        }
+        vatRadioGroup = findViewById(R.id.vatRadioGroup);
+        vat13Radio = findViewById(R.id.vat13Radio);
+        vat23Radio = findViewById(R.id.vat23Radio);
+        materialsRecyclerView = findViewById(R.id.materialsRecyclerView);
+        addMaterialButton = findViewById(R.id.addMaterialButton);
+
+        if (materialsRecyclerView != null) {
+            materialsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+            materialsAdapter = new BirdMaterialsAdapter(materials);
+            materialsRecyclerView.setAdapter(materialsAdapter);
+        }
 
         // Load email and number from centralized session (Firestore users/{StaffID})
         SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
@@ -92,6 +134,12 @@ public class BirdQuotationActivity extends AppCompatActivity {
         }));
 
         addItemButton.setOnClickListener(v -> addItem());
+        if (addMaterialButton != null) {
+            addMaterialButton.setOnClickListener(v -> addMaterialRow());
+        }
+        if (selectImageButton != null) {
+            selectImageButton.setOnClickListener(v -> openImageSelector());
+        }
         generatePdfButton.setOnClickListener(v -> {
             if (passwordProtectCheckbox != null && passwordProtectCheckbox.isChecked()) {
                 PdfPasswordPrompt.prompt(this, password -> generatePdf(password));
@@ -99,6 +147,11 @@ public class BirdQuotationActivity extends AppCompatActivity {
                 generatePdf(null);
             }
         });
+
+        // Restore state after configuration change
+        if (savedInstanceState != null) {
+            restoreInstanceState(savedInstanceState);
+        }
     }
 
     /**
@@ -131,12 +184,21 @@ public class BirdQuotationActivity extends AppCompatActivity {
         }
     }
 
+    private void addMaterialRow() {
+        materials.add(new BirdMaterialItem());
+        if (materialsAdapter != null) {
+            materialsAdapter.notifyItemInserted(materials.size() - 1);
+        }
+    }
+
     /**
      * Generates a PDF for the quotation with all the entered details.
-     * Validates required fields, including email and mobile number format.
-     * Calls the BirdQuotationPDFGenerator to create the file.
+     * Cost now comes solely from the single Item Price field; materials are descriptive only.
      */
     private void generatePdf(String ownerPassword) {
+        String companyName = companyNameInput != null
+                ? companyNameInput.getText().toString().trim()
+                : "";
         String address = addressInput.getText().toString().trim();
         String quoteDescription = quoteDescriptionInput.getText().toString().trim();
         String userEmail = userEmailInput.getText().toString().trim();
@@ -146,28 +208,60 @@ public class BirdQuotationActivity extends AppCompatActivity {
             Toast.makeText(this, "Please fill in address and quote description!", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (userEmail.isEmpty() || mobileNumber.isEmpty()) {
-            Toast.makeText(this, "Email and number are loaded from your account. If empty, add them in the users database.", Toast.LENGTH_LONG).show();
-            return;
-        }
-        if (descriptions.isEmpty() || lineTotals.isEmpty()) {
-            Toast.makeText(this, "Please add at least one line item!", Toast.LENGTH_SHORT).show();
+
+        // Reset any previous items and derive a single priced item from the main description + item price.
+        descriptions.clear();
+        lineTotals.clear();
+
+        String priceText = itemPriceInput != null ? itemPriceInput.getText().toString().trim() : "";
+        if (priceText.isEmpty()) {
+            Toast.makeText(this, "Please enter the item price!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        boolean include30PercentDeposit = check30PercentDeposit != null && check30PercentDeposit.isChecked();
+        double price;
+        try {
+            price = Double.parseDouble(priceText);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Invalid item price format!", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        BirdQuotationPDFGenerator.generateBirdQuotation(
-                address,
-                quoteDescription,
-                descriptions,
-                lineTotals,
-                userEmail,
-                mobileNumber,
-                include30PercentDeposit,
-                ownerPassword,
-                this
-        );
+        // Use item description for the priced line; fall back to quotation breakdown if empty.
+        String itemDesc = itemDescriptionInput != null ? itemDescriptionInput.getText().toString().trim() : "";
+        if (itemDesc.isEmpty()) itemDesc = quoteDescription;
+        descriptions.add(itemDesc);
+        lineTotals.add(price);
+
+        int depositPercent = 0;
+        if (checkDeposit30 != null && checkDeposit30.isChecked()) depositPercent = 30;
+        else if (checkDeposit50 != null && checkDeposit50.isChecked()) depositPercent = 50;
+        double vatRate = 0.135;
+        if (vat23Radio != null && vat23Radio.isChecked()) {
+            vatRate = 0.23;
+        }
+
+        BirdQuotationPDFGenerator.BirdQuotationResult result =
+                BirdQuotationPDFGenerator.generateBirdQuotationPair(
+                        companyName,
+                        address,
+                        quoteDescription,
+                        descriptions,
+                        lineTotals,
+                        materials,
+                        userEmail,
+                        mobileNumber,
+                        depositPercent,
+                        vatRate,
+                        selectedImageUris.isEmpty() ? null : new ArrayList<>(selectedImageUris),
+                        ownerPassword,
+                        this
+                );
+
+        if (result == null || result.getOfficePdf() == null || result.getCustomerPdf() == null) {
+            Toast.makeText(this, "Error generating Bird Quotation PDFs", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         Toast.makeText(this, "PDF Generated Successfully!", Toast.LENGTH_SHORT).show();
 
@@ -176,6 +270,142 @@ public class BirdQuotationActivity extends AppCompatActivity {
 
         // Navigate back to the previous activity with a result
         navigateBack();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (companyNameInput != null) {
+            outState.putString("companyName", companyNameInput.getText().toString());
+        }
+        outState.putString("address", addressInput != null ? addressInput.getText().toString() : "");
+        outState.putString("quoteDescription", quoteDescriptionInput != null ? quoteDescriptionInput.getText().toString() : "");
+        outState.putString("itemDescription", itemDescriptionInput != null ? itemDescriptionInput.getText().toString() : "");
+        outState.putString("userEmail", userEmailInput != null ? userEmailInput.getText().toString() : "");
+        outState.putString("mobileNumber", mobileNumberInput != null ? mobileNumberInput.getText().toString() : "");
+        outState.putBoolean("deposit30", checkDeposit30 != null && checkDeposit30.isChecked());
+        outState.putBoolean("deposit50", checkDeposit50 != null && checkDeposit50.isChecked());
+        outState.putBoolean("vatIs23", vat23Radio != null && vat23Radio.isChecked());
+
+        outState.putStringArrayList("itemDescriptions", new ArrayList<>(descriptions));
+        ArrayList<Double> lineTotalsCopy = new ArrayList<>(lineTotals);
+        double[] totalsArray = new double[lineTotalsCopy.size()];
+        for (int i = 0; i < lineTotalsCopy.size(); i++) {
+            totalsArray[i] = lineTotalsCopy.get(i);
+        }
+        outState.putDoubleArray("itemLineTotals", totalsArray);
+
+        ArrayList<String> materialNames = new ArrayList<>();
+        int[] materialQty = new int[materials.size()];
+        double[] materialPrices = new double[materials.size()];
+        for (int i = 0; i < materials.size(); i++) {
+            BirdMaterialItem item = materials.get(i);
+            materialNames.add(item.getMaterialName());
+            materialQty[i] = item.getQuantity();
+            materialPrices[i] = item.getUnitPrice();
+        }
+        outState.putStringArrayList("materialNames", materialNames);
+        outState.putIntArray("materialQty", materialQty);
+        outState.putDoubleArray("materialPrices", materialPrices);
+
+        ArrayList<String> imageUriStrings = new ArrayList<>();
+        for (Uri uri : selectedImageUris) {
+            if (uri != null) imageUriStrings.add(uri.toString());
+        }
+        outState.putStringArrayList("imageUris", imageUriStrings);
+    }
+
+    private void restoreInstanceState(Bundle savedInstanceState) {
+        if (companyNameInput != null) {
+            companyNameInput.setText(savedInstanceState.getString("companyName", ""));
+        }
+        if (addressInput != null) {
+            addressInput.setText(savedInstanceState.getString("address", ""));
+        }
+        if (quoteDescriptionInput != null) {
+            quoteDescriptionInput.setText(savedInstanceState.getString("quoteDescription", ""));
+        }
+        if (itemDescriptionInput != null) {
+            itemDescriptionInput.setText(savedInstanceState.getString("itemDescription", ""));
+        }
+        if (userEmailInput != null) {
+            userEmailInput.setText(savedInstanceState.getString("userEmail", ""));
+        }
+        if (mobileNumberInput != null) {
+            mobileNumberInput.setText(savedInstanceState.getString("mobileNumber", ""));
+        }
+        if (checkDeposit30 != null) {
+            checkDeposit30.setChecked(savedInstanceState.getBoolean("deposit30", false));
+        }
+        if (checkDeposit50 != null) {
+            checkDeposit50.setChecked(savedInstanceState.getBoolean("deposit50", false));
+        }
+        boolean vatIs23 = savedInstanceState.getBoolean("vatIs23", false);
+        if (vat23Radio != null && vat13Radio != null) {
+            vat23Radio.setChecked(vatIs23);
+            vat13Radio.setChecked(!vatIs23);
+        }
+
+        descriptions.clear();
+        lineTotals.clear();
+        ArrayList<String> descs = savedInstanceState.getStringArrayList("itemDescriptions");
+        double[] totals = savedInstanceState.getDoubleArray("itemLineTotals");
+        if (descs != null && totals != null && descs.size() == totals.length) {
+            for (int i = 0; i < descs.size(); i++) {
+                descriptions.add(descs.get(i));
+                lineTotals.add(totals[i]);
+            }
+        }
+
+        materials.clear();
+        ArrayList<String> materialNames = savedInstanceState.getStringArrayList("materialNames");
+        int[] materialQty = savedInstanceState.getIntArray("materialQty");
+        double[] materialPrices = savedInstanceState.getDoubleArray("materialPrices");
+        if (materialNames != null && materialQty != null && materialPrices != null
+                && materialNames.size() == materialQty.length
+                && materialNames.size() == materialPrices.length) {
+            for (int i = 0; i < materialNames.size(); i++) {
+                materials.add(new BirdMaterialItem(materialNames.get(i), materialQty[i], materialPrices[i]));
+            }
+        }
+        if (materialsAdapter != null) {
+            materialsAdapter.notifyDataSetChanged();
+        }
+
+        selectedImageUris.clear();
+        ArrayList<String> imageUriStrings = savedInstanceState.getStringArrayList("imageUris");
+        if (imageUriStrings != null) {
+            for (String s : imageUriStrings) {
+                try {
+                    selectedImageUris.add(Uri.parse(s));
+                } catch (Exception ignored) {
+                }
+            }
+        }
+    }
+
+    private void openImageSelector() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        startActivityForResult(intent, 1);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
+            if (data.getClipData() != null) {
+                int count = data.getClipData().getItemCount();
+                for (int i = 0; i < count; i++) {
+                    Uri imageUri = data.getClipData().getItemAt(i).getUri();
+                    selectedImageUris.add(imageUri);
+                }
+            } else if (data.getData() != null) {
+                selectedImageUris.add(data.getData());
+            }
+            Toast.makeText(this, selectedImageUris.size() + " images selected!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**

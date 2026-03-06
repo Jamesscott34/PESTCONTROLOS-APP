@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
@@ -37,7 +38,7 @@ import java.util.Map;
 
 public class AddContractActivity extends AppCompatActivity {
 
-
+    private static final String TAG = "AddContractActivity";
     /**
      * Initializes the activity, retrieves user information, and sets up UI elements.
      * Handles button click events for adding contracts and returning to the previous screen.
@@ -51,8 +52,12 @@ public class AddContractActivity extends AppCompatActivity {
     private String userName;
     private Spinner assignedTechSpinner;
 
-    private List<StaffDirectory.OwnerOption> ownerOptions = new ArrayList<>();
-    private String[] ownerOptionKeys = new String[0]; // ContractKey values for spinner storage
+    // Admin assign-to dropdown (UID-based)
+    private List<UserRepository.AssignableUser> assignableUsers = new ArrayList<>();
+    private String[] assignableUserUids = new String[0];
+
+    /** Prevents double-tap / double submit when adding a contract. */
+    private boolean addInProgress = false;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -63,8 +68,10 @@ public class AddContractActivity extends AppCompatActivity {
         // Handle keyboard properly
         getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
-        // Initialize Firestore
-        db = FirebaseFirestore.getInstance();
+        // Initialize Firestore (online flavors only)
+        if (!BuildConfig.IS_OFFLINE) {
+            db = FirebaseFirestore.getInstance();
+        }
 
         // Retrieve the user's name passed from ContractsActivity
         userName = getIntent().getStringExtra("USER_NAME");
@@ -72,6 +79,23 @@ public class AddContractActivity extends AppCompatActivity {
             Toast.makeText(this, "Error: User name not found!", Toast.LENGTH_SHORT).show();
             finish();
             return;
+        }
+
+        // Debug: log identity context for contract permissions investigation.
+        try {
+            com.google.firebase.auth.FirebaseUser authUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            String authUid = authUser != null ? authUser.getUid() : "null";
+            String authEmail = authUser != null && authUser.getEmail() != null ? authUser.getEmail() : "";
+            SessionManager.Session session = SessionManager.getCached(this);
+            String role = session != null ? session.roleNorm : "unknown";
+            String contractKey = session != null ? session.contractKey : SessionManager.getContractKey(this);
+            Log.d(TAG, "Init AddContractActivity authUid=" + authUid
+                    + ", email=" + authEmail
+                    + ", role=" + role
+                    + ", contractKey=" + (contractKey != null ? contractKey : "")
+                    + ", userName=" + userName);
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to log identity context in AddContractActivity: " + e.getMessage());
         }
 
         // Initialize UI elements
@@ -94,22 +118,28 @@ public class AddContractActivity extends AppCompatActivity {
             assignedTechSpinner.setAdapter(adapter);
             android.view.View label = findViewById(R.id.assignTechLabel);
 
-            // Resolve admin role after session is loaded so admins see the owner spinner and can add to another person.
+            // Resolve admin role after session is loaded so admins see the assign-to spinner.
             SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
-                boolean show = SessionManager.isAdmin(this);
+                boolean isAdmin = SessionManager.isAdmin(this);
+                boolean show = isAdmin && !BuildConfig.IS_OFFLINE;
                 assignedTechSpinner.setVisibility(show ? View.VISIBLE : View.GONE);
                 if (label != null) label.setVisibility(show ? View.VISIBLE : View.GONE);
 
                 if (show) {
-                    StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
-                        ownerOptions = options != null ? options : new ArrayList<>();
-                        ownerOptionKeys = new String[ownerOptions.size()];
-                        String[] display = new String[ownerOptions.size()];
-                        for (int i = 0; i < ownerOptions.size(); i++) {
-                            StaffDirectory.OwnerOption o = ownerOptions.get(i);
-                            ownerOptionKeys[i] = o != null ? o.ownerKey : "";
-                            display[i] = o != null ? o.display : ""; // ContractKey (from fetchOwnerOptions)
+                    // UID-based assignable users list (admin + tech)
+                    UserRepository.fetchAssignableUsers(users -> runOnUiThread(() -> {
+                        // Only show users that have a ContractKey; label = ContractKey.
+                        assignableUsers = users != null ? users : new ArrayList<>();
+                        java.util.List<String> uidList = new ArrayList<>();
+                        java.util.List<String> labelList = new ArrayList<>();
+                        for (UserRepository.AssignableUser u : assignableUsers) {
+                            if (u == null) continue;
+                            if (u.contractKey == null || u.contractKey.trim().isEmpty()) continue;
+                            uidList.add(u.uid != null ? u.uid : "");
+                            labelList.add(u.contractKey.trim());
                         }
+                        assignableUserUids = uidList.toArray(new String[0]);
+                        String[] display = labelList.toArray(new String[0]);
 
                         android.widget.ArrayAdapter<String> a = new android.widget.ArrayAdapter<>(
                                 this,
@@ -119,12 +149,16 @@ public class AddContractActivity extends AppCompatActivity {
                         a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                         assignedTechSpinner.setAdapter(a);
 
-                        String currentKey = SessionManager.getContractKey(this);
-                        if (currentKey == null || currentKey.trim().isEmpty()) currentKey = userName;
+                        // Default selection: current user (if present)
+                        String myUid = null;
+                        try {
+                            com.google.firebase.auth.FirebaseUser u = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                            if (u != null) myUid = u.getUid();
+                        } catch (Exception ignored) {}
                         int sel = 0;
-                        if (currentKey != null) {
-                            for (int i = 0; i < ownerOptionKeys.length; i++) {
-                                if (currentKey.equalsIgnoreCase(ownerOptionKeys[i])) {
+                        if (myUid != null) {
+                            for (int i = 0; i < assignableUserUids.length; i++) {
+                                if (myUid.equals(assignableUserUids[i])) {
                                     sel = i;
                                     break;
                                 }
@@ -137,6 +171,7 @@ public class AddContractActivity extends AppCompatActivity {
         }
 
         addButton.setOnClickListener(view -> {
+            if (addInProgress) return;
             String name = nameEditText.getText().toString().trim();
             String address = addressEditText.getText().toString().trim();
             String email = emailEditText.getText().toString().trim();
@@ -169,21 +204,71 @@ public class AddContractActivity extends AppCompatActivity {
             if (email.isEmpty()) email = "N/A";
             if (contact.isEmpty()) contact = "N/A";
 
-            String ownerKey = SessionManager.getContractKey(this);
-            if (ownerKey == null || ownerKey.trim().isEmpty()) ownerKey = userName;
-            if (assignedTechSpinner != null && assignedTechSpinner.getVisibility() == View.VISIBLE) {
+            // Determine assigned technician (UID + display/contractKey).
+            String assignedUid = null;
+            String assignedName = null;
+            String assignedStaffId = null;
+            String assignedContractKey = null;
+
+            try {
+                com.google.firebase.auth.FirebaseUser u = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                if (u != null) assignedUid = u.getUid();
+            } catch (Exception ignored) {}
+
+            boolean isAdminUser = SessionManager.isAdmin(this);
+
+            if (isAdminUser && assignedTechSpinner != null && assignedTechSpinner.getVisibility() == View.VISIBLE && assignableUserUids.length > 0) {
+                // Admin/super_admin: pick from spinner (all users with a ContractKey).
                 int pos = assignedTechSpinner.getSelectedItemPosition();
-                if (pos >= 0 && pos < ownerOptionKeys.length) {
-                    ownerKey = ownerOptionKeys[pos];
+                if (pos >= 0 && pos < assignableUserUids.length) {
+                    assignedUid = assignableUserUids[pos];
+                    UserRepository.AssignableUser sel = (pos < assignableUsers.size()) ? assignableUsers.get(pos) : null;
+                    if (sel != null) {
+                        assignedName = sel.name;
+                        assignedStaffId = sel.staffId;
+                        assignedContractKey = sel.contractKey;
+                    }
+                }
+            } else {
+                // Tech/non-admin: force assignment to their own profile.
+                if (assignedName == null || assignedName.trim().isEmpty()) {
+                    String selfName = SessionManager.getName(this);
+                    if (selfName != null && !selfName.trim().isEmpty()) {
+                        assignedName = selfName.trim();
+                    }
+                }
+                if (assignedContractKey == null || assignedContractKey.trim().isEmpty()) {
+                    String ck = SessionManager.getContractKey(this);
+                    if (ck != null && !ck.trim().isEmpty()) {
+                        assignedContractKey = ck.trim();
+                    }
                 }
             }
-            if (ownerKey == null || ownerKey.trim().isEmpty()) {
-                Toast.makeText(AddContractActivity.this, "Assigned technician could not be resolved. Please try again.", Toast.LENGTH_SHORT).show();
+
+            if (assignedUid == null || assignedUid.trim().isEmpty()) {
+                Toast.makeText(AddContractActivity.this, "Assigned technician UID could not be resolved. Please try again.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            String tableName = StaffDirectory.getContractsCollectionNameFromAnyKey(ownerKey.trim());
-            addContractToFirestore(tableName, name, address, email, contact, visits, ownerKey.trim());
+            // Debug: log final assignment and target collection before write.
+            try {
+                SessionManager.Session session = SessionManager.getCached(this);
+                String role = session != null ? session.roleNorm : "unknown";
+                String sessionContractKey = session != null ? session.contractKey : SessionManager.getContractKey(this);
+                Log.d(TAG, "Creating contract in collection=" + FirestorePaths.CONTRACTS
+                        + " for authUid=" + assignedUid
+                        + ", role=" + role
+                        + ", sessionContractKey=" + (sessionContractKey != null ? sessionContractKey : "")
+                        + ", assignedContractKey=" + (assignedContractKey != null ? assignedContractKey : "")
+                        + ", assignedName=" + (assignedName != null ? assignedName : ""));
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to log contract creation context: " + e.getMessage());
+            }
+
+            addInProgress = true;
+            addButton.setEnabled(false);
+            addContractToFirestore(name, address, email, contact, visits,
+                    assignedUid, assignedName, assignedStaffId, assignedContractKey, userName);
         });
 
         backButton.setOnClickListener(view -> {
@@ -192,61 +277,70 @@ public class AddContractActivity extends AppCompatActivity {
         });
     }
     /**
-     * Adds the contract to Firestore under the specified user's contract collection.
-     * Validates and processes the input before uploading.
-     *
-     * @param tableName The Firestore collection where the contract will be stored.
-     * @param name      The name of the contract holder.
-     * @param address   The address of the contract holder.
-     * @param email     The email associated with the contract.
-     * @param contact   The contact number associated with the contract.
-     * @param visits    The number of visits assigned in the contract.
-     * @param ownerKey  ContractKey/owner key (used in contract doc field).
+     * Adds the contract to the shared contracts collection.
+     * Stores technician UID + display fields alongside contract details.
      */
-    private void addContractToFirestore(String tableName, String name, String address, String email, String contact, String visits, String ownerKey) {
-        CollectionReference contractsCollection = db.collection(tableName);
-        Map<String, Object> contract = createContractObject(name, address, email, contact, visits, ownerKey, userName);
+    private void addContractToFirestore(String name,
+                                        String address,
+                                        String email,
+                                        String contact,
+                                        String visits,
+                                        String assignedUid,
+                                        String assignedName,
+                                        String assignedStaffId,
+                                        String assignedContractKey,
+                                        String createdByDisplayName) {
+        if (BuildConfig.IS_OFFLINE || db == null) {
+            addInProgress = false;
+            if (addButton != null) addButton.setEnabled(true);
+            Toast.makeText(this, "Contracts cannot be added in offline mode.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        CollectionReference contractsCollection = db.collection(FirestorePaths.CONTRACTS);
+        Map<String, Object> contract = createContractObject(
+                name, address, email, contact, visits,
+                assignedUid, assignedName, assignedStaffId, assignedContractKey, createdByDisplayName);
 
         contractsCollection.add(contract)
                 .addOnSuccessListener(documentReference -> {
-                    writeInAppContractAssignmentIfNeeded(documentReference.getId(), name, ownerKey, userName);
-                    writeInAppContractOversightIfNeeded(documentReference.getId(), name, ownerKey, userName);
-                    Toast.makeText(AddContractActivity.this, "Contract added successfully to " + tableName, Toast.LENGTH_SHORT).show();
+                    addInProgress = false;
+                    writeInAppContractAssignmentIfNeeded(documentReference.getId(), name, assignedUid, createdByDisplayName);
+                    writeInAppContractOversightIfNeeded(documentReference.getId(), name, assignedUid, createdByDisplayName);
+                    Toast.makeText(AddContractActivity.this, "Contract added successfully.", Toast.LENGTH_SHORT).show();
                     clearFields();
                     returnToContractsActivity();
                 })
                 .addOnFailureListener(e -> {
+                    addInProgress = false;
+                    if (addButton != null) addButton.setEnabled(true);
                     Toast.makeText(AddContractActivity.this, "Failed to add contract: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
     /**
      * In-app notification history (NOT system push).
-     * If anyone assigns a contract to another technician's contracts, notify that technician.
+     * If anyone assigns a contract to another technician, notify that technician.
      */
-    private void writeInAppContractAssignmentIfNeeded(String contractId, String contractName, String ownerKey, String createdBy) {
+    private void writeInAppContractAssignmentIfNeeded(String contractId, String contractName, String assignedUid, String createdByDisplayName) {
         try {
             if (contractId == null || contractId.trim().isEmpty()) return;
-            String owner = ownerKey != null ? ownerKey.trim() : "";
-            if (owner.isEmpty()) return;
-
-            String me = SessionManager.getContractKey(this);
-            if (me == null || me.trim().isEmpty()) me = userName;
-            if (me != null && !me.trim().isEmpty() && me.trim().equalsIgnoreCase(owner)) return;
+            String targetUid = assignedUid != null ? assignedUid.trim() : "";
+            if (targetUid.isEmpty()) return;
 
             Map<String, Object> data = new HashMap<>();
             data.put("contractId", contractId);
             data.put("contractName", contractName);
-            data.put("userName", owner);
-            data.put("createdBy", createdBy);
+            data.put("assignedTechUid", targetUid);
+            data.put("createdBy", createdByDisplayName);
             data.put("type", "contract_update");
 
             NotificationUtils.writeInAppNotification(
-                    owner,
+                    targetUid,
                     "contract_assigned_" + contractId,
                     "📋 New Contract Assigned",
                     (contractName != null ? contractName : "A contract") + " has been assigned to you"
-                            + (createdBy != null && !createdBy.trim().isEmpty() ? ("\nAssigned by " + createdBy) : ""),
+                            + (createdByDisplayName != null && !createdByDisplayName.trim().isEmpty() ? ("\nAssigned by " + createdByDisplayName) : ""),
                     "contract_update",
                     data
             );
@@ -255,49 +349,65 @@ public class AddContractActivity extends AppCompatActivity {
     }
 
     /** Write contract notification (admin fan-out handled by NotificationUtils). */
-    private void writeInAppContractOversightIfNeeded(String contractId, String contractName, String ownerKey, String createdBy) {
+    private void writeInAppContractOversightIfNeeded(String contractId, String contractName, String assignedUid, String createdByDisplayName) {
         try {
             if (contractId == null || contractId.trim().isEmpty()) return;
-            String ownerName = ownerKey != null ? ownerKey.trim() : "";
-            String creatorDisplay = (createdBy != null) ? createdBy : "";
+            String ownerUid = assignedUid != null ? assignedUid.trim() : "";
 
             Map<String, Object> data = new HashMap<>();
             data.put("contractId", contractId);
             data.put("contractName", contractName);
-            data.put("userName", ownerName);
-            data.put("createdBy", createdBy);
+            data.put("assignedTechUid", ownerUid);
+            data.put("createdBy", createdByDisplayName);
             data.put("type", "contract_update");
 
             String title = "📋 Contract added";
-            String body = creatorDisplay + " added a contract"
+            String body = createdByDisplayName + " added a contract"
                     + (contractName != null && !contractName.trim().isEmpty() ? (": " + contractName.trim()) : "")
-                    + " (assigned to " + ownerName + ")";
-            NotificationUtils.writeInAppNotification(creatorDisplay, "contract_added_" + contractId + "_" + System.currentTimeMillis(), title, body, "contract_update", data);
+                    + " (assigned to technician)";
+            NotificationUtils.writeInAppNotification(createdByDisplayName, "contract_added_" + contractId + "_" + System.currentTimeMillis(), title, body, "contract_update", data);
         } catch (Exception ignored) {
         }
     }
     /**
      * Creates a contract object formatted as a HashMap.
-     * Stores contract details including name, address, email, contact, visits, and owner.
+     * Stores contract details including name, address, email, contact, visits and technician fields.
      *
      * @param name     The name of the contract holder.
      * @param address  The address of the contract holder.
      * @param email    The email associated with the contract.
      * @param contact  The contact number associated with the contract.
      * @param visits   The number of visits assigned in the contract.
-     * @param owner    The owner of the contract entry.
+     * @param assignedUid Technician UID.
      * @return A Map containing the contract details.
      */
-    private Map<String, Object> createContractObject(String name, String address, String email, String contact, String visits, String owner, String createdBy) {
+    private Map<String, Object> createContractObject(String name,
+                                                     String address,
+                                                     String email,
+                                                     String contact,
+                                                     String visits,
+                                                     String assignedUid,
+                                                     String assignedName,
+                                                     String assignedStaffId,
+                                                     String assignedContractKey,
+                                                     String createdByDisplayName) {
         Map<String, Object> contract = new HashMap<>();
         contract.put("name", name);
         contract.put("address", address);
         contract.put("email", email);
         contract.put("contact", contact);
         contract.put("visits", visits);
-        contract.put("owner", owner);
-        contract.put("addedBy", owner);
-        contract.put("createdBy", createdBy != null ? createdBy : owner);
+        // New contracts start with no visits recorded yet.
+        contract.put("lastVisit", "N/A");
+        contract.put("nextVisit", "N/A");
+        // Keep only a single assignment string field for contracts.
+        // This is the technician's contractKey (normalized to lowercase) when available; otherwise their name.
+        if (assignedContractKey != null && !assignedContractKey.trim().isEmpty()) {
+            contract.put("assignedTech", assignedContractKey.trim().toLowerCase(java.util.Locale.getDefault()));
+        } else if (assignedName != null && !assignedName.trim().isEmpty()) {
+            contract.put("assignedTech", assignedName.trim().toLowerCase(java.util.Locale.getDefault()));
+        }
+        // Save only core fields (no createdAt, createdByName, createdByUid, updatedAt).
         return contract;
     }
     /**

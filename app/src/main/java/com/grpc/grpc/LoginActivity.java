@@ -10,6 +10,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 /**
  * LoginActivity.java
@@ -95,18 +96,80 @@ public class LoginActivity extends AppCompatActivity {
                                     Toast.makeText(LoginActivity.this, "Login succeeded, but profile could not be loaded. Please try again.", Toast.LENGTH_SHORT).show();
                                     return;
                                 }
-                                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                                intent.putExtra("USER_EMAIL", email); // Pass email as extra
-                                // Critical: use ContractKey when set, else StaffID so contracts/workview use a stable key (never full name). Capitalize so "james" -> "James" to match Firestore collection names.
-                                String contractKey = SessionManager.getContractKey(LoginActivity.this);
-                                String staffId = SessionManager.getStaffId(LoginActivity.this);
-                                if (contractKey != null && !contractKey.trim().isEmpty()) {
-                                    intent.putExtra("USER_NAME", StaffDirectory.capitalizeContractKey(contractKey.trim()));
-                                } else if (staffId != null && !staffId.trim().isEmpty()) {
-                                    intent.putExtra("USER_NAME", staffId.trim());
-                                }
-                                startActivity(intent);
-                                finish();
+
+                                // Ensure users/{uid} profile exists and is merged with session fields (including canSeeContracts, canViewAllContracts).
+                                UserRepository.ensureProfileForCurrentUser(LoginActivity.this, session, profile -> runOnUiThread(() -> {
+                                    // When super_admin or admin first logs in, ensure the shared contracts collection exists by seeding a schema doc if empty.
+                                    try {
+                                        if (!BuildConfig.IS_OFFLINE && (session.isSuperAdmin || session.isAdmin)) {
+                                            FirebaseFirestore.getInstance()
+                                                    .collection(FirestorePaths.CONTRACTS)
+                                                    .limit(1)
+                                                    .get()
+                                                    .addOnSuccessListener(snap -> {
+                                                        if (snap == null || snap.isEmpty()) {
+                                                            java.util.Map<String, Object> seed = new java.util.HashMap<>();
+                                                            seed.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+                                                            seed.put("schema", "contracts_v1");
+                                                            FirebaseFirestore.getInstance()
+                                                                    .collection(FirestorePaths.CONTRACTS)
+                                                                    .document("_schema")
+                                                                    .set(seed);
+                                                        }
+                                                    });
+                                        }
+                                    } catch (Exception ignored) {}
+
+                                    // After profile is ensured, enforce viewProfile gating:
+                                    // users/{uid}.viewProfile (default true) controls whether the user may proceed past login.
+                                    if (!BuildConfig.IS_OFFLINE) {
+                                        com.google.firebase.auth.FirebaseUser authUser = FirebaseAuth.getInstance().getCurrentUser();
+                                        if (authUser != null) {
+                                            String uid = authUser.getUid();
+                                            FirebaseFirestore db = FirebaseFirestore.getInstance();
+                                            db.collection(FirestorePaths.USERS)
+                                                    .document(uid)
+                                                    .get()
+                                                    .addOnSuccessListener(snapshot -> {
+                                                        Boolean viewProfile = snapshot.getBoolean("viewProfile");
+                                                        // Seed missing field to true on first login without overriding explicit false.
+                                                        if (viewProfile == null) {
+                                                            java.util.Map<String, Object> update = new java.util.HashMap<>();
+                                                            update.put("viewProfile", true);
+                                                            snapshot.getReference().set(update, com.google.firebase.firestore.SetOptions.merge());
+                                                            viewProfile = true;
+                                                        }
+
+                                                        if (Boolean.FALSE.equals(viewProfile)) {
+                                                            new androidx.appcompat.app.AlertDialog.Builder(LoginActivity.this)
+                                                                    .setTitle("Profile access issue")
+                                                                    .setMessage("Please contact PestControlOS if you cannot access your profile.")
+                                                                    .setPositiveButton("OK", (d, which) -> {
+                                                                        try {
+                                                                            FirebaseAuth.getInstance().signOut();
+                                                                        } catch (Exception ignored) {}
+                                                                    })
+                                                                    .setCancelable(false)
+                                                                    .show();
+                                                            return;
+                                                        }
+
+                                                        // Allowed to proceed: open MainActivity as before.
+                                                        openMainActivityWithUserExtras(email);
+                                                    })
+                                                    .addOnFailureListener(e -> {
+                                                        // If we cannot read the flag, fall back to allowing login.
+                                                        openMainActivityWithUserExtras(email);
+                                                    });
+                                        } else {
+                                            // No auth user; fail safe by not proceeding.
+                                            Toast.makeText(LoginActivity.this, "Login session expired. Please try again.", Toast.LENGTH_SHORT).show();
+                                        }
+                                    } else {
+                                        // Offline flavor never reaches here in practice, but keep behavior consistent.
+                                        openMainActivityWithUserExtras(email);
+                                    }
+                                }));
                             }));
                         } else {
                             Toast.makeText(LoginActivity.this, "Login Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
@@ -125,6 +188,21 @@ public class LoginActivity extends AppCompatActivity {
                 finish();
             });
         }
+    }
+
+    private void openMainActivityWithUserExtras(String email) {
+        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        intent.putExtra("USER_EMAIL", email); // Pass email as extra
+        // Critical: use ContractKey when set, else StaffID so contracts/workview use a stable key (never full name). Capitalize so "james" -> "James" to match Firestore collection names.
+        String contractKey = SessionManager.getContractKey(LoginActivity.this);
+        String staffId = SessionManager.getStaffId(LoginActivity.this);
+        if (contractKey != null && !contractKey.trim().isEmpty()) {
+            intent.putExtra("USER_NAME", StaffDirectory.capitalizeContractKey(contractKey.trim()));
+        } else if (staffId != null && !staffId.trim().isEmpty()) {
+            intent.putExtra("USER_NAME", staffId.trim());
+        }
+        startActivity(intent);
+        finish();
     }
 
     // Helper to extract the name from the email

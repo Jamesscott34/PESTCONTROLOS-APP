@@ -127,6 +127,32 @@ public final class DailyContractPdfHelper {
 
         prefs.edit().putLong(prefsKey, runTime).apply();
 
+        // On 31 December each year, pre-create next year's ReportsYY folder with month subfolders in Firebase Storage.
+        try {
+            Calendar cal = Calendar.getInstance();
+            cal.setTimeInMillis(runTime);
+            int year = cal.get(Calendar.YEAR);
+            int month = cal.get(Calendar.MONTH);
+            int day = cal.get(Calendar.DAY_OF_MONTH);
+            if (month == Calendar.DECEMBER && day == 31) {
+                int nextYear = year + 1;
+                String yy = String.format(Locale.getDefault(), "%02d", nextYear % 100);
+                String base = "Reports" + yy;
+
+                com.google.firebase.storage.FirebaseStorage storage = com.google.firebase.storage.FirebaseStorage.getInstance();
+                com.google.firebase.storage.StorageReference root = storage.getReference();
+
+                String[] months = new String[] {
+                        "January","February","March","April","May","June",
+                        "July","August","September","October","November","December"
+                };
+                byte[] empty = new byte[0];
+                for (String m : months) {
+                    root.child(base + "/" + m + "/.keep").putBytes(empty);
+                }
+            }
+        } catch (Exception ignored) {}
+
         // Always notify the user that the daily job ran (so they see it in Notifications).
         String title = "Daily reports generated";
         String body;

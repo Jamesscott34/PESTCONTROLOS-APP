@@ -134,7 +134,7 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
     }
 
     /**
-     * Adds a job entry to Firestore under the "JobWork" collection.
+     * Adds a management job entry to Firestore (separate from jobwork service jobs).
      * Stores technician details, customer details, and issue information.
      *
      * @param techName    The name of the assigned technician.

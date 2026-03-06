@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/screen_padding"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/welcome_margin_top">
+
+        <TextView
+            android:id="@+id/adminDashboardTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Admin Dashboard"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="@dimen/button_spacing" />
+
+        <!-- Contracts summary block -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:id="@+id/contractsSummaryLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CONTRACTS SUMMARY"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/contractsSummaryListTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Loading per-user contracts..."
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/contractsTotalTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Total contracts: loading..." />
+        </LinearLayout>
+
+        <!-- Users summary block -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:id="@+id/usersSummaryLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="USERS SUMMARY (tap to change role)"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <ListView
+                android:id="@+id/usersListView"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:divider="@android:color/transparent"
+                android:dividerHeight="0dp"
+                android:scrollbars="vertical" />
+        </LinearLayout>
+
+        <!-- Reports folder: create ReportsXX (one per year) in Firebase Storage -->
+        <LinearLayout
+            android:id="@+id/reportsFolderBlock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:id="@+id/reportsFolderLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="REPORTS FOLDERS"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/createReportsFolderButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Create Reports folder (choose year)"
+                android:backgroundTint="?attr/colorSecondary"
+                android:textColor="?attr/colorOnSecondary" />
+        </LinearLayout>
+
+        <!-- Storage usage summary block -->
+        <LinearLayout
+            android:id="@+id/storageSummaryBlock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:id="@+id/storageSummaryLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="STORAGE USAGE"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/storageSummaryTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Storage: not configured" />
+        </LinearLayout>
+
+        <!-- Authenticated users / sign-in summary block (optional) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:id="@+id/authSummaryLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="AUTH / SIGN-IN SUMMARY"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/authSummaryTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Auth log: not configured" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
+

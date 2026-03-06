@@ -120,7 +120,8 @@ public class MainActivity extends AppCompatActivity {
     private Button reportButton, reportViewButton, contractsButton, quotesButton, logoutButton,
                    CommisionButton, ServiceAgreementButton, JobButton, EnviromentButton,
                    InstantMessage, WebsiteButton, WorkViewButton, ChatButton, HelpButton,
-                   NotificationsButton, LocationFinderButton, SearchButton;
+                   NotificationsButton, LocationFinderButton, SearchButton,
+                   DashboardButton, EmployeeButton;
     
     // User information extracted from login
     private String userEmail, userName;
@@ -290,7 +291,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         applyDemoExpiredVisibility();
-        checkHomeUnreadIndicators();
+        // Messaging is hidden for all but super_admin; only super_admin sees unread message badges.
+        if (SessionManager.isSuperAdmin(this)) {
+            checkHomeUnreadIndicators();
+        } else {
+            // Still show notifications badge for everyone.
+            if (!BuildConfig.IS_OFFLINE && !DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this)
+                    && userName != null && !userName.trim().isEmpty() && db != null) {
+                checkUnreadNotifications();
+            }
+        }
     }
 
     /**
@@ -505,6 +515,8 @@ public class MainActivity extends AppCompatActivity {
         LocationFinderButton = findViewById(R.id.LocationFinderButton);
         SearchButton = findViewById(R.id.SearchButton);
         ChatButton = findViewById(R.id.ChatButton);
+        DashboardButton = findViewById(R.id.DashboardButton);
+        EmployeeButton = findViewById(R.id.EmployeeButton);
     }
 
     /**
@@ -514,9 +526,11 @@ public class MainActivity extends AppCompatActivity {
     private void setupButtonClickListeners() {
         // Instant messaging - conversation list (all users + group)
         if (InstantMessage != null) {
-            InstantMessage.setOnClickListener(view -> {
-                openActivity(MessagingConversationsActivity.class);
-            });
+            boolean canMessage = SessionManager.isSuperAdmin(this);
+            InstantMessage.setVisibility(canMessage ? View.VISIBLE : View.GONE);
+            if (canMessage) {
+                InstantMessage.setOnClickListener(view -> openActivity(MessagingConversationsActivity.class));
+            }
         }
 
         // Notification history - see what notifications were received
@@ -531,6 +545,32 @@ public class MainActivity extends AppCompatActivity {
             if (canSearch) {
                 SearchButton.setOnClickListener(v -> {
                     Intent intent = new Intent(MainActivity.this, SearchActivity.class);
+                    intent.putExtra("USER_NAME", userName);
+                    startActivity(intent);
+                });
+            }
+        }
+
+        // Admin Dashboard: admin and super_admin
+        if (DashboardButton != null) {
+            boolean canViewDashboard = SessionManager.isAdmin(this);
+            DashboardButton.setVisibility(canViewDashboard ? View.VISIBLE : View.GONE);
+            if (canViewDashboard) {
+                DashboardButton.setOnClickListener(v -> {
+                    Intent intent = new Intent(MainActivity.this, AdminDashboardActivity.class);
+                    intent.putExtra("USER_NAME", userName);
+                    startActivity(intent);
+                });
+            }
+        }
+
+        // Employee Management: super_admin only
+        if (EmployeeButton != null) {
+            boolean canManageEmployees = SessionManager.isSuperAdmin(this);
+            EmployeeButton.setVisibility(canManageEmployees ? View.VISIBLE : View.GONE);
+            if (canManageEmployees) {
+                EmployeeButton.setOnClickListener(v -> {
+                    Intent intent = new Intent(MainActivity.this, EmployeeManagementActivity.class);
                     intent.putExtra("USER_NAME", userName);
                     startActivity(intent);
                 });
@@ -700,6 +740,8 @@ public class MainActivity extends AppCompatActivity {
         if (JobButton != null) JobButton.setVisibility(View.GONE);
         if (EnviromentButton != null) EnviromentButton.setVisibility(View.GONE);
         if (InstantMessage != null) InstantMessage.setVisibility(View.GONE);
+        if (DashboardButton != null) DashboardButton.setVisibility(View.GONE);
+        if (EmployeeButton != null) EmployeeButton.setVisibility(View.GONE);
         // Keep Visit website visible for offline (opens pestcontrolos.ie)
         if (HelpButton != null) HelpButton.setVisibility(View.GONE);
         if (ChatButton != null) ChatButton.setVisibility(View.GONE);
@@ -736,6 +778,8 @@ public class MainActivity extends AppCompatActivity {
         if (InstantMessage != null) InstantMessage.setVisibility(View.GONE);
         if (HelpButton != null) HelpButton.setVisibility(View.GONE);
         if (ChatButton != null) ChatButton.setVisibility(View.GONE);
+        if (DashboardButton != null) DashboardButton.setVisibility(View.GONE);
+        if (EmployeeButton != null) EmployeeButton.setVisibility(View.GONE);
         if (welcomeTextView != null) welcomeTextView.setText(getString(R.string.demo_expired_message));
     }
 

@@ -680,41 +680,61 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show contract selection dialog for regular users
+     * Show contract selection dialog for regular users.
+     * Loads from shared contracts collection by assignedTech (contractKey). Scalable for any number of techs.
      */
     private void showUserContractSelectionDialog(String user) {
-        // Contract collections are keyed by users/{StaffID}.ContractKey
-        String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(user);
-        
-        db.collection(collectionName).get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                List<String> contractNames = new ArrayList<>();
-                List<String> contractIds = new ArrayList<>();
-                List<String> contractAddresses = new ArrayList<>();
-                
-                for (QueryDocumentSnapshot document : task.getResult()) {
-                    Map<String, Object> contract = document.getData();
-                    String contractName = contract.get("name") != null ? contract.get("name").toString() : "N/A";
-                    String contractAddress = contract.get("address") != null ? contract.get("address").toString() : "N/A";
-                    
-                    if (!contractName.equals("N/A")) {
-                        contractNames.add(contractName + "\n📍 " + contractAddress);
-                        contractIds.add(document.getId());
-                        contractAddresses.add(contractAddress);
+        // When admin chose a user (e.g. Dean), filter by that user's contracts; otherwise use session contractKey (tech).
+        String contractKey = (user != null && !user.trim().isEmpty()) ? user.trim() : (SessionManager.getContractKey(this) != null ? SessionManager.getContractKey(this).trim() : "");
+        if (contractKey.isEmpty()) {
+            Toast.makeText(this, "Could not resolve technician. Please try again.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final String filterKey = contractKey.trim().toLowerCase(java.util.Locale.getDefault());
+
+        // Debug: log contract selection query for WorkView (no time slot).
+        try {
+            com.google.firebase.auth.FirebaseUser authUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            String authUid = authUser != null ? authUser.getUid() : "null";
+            SessionManager.Session session = SessionManager.getCached(this);
+            String role = session != null ? session.roleNorm : "unknown";
+            String sessionContractKey = session != null ? session.contractKey : SessionManager.getContractKey(this);
+            Log.d("WorkViewActivity", "Contract selection query (calendar) where assignedTech=" + filterKey
+                    + " (requestedUser=" + user
+                    + ", authUid=" + authUid
+                    + ", role=" + role
+                    + ", sessionContractKey=" + (sessionContractKey != null ? sessionContractKey : "") + ")");
+        } catch (Exception e) {
+            Log.w("WorkViewActivity", "Failed to log contract selection (calendar) context: " + e.getMessage());
+        }
+
+        db.collection(FirestorePaths.CONTRACTS)
+                .whereEqualTo("assignedTech", filterKey)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        List<String> contractNames = new ArrayList<>();
+                        List<String> contractIds = new ArrayList<>();
+                        List<String> contractAddresses = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Map<String, Object> contract = document.getData();
+                            String contractName = contract.get("name") != null ? contract.get("name").toString() : "N/A";
+                            String contractAddress = contract.get("address") != null ? contract.get("address").toString() : "N/A";
+                            if (!contractName.equals("N/A")) {
+                                contractNames.add(contractName + "\n📍 " + contractAddress);
+                                contractIds.add(document.getId());
+                                contractAddresses.add(contractAddress);
+                            }
+                        }
+                        if (contractNames.isEmpty()) {
+                            Toast.makeText(this, "No contracts found for you. Please add contracts first.", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        showContractSelectionDialogWithSearch(contractNames, contractIds, contractAddresses, FirestorePaths.CONTRACTS);
+                    } else {
+                        Toast.makeText(this, "Error loading contracts: " + (task.getException() != null ? task.getException().getMessage() : ""), Toast.LENGTH_SHORT).show();
                     }
-                }
-                
-                if (contractNames.isEmpty()) {
-                    Toast.makeText(this, "No contracts found in " + collectionName + ". Please add contracts first.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                
-                // Create custom dialog with search functionality
-                showContractSelectionDialogWithSearch(contractNames, contractIds, contractAddresses, collectionName);
-            } else {
-                Toast.makeText(this, "Error loading contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+                });
     }
 
     /**
@@ -780,21 +800,28 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show contract selection dialog for oversight users (can add to any contract technician)
+     * Show contract selection dialog for oversight users (admin/super_admin).
+     * Uses assignable users (contractKey) so it scales with any number of techs.
      */
     private void showAdminContractSelectionDialog() {
-        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
-            List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
-            String[] displayLabels = new String[opts.size()];
-            String[] ownerKeys = new String[opts.size()];
-            for (int i = 0; i < opts.size(); i++) {
-                StaffDirectory.OwnerOption o = opts.get(i);
-                displayLabels[i] = o != null ? o.display : "";
-                ownerKeys[i] = o != null ? o.ownerKey : "";
+        UserRepository.fetchAssignableUsers(users -> runOnUiThread(() -> {
+            List<UserRepository.AssignableUser> opts = users != null ? users : new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+            List<String> contractKeys = new ArrayList<>();
+            for (UserRepository.AssignableUser u : opts) {
+                if (u == null || u.contractKey == null || u.contractKey.trim().isEmpty()) continue;
+                labels.add(u.contractKey.trim());
+                contractKeys.add(u.contractKey.trim());
             }
+            if (labels.isEmpty()) {
+                Toast.makeText(this, "No technicians with contracts found.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String[] displayLabels = labels.toArray(new String[0]);
+            final String[] ownerContractKeys = contractKeys.toArray(new String[0]);
             new AlertDialog.Builder(this)
                     .setTitle("Select User's Contracts")
-                    .setItems(displayLabels, (dialog, which) -> showUserContractSelectionDialog(ownerKeys[which]))
+                    .setItems(displayLabels, (dialog, which) -> showUserContractSelectionDialog(ownerContractKeys[which]))
                     .show();
         }));
     }
@@ -813,21 +840,26 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show user selection dialog for oversight users
+     * Show user selection dialog for oversight users (contractKey labels; scales with any number of techs).
      */
     private void showAdminUserSelectionDialog(String eventType, String eventId, String eventName) {
-        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
-            List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
-            String[] displayLabels = new String[opts.size()];
-            String[] ownerKeys = new String[opts.size()];
-            for (int i = 0; i < opts.size(); i++) {
-                StaffDirectory.OwnerOption o = opts.get(i);
-                displayLabels[i] = o != null ? o.display : "";
-                ownerKeys[i] = o != null ? o.ownerKey : "";
+        UserRepository.fetchAssignableUsers(users -> runOnUiThread(() -> {
+            List<UserRepository.AssignableUser> opts = users != null ? users : new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+            List<String> keys = new ArrayList<>();
+            for (UserRepository.AssignableUser u : opts) {
+                if (u == null || u.contractKey == null || u.contractKey.trim().isEmpty()) continue;
+                labels.add(u.contractKey.trim());
+                keys.add(u.contractKey.trim());
             }
+            if (labels.isEmpty()) {
+                Toast.makeText(this, "No technicians found.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            final String[] ownerKeys = keys.toArray(new String[0]);
             new AlertDialog.Builder(this)
                     .setTitle("Select User's Work View")
-                    .setItems(displayLabels, (dialog, which) -> showTimeSlotsDialog(eventType, eventId, eventName, ownerKeys[which]))
+                    .setItems(labels.toArray(new String[0]), (dialog, which) -> showTimeSlotsDialog(eventType, eventId, eventName, ownerKeys[which]))
                     .show();
         }));
     }
@@ -892,7 +924,7 @@ public class WorkViewActivity extends AppCompatActivity {
         }
     }
 
-    /** Load jobs from JobWork and show selection (role-gated). */
+    /** Load jobs from shared jobwork collection and show selection (role-gated). */
     private void showAddExistingJobDialog(String timeSlot) {
         String targetUser = userName;
         if (canManageOtherWorkViews()) {
@@ -916,7 +948,7 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     private void loadJobsAndShowSelection(String forUser, String timeSlot) {
-        com.google.firebase.firestore.Query query = db.collection("JobWork");
+        com.google.firebase.firestore.Query query = db.collection(FirestorePaths.JOBWORK);
         query = query.whereEqualTo("AssignedTech", forUser);
         query.get().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
@@ -1095,9 +1127,8 @@ public class WorkViewActivity extends AppCompatActivity {
         
         // Add address information based on event type
         if ("contract".equals(eventType)) {
-            // For contracts, get address from contract data
-            String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(targetUser);
-            db.collection(collectionName).document(eventId)
+            // Contracts live in shared collection (scalable for any number of techs)
+            db.collection(FirestorePaths.CONTRACTS).document(eventId)
               .get()
               .addOnSuccessListener(documentSnapshot -> {
                   if (documentSnapshot.exists()) {
@@ -1140,8 +1171,7 @@ public class WorkViewActivity extends AppCompatActivity {
         event.put("createdAt", new Date());
 
         if ("contract".equals(eventType)) {
-            String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(targetUser);
-            db.collection(collectionName).document(eventId)
+            db.collection(FirestorePaths.CONTRACTS).document(eventId)
                     .get()
                     .addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
@@ -1482,9 +1512,26 @@ public class WorkViewActivity extends AppCompatActivity {
         boolean isContract = "contract".equals(event.getEventType());
 
         if (isContract) {
-            // Update contract in assigned user's collection by contract ID; use batch with work view update.
-            String contractOwner = event.getUserName() != null ? event.getUserName() : userName;
-            String contractCollection = StaffDirectory.getContractsCollectionNameFromAnyKey(contractOwner);
+            // Debug: log mark-as-done context for contract events.
+            try {
+                com.google.firebase.auth.FirebaseUser authUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                String authUid = authUser != null ? authUser.getUid() : "null";
+                SessionManager.Session session = SessionManager.getCached(this);
+                String role = session != null ? session.roleNorm : "unknown";
+                String sessionContractKey = session != null ? session.contractKey : SessionManager.getContractKey(this);
+                Log.d("WorkViewActivity", "MarkEventComplete for contract: eventId=" + event.getId()
+                        + ", contractId=" + event.getEventId()
+                        + ", workCollection=" + collectionName
+                        + ", contractCollection=" + FirestorePaths.CONTRACTS
+                        + ", authUid=" + authUid
+                        + ", role=" + role
+                        + ", sessionContractKey=" + (sessionContractKey != null ? sessionContractKey : "") + ")");
+            } catch (Exception e) {
+                Log.w("WorkViewActivity", "Failed to log markEventComplete contract context: " + e.getMessage());
+            }
+
+            // Update contract in shared contracts collection by contract ID; use batch with work view update. Scalable for any number of techs.
+            String contractCollection = FirestorePaths.CONTRACTS;
             db.collection(contractCollection).document(event.getEventId()).get()
                 .addOnSuccessListener(contractSnap -> {
                     if (!contractSnap.exists()) {
@@ -1992,9 +2039,9 @@ public class WorkViewActivity extends AppCompatActivity {
             .setMessage("Are you sure you want to finish this job? This will delete it from the database.")
             .setPositiveButton("Yes", (dialog, which) -> {
                 cancelInAppReminder(event);
-                // Delete from JobWork collection (eventId is the JobWork document ID)
+                // Delete from jobwork collection (eventId is the jobwork document ID)
                 String userCollection = getCollectionForEvent(event);
-                db.collection("JobWork").document(event.getEventId())
+                db.collection(FirestorePaths.JOBWORK).document(event.getEventId())
                   .delete()
                   .addOnSuccessListener(aVoid -> {
                       // Delete from work view collection
@@ -2039,11 +2086,9 @@ public class WorkViewActivity extends AppCompatActivity {
 
     /**
      * Update contract last visit and remove from calendar.
-     * Updates by contract ID in the assigned user's Contracts collection.
+     * Updates by contract ID in the shared contracts collection. Scalable for any number of techs.
      */
     private void updateContractLastVisitAndRemove(WorkEvent event) {
-        String contractOwner = event.getUserName() != null ? event.getUserName() : userName;
-        String contractCollection = StaffDirectory.getContractsCollectionNameFromAnyKey(contractOwner);
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
         sdf.setTimeZone(TimeZone.getTimeZone("Europe/Dublin"));
         String today = sdf.format(new Date());
@@ -2051,9 +2096,30 @@ public class WorkViewActivity extends AppCompatActivity {
         Map<String, Object> updates = new HashMap<>();
         updates.put("lastVisit", today);
 
-        db.collection(contractCollection).document(event.getEventId())
+        db.collection(FirestorePaths.CONTRACTS).document(event.getEventId())
           .update(updates)
           .addOnSuccessListener(aVoid -> {
+              // Notify technician + admins about contract visit update from calendar.
+              try {
+                  if (!BuildConfig.IS_OFFLINE) {
+                      Map<String, Object> data = new HashMap<>();
+                      data.put("contractId", event.getEventId());
+                      data.put("eventId", event.getId());
+                      data.put("lastVisit", today);
+                      data.put("eventName", event.getEventName());
+                      String docId = "contract_visit_calendar_" + event.getEventId() + "_" + System.currentTimeMillis();
+                      String recipient = event.getUserName() != null ? event.getUserName() : userName;
+                      NotificationUtils.writeInAppNotification(
+                              recipient,
+                              docId,
+                              "Contract visit updated from calendar",
+                              "Visit marked complete for " + (event.getEventName() != null ? event.getEventName() : "contract") + ".",
+                              "contract_update",
+                              data
+                      );
+                  }
+              } catch (Exception ignored) { }
+
               cancelInAppReminder(event);
               db.collection(getCollectionForEvent(event)).document(event.getId())
                 .delete()
@@ -2379,56 +2445,85 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Show contract selection dialog for regular users with time
+     * Show contract selection dialog for regular users with time.
+     * Loads from shared contracts by assignedTech (contractKey). Scalable for any number of techs.
      */
     private void showUserContractSelectionDialogForTime(String user, String timeSlot) {
-        String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(user);
-        
-        db.collection(collectionName).get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                List<String> contractNames = new ArrayList<>();
-                List<String> contractIds = new ArrayList<>();
-                List<String> contractAddresses = new ArrayList<>();
-                
-                for (QueryDocumentSnapshot document : task.getResult()) {
-                    Map<String, Object> contract = document.getData();
-                    String contractName = contract.get("name") != null ? contract.get("name").toString() : "N/A";
-                    String contractAddress = contract.get("address") != null ? contract.get("address").toString() : "N/A";
-                    
-                    if (!contractName.equals("N/A")) {
-                        contractNames.add(contractName + "\n📍 " + contractAddress);
-                        contractIds.add(document.getId());
-                        contractAddresses.add(contractAddress);
+        // When admin chose a user, filter by that user's contracts; otherwise use session contractKey (tech).
+        String contractKey = (user != null && !user.trim().isEmpty()) ? user.trim() : (SessionManager.getContractKey(this) != null ? SessionManager.getContractKey(this).trim() : "");
+        if (contractKey.isEmpty()) {
+            Toast.makeText(this, "Could not resolve technician.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final String filterKey = contractKey.trim().toLowerCase(java.util.Locale.getDefault());
+
+        // Debug: log contract selection query for WorkView (with time slot).
+        try {
+            com.google.firebase.auth.FirebaseUser authUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            String authUid = authUser != null ? authUser.getUid() : "null";
+            SessionManager.Session session = SessionManager.getCached(this);
+            String role = session != null ? session.roleNorm : "unknown";
+            String sessionContractKey = session != null ? session.contractKey : SessionManager.getContractKey(this);
+            Log.d("WorkViewActivity", "Contract selection query (calendar+time) where assignedTech=" + filterKey
+                    + " (requestedUser=" + user
+                    + ", timeSlot=" + timeSlot
+                    + ", authUid=" + authUid
+                    + ", role=" + role
+                    + ", sessionContractKey=" + (sessionContractKey != null ? sessionContractKey : "") + ")");
+        } catch (Exception e) {
+            Log.w("WorkViewActivity", "Failed to log contract selection (calendar+time) context: " + e.getMessage());
+        }
+
+        db.collection(FirestorePaths.CONTRACTS)
+                .whereEqualTo("assignedTech", filterKey)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        List<String> contractNames = new ArrayList<>();
+                        List<String> contractIds = new ArrayList<>();
+                        List<String> contractAddresses = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Map<String, Object> contract = document.getData();
+                            String contractName = contract.get("name") != null ? contract.get("name").toString() : "N/A";
+                            String contractAddress = contract.get("address") != null ? contract.get("address").toString() : "N/A";
+                            if (!contractName.equals("N/A")) {
+                                contractNames.add(contractName + "\n📍 " + contractAddress);
+                                contractIds.add(document.getId());
+                                contractAddresses.add(contractAddress);
+                            }
+                        }
+                        if (contractNames.isEmpty()) {
+                            Toast.makeText(this, "No contracts found. Please add contracts first.", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        showContractSelectionDialogWithSearchForTime(contractNames, contractIds, contractAddresses, FirestorePaths.CONTRACTS, timeSlot, user);
+                    } else {
+                        Toast.makeText(this, "Error loading contracts: " + (task.getException() != null ? task.getException().getMessage() : ""), Toast.LENGTH_SHORT).show();
                     }
-                }
-                
-                if (contractNames.isEmpty()) {
-                    Toast.makeText(this, "No contracts found in " + collectionName + ". Please add contracts first.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                
-                // Use the improved contract selection dialog
-                showContractSelectionDialogWithSearchForTime(contractNames, contractIds, contractAddresses, collectionName, timeSlot, user);
-            } else {
-                Toast.makeText(this, "Error loading contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+                });
     }
 
     /**
-     * Show contract selection dialog for oversight users with time (contract technicians only)
+     * Show contract selection dialog for oversight users with time (contractKey list; scales with any number of techs).
      */
     private void showAdminContractSelectionDialogForTime(String timeSlot) {
-        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
-            List<StaffDirectory.OwnerOption> opts = options != null ? options : new ArrayList<>();
-            String[] users = new String[opts.size()];
-            for (int i = 0; i < opts.size(); i++) {
-                StaffDirectory.OwnerOption o = opts.get(i);
-                users[i] = o != null ? o.ownerKey : "";
+        UserRepository.fetchAssignableUsers(users -> runOnUiThread(() -> {
+            List<UserRepository.AssignableUser> opts = users != null ? users : new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+            List<String> keys = new ArrayList<>();
+            for (UserRepository.AssignableUser u : opts) {
+                if (u == null || u.contractKey == null || u.contractKey.trim().isEmpty()) continue;
+                labels.add(u.contractKey.trim());
+                keys.add(u.contractKey.trim());
             }
+            if (labels.isEmpty()) {
+                Toast.makeText(this, "No technicians with contracts found.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            final String[] ownerContractKeys = keys.toArray(new String[0]);
             new AlertDialog.Builder(this)
                     .setTitle("Select User's Contracts for " + formatSlotRange(timeSlot))
-                    .setItems(users, (dialog, which) -> showUserContractSelectionDialogForTime(users[which], timeSlot))
+                    .setItems(labels.toArray(new String[0]), (dialog, which) -> showUserContractSelectionDialogForTime(ownerContractKeys[which], timeSlot))
                     .show();
         }));
     }
@@ -2837,18 +2932,16 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Update contract last visit date with proper format
+     * Update contract last visit date with proper format. Uses shared contracts collection (scalable for any number of techs).
      */
     private void updateContractLastVisit(String contractId, String userName) {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
         String today = sdf.format(new Date());
-        
-        String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(userName);
-        
+
         Map<String, Object> updates = new HashMap<>();
         updates.put("lastVisit", today);
-        
-        db.collection(collectionName).document(contractId)
+
+        db.collection(FirestorePaths.CONTRACTS).document(contractId)
           .update(updates)
           .addOnSuccessListener(aVoid -> {
               Toast.makeText(this, "Contract last visit updated to " + today, Toast.LENGTH_SHORT).show();

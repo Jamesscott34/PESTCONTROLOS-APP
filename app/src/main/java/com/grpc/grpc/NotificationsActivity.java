@@ -269,22 +269,30 @@ public class NotificationsActivity extends AppCompatActivity {
         // Default to current user if missing
         String currentUser = userName != null ? userName : "";
 
-        // Conversation messages: open the chat directly
+        // Conversation messages: open the chat directly (super_admin only; others see a toast)
         if ("conversation_message".equals(type) && data != null) {
             String convId = asString(data.get("convId"));
             if (!TextUtils.isEmpty(convId)) {
-                String displayName = getConversationDisplayName(convId, currentUser);
-                Intent intent = new Intent(this, MessagingActivity.class);
-                intent.putExtra("USER_NAME", currentUser);
-                intent.putExtra("CONVERSATION_ID", convId);
-                intent.putExtra("CONVERSATION_NAME", displayName);
-                startActivity(intent);
+                if (SessionManager.isSuperAdmin(this)) {
+                    String displayName = getConversationDisplayName(convId, currentUser);
+                    Intent intent = new Intent(this, MessagingActivity.class);
+                    intent.putExtra("USER_NAME", currentUser);
+                    intent.putExtra("CONVERSATION_ID", convId);
+                    intent.putExtra("CONVERSATION_NAME", displayName);
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(this, "Messaging is currently available only to super admin.", Toast.LENGTH_SHORT).show();
+                }
                 return;
             }
             // Fallback
-            Intent intent = new Intent(this, MessagingConversationsActivity.class);
-            intent.putExtra("USER_NAME", currentUser);
-            startActivity(intent);
+            if (SessionManager.isSuperAdmin(this)) {
+                Intent intent = new Intent(this, MessagingConversationsActivity.class);
+                intent.putExtra("USER_NAME", currentUser);
+                startActivity(intent);
+            } else {
+                Toast.makeText(this, "Messaging is currently available only to super admin.", Toast.LENGTH_SHORT).show();
+            }
             return;
         }
 
@@ -386,7 +394,7 @@ public class NotificationsActivity extends AppCompatActivity {
         if ("jobwork".equals(type) && data != null) {
             String jobId = asString(data.get("jobId"));
             if (!TextUtils.isEmpty(jobId)) {
-                db.collection("JobWork").document(jobId).get()
+                db.collection(FirestorePaths.JOBWORK).document(jobId).get()
                         .addOnSuccessListener(ds -> {
                             String addr = ds.getString("Address");
                             if (TextUtils.isEmpty(addr)) addr = ds.getString("address");

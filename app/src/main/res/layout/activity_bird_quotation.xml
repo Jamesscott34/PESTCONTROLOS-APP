@@ -22,6 +22,18 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent" />
 
+        <!-- Company / customer details -->
+        <EditText
+            android:id="@+id/companyNameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Company Name (customer)"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/colorSurface"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
+
         <EditText
             android:id="@+id/addressInput"
             android:layout_width="match_parent"
@@ -37,13 +49,41 @@
             android:id="@+id/quoteDescriptionInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Quote Breakdown"
+            android:hint="Quotation Breakdown"
             android:padding="12dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="12dp"
             android:background="?attr/colorSurface"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
+        <!-- Materials Required section (table-like, above totals) -->
+        <TextView
+            android:id="@+id/materialsHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Materials Required"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/materialsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/addMaterialButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add Material Item"
+            android:backgroundTint="?attr/colorSecondary"
+            android:textColor="?attr/colorOnSecondary"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Company contact (auto-filled from profile) -->
         <TextView
             android:id="@+id/userEmailLabel"
             android:layout_width="match_parent"
@@ -51,7 +91,8 @@
             android:text="Company email (from your account)"
             android:textSize="12sp"
             android:layout_marginBottom="4dp"
-            android:textColor="?android:attr/textColorSecondary" />
+            android:textColor="?android:attr/textColorSecondary"
+            android:visibility="gone" />
 
         <EditText
             android:id="@+id/userEmailInput"
@@ -62,7 +103,9 @@
             android:layout_marginBottom="8dp"
             android:background="?attr/colorSurface"
             android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary" />
+            android:textColorHint="?android:attr/textColorSecondary"
+            android:enabled="false"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/mobileNumberLabel"
@@ -71,7 +114,8 @@
             android:text="Company number (from your account)"
             android:textSize="12sp"
             android:layout_marginBottom="4dp"
-            android:textColor="?android:attr/textColorSecondary" />
+            android:textColor="?android:attr/textColorSecondary"
+            android:visibility="gone" />
 
         <EditText
             android:id="@+id/mobileNumberInput"
@@ -79,16 +123,30 @@
             android:layout_height="wrap_content"
             android:hint="Loading…"
             android:padding="12dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="12dp"
             android:background="?attr/colorSurface"
             android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary" />
+            android:textColorHint="?android:attr/textColorSecondary"
+            android:enabled="false"
+            android:visibility="gone" />
+
+        <!-- Quotation line items (existing breakdown, kept intact) -->
+        <TextView
+            android:id="@+id/quotationItemsHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Quotation Line Items"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:visibility="gone" />
 
         <EditText
             android:id="@+id/itemDescriptionInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Item Description"
+            android:hint="Short quote description (for the priced line)"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
             android:background="?attr/colorSurface"
@@ -99,7 +157,7 @@
             android:id="@+id/itemPriceInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Item Price (€)"
+            android:hint="Full price excluding VAT"
             android:inputType="numberDecimal"
             android:padding="12dp"
             android:layout_marginBottom="12dp"
@@ -107,12 +165,57 @@
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
-        <!-- Options -->
+        <!-- VAT and deposit options -->
+        <TextView
+            android:id="@+id/vatLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="VAT rate"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <LinearLayout
+            android:id="@+id/vatOptionsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <RadioGroup
+                android:id="@+id/vatRadioGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/vat13Radio"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="13.5%"
+                    android:checked="true" />
+
+                <RadioButton
+                    android:id="@+id/vat23Radio"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="23%" />
+            </RadioGroup>
+        </LinearLayout>
+
         <CheckBox
             android:id="@+id/check30PercentDeposit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="30% deposit due before job (uncheck for total payment only)"
+            android:text="30% Deposit Required"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="4dp" />
+
+        <CheckBox
+            android:id="@+id/check50PercentDeposit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="50% Deposit Required"
             android:textColor="?android:attr/textColorPrimary"
             android:layout_marginBottom="8dp" />
 
@@ -127,19 +230,29 @@
             android:layout_marginBottom="12dp" />
 
         <Button
+            android:id="@+id/selectImageButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Attach Images (optional)"
+            android:backgroundTint="?attr/colorSecondary"
+            android:textColor="?attr/colorOnSecondary"
+            android:layout_marginBottom="8dp" />
+
+        <Button
             android:id="@+id/addItemButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Add Line Item"
             android:backgroundTint="?attr/colorSecondary"
             android:textColor="?attr/colorOnSecondary"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/generatePdfButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Generate Bird Quotation PDF"
+            android:text="Generate Bird Quotation PDFs"
             android:background="@drawable/button_background"
             android:textColor="?attr/colorOnPrimary" />
 

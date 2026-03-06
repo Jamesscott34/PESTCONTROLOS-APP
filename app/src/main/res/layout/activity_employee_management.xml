@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/screen_padding"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/welcome_margin_top">
+
+        <TextView
+            android:id="@+id/employeeManagementTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Employee Management"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="@dimen/button_spacing" />
+
+        <!-- Create Employee block -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:id="@+id/createEmployeeLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CREATE EMPLOYEE"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/editEmployeeName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Name" />
+
+            <EditText
+                android:id="@+id/editEmployeeNumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Mobile number"
+                android:inputType="phone" />
+
+            <EditText
+                android:id="@+id/editEmployeeEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Email"
+                android:inputType="textEmailAddress" />
+
+            <EditText
+                android:id="@+id/editEmployeePassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Password"
+                android:inputType="textPassword" />
+
+            <Spinner
+                android:id="@+id/spinnerEmployeeRole"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" />
+
+            <EditText
+                android:id="@+id/editEmployeeStaffId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Staff ID (e.g. 001)" />
+
+            <EditText
+                android:id="@+id/editEmployeeContractKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Contract key (lowercase)"
+                android:inputType="textNoSuggestions" />
+
+            <EditText
+                android:id="@+id/editEmployeeTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Title (optional)" />
+
+            <Button
+                android:id="@+id/buttonCreateEmployee"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Create Employee"
+                android:layout_marginTop="@dimen/button_spacing" />
+        </LinearLayout>
+
+        <!-- Initialize Profile block -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:id="@+id/initializeProfileLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="INITIALIZE PROFILE"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/editExistingUidOrEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Existing UID or email" />
+
+            <Button
+                android:id="@+id/buttonInitializeProfile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Initialize Profile"
+                android:layout_marginTop="@dimen/button_spacing" />
+        </LinearLayout>
+
+        <!-- Employee list block -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:id="@+id/employeeListLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="EMPLOYEES"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <ListView
+                android:id="@+id/employeeListView"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:divider="@android:color/transparent"
+                android:dividerHeight="0dp"
+                android:scrollbars="vertical" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
+

@@ -1,0 +1,258 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------------------------------------------------
+    // Helper functions
+    // --------------------------------------------------------------------------
+
+    // Return the user's role (normalized to lowercase). Defaults to empty string.
+    function userRole() {
+      let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return role != null ? role.lower() : '';
+    }
+
+    // Return the user's contractKey (normalized to lowercase). Defaults to empty string.
+    function userContractKey() {
+      let key = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.contractKey;
+      return key != null ? key.lower() : '';
+    }
+
+    // Return the user's staffId (normalized to lowercase). Defaults to empty string.
+    function userStaffId() {
+      let staff = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.staffId;
+      return staff != null ? staff.toLowerCase() : '';
+    }
+
+    // Role helpers
+    function isAdmin() {
+      return request.auth != null &&
+             userRole() in ['admin','super_admin','kristine'];
+    }
+
+    function isSuperAdmin() {
+      return request.auth != null && userRole() == 'super_admin';
+    }
+
+    function isTech() {
+      return request.auth != null && userRole() == 'tech';
+    }
+
+    // --------------------------------------------------------------------------
+    // Collection rules
+    // --------------------------------------------------------------------------
+
+    // Staff collection
+    match /staff/{staffId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null &&
+        (request.auth.uid == userId || userId.matches('^\\d{3}$') || isAdmin());
+      allow write: if request.auth != null &&
+        (request.auth.uid == userId || isAdmin());
+    }
+
+    // Customers collection: admin only
+    match /customers/{customerId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Generic contracts collection: admin only
+    match /contracts/{contractId} {
+      allow read, write: if isAdmin();
+    }
+
+    /*
+      Technician-specific contract collections.
+      Convert the collection name to lowercase and compare it with the user’s contract key.
+      Admins can access all; techs can access only their own collection.
+    */
+    match /{contractCollection}/{contractId} {
+      allow read, write: if request.auth != null &&
+        contractCollection.lower() in [
+          'james contracts','ian contracts','dean contracts'
+        ] &&
+        (
+          isAdmin() ||
+          (contractCollection.lower() == 'james contracts' && userContractKey() == 'james') ||
+          (contractCollection.lower() == 'ian contracts'   && userContractKey() == 'ian')   ||
+          (contractCollection.lower() == 'dean contracts'  && userContractKey() == 'dean')
+        );
+    }
+
+    /*
+      JobWork: admin full; techs can read/write when AssignedTechKey or legacy AssignedTech
+      matches their contractKey, case-insensitively.
+    */
+    match /JobWork/{jobId} {
+      // Full access for admins
+      allow read, write: if isAdmin();
+
+      // Tech read access if assigned
+      allow read: if isTech() &&
+        (
+          resource.data.get('AssignedTechKey','').lower() == userContractKey() ||
+          (
+            resource.data.get('AssignedTechKey','') == '' &&
+            resource.data.get('AssignedTech','').lower() == userContractKey()
+          )
+        );
+
+      // Tech create only if assigning to self
+      allow create: if isTech() &&
+        request.resource.data.get('AssignedTechKey','').lower() == userContractKey();
+
+      // Tech update only if assigned to self and assignment doesn't change
+      allow update: if isTech() &&
+        request.resource.data.get('AssignedTechKey','').lower() == userContractKey() &&
+        (
+          resource.data.get('AssignedTechKey','') == '' ||
+          resource.data.get('AssignedTechKey','').lower() ==
+            request.resource.data.get('AssignedTechKey','').lower()
+        );
+
+      // Deletion restricted to admins (already covered by admin rule)
+      allow delete: if isAdmin();
+    }
+
+    /*
+      ManagementJobs: admin full; techs can read/update/create when AssignedTo or AssignedTech
+      matches their contractKey, case-insensitively.
+    */
+    match /ManagmentJobs/{jobId} {
+      // Admins read/write all
+      allow read, write: if isAdmin();
+
+      // Tech read/update if assigned
+      allow read, update: if isTech() &&
+        (
+          resource.data.get('AssignedTo','').lower() == userContractKey() ||
+          resource.data.get('AssignedTech','').lower() == userContractKey()
+        );
+
+      // Tech create if assigning to self
+      allow create: if isTech() &&
+        (
+          request.resource.data.get('AssignedTo','').lower() == userContractKey() ||
+          request.resource.data.get('AssignedTech','').lower() == userContractKey()
+        );
+
+      // Delete restricted to admins
+      allow delete: if isAdmin();
+    }
+
+    /*
+      Leads: admin full; techs can read if they created the lead or are assigned to it.
+      Case-insensitive comparisons on 'Added By' and 'Assigned Tech'.
+    */
+    match /Leads/{leadId} {
+      allow read: if isAdmin() ||
+        (
+          isTech() &&
+          (
+            resource.data.get('Added By','').lower() == userContractKey() ||
+            resource.data.get('Assigned Tech','').lower() == userContractKey()
+          )
+        );
+      allow create: if request.auth != null;
+      allow update: if isAdmin() || (isTech() && request.auth != null);
+      allow delete: if isAdmin();
+    }
+
+    // WorkView calendars: one collection per technician
+    match /james_workview/{eventId} {
+      allow read, write: if isAdmin();
+      allow read, write: if isTech() && userContractKey() == 'james';
+    }
+    match /ian_workview/{eventId} {
+      allow read, write: if isAdmin();
+      allow read, write: if isTech() && userContractKey() == 'ian';
+    }
+    match /dean_workview/{eventId} {
+      allow read, write: if isAdmin();
+      allow read, write: if isTech() && userContractKey() == 'dean';
+    }
+
+    // sharedAccounts: super-admin only
+    match /sharedAccounts/{accountId} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // emailHistory: written by Cloud Functions; only admins read
+    match /emailHistory/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // rateLimits: no client access
+    match /rateLimits/{docId} {
+      allow read, write: if false;
+    }
+
+    // storage_metadata: any authenticated read; admin write
+    match /storage_metadata/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // reports: admin only
+    match /reports/{reportId} {
+      allow read, write: if isAdmin();
+    }
+
+    // jobs: admin full; techs read/update jobs assigned to them
+    match /jobs/{jobId} {
+      allow read, write: if isAdmin();
+      allow read, update: if isTech() &&
+        resource.data.assignedToUserId == request.auth.uid;
+    }
+
+    // quotes: any authenticated read; admin write
+    match /quotes/{quoteId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // requests: public create; admin read/write
+    match /requests/{requestId} {
+      allow read, write: if isAdmin();
+      allow create: if true;
+    }
+
+    // --------------------------------------------------------------------------
+    // Notifications
+    // --------------------------------------------------------------------------
+
+    match /notifications/{recipientKey}/items/{notifId} {
+      // Admins can read and write all notifications
+      allow read, write: if isAdmin();
+
+      // The recipient can read their own notifications
+      allow read: if request.auth != null &&
+        (
+          recipientKey.toLowerCase() == userStaffId() ||
+          recipientKey.toLowerCase() == userContractKey()
+        );
+
+      // Optionally allow the recipient (or your app) to write if not using Cloud Functions
+      allow write: if request.auth != null &&
+        (
+          recipientKey.toLowerCase() == userStaffId() ||
+          recipientKey.toLowerCase() == userContractKey()
+        );
+    }
+
+    // --------------------------------------------------------------------------
+    // Catch-all: deny everything else
+    // --------------------------------------------------------------------------
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

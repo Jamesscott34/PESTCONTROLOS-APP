@@ -205,7 +205,7 @@ public class ViewJobActivity extends AppCompatActivity {
     }
 
     private void loadAllJobs() {
-        com.google.firebase.firestore.Query baseQuery = db.collection("JobWork");
+        com.google.firebase.firestore.Query baseQuery = db.collection(FirestorePaths.JOBWORK);
         // RBAC: admins (or flag) see all jobs; tech see only assigned jobs
         SessionManager.ensureLoaded(this, null);
         if (!SessionManager.seesAllJobs(this)) {
@@ -463,7 +463,7 @@ public class ViewJobActivity extends AppCompatActivity {
 
 
     private void showAcceptOrDeleteDialog(String documentId) {
-        db.collection("JobWork").document(documentId).get().addOnSuccessListener(documentSnapshot -> {
+        db.collection(FirestorePaths.JOBWORK).document(documentId).get().addOnSuccessListener(documentSnapshot -> {
             if (documentSnapshot.exists() && Boolean.TRUE.equals(documentSnapshot.getBoolean("Accepted"))) {
                 showMapAndReportOptions(documentId); // Switch to Maps & Report after acceptance
                 return;
@@ -496,7 +496,7 @@ public class ViewJobActivity extends AppCompatActivity {
                 .setPositiveButton("Save", (dialog, which) -> {
                     String address = addressInput.getText().toString().trim();
                     if (!address.isEmpty()) {
-                        db.collection("JobWork").document(documentId)
+                        db.collection(FirestorePaths.JOBWORK).document(documentId)
                                 .update("Address", address, "Status", "Completed", "Accepted", true)
                                 .addOnSuccessListener(aVoid -> {
                                     Toast.makeText(this, "Job Accepted & Marked as Completed", Toast.LENGTH_SHORT).show();
@@ -526,7 +526,7 @@ public class ViewJobActivity extends AppCompatActivity {
     }
 
     private void openMaps(String documentId) {
-        db.collection("JobWork").document(documentId).get().addOnSuccessListener(document -> {
+        db.collection(FirestorePaths.JOBWORK).document(documentId).get().addOnSuccessListener(document -> {
             if (document.exists() && document.contains("Address")) {
                 String address = document.getString("Address");
                 if (address != null && !address.isEmpty()) {
@@ -558,7 +558,7 @@ public class ViewJobActivity extends AppCompatActivity {
     private void createReport(String documentId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        db.collection("JobWork").document(documentId).get().addOnSuccessListener(document -> {
+        db.collection(FirestorePaths.JOBWORK).document(documentId).get().addOnSuccessListener(document -> {
             if (document.exists()) {
                 // Retrieve Customer Name and Address from Firestore
                 String customerName = document.getString("CustomerName"); // Use CustomerName as CompanyName
@@ -585,7 +585,7 @@ public class ViewJobActivity extends AppCompatActivity {
 
 
     private void showJobOptions(String documentId) {
-        db.collection("JobWork").document(documentId).get().addOnSuccessListener(documentSnapshot -> {
+        db.collection(FirestorePaths.JOBWORK).document(documentId).get().addOnSuccessListener(documentSnapshot -> {
             boolean initialSetupDone = documentSnapshot.contains("SetupDate");
             boolean paymentDone = documentSnapshot.contains("PaymentAmount") && documentSnapshot.getDouble("PaymentAmount") != null;
 
@@ -721,7 +721,7 @@ public class ViewJobActivity extends AppCompatActivity {
 
 
     private void saveFollowUpDate(String documentId, String dateTime) {
-        db.collection("JobWork").document(documentId)
+        db.collection(FirestorePaths.JOBWORK).document(documentId)
                 .update("FollowUpDate", dateTime)
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Follow-up saved", Toast.LENGTH_SHORT).show();
@@ -760,7 +760,7 @@ public class ViewJobActivity extends AppCompatActivity {
                     String priceGiven = priceInput.getText().toString().trim();
 
                     if (!newTech.isEmpty()) {
-                        db.collection("JobWork").document(documentId)
+                        db.collection(FirestorePaths.JOBWORK).document(documentId)
                                 .update("AssignedTech", newTech, "TechnicianMobile", newMobile)
                                 .addOnSuccessListener(aVoid -> {
                                     Toast.makeText(this, "Technician Updated", Toast.LENGTH_SHORT).show();
@@ -790,7 +790,7 @@ public class ViewJobActivity extends AppCompatActivity {
      * Opens WhatsApp with a pre-filled job message.
      */
     private void sendWhatsAppMessage(String mobile, String newTech, String price, String documentId) {
-        db.collection("JobWork").document(documentId).get().addOnSuccessListener(document -> {
+        db.collection(FirestorePaths.JOBWORK).document(documentId).get().addOnSuccessListener(document -> {
             if (document.exists()) {
                 String customerName = document.getString("CustomerName");
                 String customerContact = document.getString("CustomerContact");
@@ -816,7 +816,7 @@ public class ViewJobActivity extends AppCompatActivity {
 
 
     private void showAddEmailDialog(String documentId) {
-        db.collection("JobWork").document(documentId).get().addOnSuccessListener(documentSnapshot -> {
+        db.collection(FirestorePaths.JOBWORK).document(documentId).get().addOnSuccessListener(documentSnapshot -> {
             String currentEmail = documentSnapshot.contains("CustomerEmail") ? documentSnapshot.getString("CustomerEmail") : "";
 
             EditText emailInput = new EditText(this);
@@ -829,7 +829,7 @@ public class ViewJobActivity extends AppCompatActivity {
                     .setPositiveButton("Save", (dialog, which) -> {
                         String email = emailInput.getText().toString().trim();
                         if (!email.isEmpty()) {
-                            db.collection("JobWork").document(documentId)
+                            db.collection(FirestorePaths.JOBWORK).document(documentId)
                                     .update("CustomerEmail", email)
                                     .addOnSuccessListener(aVoid -> Toast.makeText(this, "Email Updated Successfully", Toast.LENGTH_SHORT).show())
                                     .addOnFailureListener(e -> Toast.makeText(this, "Failed to Update Email", Toast.LENGTH_SHORT).show());
@@ -852,7 +852,7 @@ public class ViewJobActivity extends AppCompatActivity {
                 .setPositiveButton("Save", (dialog, which) -> {
                     String userInput = input.getText().toString().trim();
                     if (isValidDateFormat(userInput)) {
-                        db.collection("JobWork").document(documentId)
+                        db.collection(FirestorePaths.JOBWORK).document(documentId)
                                 .update("SetupDate", userInput)
                                 .addOnSuccessListener(aVoid -> {
                                     Toast.makeText(this, "Setup date saved", Toast.LENGTH_SHORT).show();
@@ -948,7 +948,7 @@ public class ViewJobActivity extends AppCompatActivity {
 
 
     private void savePaymentToDatabase(double price, String method, String documentId) {
-        db.collection("JobWork").document(documentId)
+        db.collection(FirestorePaths.JOBWORK).document(documentId)
                 .update("PaymentAmount", price, "PaymentMethod", method)
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Payment Saved", Toast.LENGTH_SHORT).show();
@@ -967,7 +967,7 @@ public class ViewJobActivity extends AppCompatActivity {
                     .show();
             return;
         }
-        db.collection("JobWork").document(documentId).delete();
+        db.collection(FirestorePaths.JOBWORK).document(documentId).delete();
         loadAllJobs();
     }
 

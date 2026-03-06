@@ -191,7 +191,7 @@ public class CallOutActivity extends AppCompatActivity {
      */
     private void setTechnicianDetails() {
         String userId = StaffDirectory.getUserId(userName);
-        techName = StaffDirectory.getReportDisplayName(userId);
+        techName = StaffDirectory.getTechnicianDisplayLabel(userId);
         if (techName == null || techName.isEmpty()) techName = "Unknown Technician";
         String mobile = StaffDirectory.getMobileForUserId(userId);
         techContact = mobile != null && !mobile.isEmpty() ? mobile : "N/A";

@@ -123,6 +123,8 @@ public class StaffDirectory {
     private static final Map<String, String> ID_TO_MOBILE = new ConcurrentHashMap<>();
     /** Full name for report footer. Filled only from Firestore (users.Name) via refreshFromFirestore(). */
     private static final Map<String, String> ID_TO_REPORT_NAME = new ConcurrentHashMap<>();
+    /** Job title for technician (users.Title) via refreshFromFirestore(). */
+    private static final Map<String, String> ID_TO_TITLE = new ConcurrentHashMap<>();
     /** Contract collection key for this user (users.ContractKey) via refreshFromFirestore(). */
     private static final Map<String, String> ID_TO_CONTRACT_KEY = new ConcurrentHashMap<>();
 
@@ -181,6 +183,7 @@ public class StaffDirectory {
                         CONTRACTKEY_TO_ID.clear();
                         ID_TO_MOBILE.clear();
                         ID_TO_REPORT_NAME.clear();
+                        ID_TO_TITLE.clear();
                         ID_TO_CONTRACT_KEY.clear();
                         CACHED_ADMIN_STAFF_IDS.clear();
                     } catch (Exception ignored) {}
@@ -206,6 +209,9 @@ public class StaffDirectory {
                             }
                             if (profile.mobile != null && !profile.mobile.trim().isEmpty()) {
                                 ID_TO_MOBILE.put(profile.id, normalizeMobile(profile.mobile.trim()));
+                            }
+                            if (profile.title != null && !profile.title.trim().isEmpty()) {
+                                ID_TO_TITLE.put(profile.id, profile.title.trim());
                             }
                             if (profile.contractKey != null && !profile.contractKey.trim().isEmpty()) {
                                 ID_TO_CONTRACT_KEY.put(profile.id, profile.contractKey.trim());
@@ -277,6 +283,7 @@ public class StaffDirectory {
             CONTRACTKEY_TO_ID.clear();
             ID_TO_MOBILE.clear();
             ID_TO_REPORT_NAME.clear();
+            ID_TO_TITLE.clear();
             ID_TO_CONTRACT_KEY.clear();
             CACHED_ADMIN_STAFF_IDS.clear();
             CACHED_STAFF_PROFILES = null;
@@ -350,6 +357,36 @@ public class StaffDirectory {
         if (id == null) return "";
         String name = ID_TO_REPORT_NAME.get(id);
         return name != null ? name : getFallbackDisplayName(id);
+    }
+
+    /** Returns title for user (from Firestore cache when available). */
+    public static String getTitleForUserId(String id) {
+        if (id == null) return "";
+        String title = ID_TO_TITLE.get(id);
+        return title != null ? title : "";
+    }
+
+    /**
+     * Returns composite technician label: "Name -- Number -- Title" (skips empty segments).
+     */
+    public static String getTechnicianDisplayLabel(String id) {
+        if (id == null) return "";
+        String name = getReportDisplayName(id);
+        String mobile = getMobileForUserId(id);
+        String title = getTitleForUserId(id);
+
+        java.util.List<String> parts = new java.util.ArrayList<>();
+        if (name != null && !name.trim().isEmpty()) parts.add(name.trim());
+        if (mobile != null && !mobile.trim().isEmpty()) parts.add(mobile.trim());
+        if (title != null && !title.trim().isEmpty()) parts.add(title.trim());
+
+        if (parts.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.size(); i++) {
+            if (i > 0) sb.append(" -- ");
+            sb.append(parts.get(i));
+        }
+        return sb.toString();
     }
 
     public interface Callback {

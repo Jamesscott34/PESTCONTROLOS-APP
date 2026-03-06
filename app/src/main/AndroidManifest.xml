@@ -100,6 +100,18 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Admin dashboard: contracts/users summaries (admin + super_admin) -->
+        <activity
+            android:name=".AdminDashboardActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <!-- Super admin only: employee creation and profile initialization -->
+        <activity
+            android:name=".EmployeeManagementActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
         <!-- Admin-only (for now): Global search entry point -->
         <activity
             android:name=".SearchActivity"

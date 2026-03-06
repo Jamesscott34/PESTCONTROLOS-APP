@@ -83,7 +83,7 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
     }
 
     /**
-     * Save job to JobWork collection (same format as AddJobsActivity) and create work event.
+     * Save job to shared \"jobwork\" collection (same format as AddJobsActivity) and create work event.
      * Jobs appear in View Jobs section for the assigned technician.
      */
     private void saveJob() {
@@ -120,7 +120,7 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
         job.put("CreatedAt", new Date());
         job.put("JobType", "Service");
 
-        db.collection("JobWork")
+        db.collection(FirestorePaths.JOBWORK)
           .add(job)
           .addOnSuccessListener(documentReference -> {
               String jobId = documentReference.getId();

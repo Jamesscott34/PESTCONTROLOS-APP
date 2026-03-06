@@ -614,3 +614,235 @@ exports.updateGrokKey = functions.https.onCall(async (data, context) => {
   return { success: true };
 });
 
+// ---------------------------------------------------------------------------
+// 9. EMPLOYEE MANAGEMENT (super_admin only, callable from Android client)
+// ---------------------------------------------------------------------------
+
+function normalizeRole(raw) {
+  if (!raw) return 'unknown';
+  const s = String(raw).trim().toLowerCase();
+  if (s === 'super_admin' || s === 'super admin' || s === 'owner') return 'super_admin';
+  if (s === 'admin' || s === 'administrator') return 'admin';
+  if (s === 'tech' || s === 'technician') return 'tech';
+  return 'unknown';
+}
+
+async function requireSuperAdmin(context) {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Login required.');
+  }
+  const uid = context.auth.uid;
+  const snap = await admin.firestore().collection('users').doc(uid).get();
+  const data = snap && snap.exists ? snap.data() : null;
+  const roleRaw = data && (data.role || data.Role);
+  const roleNorm = normalizeRole(roleRaw);
+  if (roleNorm !== 'super_admin') {
+    throw new functions.https.HttpsError('permission-denied', 'Super admin only.');
+  }
+  return { uid, roleNorm, profile: data || {} };
+}
+
+// Creates a new Firebase Auth user and users/{uid} profile with role/flags.
+exports.createEmployee = functions.https.onCall(async (data, context) => {
+  await requireSuperAdmin(context);
+
+  data = data || {};
+
+  const name = (data.name || '').toString().trim();
+  const number = (data.number || '').toString().trim();
+  const email = (data.email || '').toString().trim().toLowerCase();
+  const password = (data.password || '').toString();
+  const staffId = (data.staffId || '').toString().trim();
+  const contractKeyRaw = (data.contractKey || '').toString().trim();
+  const title = (data.title || '').toString().trim();
+  const roleNorm = normalizeRole(data.role);
+
+  if (!name || !email || !password || !staffId || !contractKeyRaw) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'name, email, password, staffId and contractKey are required.'
+    );
+  }
+  if (!['admin', 'tech', 'super_admin'].includes(roleNorm)) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'role must be one of admin, tech, super_admin.'
+    );
+  }
+
+  // Contract key is stored normalized to lowercase for use in contracts.assignedTech.
+  const contractKey = contractKeyRaw.toLowerCase();
+
+  let userRecord;
+  try {
+    userRecord = await admin.auth().createUser({
+      email,
+      password,
+      displayName: name,
+    });
+  } catch (e) {
+    if (e && e.code === 'auth/email-already-exists') {
+      throw new functions.https.HttpsError('already-exists', 'A user with this email already exists.');
+    }
+    throw new functions.https.HttpsError(
+      'internal',
+      'Failed to create auth user: ' + (e && e.message ? e.message : String(e))
+    );
+  }
+
+  const uid = userRecord.uid;
+  const isSuperAdmin = roleNorm === 'super_admin';
+  const isAdmin = isSuperAdmin || roleNorm === 'admin';
+
+  // Role-based defaults, aligned with SessionManager.
+  const canSearch = isSuperAdmin;
+  const canUseLocationFinder = isSuperAdmin;
+  const canHardPressContracts = isAdmin;
+  const canMarkPaidLeads = isSuperAdmin;
+  const canAccessCommission = true;
+  const seesAllJobs = isAdmin;
+  const canSeeContracts = ['tech', 'admin', 'super_admin'].includes(roleNorm);
+  const canViewAllContracts = isAdmin;
+
+  const profile = {
+    uid,
+    name,
+    email,
+    number,
+    title,
+    staffId,
+    contractKey,
+    role: roleNorm,
+    canSearch,
+    canAccessCommission,
+    canHardPressContracts,
+    canMarkPaidLeads,
+    canUseLocationFinder,
+    seesAllJobs,
+    canSeeContracts,
+    canViewAllContracts,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    active: true,
+  };
+
+  await admin.firestore().collection('users').doc(uid).set(profile, { merge: true });
+  return { uid };
+});
+
+// Initialize or backfill a users/{uid} profile without overwriting existing values.
+exports.initializeEmployeeProfile = functions.https.onCall(async (data, context) => {
+  await requireSuperAdmin(context);
+
+  data = data || {};
+
+  let targetUid = (data.uid || '').toString().trim();
+  const email = (data.email || '').toString().trim().toLowerCase();
+
+  if (!targetUid && !email) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Either uid or email must be provided.'
+    );
+  }
+
+  if (!targetUid && email) {
+    try {
+      const userRecord = await admin.auth().getUserByEmail(email);
+      targetUid = userRecord.uid;
+    } catch (e) {
+      throw new functions.https.HttpsError(
+        'not-found',
+        'No auth user found for the given email.'
+      );
+    }
+  }
+
+  const docRef = admin.firestore().collection('users').doc(targetUid);
+  const snap = await docRef.get();
+  const existing = snap.exists ? (snap.data() || {}) : {};
+
+  const updates = {};
+
+  // Preserve existing values; only fill in when missing.
+  const incomingRoleNorm = normalizeRole(data.role);
+  const existingRoleRaw = existing.role || existing.Role;
+  const roleNorm = normalizeRole(existingRoleRaw || incomingRoleNorm);
+
+  function hasValue(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key) && obj[key] !== undefined && obj[key] !== null;
+  }
+
+  function valueOrEmpty(obj, key) {
+    const v = hasValue(obj, key) ? obj[key] : '';
+    return (v === undefined || v === null) ? '' : String(v).trim();
+  }
+
+  const incoming = {
+    name: (data.name || '').toString().trim(),
+    email: email || (data.email || '').toString().trim(),
+    number: (data.number || '').toString().trim(),
+    title: (data.title || '').toString().trim(),
+    staffId: (data.staffId || '').toString().trim(),
+    contractKey: (data.contractKey || '').toString().trim(),
+  };
+
+  // Simple string fields.
+  ['name', 'email', 'number', 'title', 'staffId'].forEach(key => {
+    const current = valueOrEmpty(existing, key);
+    const incomingVal = incoming[key];
+    if (!current && incomingVal) {
+      updates[key] = incomingVal;
+    }
+  });
+
+  // Contract key: ensure lowercase when we do populate it.
+  const existingCk = valueOrEmpty(existing, 'contractKey');
+  if (!existingCk && incoming.contractKey) {
+    updates.contractKey = incoming.contractKey.toLowerCase();
+  }
+
+  // Role: set only if missing and we have a sensible default.
+  const existingRole = valueOrEmpty(existing, 'role') || valueOrEmpty(existing, 'Role');
+  if (!existingRole && roleNorm !== 'unknown') {
+    updates.role = roleNorm;
+  }
+
+  const effRole = existingRole ? normalizeRole(existingRole) : roleNorm;
+
+  const isSuperAdmin = effRole === 'super_admin';
+  const isAdmin = isSuperAdmin || effRole === 'admin';
+
+  // Role-based defaults for flags; only add when the field is absent.
+  const defaults = {
+    canSearch: isSuperAdmin,
+    canUseLocationFinder: isSuperAdmin,
+    canHardPressContracts: isAdmin,
+    canMarkPaidLeads: isSuperAdmin,
+    canAccessCommission: true,
+    seesAllJobs: isAdmin,
+    canSeeContracts: ['tech', 'admin', 'super_admin'].includes(effRole),
+    canViewAllContracts: isAdmin,
+  };
+
+  Object.keys(defaults).forEach(key => {
+    if (!hasValue(existing, key)) {
+      updates[key] = defaults[key];
+    }
+  });
+
+  if (!hasValue(existing, 'createdAt')) {
+    updates.createdAt = admin.firestore.FieldValue.serverTimestamp();
+  }
+  if (!hasValue(existing, 'active')) {
+    updates.active = true;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    // Nothing to change; return success without write.
+    return { uid: targetUid, updated: false };
+  }
+
+  await docRef.set(updates, { merge: true });
+  return { uid: targetUid, updated: true };
+});
+

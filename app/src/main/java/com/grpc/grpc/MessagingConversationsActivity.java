@@ -102,6 +102,12 @@ public class MessagingConversationsActivity extends AppCompatActivity {
 
     private void loadUsersAndRefreshList() {
         // Messages: include all users; use Name when no ContractKey (fetchOwnerOptionsForMessaging).
+        // RBAC: hide messaging completely for non-super_admin (Activity is still reachable only if caller bypassed UI).
+        if (!SessionManager.isSuperAdmin(this)) {
+            Toast.makeText(this, "Messaging is currently available only to super admin.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         StaffDirectory.fetchOwnerOptionsForMessaging(this, options -> runOnUiThread(() -> {
             allUserOptions.clear();
             if (options != null) {

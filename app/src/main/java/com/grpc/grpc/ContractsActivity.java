@@ -109,6 +109,9 @@ public class ContractsActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
     private GestureDetectorCompat gestureDetector;
+
+    /** Debounce flag to avoid double-opening ViewContractActivity on fast taps. */
+    private boolean viewContractClickInProgress = false;
     private static final int SWIPE_THRESHOLD = 100;
     private static final int SWIPE_VELOCITY_THRESHOLD = 100;
 
@@ -242,8 +245,14 @@ public class ContractsActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // View Contract Button - Navigate to contract management
+        // View Contract Button - Navigate to contract management (debounced)
         viewContractButton.setOnClickListener(v -> {
+            if (viewContractClickInProgress) {
+                return;
+            }
+            viewContractClickInProgress = true;
+            v.postDelayed(() -> viewContractClickInProgress = false, 600);
+
             Intent intent = new Intent(ContractsActivity.this, ViewContractActivity.class);
             intent.putExtra("USER_NAME", userName);
             startActivity(intent);
@@ -277,28 +286,41 @@ public class ContractsActivity extends AppCompatActivity {
 
         SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
             if (SessionManager.seesAllJobs(this)) {
+                // Admin/oversight: use shared scalable contracts collection grouped by assignedTech.
                 generateBehindsListForAdmin();
             } else {
-                // Use ContractKey from users/{StaffID} when available (via StaffDirectory cache).
-                String ownerId = StaffDirectory.getUserId(userName);
-                String tableName = ownerId != null ? StaffDirectory.getContractsCollectionName(ownerId) : (userName + " Contracts");
-                final String ownerLabel = ownerId != null ? StaffDirectory.getContractsCollectionName(ownerId).replace(" Contracts", "") : userName;
+                // Technician: load from shared contracts collection by assignedTech (contractKey, normalized to lowercase).
+                String contractKey = SessionManager.getContractKey(this);
+                if (contractKey == null || contractKey.trim().isEmpty()) {
+                    String sid = SessionManager.getStaffId(this);
+                    contractKey = sid != null ? sid.trim() : "";
+                }
+                if (contractKey == null || contractKey.trim().isEmpty()) {
+                    Toast.makeText(this, "Could not resolve technician key for behinds list.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                final String ownerLabel = contractKey.trim();
+                final String keyFilter = ownerLabel.toLowerCase(Locale.getDefault());
 
-                db.collection(tableName).get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        List<Map<String, Object>> contractsList = new ArrayList<>();
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            Map<String, Object> contract = document.getData();
-                            contract.put("documentId", document.getId());
-                            contract.put("owner", ownerLabel);
-                            contractsList.add(contract);
-                        }
-                        // Move heavy processing to background thread
-                        new ProcessContractsAsyncTask().execute(contractsList, ownerLabel);
-                    } else {
-                        Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
+                db.collection(FirestorePaths.CONTRACTS)
+                        .whereEqualTo("assignedTech", keyFilter)
+                        .get()
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful() && task.getResult() != null) {
+                                List<Map<String, Object>> contractsList = new ArrayList<>();
+                                for (QueryDocumentSnapshot document : task.getResult()) {
+                                    Map<String, Object> contract = document.getData();
+                                    contract.put("documentId", document.getId());
+                                    contract.put("owner", ownerLabel);
+                                    contractsList.add(contract);
+                                }
+                                // Move heavy processing to background thread
+                                new ProcessContractsAsyncTask().execute(contractsList, ownerLabel);
+                            } else {
+                                String msg = task.getException() != null ? task.getException().getMessage() : "unknown error";
+                                Toast.makeText(this, "Failed to load contracts: " + msg, Toast.LENGTH_SHORT).show();
+                            }
+                        });
             }
         }));
     }
@@ -307,48 +329,46 @@ public class ContractsActivity extends AppCompatActivity {
      * Generates separate behinds list PDFs per contract owner when user is admin/oversight.
      */
     private void generateBehindsListForAdmin() {
-        java.util.List<String> contractCollectionsList = new java.util.ArrayList<>();
-        try {
-            for (StaffDirectory.StaffProfile p : StaffDirectory.getCachedStaffProfiles()) {
-                if (p == null) continue;
-                String ck = p.contractKey != null ? p.contractKey.trim() : "";
-                if (!ck.isEmpty()) contractCollectionsList.add(ck + " Contracts");
+        db.collection(FirestorePaths.CONTRACTS).get().addOnCompleteListener(task -> {
+            if (!task.isSuccessful() || task.getResult() == null) {
+                String msg = task.getException() != null ? task.getException().getMessage() : "unknown error";
+                Toast.makeText(this, "Failed to load contracts: " + msg, Toast.LENGTH_SHORT).show();
+                return;
             }
-        } catch (Exception ignored) {}
-        if (contractCollectionsList.isEmpty() && userName != null && !userName.trim().isEmpty()) {
-            contractCollectionsList.add(userName.trim() + " Contracts");
-        }
-        String[] contractCollections = contractCollectionsList.toArray(new String[0]);
-        Map<String, List<Map<String, Object>>> technicianContracts = new HashMap<>();
-        int[] loadedCount = {0};
 
-        for (String collectionName : contractCollections) {
-            db.collection(collectionName).get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    List<Map<String, Object>> techContracts = new ArrayList<>();
-                    for (QueryDocumentSnapshot document : task.getResult()) {
-                        Map<String, Object> contract = document.getData();
-                        contract.put("documentId", document.getId());
-                        contract.put("owner", collectionName.replace(" Contracts", ""));
-                        techContracts.add(contract);
-                    }
+            Map<String, List<Map<String, Object>>> technicianContracts = new HashMap<>();
 
-                    String technician = collectionName.replace(" Contracts", "");
-                    technicianContracts.put(technician, techContracts);
-                } else {
-                    Toast.makeText(this, "Failed to load " + collectionName, Toast.LENGTH_SHORT).show();
+            for (QueryDocumentSnapshot document : task.getResult()) {
+                Map<String, Object> contract = document.getData();
+                contract.put("documentId", document.getId());
+
+                String assignedTech = contract.get("assignedTech") != null
+                        ? contract.get("assignedTech").toString().trim()
+                        : "";
+                if (assignedTech.isEmpty()) {
+                    continue;
                 }
+                String keyLower = assignedTech.toLowerCase(Locale.getDefault());
+                String displayLabel = StaffDirectory.capitalizeContractKey(assignedTech);
+                contract.put("owner", displayLabel);
 
-                loadedCount[0]++;
-                if (loadedCount[0] == contractCollections.length) {
-                    // Generate PDFs for each technician using AsyncTask
-                    for (String tech : technicianContracts.keySet()) {
-                        List<Map<String, Object>> contracts = technicianContracts.get(tech);
-                        new ProcessContractsAsyncTask().execute(contracts, tech);
-                    }
-                }
-            });
-        }
+                technicianContracts
+                        .computeIfAbsent(keyLower, k -> new ArrayList<>())
+                        .add(contract);
+            }
+
+            if (technicianContracts.isEmpty()) {
+                Toast.makeText(this, "No contracts found in shared collection.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            for (Map.Entry<String, List<Map<String, Object>>> entry : technicianContracts.entrySet()) {
+                String keyLower = entry.getKey();
+                List<Map<String, Object>> contracts = entry.getValue();
+                String techLabel = StaffDirectory.capitalizeContractKey(keyLower);
+                new ProcessContractsAsyncTask().execute(contracts, techLabel);
+            }
+        });
     }
 
     /**
@@ -361,27 +381,40 @@ public class ContractsActivity extends AppCompatActivity {
 
         SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
             if (SessionManager.seesAllJobs(this)) {
+                // Admin/oversight: use shared scalable contracts collection grouped by assignedTech.
                 generateDueListForAdmin();
             } else {
-                String ownerId = StaffDirectory.getUserId(userName);
-                String tableName = ownerId != null ? StaffDirectory.getContractsCollectionName(ownerId) : (userName + " Contracts");
-                final String ownerLabel = ownerId != null ? StaffDirectory.getContractsCollectionName(ownerId).replace(" Contracts", "") : userName;
+                String contractKey = SessionManager.getContractKey(this);
+                if (contractKey == null || contractKey.trim().isEmpty()) {
+                    String sid = SessionManager.getStaffId(this);
+                    contractKey = sid != null ? sid.trim() : "";
+                }
+                if (contractKey == null || contractKey.trim().isEmpty()) {
+                    Toast.makeText(this, "Could not resolve technician key for due list.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                final String ownerLabel = contractKey.trim();
+                final String keyFilter = ownerLabel.toLowerCase(Locale.getDefault());
 
-                db.collection(tableName).get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        List<Map<String, Object>> contractsList = new ArrayList<>();
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            Map<String, Object> contract = document.getData();
-                            contract.put("documentId", document.getId());
-                            contract.put("owner", ownerLabel);
-                            contractsList.add(contract);
-                        }
-                        // Move heavy processing to background thread
-                        new ProcessDueContractsAsyncTask().execute(contractsList, ownerLabel);
-                    } else {
-                        Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
+                db.collection(FirestorePaths.CONTRACTS)
+                        .whereEqualTo("assignedTech", keyFilter)
+                        .get()
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful() && task.getResult() != null) {
+                                List<Map<String, Object>> contractsList = new ArrayList<>();
+                                for (QueryDocumentSnapshot document : task.getResult()) {
+                                    Map<String, Object> contract = document.getData();
+                                    contract.put("documentId", document.getId());
+                                    contract.put("owner", ownerLabel);
+                                    contractsList.add(contract);
+                                }
+                                // Move heavy processing to background thread
+                                new ProcessDueContractsAsyncTask().execute(contractsList, ownerLabel);
+                            } else {
+                                String msg = task.getException() != null ? task.getException().getMessage() : "unknown error";
+                                Toast.makeText(this, "Failed to load contracts: " + msg, Toast.LENGTH_SHORT).show();
+                            }
+                        });
             }
         }));
     }
@@ -390,48 +423,46 @@ public class ContractsActivity extends AppCompatActivity {
      * Generates separate due list PDFs per contract owner when user is admin/oversight.
      */
     private void generateDueListForAdmin() {
-        java.util.List<String> contractCollectionsList = new java.util.ArrayList<>();
-        try {
-            for (StaffDirectory.StaffProfile p : StaffDirectory.getCachedStaffProfiles()) {
-                if (p == null) continue;
-                String ck = p.contractKey != null ? p.contractKey.trim() : "";
-                if (!ck.isEmpty()) contractCollectionsList.add(ck + " Contracts");
+        db.collection(FirestorePaths.CONTRACTS).get().addOnCompleteListener(task -> {
+            if (!task.isSuccessful() || task.getResult() == null) {
+                String msg = task.getException() != null ? task.getException().getMessage() : "unknown error";
+                Toast.makeText(this, "Failed to load contracts: " + msg, Toast.LENGTH_SHORT).show();
+                return;
             }
-        } catch (Exception ignored) {}
-        if (contractCollectionsList.isEmpty() && userName != null && !userName.trim().isEmpty()) {
-            contractCollectionsList.add(userName.trim() + " Contracts");
-        }
-        String[] contractCollections = contractCollectionsList.toArray(new String[0]);
-        Map<String, List<Map<String, Object>>> technicianContracts = new HashMap<>();
-        int[] loadedCount = {0};
 
-        for (String collectionName : contractCollections) {
-            db.collection(collectionName).get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    List<Map<String, Object>> techContracts = new ArrayList<>();
-                    for (QueryDocumentSnapshot document : task.getResult()) {
-                        Map<String, Object> contract = document.getData();
-                        contract.put("documentId", document.getId());
-                        contract.put("owner", collectionName.replace(" Contracts", ""));
-                        techContracts.add(contract);
-                    }
+            Map<String, List<Map<String, Object>>> technicianContracts = new HashMap<>();
 
-                    String technician = collectionName.replace(" Contracts", "");
-                    technicianContracts.put(technician, techContracts);
-                } else {
-                    Toast.makeText(this, "Failed to load " + collectionName, Toast.LENGTH_SHORT).show();
+            for (QueryDocumentSnapshot document : task.getResult()) {
+                Map<String, Object> contract = document.getData();
+                contract.put("documentId", document.getId());
+
+                String assignedTech = contract.get("assignedTech") != null
+                        ? contract.get("assignedTech").toString().trim()
+                        : "";
+                if (assignedTech.isEmpty()) {
+                    continue;
                 }
+                String keyLower = assignedTech.toLowerCase(Locale.getDefault());
+                String displayLabel = StaffDirectory.capitalizeContractKey(assignedTech);
+                contract.put("owner", displayLabel);
 
-                loadedCount[0]++;
-                if (loadedCount[0] == contractCollections.length) {
-                    // Generate PDFs for each technician using AsyncTask
-                    for (String tech : technicianContracts.keySet()) {
-                        List<Map<String, Object>> contracts = technicianContracts.get(tech);
-                        new ProcessDueContractsAsyncTask().execute(contracts, tech);
-                    }
-                }
-            });
-        }
+                technicianContracts
+                        .computeIfAbsent(keyLower, k -> new ArrayList<>())
+                        .add(contract);
+            }
+
+            if (technicianContracts.isEmpty()) {
+                Toast.makeText(this, "No contracts found in shared collection.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            for (Map.Entry<String, List<Map<String, Object>>> entry : technicianContracts.entrySet()) {
+                String keyLower = entry.getKey();
+                List<Map<String, Object>> contracts = entry.getValue();
+                String techLabel = StaffDirectory.capitalizeContractKey(keyLower);
+                new ProcessDueContractsAsyncTask().execute(contracts, techLabel);
+            }
+        });
     }
 
     /**

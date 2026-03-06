@@ -134,7 +134,7 @@ public class AddJobsActivity extends AppCompatActivity {
     }
 
     /**
-     * Adds a job entry to Firestore under the "JobWork" collection.
+     * Adds a job entry to Firestore under the shared "jobwork" collection.
      * Stores technician details, customer details, and issue information.
      *
      * @param techName    The name of the assigned technician.
@@ -155,7 +155,7 @@ public class AddJobsActivity extends AppCompatActivity {
         job.put("CreatedAt", new java.util.Date());
         job.put("JobType", "Service");
 
-        db.collection("JobWork").add(job)
+        db.collection(FirestorePaths.JOBWORK).add(job)
                 .addOnSuccessListener(documentReference -> {
                     writeInAppJobNotifications(documentReference.getId(), custName, techName, userName);
                     Toast.makeText(this, "Job Added Successfully", Toast.LENGTH_SHORT).show();

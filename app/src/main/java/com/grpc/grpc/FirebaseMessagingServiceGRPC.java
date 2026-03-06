@@ -43,9 +43,54 @@ public class FirebaseMessagingServiceGRPC extends FirebaseMessagingService {
     public void onMessageReceived(RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
-        // In-app only notifications: ignore all push notifications (no status-bar / system notifications).
-        // Keeping this service avoids manifest/class reference issues while ensuring no outside-app alerts.
-        Log.d("GRPC-FCM", "Push received but ignored (in-app only). type=" + remoteMessage.getData().get("type"));
+        String type = remoteMessage.getData() != null ? remoteMessage.getData().get("type") : null;
+        Log.d("GRPC-FCM", "Push received. type=" + type + " data=" + remoteMessage.getData());
+
+        if (type == null || type.trim().isEmpty()) {
+            // Fallback: generic notification using title/body if present.
+            if (remoteMessage.getNotification() != null) {
+                String title = remoteMessage.getNotification().getTitle();
+                String body = remoteMessage.getNotification().getBody();
+                if (title == null || title.trim().isEmpty()) title = "Notification";
+                if (body == null) body = "";
+                showNotification(title, body);
+            }
+            return;
+        }
+
+        switch (type) {
+            case "work_event":
+                showWorkEventNotification(remoteMessage);
+                break;
+            case "message":
+                showMessageNotification(remoteMessage);
+                break;
+            case "job_assignment":
+                showJobWorkNotification(remoteMessage);
+                break;
+            case "management_task":
+                showManagementJobNotification(remoteMessage);
+                break;
+            case "workview_update":
+                showWorkViewUpdateNotification(remoteMessage);
+                break;
+            case "conversation_message":
+                showConversationMessageNotification(remoteMessage);
+                break;
+            case "contract_update":
+                showContractUpdateNotification(remoteMessage);
+                break;
+            default:
+                // Any other type (including potential Behinds list alerts) use a generic notification.
+                if (remoteMessage.getNotification() != null) {
+                    String title = remoteMessage.getNotification().getTitle();
+                    String body = remoteMessage.getNotification().getBody();
+                    if (title == null || title.trim().isEmpty()) title = "Notification";
+                    if (body == null) body = "";
+                    showNotification(title, body);
+                }
+                break;
+        }
     }
 
     private void showNotification(String title, String message) {
@@ -166,8 +211,8 @@ public class FirebaseMessagingServiceGRPC extends FirebaseMessagingService {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
 
-        // Create intent - LoginActivity if not signed in, MessagingActivity with user if signed in
-        Intent intent = createNotificationIntent(MessagingActivity.class, null);
+        // Create intent - LoginActivity if not signed in, MessagingActivity with user if signed in (super_admin only).
+        Intent intent = createNotificationIntent(MessagingConversationsActivity.class, null);
         android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
 
@@ -342,8 +387,8 @@ public class FirebaseMessagingServiceGRPC extends FirebaseMessagingService {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
 
-        // Create intent - LoginActivity if not signed in, MessagingActivity with conv if signed in
-        Intent intent = createNotificationIntent(MessagingActivity.class, null);
+        // Create intent - LoginActivity if not signed in, MessagingActivity with conv if signed in (super_admin only).
+        Intent intent = createNotificationIntent(MessagingConversationsActivity.class, null);
         intent.putExtra("CONVERSATION_ID", convId);
         intent.putExtra("CONVERSATION_NAME", displayName);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);

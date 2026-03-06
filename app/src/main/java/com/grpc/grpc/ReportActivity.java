@@ -149,7 +149,6 @@ public class ReportActivity extends AppCompatActivity {
     // ============================================================================
     
     private Button saveButton, backButton, selectImageButton, aiFixButton, readBackButton;
-    private CheckBox passwordProtectCheckbox;
 
     // ============================================================================
     // DATA MANAGEMENT - Image and content storage
@@ -266,7 +265,6 @@ public class ReportActivity extends AppCompatActivity {
         }));
 
         initializeButtons();
-        setupPdfTemplateSectionVisibility();
         applyCreateCustomReportIntent();
         setupTemplateModeIfNeeded(savedInstanceState);
         setupKeyboardHandling();
@@ -341,11 +339,7 @@ public class ReportActivity extends AppCompatActivity {
     private void performSaveReport() {
         ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        if (passwordProtectCheckbox != null && passwordProtectCheckbox.isChecked()) {
-            showPasswordDialogAndSave(db);
-        } else {
-            saveReport(db, null);
-        }
+        saveReport(db, null);
     }
 
     private void showPasswordDialogAndSave(SQLiteDatabase db) {
@@ -545,41 +539,11 @@ public class ReportActivity extends AppCompatActivity {
         aiFixButton = findViewById(R.id.aiFixButton);
         readBackButton = findViewById(R.id.readBackButton);
 
-        passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
-        // Save button - stores report data and generates PDF (optional password)
+        // Save button - stores report data and generates PDF
         saveButton.setOnClickListener(v -> performSaveReport());
 
-        // PDF Template Settings (offline custom logo/watermark/header)
-        Button pdfTemplateSettingsButton = findViewById(R.id.pdfTemplateSettingsButton);
-        if (pdfTemplateSettingsButton != null) {
-            pdfTemplateSettingsButton.setOnClickListener(v -> {
-                Intent intent = new Intent(ReportActivity.this, PdfTemplateSettingsActivity.class);
-                intent.putExtra("USER_NAME", userName);
-                startActivity(intent);
-            });
-        }
-
         // General Quotation (catalog-driven from sales.json per flavor)
-        Button generalQuotationButton = findViewById(R.id.generalQuotationButton);
-        if (generalQuotationButton != null) {
-            generalQuotationButton.setOnClickListener(v -> {
-                Intent intent = new Intent(ReportActivity.this, GeneralQuotationFromCatalogActivity.class);
-                intent.putExtra("USER_NAME", userName);
-                if (nameInput != null && nameInput.getEditText() != null) {
-                    String name = nameInput.getEditText().getText() != null ? nameInput.getEditText().getText().toString().trim() : "";
-                    if (!name.isEmpty()) intent.putExtra("PREFILL_CUSTOMER_NAME", name);
-                }
-                if (addressInput != null && addressInput.getEditText() != null) {
-                    String addr = addressInput.getEditText().getText() != null ? addressInput.getEditText().getText().toString().trim() : "";
-                    if (!addr.isEmpty()) intent.putExtra("PREFILL_CUSTOMER_ADDRESS", addr);
-                }
-                if (dateInput != null && dateInput.getText() != null) {
-                    String dt = dateInput.getText().toString().trim();
-                    if (!dt.isEmpty()) intent.putExtra("PREFILL_DATE", dt);
-                }
-                startActivity(intent);
-            });
-        }
+
         
         // Back button - returns to previous screen
         backButton.setOnClickListener(v -> {
@@ -604,25 +568,10 @@ public class ReportActivity extends AppCompatActivity {
     }
 
     /**
-     * Show PDF template section (Use GRPC / Use My Template + PDF Template Settings) only when user is NOT logged in.
-     * When logged in (Firebase Auth current user present), hide it and reports always use GRPC template.
-     */
-    private void setupPdfTemplateSectionVisibility() {
-        View pdfTemplateSection = findViewById(R.id.pdfTemplateSection);
-        if (pdfTemplateSection != null) {
-            boolean isLoggedIn = FirebaseAuth.getInstance().getCurrentUser() != null;
-            pdfTemplateSection.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
-        }
-    }
-
-    /**
-     * When launched via "Create Custom Report", hide the PDF template section (Default vs Select template at top is enough),
-     * and show Report form choice (Default vs Select template).
+     * When launched via "Create Custom Report", show Report form choice (Default vs Select template).
      */
     private void applyCreateCustomReportIntent() {
         if (!getIntent().getBooleanExtra("USE_MY_TEMPLATE", false)) return;
-        View pdfTemplateSection = findViewById(R.id.pdfTemplateSection);
-        if (pdfTemplateSection != null) pdfTemplateSection.setVisibility(View.GONE);
         setupReportFormChoiceSection();
     }
 
@@ -979,17 +928,8 @@ public class ReportActivity extends AppCompatActivity {
                     settings = t != null ? t.toPdfTemplateSettings() : new PdfTemplateStorage(this).load();
                 } else {
                     settings = new PdfTemplateStorage(this).load();
-                    View pdfTemplateSection = findViewById(R.id.pdfTemplateSection);
-                    if (pdfTemplateSection != null && pdfTemplateSection.getVisibility() != View.VISIBLE) {
-                        settings.setTemplateSelection(PdfTemplateSettings.GRPC);
-                    } else {
-                        RadioButton radioMyTemplate = findViewById(R.id.radioMyTemplate);
-                        if (radioMyTemplate != null && radioMyTemplate.isChecked()) {
-                            settings.setTemplateSelection(PdfTemplateSettings.MY_TEMPLATE);
-                        } else {
-                            settings.setTemplateSelection(PdfTemplateSettings.GRPC);
-                        }
-                    }
+                    // PDF template selection removed from this screen; use GRPC by default
+                    settings.setTemplateSelection(PdfTemplateSettings.GRPC);
                 }
                 PDFReportGeneratorWithTemplate.generatePdf(
                         "Company",

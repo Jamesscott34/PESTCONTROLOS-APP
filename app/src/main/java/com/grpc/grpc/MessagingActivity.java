@@ -68,6 +68,13 @@ public class MessagingActivity extends AppCompatActivity {
         getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         userName = getIntent().getStringExtra("USER_NAME");
+
+        // RBAC: hide messaging for everyone except super_admin.
+        if (!SessionManager.isSuperAdmin(this)) {
+            Toast.makeText(this, "Messaging is currently available only to super admin.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         conversationId = getIntent().getStringExtra("CONVERSATION_ID");
         conversationName = getIntent().getStringExtra("CONVERSATION_NAME");
 

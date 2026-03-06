@@ -437,6 +437,8 @@ public final class SessionManager {
                     Boolean markPaidFlag = pickBoolean(ds, "CanMarkPaidLeads", "canMarkPaidLeads");
                     Boolean commissionFlag = pickBoolean(ds, "CanAccessCommission", "canAccessCommission", "CanAccessCommissionLeads");
                     Boolean seesAllJobsFlag = pickBoolean(ds, "SeesAllJobs", "seesAllJobs");
+                    Boolean canSeeContractsFlag = pickBoolean(ds, "CanSeeContracts", "canSeeContracts");
+                    Boolean canViewAllContractsFlag = pickBoolean(ds, "CanViewAllContracts", "canViewAllContracts");
 
                     // Role-based defaults (applied when flags are missing).
                     // Requested behavior:
@@ -449,6 +451,8 @@ public final class SessionManager {
                     boolean defaultMarkPaidLeads = isSuperAdmin; // super_admin only by default
                     boolean defaultCanAccessCommission = true; // all staff can access; non-admin sees only their own commission/leads
                     boolean defaultSeesAllJobs = isAdmin; // admin + super_admin
+                    boolean defaultCanSeeContracts = isSuperAdmin || "admin".equals(roleNorm) || "tech".equals(roleNorm);
+                    boolean defaultCanViewAllContracts = isAdmin; // admin + super_admin only; tech = false
 
                     boolean canSearch = canSearchFlag != null ? canSearchFlag : defaultCanSearch;
                     boolean canLocation = canLocationFlag != null ? canLocationFlag : defaultCanLocation;
@@ -473,6 +477,8 @@ public final class SessionManager {
                         if (markPaidFlag == null) seed.put("CanMarkPaidLeads", defaultMarkPaidLeads);
                         if (commissionFlag == null) seed.put("CanAccessCommission", defaultCanAccessCommission);
                         if (seesAllJobsFlag == null) seed.put("SeesAllJobs", defaultSeesAllJobs);
+                        if (canSeeContractsFlag == null) seed.put("canSeeContracts", defaultCanSeeContracts);
+                        if (canViewAllContractsFlag == null) seed.put("canViewAllContracts", defaultCanViewAllContracts);
 
                         if (!seed.isEmpty()) {
                             db.collection("users")

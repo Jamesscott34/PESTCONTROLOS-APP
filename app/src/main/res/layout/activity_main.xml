@@ -122,6 +122,22 @@
                 android:layout_marginBottom="@dimen/button_spacing"
                 android:visibility="gone" />
 
+            <!-- Admin / Super Admin: high-level dashboards -->
+            <Button
+                android:id="@+id/DashboardButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Dashboard"
+                android:layout_marginBottom="@dimen/button_spacing"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/EmployeeButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Employee"
+                android:layout_marginBottom="@dimen/button_spacing"
+                android:visibility="gone" />
 
 
             <!-- ============================================================================

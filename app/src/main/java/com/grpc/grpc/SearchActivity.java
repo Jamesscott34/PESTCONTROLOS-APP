@@ -279,7 +279,7 @@ public class SearchActivity extends AppCompatActivity {
         void run() {
             // Jobs (same visibility rules as ViewJobActivity)
             pending++;
-            Query jq = db.collection("JobWork").whereEqualTo("AssignedTech", userName);
+            Query jq = db.collection(FirestorePaths.JOBWORK).whereEqualTo("AssignedTech", userName);
             jq.get().addOnCompleteListener(t -> {
                 if (!t.isSuccessful() || t.getResult() == null) {
                     doneOne();

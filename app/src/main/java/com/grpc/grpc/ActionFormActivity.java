@@ -173,7 +173,7 @@ public class ActionFormActivity extends AppCompatActivity {
         recommendationsInput.setMinLines(3);
         recommendationsInput.setGravity(android.view.Gravity.TOP);
         followUp1Input.setHint("Enter Follow-Up Details");
-        roleInput.setHint("Enter Role");
+        roleInput.setHint("Technician (name -- number -- title)");
 
         // Auto-fill premises name and address if provided from intent
         String companyName = getIntent().getStringExtra("COMPANY_NAME");
@@ -185,6 +185,17 @@ public class ActionFormActivity extends AppCompatActivity {
         
         if (address != null && !address.isEmpty() && !address.equals("N/A")) {
             premisesAddressInput.getEditText().setText(address);
+        }
+
+        // Auto-fill technician name field with "Name -- Number -- Title" when available.
+        try {
+            String userId = StaffDirectory.getUserId(userName);
+            String techLabel = StaffDirectory.getTechnicianDisplayLabel(userId);
+            if (roleInput != null && roleInput.getEditText() != null
+                    && techLabel != null && !techLabel.trim().isEmpty()) {
+                roleInput.getEditText().setText(techLabel);
+            }
+        } catch (Exception ignored) {
         }
     }
 
