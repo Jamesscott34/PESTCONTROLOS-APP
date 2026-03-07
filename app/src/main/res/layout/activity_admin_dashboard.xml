@@ -71,10 +71,45 @@
             <ListView
                 android:id="@+id/usersListView"
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
+                android:layout_height="350dp"
                 android:divider="@android:color/transparent"
                 android:dividerHeight="0dp"
-                android:scrollbars="vertical" />
+                android:scrollbars="vertical"
+                android:scrollbarStyle="outsideOverlay" />
+        </LinearLayout>
+
+        <!-- Bug report / Feature request: admin submit; super_admin view & set cost/days -->
+        <LinearLayout
+            android:id="@+id/bugReportFeatureRequestBlock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:id="@+id/bugReportFeatureRequestLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="BUG REPORT / FEATURE REQUEST"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/submitBugReportFeatureRequestButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Submit bug report or feature request"
+                android:backgroundTint="?attr/colorSecondary"
+                android:textColor="?attr/colorOnSecondary"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/viewBugReportFeatureRequestButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="View bug reports &amp; feature requests" />
         </LinearLayout>
 
         <!-- Reports folder: create ReportsXX (one per year) in Firebase Storage -->
@@ -104,7 +139,7 @@
                 android:textColor="?attr/colorOnSecondary" />
         </LinearLayout>
 
-        <!-- Storage usage summary block -->
+        <!-- Storage usage: upload/download metrics (super_admin only) -->
         <LinearLayout
             android:id="@+id/storageSummaryBlock"
             android:layout_width="match_parent"
@@ -118,7 +153,7 @@
                 android:id="@+id/storageSummaryLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="STORAGE USAGE"
+                android:text="UPLOAD / DOWNLOAD METRICS"
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
 
@@ -126,11 +161,36 @@
                 android:id="@+id/storageSummaryTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Storage: not configured" />
+                android:text="Storage: not configured. Update storage_metadata/summary (uploadsToday, downloadsToday, etc.) via Cloud Functions or admin." />
         </LinearLayout>
 
-        <!-- Authenticated users / sign-in summary block (optional) -->
+        <!-- Reports in Storage: file count and total size (super_admin only) -->
         <LinearLayout
+            android:id="@+id/reportsStorageBlock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="REPORTS (STORAGE)"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/reportsStorageTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Loading report file count and size..." />
+        </LinearLayout>
+
+        <!-- Authenticated users / sign-in summary block (hidden for now) -->
+        <LinearLayout
+            android:id="@+id/authSummaryBlock"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"

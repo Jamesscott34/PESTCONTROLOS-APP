@@ -46,31 +46,22 @@
             android:textColorHint="?android:attr/textColorSecondary" />
 
         <EditText
-            android:id="@+id/companyAddressInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Enter Company Address"
-            android:layout_marginBottom="12dp"
-            android:padding="12dp"
-            android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary" />
-
-        <EditText
             android:id="@+id/addressInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Customer Address"
+            android:hint="Company Address"
             android:layout_marginBottom="12dp"
             android:padding="12dp"
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
+        <!-- Tech email/number: hidden, autofilled from session -->
         <EditText
             android:id="@+id/userEmailInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:hint="User Email"
             android:layout_marginBottom="12dp"
             android:padding="12dp"
@@ -82,12 +73,40 @@
             android:id="@+id/mobileNumberInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:hint="Mobile Number"
             android:layout_marginBottom="12dp"
             android:padding="12dp"
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="VAT rate"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <RadioGroup
+            android:id="@+id/vatRateGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+            <RadioButton
+                android:id="@+id/vat13_5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="13.5%" />
+            <RadioButton
+                android:id="@+id/vat23"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="23%" />
+        </RadioGroup>
 
         <EditText
             android:id="@+id/quoteDescriptionInput"
@@ -131,6 +150,39 @@
             android:text="ADD LINE ITEM"
             android:background="@drawable/button_background"
             android:textColor="?attr/colorOnPrimary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Images (optional)"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <Button
+            android:id="@+id/addImageButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Add image"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
+
+        <HorizontalScrollView
+            android:id="@+id/imagesScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/imagesContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical" />
+        </HorizontalScrollView>
 
         <CheckBox
             android:id="@+id/passwordProtectCheckbox"

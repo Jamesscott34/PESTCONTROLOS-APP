@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="contract_sort_options">
+        <item>Name (A–Z)</item>
+        <item>Name (Z–A)</item>
+        <item>Next visit (soonest first)</item>
+        <item>Next visit (latest first)</item>
+        <item>Address (A–Z)</item>
+    </string-array>
+
+    <string-array name="bug_report_feature_request_types">
+        <item>Bug report</item>
+        <item>Feature request</item>
+    </string-array>
+</resources>

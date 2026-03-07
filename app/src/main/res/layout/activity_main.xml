@@ -54,6 +54,8 @@
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:fillViewport="true"
+        android:scrollbars="vertical"
         android:layout_marginBottom="@dimen/button_spacing"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/LogoutButton">
@@ -67,7 +69,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center">
+            android:gravity="center"
+            android:paddingBottom="24dp">
 
             <!-- ============================================================================
                  WELCOME MESSAGE
@@ -90,7 +93,7 @@
                     android:adjustViewBounds="true"
                     android:scaleType="fitCenter"
                     android:src="@drawable/logo"
-                    android:contentDescription="GRPC Logo" />
+                    android:contentDescription="Good Riddance Pest Control Logo" />
 
                 <TextView
                     android:id="@+id/welcomeTextView"
@@ -138,7 +141,6 @@
                 android:text="Employee"
                 android:layout_marginBottom="@dimen/button_spacing"
                 android:visibility="gone" />
-
 
             <!-- ============================================================================
                  REPORT MANAGEMENT BUTTONS
@@ -275,6 +277,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Messaging"
+                android:layout_marginBottom="@dimen/button_spacing" />
+
+            <!-- Maps feature (placeholder): visible when canMap=true -->
+            <Button
+                android:id="@+id/MapsButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Maps"
+                android:visibility="gone"
                 android:layout_marginBottom="@dimen/button_spacing" />
 
             <!-- Access company website and resources -->

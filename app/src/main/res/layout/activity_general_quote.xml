@@ -62,24 +62,7 @@
             android:minHeight="56dp"
             android:text="12pt Contract"
             android:textSize="16sp"
-            android:layout_marginBottom="16dp" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/divider_outline" />
-
-        <Button
-            android:id="@+id/buttonCustomQuote"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="Custom Quote"
-            android:textSize="16sp"
-            android:layout_marginBottom="24dp"
-            android:backgroundTint="?attr/colorSecondary"
-            android:textColor="?attr/colorOnSecondary" />
+            android:layout_marginBottom="24dp" />
 
     </LinearLayout>
 </ScrollView>

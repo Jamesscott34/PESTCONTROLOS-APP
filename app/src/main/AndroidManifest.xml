@@ -65,7 +65,7 @@
          Main application settings and theme configuration
          ============================================================================ -->
     <application
-        android:name=".GrpcApplication"
+        android:name="com.grpc.grpc.core.GrpcApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
@@ -85,7 +85,7 @@
 
         <!-- Login Activity - Entry point for user authentication -->
         <activity
-            android:name=".LoginActivity"
+            android:name="com.grpc.grpc.login.LoginActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>
@@ -96,49 +96,64 @@
 
         <!-- Main Activity - Central hub with navigation to all features -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.grpc.grpc.main.MainActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Admin dashboard: contracts/users summaries (admin + super_admin) -->
         <activity
-            android:name=".AdminDashboardActivity"
+            android:name="com.grpc.grpc.admin.ui.AdminDashboardActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <!-- Super admin only: employee creation and profile initialization -->
         <activity
-            android:name=".EmployeeManagementActivity"
+            android:name="com.grpc.grpc.admin.ui.EmployeeManagementActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <activity
+            android:name="com.grpc.grpc.admin.ui.EditEmployeeActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <!-- Bug report / Feature request (admin): submit and view; super_admin: set cost & days -->
+        <activity
+            android:name="com.grpc.grpc.bugreport.ui.BugReportFeatureRequestSubmitActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+        <activity
+            android:name="com.grpc.grpc.bugreport.ui.BugReportFeatureRequestViewActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <!-- Admin-only (for now): Global search entry point -->
         <activity
-            android:name=".SearchActivity"
+            android:name="com.grpc.grpc.search.ui.SearchActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <!-- Admin-only: view last known technician locations -->
         <activity
-            android:name=".LocationFinderActivity"
+            android:name="com.grpc.grpc.location.ui.LocationFinderActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <!-- Help / README Activity - In-app instructions for using the app -->
         <activity
-            android:name=".HelpReadmeActivity"
+            android:name="com.grpc.grpc.files.ui.HelpReadmeActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Work View Activity - Calendar and work scheduling -->
         <activity
-            android:name=".WorkViewActivity"
+            android:name="com.grpc.grpc.workview.ui.WorkViewActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- WorkView home screen widget: shows next 3 jobs from local cache, tap opens WorkViewActivity -->
         <receiver
-            android:name=".WorkViewWidgetProvider"
+            android:name="com.grpc.grpc.workview.ui.WorkViewWidgetProvider"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
@@ -150,19 +165,19 @@
 
         <!-- Add Job From Calendar Activity -->
         <activity
-            android:name=".AddJobFromCalendarActivity"
+            android:name="com.grpc.grpc.jobs.ui.AddJobFromCalendarActivity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:exported="true"/>
 
         <!-- Chat Activity - AI Chat Assistant -->
         <activity
-            android:name=".ChatActivity"
+            android:name="com.grpc.grpc.messaging.ui.ChatActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
         <!-- Add Follow-up Activity -->
         <activity
-            android:name=".AddFollowUpActivity"
+            android:name="com.grpc.grpc.reports.ui.AddFollowUpActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -174,69 +189,69 @@
 
         <!-- Core report creation and management -->
         <activity
-            android:name=".ReportActivity"
+            android:name="com.grpc.grpc.reports.ui.ReportActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Offline PDF template settings (logo, watermark, header blocks) -->
         <activity
-            android:name=".PdfTemplateSettingsActivity"
+            android:name="com.grpc.grpc.reports.ui.PdfTemplateSettingsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
         <activity
-            android:name=".ViewTemplatesActivity"
+            android:name="com.grpc.grpc.reports.ui.ViewTemplatesActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
         <activity
-            android:name=".ReportViewActivity"
+            android:name="com.grpc.grpc.reports.ui.ReportViewActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <activity
-            android:name=".CreateReportActivity"
+            android:name="com.grpc.grpc.reports.ui.CreateReportActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Report selection and PDF management -->
         <activity
-            android:name=".ReportSelectionActivity"
+            android:name="com.grpc.grpc.reports.ui.ReportSelectionActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <activity
-            android:name=".PDFSelectionActivity"
+            android:name="com.grpc.grpc.reports.ui.PDFSelectionActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Action Form creation -->
         <activity
-            android:name=".ActionFormActivity"
+            android:name="com.grpc.grpc.reports.ui.ActionFormActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Signature Capture -->
         <activity
-            android:name=".SignatureCaptureActivity"
+            android:name="com.grpc.grpc.core.SignatureCaptureActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
         <!-- Quotation viewing and management -->
         <activity
-            android:name=".QuotationViewActivity"
+            android:name="com.grpc.grpc.quotations.ui.QuotationViewActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Follow-up report creation -->
         <activity
-            android:name=".FollowUpActivity"
+            android:name="com.grpc.grpc.reports.ui.FollowUpActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Bird control quotation generation -->
         <activity
-            android:name=".BirdQuotationActivity"
+            android:name="com.grpc.grpc.quotations.ui.BirdQuotationActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -248,19 +263,19 @@
 
         <!-- Contract management and overview -->
         <activity
-            android:name=".ContractsActivity"
+            android:name="com.grpc.grpc.contracts.ui.ContractsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Individual contract viewing and editing -->
         <activity
-            android:name=".ViewContractActivity"
+            android:name="com.grpc.grpc.contracts.ui.ViewContractActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- New contract creation -->
         <activity
-            android:name=".AddContractActivity"
+            android:name="com.grpc.grpc.contracts.ui.AddContractActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -272,18 +287,18 @@
 
         <!-- Quotation management and generation -->
         <activity
-            android:name=".QuotesActivity"
+            android:name="com.grpc.grpc.quotations.ui.QuotesActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Service agreement creation and management -->
         <activity
-            android:name=".ServiceAgreementActivity"
+            android:name="com.grpc.grpc.serviceagreements.ui.ServiceAgreementActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Service agreement viewing -->
-        <activity android:name=".ServiceAgreementViewActivity"
+        <activity android:name="com.grpc.grpc.serviceagreements.ui.ServiceAgreementViewActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -295,22 +310,22 @@
 
         <!-- General reports with different point sizes for various document types -->
         <activity
-            android:name=".General8ptActivity"
+            android:name="com.grpc.grpc.generalreports.ui.General8ptActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <activity
-            android:name=".General6ptActivity"
+            android:name="com.grpc.grpc.generalreports.ui.General6ptActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <activity
-            android:name=".General4ptActivity"
+            android:name="com.grpc.grpc.generalreports.ui.General4ptActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <activity
-            android:name=".General12ptActivity"
+            android:name="com.grpc.grpc.generalreports.ui.General12ptActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -322,19 +337,19 @@
 
         <!-- Lead management and selection -->
         <activity
-            android:name=".LeadsSelectionActivity"
+            android:name="com.grpc.grpc.leads.ui.LeadsSelectionActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Lead viewing and management -->
         <activity
-            android:name=".ViewLeadsActivity"
+            android:name="com.grpc.grpc.leads.ui.ViewLeadsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Lead generation and creation -->
         <activity
-            android:name=".GenerateLeadsActivity"
+            android:name="com.grpc.grpc.leads.ui.GenerateLeadsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -346,19 +361,19 @@
 
         <!-- Job overview and management -->
         <activity
-            android:name=".JobsActivity"
+            android:name="com.grpc.grpc.jobs.ui.JobsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- New job creation -->
         <activity
-            android:name=".AddJobsActivity"
+            android:name="com.grpc.grpc.jobs.ui.AddJobsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Individual job viewing and editing -->
         <activity
-            android:name=".ViewJobActivity"
+            android:name="com.grpc.grpc.jobs.ui.ViewJobActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -369,37 +384,37 @@
              ============================================================================ -->
 
         <!-- Rodent control routine operations -->
-        <activity android:name=".RodentRoutineActivity"
+        <activity android:name="com.grpc.grpc.jobs.rodent.RodentRoutineActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
         <!-- External rodent routine operations -->
-        <activity android:name=".RodentActivityExternalRoutine"
+        <activity android:name="com.grpc.grpc.jobs.rodent.RodentActivityExternalRoutine"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
         <!-- External rodent call-out operations -->
-        <activity android:name=".RodentCallOutExternalActivity"
+        <activity android:name="com.grpc.grpc.jobs.rodent.RodentCallOutExternalActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
         <!-- Rodent call-out operations -->
-        <activity android:name=".RodentCallOutActivity"
+        <activity android:name="com.grpc.grpc.jobs.rodent.RodentCallOutActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
         <!-- Initial rodent control operations -->
-        <activity android:name=".RodentInitialActivity"
+        <activity android:name="com.grpc.grpc.jobs.rodent.RodentInitialActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
         <!-- Rodent routine activity management -->
-        <activity android:name=".RodentActivityRoutine"
+        <activity android:name="com.grpc.grpc.jobs.rodent.RodentActivityRoutine"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
         <!-- Rodent job activity management -->
-        <activity android:name=".RodentJobActivity"
+        <activity android:name="com.grpc.grpc.jobs.rodent.RodentJobActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
@@ -410,12 +425,12 @@
              ============================================================================ -->
 
         <!-- Folder contents viewing -->
-        <activity android:name=".FolderContentsActivity"
+        <activity android:name="com.grpc.grpc.files.ui.FolderContentsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Stored reports management -->
-        <activity android:name=".StoredReportsActivity"
+        <activity android:name="com.grpc.grpc.reports.ui.StoredReportsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -426,15 +441,15 @@
              ============================================================================ -->
 
         <!-- Messaging - conversation list -->
-        <activity android:name=".NotificationsActivity"
+        <activity android:name="com.grpc.grpc.messaging.ui.NotificationsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
-        <activity android:name=".MessagingConversationsActivity"
+        <activity android:name="com.grpc.grpc.messaging.ui.MessagingConversationsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Internal messaging - per-conversation chat -->
-        <activity android:name=".MessagingActivity"
+        <activity android:name="com.grpc.grpc.messaging.ui.MessagingActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -445,12 +460,12 @@
              ============================================================================ -->
 
         <!-- General quotation creation -->
-        <activity android:name=".GeneralQuotationActivity"
+        <activity android:name="com.grpc.grpc.quotations.ui.GeneralQuotationActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- General Quotation from catalog (sales.json per flavor) -->
-        <activity android:name=".GeneralQuotationFromCatalogActivity"
+        <activity android:name="com.grpc.grpc.quotations.ui.GeneralQuotationFromCatalogActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
@@ -461,22 +476,22 @@
              ============================================================================ -->
 
         <!-- ERA selection and management -->
-        <activity android:name=".EnvironmentSelectionActivity"
+        <activity android:name="com.grpc.grpc.era.ui.EnvironmentSelectionActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Non-toxic ERA creation -->
-        <activity android:name=".NonToxERAActivity"
+        <activity android:name="com.grpc.grpc.era.ui.NonToxERAActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Toxic ERA creation -->
-        <activity android:name=".ToxicERAActivity"
+        <activity android:name="com.grpc.grpc.era.ui.ToxicERAActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- ERA viewing and management -->
-        <activity android:name=".ERAViewActivity"
+        <activity android:name="com.grpc.grpc.era.ui.ERAViewActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -487,17 +502,17 @@
              ============================================================================ -->
 
         <!-- General report creation -->
-        <activity android:name=".GeneralReportActivity"
+        <activity android:name="com.grpc.grpc.generalreports.ui.GeneralReportActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Management job creation -->
-        <activity android:name=".AddManagmentJobsActivity"
+        <activity android:name="com.grpc.grpc.jobs.ui.AddManagmentJobsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Management job viewing -->
-        <activity android:name=".ViewManagmentJobActivity"
+        <activity android:name="com.grpc.grpc.jobs.ui.ViewManagmentJobActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -508,12 +523,12 @@
              ============================================================================ -->
 
         <!-- Behinds list viewing and management -->
-        <activity android:name=".BehindsListViewActivity"
+        <activity android:name="com.grpc.grpc.contracts.ui.BehindsListViewActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
         <!-- Contract-specific report viewing -->
-        <activity android:name=".ContractReportsActivity"
+        <activity android:name="com.grpc.grpc.contracts.ui.ContractReportsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
@@ -523,7 +538,7 @@
              Service for handling push notifications and real-time messaging
              ============================================================================ -->
         <service
-            android:name="FirebaseMessagingServiceGRPC"
+            android:name="com.grpc.grpc.messaging.service.FirebaseMessagingServiceGRPC"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

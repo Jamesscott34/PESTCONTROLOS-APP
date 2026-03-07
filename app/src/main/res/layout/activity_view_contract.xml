@@ -115,13 +115,34 @@
         android:id="@+id/searchBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Search by name"
+        android:hint="Search by name, address, contact"
         android:padding="12dp"
         android:textSize="16sp"
         android:background="@drawable/edit_text_border"
         android:textColor="?android:attr/textColorPrimary"
         android:textColorHint="?android:attr/textColorSecondary"
         android:layout_marginBottom="8dp" />
+
+    <!-- Sort order -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sort: "
+            android:textSize="14sp"
+            android:layout_marginEnd="4dp" />
+        <Spinner
+            android:id="@+id/sortSpinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="40dp" />
+    </LinearLayout>
 
     <!-- Export Contracts to PDF Button -->
     <Button

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/screen_padding"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/welcome_margin_top">
+
+        <TextView
+            android:id="@+id/editEmployeeTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Edit Employee"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="@dimen/button_spacing" />
+
+        <TextView
+            android:id="@+id/editEmployeeUidLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="UID (authUid)"
+            android:textSize="12sp"
+            android:layout_marginBottom="2dp" />
+
+        <EditText
+            android:id="@+id/editEmployeeName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Name"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/editEmployeeEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Email"
+            android:inputType="textEmailAddress"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/editEmployeeNumber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Mobile number"
+            android:inputType="phone"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/editEmployeeTitleField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Title"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/editEmployeeStaffId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Staff ID"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/editEmployeeContractKey"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Contract key"
+            android:inputType="textNoSuggestions"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/editEmployeeRoleSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/button_spacing" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Permissions"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <CheckBox
+            android:id="@+id/checkCanSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can search"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanUseLocationFinder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can use location finder"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanHardPressContracts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can hard-press contracts"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanMarkPaidLeads"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can mark paid leads"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanAccessCommission"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can access commission"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkSeesAllJobs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sees all jobs"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanSeeContracts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can see contracts"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanViewAllContracts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can view all contracts"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can message (Messaging)"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanMap"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can map (Maps)"
+            android:layout_marginBottom="@dimen/button_spacing" />
+
+        <Button
+            android:id="@+id/buttonSaveEmployee"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+</ScrollView>

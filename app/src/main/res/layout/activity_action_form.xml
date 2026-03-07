@@ -59,7 +59,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
 
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/premisesNameInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -84,7 +84,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
 
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/premisesAddressInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -136,7 +136,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
 
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/serviceTypeInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -161,7 +161,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
 
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/serviceNumberInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -186,7 +186,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
 
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/prepInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -213,7 +213,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
 
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/serviceReportInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -240,7 +240,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
 
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/recommendationsInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -293,7 +293,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/followUp1Input"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -320,7 +320,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
 
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/roleInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

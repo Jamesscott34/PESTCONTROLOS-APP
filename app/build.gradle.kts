@@ -55,6 +55,7 @@ android {
     productFlavors {
         create("grpc") {
             dimension = "tenant"
+            buildConfigField("String", "FLAVOR", "\"grpc\"")
             buildConfigField("boolean", "IS_OFFLINE", "false")
             buildConfigField("boolean", "IS_DEMO", "false")
             buildConfigField("int", "OFFLINE_TRIAL_DAYS", "0")
@@ -66,6 +67,7 @@ android {
             dimension = "tenant"
             applicationIdSuffix = ".demo"
             versionNameSuffix = "-demo"
+            buildConfigField("String", "FLAVOR", "\"demo\"")
             buildConfigField("boolean", "IS_OFFLINE", "false")
             buildConfigField("boolean", "IS_DEMO", "true")
             buildConfigField("int", "OFFLINE_TRIAL_DAYS", "30")   // Trial redirect affects demo + offline, not grpc
@@ -76,6 +78,7 @@ android {
             dimension = "tenant"
             applicationIdSuffix = ".offline"
             versionNameSuffix = "-offline"
+            buildConfigField("String", "FLAVOR", "\"offline\"")
             buildConfigField("boolean", "IS_OFFLINE", "true")
             buildConfigField("boolean", "IS_DEMO", "false")
             buildConfigField("int", "OFFLINE_TRIAL_DAYS", "30")

@@ -32,7 +32,7 @@
             android:adjustViewBounds="true"
             android:scaleType="fitCenter"
             android:src="@drawable/logo"
-            android:contentDescription="GRPC Logo" />
+            android:contentDescription="Good Riddance Pest Control Logo" />
 
         <!-- Email input -->
         <EditText 

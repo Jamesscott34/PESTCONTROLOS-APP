@@ -18,7 +18,7 @@
         android:textColor="?android:attr/textColorPrimary" />
 
     <!-- Signature Canvas -->
-    <com.grpc.grpc.SignatureCaptureActivity.SimpleSignatureView
+    <com.grpc.grpc.core.SignatureCaptureActivity.SimpleSignatureView
         android:id="@+id/signatureView"
         android:layout_width="match_parent"
         android:layout_height="0dp"

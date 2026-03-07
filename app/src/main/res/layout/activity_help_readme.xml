@@ -7,11 +7,15 @@
     android:padding="16dp"
     android:background="?android:attr/colorBackground">
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="24dp" />
+
     <TextView
         android:id="@+id/helpTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="How to Use the GRPest Control App"
+        android:text="How to Use the Pest Control App"
         android:textSize="20sp"
         android:textStyle="bold"
         android:gravity="center"
@@ -218,7 +222,7 @@
                     android:id="@+id/section6Header"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="6. Notifications &amp; Messaging"
+                    android:text="6. Notifications"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:padding="10dp"

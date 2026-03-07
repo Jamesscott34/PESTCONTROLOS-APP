@@ -22,7 +22,7 @@
             android:id="@+id/globalSearchBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Search jobs, contracts, leads, reports..."
+            android:hint="Search contracts, reports, commission, work view..."
             android:background="?attr/colorSurface"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary"
@@ -32,10 +32,12 @@
             android:inputType="text"
             android:maxLines="1" />
 
+        <!-- Recent searches hidden: search runs as you type and shows only results -->
         <TextView
             android:id="@+id/recentSearchesLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:text="Recent searches"
             android:textColor="?android:attr/textColorSecondary"
             android:layout_marginTop="12dp"
@@ -45,6 +47,7 @@
             android:id="@+id/recentSearchesContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:orientation="vertical" />
 
         <TextView

@@ -93,14 +93,14 @@
                 android:textColor="?android:attr/textColorPrimary" />
 
             <!-- Input field for property name -->
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/nameInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"/>
 
             <!-- Input field for address -->
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/addressInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -118,7 +118,7 @@
                 android:textColorHint="?android:attr/textColorSecondary"/>
 
             <!-- Visit type -->
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/visitTypeInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -135,14 +135,14 @@
                 android:textColor="?android:attr/textColorPrimary" />
 
             <!-- Site inspection -->
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/siteInspectionInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"/>
 
             <!-- Recommendations -->
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/recommendationsInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -159,21 +159,21 @@
                 android:textColor="?android:attr/textColorPrimary" />
 
             <!-- Prep steps -->
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/prepInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"/>
 
             <!-- Follow up -->
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/followUpInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"/>
 
             <!-- Technician name -->
-            <com.grpc.grpc.DictateEditText
+            <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/techInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
