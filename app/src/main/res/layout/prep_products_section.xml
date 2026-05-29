@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/prepProductsSectionRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_marginBottom="12dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Prep / Products Used"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="8dp"
+        android:textColor="?android:attr/textColorPrimary" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Product type"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <Spinner
+        android:id="@+id/prepProductTypeSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/edit_text_background"
+        android:padding="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Product name"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <AutoCompleteTextView
+        android:id="@+id/prepProductNameInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Search or select product"
+        android:inputType="text"
+        android:background="@drawable/edit_text_background"
+        android:padding="12dp"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/prepCustomProductNameInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter custom product name"
+        android:visibility="gone"
+        android:background="@drawable/edit_text_background"
+        android:padding="12dp"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Quantity"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <EditText
+        android:id="@+id/prepQuantityInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Quantity (optional)"
+        android:inputType="text"
+        android:background="@drawable/edit_text_background"
+        android:padding="12dp"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Batch No. / BN"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <EditText
+        android:id="@+id/prepBatchNumberInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Batch number (optional)"
+        android:inputType="text"
+        android:background="@drawable/edit_text_background"
+        android:padding="12dp"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Location"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <EditText
+        android:id="@+id/prepLocationInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Location (optional)"
+        android:inputType="text"
+        android:background="@drawable/edit_text_background"
+        android:padding="12dp"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/prepAddProductButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Product"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/prepRodenticideHeading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Rodenticides Used"
+        android:textStyle="bold"
+        android:textSize="13sp"
+        android:visibility="gone"
+        android:layout_marginBottom="4dp"
+        android:textColor="?android:attr/textColorPrimary" />
+
+    <LinearLayout
+        android:id="@+id/prepRodenticideList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/prepInsecticideHeading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Insecticides Used"
+        android:textStyle="bold"
+        android:textSize="13sp"
+        android:visibility="gone"
+        android:layout_marginBottom="4dp"
+        android:textColor="?android:attr/textColorPrimary" />
+
+    <LinearLayout
+        android:id="@+id/prepInsecticideList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <!-- Hidden legacy prep for voice dictation / plain-text fallback -->
+    <EditText
+        android:id="@+id/prepInput"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        android:importantForAccessibility="no" />
+</LinearLayout>

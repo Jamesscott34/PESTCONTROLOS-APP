@@ -171,3 +171,6 @@ CONFIG.local.md
 # =============================================================================
 .vscode/
 .cursor/
+.firebaserc
+firebase.json
+google-services.json
