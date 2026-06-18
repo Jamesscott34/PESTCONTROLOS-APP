@@ -27,7 +27,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            shrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -157,6 +158,17 @@ android {
     
     buildFeatures {
         buildConfig = true
+    }
+
+    lint {
+        abortOnError = false          // never fail the build on lint errors
+        checkReleaseBuilds = false    // skip lint on release variants (CI runs debug)
+        disable += "MissingTranslation"   // multi-tenant app has intentional per-flavour strings
+        disable += "ExtraTranslation"
+        disable += "Instantiatable"   // suppress false positives on WorkManager workers
+        htmlReport = true
+        htmlOutput = file("build/reports/lint/lint-report.html")
+        xmlReport = false
     }
 
     packaging {

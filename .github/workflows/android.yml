@@ -5,10 +5,10 @@
 # Required GitHub Actions secrets (Settings → Secrets and variables → Actions):
 #
 #   GOOGLE_SERVICES_JSON
-#     Base64-encoded contents of app/src/company1/google-services.json for the
+#     Base64-encoded contents of app/src/grpc/google-services.json for the
 #     primary product flavour. Injected at build time (file is gitignored).
 #     Encode on macOS/Linux:
-#       base64 -i app/src/company1/google-services.json | tr -d '\n'
+#       base64 -i app/src/grpc/google-services.json | tr -d '\n'
 #     Add the single-line output as a repository secret named GOOGLE_SERVICES_JSON.
 #
 #   MAPS_API_KEY
@@ -59,8 +59,8 @@ jobs:
 
       - name: Inject google-services.json
         run: |
-          mkdir -p app/src/company1
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > app/src/company1/google-services.json
+          mkdir -p app/src/grpc
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > app/src/grpc/google-services.json
 
       - name: Inject gradle.properties
         run: |
@@ -69,17 +69,25 @@ jobs:
           echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> gradle.properties
 
       - name: Run lint
-        run: ./gradlew lintCompany1Debug
+        run: ./gradlew lintGrpcDebug
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint/lint-report.html
+          retention-days: 7
 
       - name: Run unit tests
-        run: ./gradlew testCompany1DebugUnitTest
+        run: ./gradlew testGrpcDebugUnitTest
 
       - name: Assemble debug APK
-        run: ./gradlew assembleCompany1Debug
+        run: ./gradlew assembleGrpcDebug
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/**/debug/*.apk
+          path: app/build/outputs/apk/grpc/debug/*.apk
           retention-days: 7
