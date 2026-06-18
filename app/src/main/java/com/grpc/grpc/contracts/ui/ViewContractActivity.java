@@ -2537,4 +2537,69 @@ public class ViewContractActivity extends AppCompatActivity {
     }
 
     private String buildContractExportDedupKey(Map<String, Object> contract) {
-        String displayName = firstNo
+        if (contract == null) return "";
+
+        Object docId = contract.get("documentId");
+        if (docId != null) {
+            String id = docId.toString().trim();
+            if (!id.isEmpty()) return "id:" + id;
+        }
+
+        String displayName = firstNonBlank(contract,
+                "name", "Name", "companyName", "Company", "CustomerName", "customerName",
+                "contractName", "ContractName", "contractKey", "address");
+        String address = firstNonBlank(contract, "address", "Address", "customerAddress", "CustomerAddress");
+        String tech = firstNonBlank(contract, "assignedTech", "contractKey", "owner", "assignedTechName");
+        return (tech + "|" + displayName + "|" + address).toLowerCase(Locale.getDefault());
+    }
+
+    private String firstNonBlank(Map<String, Object> contract, String... keys) {
+        if (contract == null || keys == null) return "";
+        for (String key : keys) {
+            Object value = contract.get(key);
+            if (value == null) continue;
+            String text = value.toString().trim();
+            if (!text.isEmpty() && !"N/A".equalsIgnoreCase(text)) {
+                return text;
+            }
+        }
+        return "";
+    }
+
+    private void viewContractsPdf(File file) {
+        try {
+            Uri fileUri = FileProvider.getUriForFile(
+                    this,
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
+                    file
+            );
+
+            Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+            viewIntent.setDataAndType(fileUri, "application/pdf");
+            viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            startActivity(viewIntent);
+        } catch (Exception e) {
+            Toast.makeText(this, "No application found to view this PDF.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void shareContractsPdf(File file) {
+        try {
+            Uri fileUri = FileProvider.getUriForFile(
+                    this,
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
+                    file
+            );
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("application/pdf");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            startActivity(Intent.createChooser(shareIntent, "Share Contracts PDF"));
+        } catch (Exception e) {
+            Toast.makeText(this, "No application available to share the PDF.", Toast.LENGTH_SHORT).show();
+        }
+    }
+}

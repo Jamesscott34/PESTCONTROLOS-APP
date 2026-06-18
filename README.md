@@ -425,7 +425,7 @@ At build time the workflow injects `google-services.json` and appends keys to `g
 - **Never commit** `google-services.json`, `gradle.properties`, API keys, keystores, or service account files. All are covered in `.gitignore`.
 - **Firestore rules** must restrict reads/writes by `request.auth.uid` and role. The `firestore.rules` file is the reference. Never deploy `allow read, write: if true` to production.
 - **App Check** is wired up — enforce it in Firebase Console for Firestore and Storage to block unauthorised clients.
-- **ProGuard/R8 is enabled for release builds** (`isMinifyEnabled = true`, `shrinkResources = true`). Keep rules in `app/proguard-rules.pro` cover Firebase, iText7, Apache POI, ML Kit, OkHttp, WorkManager, and Firestore model classes. Mapping files are written to `app/build/outputs/mapping/` after each release build.
+- **ProGuard/R8 is enabled for release builds** (`isMinifyEnabled = true`, `isShrinkResources = true`). Keep rules in `app/proguard-rules.pro` cover Firebase, iText7, Apache POI, ML Kit, OkHttp, WorkManager, and Firestore model classes. Mapping files are written to `app/build/outputs/mapping/` after each release build.
 - **Local data** (offline reports, SQLite, SharedPreferences) is not encrypted at rest. For regulated deployments use `EncryptedSharedPreferences` and SQLCipher.
 - **MFA** is strongly recommended for admin and super_admin accounts. Firebase Authentication supports TOTP MFA.
 - **Rotate** all API keys (LLM, Maps, Firebase service accounts) on a regular schedule.
