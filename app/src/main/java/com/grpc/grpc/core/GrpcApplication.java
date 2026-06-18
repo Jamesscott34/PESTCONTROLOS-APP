@@ -118,4 +118,37 @@ public class GrpcApplication extends Application {
             // Clear app session caches
             SessionManager.clear(activity.getApplicationContext());
             ActiveUserContext.clear(activity.getApplicationContext());
-            try { StaffDirectory.clearCache(); } catch (Exception ignored) 
+            try {
+                StaffDirectory.clearCache();
+            } catch (Exception ignored) {
+            }
+            try {
+                WorkViewLocalEventStore.clearAll(activity.getApplicationContext());
+            } catch (Exception ignored) {
+            }
+            try {
+                WorkViewWidgetHelper.clearWidgetCache(activity.getApplicationContext());
+            } catch (Exception ignored) {
+            }
+            try {
+                LocationSharing.clearLocalCache(activity.getApplicationContext());
+            } catch (Exception ignored) {
+            }
+
+            // Firebase sign-out (if signed in); no-op for offline
+            if (!BuildConfig.IS_OFFLINE) {
+                try {
+                    FirebaseAuth.getInstance().signOut();
+                } catch (Exception ignored) {
+                }
+            }
+
+            Intent intent = new Intent(activity, LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intent.putExtra("LOGOUT_REASON", "timeout");
+            activity.startActivity(intent);
+            activity.finish();
+        } catch (Exception ignored) {
+        }
+    }
+}
