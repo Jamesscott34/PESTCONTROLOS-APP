@@ -1,0 +1,85 @@
+# ============================================================================
+# Android CI — Gradle build, lint, test, and debug APK verification
+# ============================================================================
+#
+# Required GitHub Actions secrets (Settings → Secrets and variables → Actions):
+#
+#   GOOGLE_SERVICES_JSON
+#     Base64-encoded contents of app/src/company1/google-services.json for the
+#     primary product flavour. Injected at build time (file is gitignored).
+#     Encode on macOS/Linux:
+#       base64 -i app/src/company1/google-services.json | tr -d '\n'
+#     Add the single-line output as a repository secret named GOOGLE_SERVICES_JSON.
+#
+#   MAPS_API_KEY
+#     Google Maps API key. Appended to gradle.properties as MAPS_API_KEY at build time.
+#
+#   FIREBASE_PROJECT_ID
+#     Firebase project ID. Appended to gradle.properties as FIREBASE_PROJECT_ID
+#     at build time.
+#
+# ============================================================================
+
+name: Android CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Inject google-services.json
+        run: |
+          mkdir -p app/src/company1
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > app/src/company1/google-services.json
+
+      - name: Inject gradle.properties
+        run: |
+          cp gradle.properties.template gradle.properties
+          echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" >> gradle.properties
+          echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> gradle.properties
+
+      - name: Run lint
+        run: ./gradlew lintCompany1Debug
+
+      - name: Run unit tests
+        run: ./gradlew testCompany1DebugUnitTest
+
+      - name: Assemble debug APK
+        run: ./gradlew assembleCompany1Debug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/**/debug/*.apk
+          retention-days: 7
