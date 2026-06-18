@@ -27,14 +27,24 @@ async function getAdminEmail() {
   return null;
 }
 
+function buildNotificationDocId(parts) {
+  const raw = parts
+    .filter(Boolean)
+    .map((part) => String(part).trim().toLowerCase())
+    .join('_');
+  const safe = raw.replace(/[^a-z0-9._-]+/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+  return safe || `notif_${Date.now()}`;
+}
+
 /** Save notification to Firestore for in-app notification history */
-async function saveNotificationHistory(recipientTopic, title, body, type, data) {
+async function saveNotificationHistory(recipientTopic, docId, title, body, type, data) {
   try {
     await admin.firestore()
       .collection('notifications')
       .doc(recipientTopic.toLowerCase())
       .collection('items')
-      .add({
+      .doc(docId || buildNotificationDocId([type, recipientTopic, Date.now()]))
+      .set({
         title: title || 'Notification',
         body: body || '',
         type: type || 'general',
@@ -93,8 +103,18 @@ exports.onConversationMessageCreated = functions.firestore
     try {
       // In-app only notifications: save to in-app notification history, do not send push.
       for (const recipient of recipients) {
-        await saveNotificationHistory(recipient.toLowerCase(), notificationTitle, notificationBody,
-          'conversation_message', payload.data);
+        await saveNotificationHistory(
+          recipient.toLowerCase(),
+          buildNotificationDocId(['conversation_message', convId, context.params.docId, recipient]),
+          notificationTitle,
+          notificationBody,
+          'conversation_message',
+          {
+            sender,
+            convId,
+            messageId: context.params.docId,
+          }
+        );
       }
       console.log("✅ Conversation in-app notification saved:", convId, sender, "->", recipients);
       return null;
@@ -204,6 +224,10 @@ exports.onJobWorkAdded = functions.firestore
 exports.onManagmentJobAdded = functions.firestore
   .document('ManagmentJobs/{docId}')
   .onCreate(async (snap, context) => {
+    // Disabled: management job in-app notifications are now written by the Android client.
+    // Keeping this function active creates duplicate records for the assignee.
+    return null;
+
     const data = snap.data();
     const manager = data?.AssignedManager || 'Manager';
     const task = data?.Task || 'New Task';
@@ -225,7 +249,9 @@ exports.onManagmentJobAdded = functions.firestore
     try {
       // In-app only notifications
       if (!manager || manager.toLowerCase() === createdBy.toLowerCase()) return null;
-      await saveNotificationHistory(manager.toLowerCase(), notificationTitle, notificationBody,
+      await saveNotificationHistory(manager.toLowerCase(),
+        buildNotificationDocId(['management', context.params.docId, manager]),
+        notificationTitle, notificationBody,
         'management', {
           jobId: context.params.docId,
           assignedManager: manager,
@@ -265,7 +291,9 @@ function createContractUpdateFunction(collectionName) {
         try {
           // In-app only notifications
           const recipient = collectionName.replace(' Contracts', '').toLowerCase();
-          await saveNotificationHistory(recipient, '📅 Contract Updated',
+          await saveNotificationHistory(recipient,
+            buildNotificationDocId(['contract_update', context.params.docId, lastVisit, recipient]),
+            '📅 Contract Updated',
             `${contractName} - Last visit: ${lastVisit}`, 'contract_update', {
               contractId: context.params.docId,
               contractName: contractName,
@@ -337,8 +365,12 @@ function createContractCreatedFunction(collectionName) {
           };
           const nTitle = '📋 New Contract Added';
           const nBody = `${createdBy} added ${contractName} to their contracts`;
-          await saveNotificationHistory('ian', nTitle, nBody, 'contract_update', msg.data);
-          await saveNotificationHistory('kristine', nTitle, nBody, 'contract_update', msg.data);
+          await saveNotificationHistory('ian',
+            buildNotificationDocId(['contract_created', context.params.docId, 'ian']),
+            nTitle, nBody, 'contract_update', msg.data);
+          await saveNotificationHistory('kristine',
+            buildNotificationDocId(['contract_created', context.params.docId, 'kristine']),
+            nTitle, nBody, 'contract_update', msg.data);
           console.log("✅ Contract own-list in-app notifications saved (ian/kristine):", context.params.docId);
           return null;
         }
@@ -347,7 +379,9 @@ function createContractCreatedFunction(collectionName) {
         if (createdLower !== 'kristine' && createdLower !== 'ian') return null;
         if (!ownerLower || ownerLower === createdLower) return null;
 
-        await saveNotificationHistory(assignedTech.toLowerCase(), '📋 New Contract Assigned',
+        await saveNotificationHistory(assignedTech.toLowerCase(),
+          buildNotificationDocId(['contract_assigned', context.params.docId, assignedTech]),
+          '📋 New Contract Assigned',
           `${contractName} has been assigned to you`, 'contract_update', {
             contractId: context.params.docId,
             contractName: contractName,
@@ -400,7 +434,9 @@ function createWorkViewNotifyFunction(collectionName) {
 
       try {
         // In-app only notifications
-        await saveNotificationHistory(owner.toLowerCase(), notificationTitle, notificationBody,
+        await saveNotificationHistory(owner.toLowerCase(),
+          buildNotificationDocId(['workview_update', context.params.docId, owner]),
+          notificationTitle, notificationBody,
           'workview_update', {
             eventId: context.params.docId,
             eventName: eventName,
@@ -525,8 +561,12 @@ exports.onLeadCreatedNotifyCommission = functions.firestore
       type: 'commission'
     };
 
-    await saveNotificationHistory('ian', title, body, 'commission', payload);
-    await saveNotificationHistory('kristine', title, body, 'commission', payload);
+    await saveNotificationHistory('ian',
+      buildNotificationDocId(['commission_created', context.params.docId, 'ian']),
+      title, body, 'commission', payload);
+    await saveNotificationHistory('kristine',
+      buildNotificationDocId(['commission_created', context.params.docId, 'kristine']),
+      title, body, 'commission', payload);
     console.log('✅ Commission add in-app notification saved for Ian + Kristine');
     return null;
   });
@@ -563,7 +603,9 @@ exports.onLeadUpdatedNotifyCommission = functions.firestore
       type: 'commission'
     };
 
-    await saveNotificationHistory(affectedTech.toLowerCase(), title, body, 'commission', payload);
+    await saveNotificationHistory(affectedTech.toLowerCase(),
+      buildNotificationDocId(['commission_updated', context.params.docId, affectedTech]),
+      title, body, 'commission', payload);
     console.log('✅ Commission update in-app notification saved for', affectedTech);
     return null;
   });
@@ -648,6 +690,7 @@ exports.createEmployee = functions.https.onCall(async (data, context) => {
 
   data = data || {};
 
+  const requestedUid = (data.uid || '').toString().trim();
   const name = (data.name || '').toString().trim();
   const number = (data.number || '').toString().trim();
   const email = (data.email || '').toString().trim().toLowerCase();
@@ -657,16 +700,22 @@ exports.createEmployee = functions.https.onCall(async (data, context) => {
   const title = (data.title || '').toString().trim();
   const roleNorm = normalizeRole(data.role);
 
-  if (!name || !email || !password || !staffId || !contractKeyRaw) {
-    throw new functions.https.HttpsError(
-      'invalid-argument',
-      'name, email, password, staffId and contractKey are required.'
-    );
-  }
   if (!['admin', 'tech', 'super_admin'].includes(roleNorm)) {
     throw new functions.https.HttpsError(
       'invalid-argument',
       'role must be one of admin, tech, super_admin.'
+    );
+  }
+  if (!name || !staffId || !contractKeyRaw) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'name, staffId and contractKey are required.'
+    );
+  }
+  if (!requestedUid && (!email || !password)) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'email and password are required when uid is not provided.'
     );
   }
 
@@ -674,23 +723,46 @@ exports.createEmployee = functions.https.onCall(async (data, context) => {
   const contractKey = contractKeyRaw.toLowerCase();
 
   let userRecord;
-  try {
-    userRecord = await admin.auth().createUser({
-      email,
-      password,
-      displayName: name,
-    });
-  } catch (e) {
-    if (e && e.code === 'auth/email-already-exists') {
-      throw new functions.https.HttpsError('already-exists', 'A user with this email already exists.');
+  if (requestedUid) {
+    try {
+      userRecord = await admin.auth().getUser(requestedUid);
+    } catch (e) {
+      throw new functions.https.HttpsError(
+        'not-found',
+        'No auth user found for the provided uid.'
+      );
     }
-    throw new functions.https.HttpsError(
-      'internal',
-      'Failed to create auth user: ' + (e && e.message ? e.message : String(e))
-    );
+    try {
+      await admin.auth().updateUser(requestedUid, {
+        displayName: name || userRecord.displayName || undefined,
+      });
+      userRecord = await admin.auth().getUser(requestedUid);
+    } catch (e) {
+      throw new functions.https.HttpsError(
+        'internal',
+        'Failed to update auth user: ' + (e && e.message ? e.message : String(e))
+      );
+    }
+  } else {
+    try {
+      userRecord = await admin.auth().createUser({
+        email,
+        password,
+        displayName: name,
+      });
+    } catch (e) {
+      if (e && e.code === 'auth/email-already-exists') {
+        throw new functions.https.HttpsError('already-exists', 'A user with this email already exists.');
+      }
+      throw new functions.https.HttpsError(
+        'internal',
+        'Failed to create auth user: ' + (e && e.message ? e.message : String(e))
+      );
+    }
   }
 
   const uid = userRecord.uid;
+  const resolvedEmail = (userRecord.email || email || '').toString().trim().toLowerCase();
   const isSuperAdmin = roleNorm === 'super_admin';
   const isAdmin = isSuperAdmin || roleNorm === 'admin';
 
@@ -707,7 +779,7 @@ exports.createEmployee = functions.https.onCall(async (data, context) => {
   const profile = {
     uid,
     name,
-    email,
+    email: resolvedEmail,
     number,
     title,
     staffId,
@@ -721,6 +793,7 @@ exports.createEmployee = functions.https.onCall(async (data, context) => {
     seesAllJobs,
     canSeeContracts,
     canViewAllContracts,
+    canConvert: false,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     active: true,
   };
@@ -737,6 +810,7 @@ exports.initializeEmployeeProfile = functions.https.onCall(async (data, context)
 
   let targetUid = (data.uid || '').toString().trim();
   const email = (data.email || '').toString().trim().toLowerCase();
+  const password = (data.password || '').toString();
 
   if (!targetUid && !email) {
     throw new functions.https.HttpsError(
@@ -750,10 +824,29 @@ exports.initializeEmployeeProfile = functions.https.onCall(async (data, context)
       const userRecord = await admin.auth().getUserByEmail(email);
       targetUid = userRecord.uid;
     } catch (e) {
-      throw new functions.https.HttpsError(
-        'not-found',
-        'No auth user found for the given email.'
-      );
+      if (!password) {
+        throw new functions.https.HttpsError(
+          'not-found',
+          'No auth user found for the given email.'
+        );
+      }
+      try {
+        const userRecord = await admin.auth().createUser({
+          email,
+          password,
+        });
+        targetUid = userRecord.uid;
+      } catch (createErr) {
+        if (createErr && createErr.code === 'auth/email-already-exists') {
+          const userRecord = await admin.auth().getUserByEmail(email);
+          targetUid = userRecord.uid;
+        } else {
+          throw new functions.https.HttpsError(
+            'internal',
+            'Failed to initialize auth user: ' + (createErr && createErr.message ? createErr.message : String(createErr))
+          );
+        }
+      }
     }
   }
 

@@ -136,10 +136,37 @@
         </LinearLayout>
 
         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="VAT rate"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <RadioGroup
+            android:id="@+id/vatRateGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+            <RadioButton
+                android:id="@+id/vat13_5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="13.5%" />
+            <RadioButton
+                android:id="@+id/vat23"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="23%" />
+        </RadioGroup>
+
+        <TextView
             android:id="@+id/vatLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/general_quotation_vat_label"
+            android:text="@string/general_quotation_vat_amount_label"
             android:textSize="14sp"
             android:textColor="?android:attr/textColorSecondary" />
         <TextView
@@ -173,7 +200,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/general_quotation_additional_info_hint"
-            android:minLines="3"
+            android:minLines="5"
             android:gravity="top"
             android:inputType="textMultiLine"
             android:layout_marginBottom="12dp"
@@ -189,6 +216,13 @@
             android:layout_marginBottom="8dp"
             android:text="Password protect PDF"
             android:textColor="?android:attr/textColorPrimary" />
+
+        <Button
+            android:id="@+id/previewPdfButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Preview PDF" />
 
         <Button
             android:id="@+id/generatePdfButton"

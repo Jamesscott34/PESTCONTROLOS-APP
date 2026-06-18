@@ -180,11 +180,15 @@ public class BugReportFeatureRequestViewActivity extends AppCompatActivity {
         String submittedBy = safeStr(item.get("submittedBy"));
         String status = safeStr(item.get("status"));
         if (status.isEmpty()) status = "open";
+        if ("done".equalsIgnoreCase(status)) status = "resolved";
         String submittedAt = formatTs(item.get("submittedAt"));
         double cost = toDouble(item.get("cost"), 0);
         long daysToComplete = toLong(item.get("daysToComplete"), 0);
         String currency = safeStr(item.get("costCurrency"));
         if (currency.isEmpty()) currency = "£";
+        String adminReply = safeStr(item.get("adminReply"));
+        String userResolution = safeStr(item.get("userResolution"));
+        boolean upcomingFeature = Boolean.TRUE.equals(item.get("upcomingFeature"));
         boolean isFeature = "feature".equalsIgnoreCase(type);
         double ratePerHour = toDouble(item.get("ratePerHour"), 0);
         double hours = toDouble(item.get("hours"), 0);
@@ -200,6 +204,7 @@ public class BugReportFeatureRequestViewActivity extends AppCompatActivity {
         text.append("[").append(type.isEmpty() ? "?" : type).append("] ").append(title.isEmpty() ? "No title" : title).append("\n");
         text.append("By: ").append(submittedBy.isEmpty() ? "—" : submittedBy).append(" • ").append(submittedAt).append("\n");
         text.append("Status: ").append(status).append("\n");
+        if (upcomingFeature) text.append("Upcoming feature: yes\n");
         if (isFeature && (ratePerHour > 0 || cost > 0)) {
             text.append("Quote: ").append(currency).append(String.format(Locale.getDefault(), "%.2f", cost > 0 ? cost : ratePerHour * hours)).append(" • ");
             if (estimatedDays > 0 || daysToComplete > 0) text.append((estimatedDays > 0 ? estimatedDays : daysToComplete)).append(" days • ");
@@ -209,6 +214,8 @@ public class BugReportFeatureRequestViewActivity extends AppCompatActivity {
             if (cost > 0) text.append("Cost: ").append(currency).append(String.format(Locale.getDefault(), "%.2f", cost)).append("\n");
             if (daysToComplete > 0) text.append("Days to complete: ").append(daysToComplete).append("\n");
         }
+        if (!adminReply.isEmpty()) text.append("Admin reply: ").append(adminReply).append("\n");
+        if (!userResolution.isEmpty()) text.append("How to resolve: ").append(userResolution).append("\n");
         if (!desc.isEmpty()) text.append(desc.length() > 120 ? desc.substring(0, 120) + "…" : desc);
 
         TextView tv = new TextView(this);
@@ -234,12 +241,16 @@ public class BugReportFeatureRequestViewActivity extends AppCompatActivity {
         String submittedByUid = safeStr(item.get("submittedByUid"));
         String status = safeStr(item.get("status"));
         if (status.isEmpty()) status = "open";
+        if ("done".equalsIgnoreCase(status)) status = "resolved";
         String submittedAt = formatTs(item.get("submittedAt"));
         double cost = toDouble(item.get("cost"), 0);
         long daysToComplete = toLong(item.get("daysToComplete"), 0);
         String currency = safeStr(item.get("costCurrency"));
         if (currency.isEmpty()) currency = "£";
         String superNotes = safeStr(item.get("superAdminNotes"));
+        String adminReply = safeStr(item.get("adminReply"));
+        String userResolution = safeStr(item.get("userResolution"));
+        boolean upcomingFeature = Boolean.TRUE.equals(item.get("upcomingFeature"));
         boolean isFeature = "feature".equalsIgnoreCase(type);
         double ratePerHour = toDouble(item.get("ratePerHour"), 0);
         double hours = toDouble(item.get("hours"), 0);
@@ -255,6 +266,7 @@ public class BugReportFeatureRequestViewActivity extends AppCompatActivity {
         msg.append("Submitted by: ").append(submittedBy).append("\n");
         msg.append("Submitted at: ").append(submittedAt).append("\n\n");
         msg.append("Status: ").append(status).append("\n");
+        if (upcomingFeature) msg.append("Upcoming feature: yes\n");
         if (isFeature && (ratePerHour > 0 || cost > 0)) {
             msg.append("\n--- Quote ---\n");
             if (ratePerHour > 0) msg.append("Rate: ").append(currency).append(String.format(Locale.getDefault(), "%.0f", ratePerHour)).append("/hr\n");
@@ -271,6 +283,8 @@ public class BugReportFeatureRequestViewActivity extends AppCompatActivity {
             if (cost > 0) msg.append("Cost: ").append(currency).append(String.format(Locale.getDefault(), "%.2f", cost)).append("\n");
             if (daysToComplete > 0) msg.append("Days to complete: ").append(daysToComplete).append("\n");
         }
+        if (!adminReply.isEmpty()) msg.append("\nAdmin reply: ").append(adminReply).append("\n");
+        if (!userResolution.isEmpty()) msg.append("How to resolve: ").append(userResolution).append("\n");
         if (!superNotes.isEmpty()) msg.append("\nNotes: ").append(superNotes);
 
         boolean isSubmitter = submittedByUid.equals(SessionManager.getStaffId(this)) || submittedBy.equalsIgnoreCase(SessionManager.getName(this));
@@ -282,14 +296,16 @@ public class BugReportFeatureRequestViewActivity extends AppCompatActivity {
                     .setMessage(msg.toString())
                     .setItems(new CharSequence[]{
                             "Update (cost & estimated time)",
+                            "Answer / resolution guidance",
                             "Update status",
-                            "Mark complete (notify submitting admin)",
+                            "Mark resolved (notify submitting admin)",
                             "Delete (remove from Firebase)"
                     }, (dialog, which) -> {
                         if (which == 0) showSetCostAndDaysDialog(documentId, item);
-                        else if (which == 1) showStatusDialog(documentId, item);
-                        else if (which == 2) setCompleteAndNotify(documentId, item);
-                        else if (which == 3) confirmDelete(documentId, item);
+                        else if (which == 1) showAdminResponseDialog(documentId, item);
+                        else if (which == 2) showStatusDialog(documentId, item);
+                        else if (which == 3) setResolvedAndNotify(documentId, item);
+                        else if (which == 4) confirmDelete(documentId, item);
                     })
                     .setNegativeButton("Close", null)
                     .show();
@@ -418,28 +434,126 @@ public class BugReportFeatureRequestViewActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Toast.makeText(this, "Delete failed: " + (e != null ? e.getMessage() : ""), Toast.LENGTH_SHORT).show());
     }
 
-    private void setCompleteAndNotify(String documentId, Map<String, Object> item) {
+    private void setResolvedAndNotify(String documentId, Map<String, Object> item) {
         String title = safeStr(item.get("title"));
         String submittedBy = safeStr(item.get("submittedBy"));
+        final String recipient = safeStr(item.get("submittedByUid")).isEmpty()
+                ? submittedBy
+                : safeStr(item.get("submittedByUid"));
+        String userResolution = safeStr(item.get("userResolution"));
         Map<String, Object> updates = new HashMap<>();
-        updates.put("status", "done");
+        updates.put("status", "resolved");
         updates.put("updatedAt", Timestamp.now());
         db.collection(FirestorePaths.BUG_REPORT_FEATURE_REQUEST).document(documentId)
                 .update(updates)
                 .addOnSuccessListener(aVoid -> {
-                    if (!submittedBy.isEmpty()) {
+                    if (!recipient.isEmpty()) {
                         String notifDocId = "bugreport_done_" + documentId + "_" + System.currentTimeMillis();
-                        String notifTitle = "Bug report / Feature request completed";
-                        String body = title.isEmpty() ? "Your submission has been marked complete." : "\"" + title + "\" has been marked complete.";
+                        String notifTitle = "Bug report / Feature request resolved";
+                        String body = title.isEmpty() ? "Your submission has been marked resolved." : "\"" + title + "\" has been marked resolved.";
+                        if (!userResolution.isEmpty()) body += " How to resolve: " + userResolution;
                         Map<String, Object> data = new HashMap<>();
                         data.put("documentId", documentId);
-                        data.put("type", "bugreport_complete");
-                        NotificationUtils.writeInAppNotification(submittedBy, notifDocId, notifTitle, body, "bugreport_complete", data);
+                        data.put("type", "bugreport_resolved");
+                        NotificationUtils.writeInAppNotification(recipient, notifDocId, notifTitle, body, "bugreport_resolved", data);
                     }
-                    Toast.makeText(this, "Marked complete. Submitting admin has been notified.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Marked resolved. Submitting admin has been notified.", Toast.LENGTH_SHORT).show();
                     loadItems();
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed: " + (e != null ? e.getMessage() : ""), Toast.LENGTH_SHORT).show());
+    }
+
+    private void showAdminResponseDialog(String documentId, Map<String, Object> item) {
+        boolean isFeature = "feature".equalsIgnoreCase(safeStr(item.get("type")));
+        String existingReply = safeStr(item.get("adminReply"));
+        String existingResolution = safeStr(item.get("userResolution"));
+        boolean existingUpcoming = Boolean.TRUE.equals(item.get("upcomingFeature"));
+
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 24, 32, 24);
+
+        TextView replyLabel = new TextView(this);
+        replyLabel.setText("Super admin note / answer");
+        layout.addView(replyLabel);
+        EditText replyEdit = new EditText(this);
+        replyEdit.setMinLines(3);
+        replyEdit.setHint("Reply to the user");
+        replyEdit.setText(existingReply);
+        replyEdit.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        layout.addView(replyEdit);
+
+        TextView resolutionLabel = new TextView(this);
+        resolutionLabel.setText("How the user can resolve it");
+        resolutionLabel.setPadding(0, 16, 0, 0);
+        layout.addView(resolutionLabel);
+        EditText resolutionEdit = new EditText(this);
+        resolutionEdit.setMinLines(3);
+        resolutionEdit.setHint("Steps or advice for the user");
+        resolutionEdit.setText(existingResolution);
+        resolutionEdit.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        layout.addView(resolutionEdit);
+
+        android.widget.CheckBox upcomingCheck = new android.widget.CheckBox(this);
+        upcomingCheck.setText("Show as upcoming feature");
+        upcomingCheck.setChecked(existingUpcoming);
+        upcomingCheck.setEnabled(isFeature);
+        upcomingCheck.setPadding(0, 16, 0, 0);
+        layout.addView(upcomingCheck);
+
+        scroll.addView(layout);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Answer / resolution")
+                .setView(scroll)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String reply = replyEdit.getText() != null ? replyEdit.getText().toString().trim() : "";
+                    String resolution = resolutionEdit.getText() != null ? resolutionEdit.getText().toString().trim() : "";
+                    boolean upcoming = isFeature && upcomingCheck.isChecked();
+
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("adminReply", reply);
+                    updates.put("userResolution", resolution);
+                    updates.put("upcomingFeature", upcoming);
+                    updates.put("updatedAt", Timestamp.now());
+                    db.collection(FirestorePaths.BUG_REPORT_FEATURE_REQUEST).document(documentId)
+                            .update(updates)
+                            .addOnSuccessListener(aVoid -> {
+                                notifySubmitterOfResponse(documentId, item, reply, resolution, upcoming);
+                                Toast.makeText(this, "Answer saved.", Toast.LENGTH_SHORT).show();
+                                loadItems();
+                            })
+                            .addOnFailureListener(e -> Toast.makeText(this, "Failed: " + (e != null ? e.getMessage() : ""), Toast.LENGTH_SHORT).show());
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void notifySubmitterOfResponse(String documentId, Map<String, Object> item, String reply, String resolution, boolean upcomingFeature) {
+        String recipient = safeStr(item.get("submittedByUid"));
+        if (recipient.isEmpty()) recipient = safeStr(item.get("submittedBy"));
+        if (recipient.isEmpty()) return;
+
+        String title = safeStr(item.get("title"));
+        String notifDocId = "bugreport_reply_" + documentId + "_" + System.currentTimeMillis();
+        String notifTitle = upcomingFeature ? "Feature request updated" : "Bug report / Feature request answered";
+        StringBuilder body = new StringBuilder();
+        if (!title.isEmpty()) body.append("\"").append(title).append("\"");
+        else body.append("Your submission");
+        if (upcomingFeature) body.append(" has been marked as an upcoming feature.");
+        else body.append(" has a new reply from super admin.");
+        if (!reply.isEmpty()) body.append(" Note: ").append(reply);
+        if (!resolution.isEmpty()) body.append(" How to resolve: ").append(resolution);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("documentId", documentId);
+        data.put("type", "bugreport_reply");
+        NotificationUtils.writeInAppNotification(recipient, notifDocId, notifTitle, body.toString(), "bugreport_reply", data);
     }
 
     private void showSetCostAndDaysDialog(String documentId, Map<String, Object> item) {
@@ -701,7 +815,14 @@ public class BugReportFeatureRequestViewActivity extends AppCompatActivity {
     private void showStatusDialog(String documentId, Map<String, Object> item) {
         String current = safeStr(item.get("status"));
         if (current.isEmpty()) current = "open";
-        String[] options = new String[]{"open", "in_progress", "done"};
+        if ("done".equalsIgnoreCase(current)) current = "resolved";
+        boolean isFeature = "feature".equalsIgnoreCase(safeStr(item.get("type")));
+        List<String> optionsList = new ArrayList<>();
+        optionsList.add("open");
+        optionsList.add("in_progress");
+        optionsList.add("resolved");
+        if (isFeature) optionsList.add("upcoming");
+        String[] options = optionsList.toArray(new String[0]);
         int selected = 0;
         for (int i = 0; i < options.length; i++) {
             if (options[i].equalsIgnoreCase(current)) {
@@ -719,23 +840,31 @@ public class BugReportFeatureRequestViewActivity extends AppCompatActivity {
                     String newStatus = options[pos];
                     Map<String, Object> updates = new HashMap<>();
                     updates.put("status", newStatus);
+                    updates.put("upcomingFeature", isFeature && "upcoming".equals(newStatus));
                     updates.put("updatedAt", Timestamp.now());
                     db.collection(FirestorePaths.BUG_REPORT_FEATURE_REQUEST).document(documentId)
                             .update(updates)
                             .addOnSuccessListener(aVoid -> {
-                                if ("done".equals(newStatus)) {
+                                if ("resolved".equals(newStatus)) {
                                     String submittedBy = safeStr(item.get("submittedBy"));
+                                    String recipient = safeStr(item.get("submittedByUid"));
+                                    if (recipient.isEmpty()) recipient = submittedBy;
                                     String title = safeStr(item.get("title"));
-                                    if (!submittedBy.isEmpty()) {
+                                    String resolution = safeStr(item.get("userResolution"));
+                                    if (!recipient.isEmpty()) {
                                         String notifDocId = "bugreport_done_" + documentId + "_" + System.currentTimeMillis();
-                                        String notifTitle = "Bug report / Feature request completed";
-                                        String body = title.isEmpty() ? "Your submission has been marked complete." : "\"" + title + "\" has been marked complete.";
+                                        String notifTitle = "Bug report / Feature request resolved";
+                                        String body = title.isEmpty() ? "Your submission has been marked resolved." : "\"" + title + "\" has been marked resolved.";
+                                        if (!resolution.isEmpty()) body += " How to resolve: " + resolution;
                                         Map<String, Object> data = new HashMap<>();
                                         data.put("documentId", documentId);
-                                        data.put("type", "bugreport_complete");
-                                        NotificationUtils.writeInAppNotification(submittedBy, notifDocId, notifTitle, body, "bugreport_complete", data);
+                                        data.put("type", "bugreport_resolved");
+                                        NotificationUtils.writeInAppNotification(recipient, notifDocId, notifTitle, body, "bugreport_resolved", data);
                                     }
                                     Toast.makeText(this, "Status updated. Submitting admin has been notified.", Toast.LENGTH_SHORT).show();
+                                } else if ("upcoming".equals(newStatus)) {
+                                    notifySubmitterOfResponse(documentId, item, "", "", true);
+                                    Toast.makeText(this, "Status updated. Feature marked upcoming.", Toast.LENGTH_SHORT).show();
                                 } else {
                                     Toast.makeText(this, "Status updated.", Toast.LENGTH_SHORT).show();
                                 }

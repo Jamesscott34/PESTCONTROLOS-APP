@@ -6,8 +6,8 @@ import com.grpc.grpc.quotations.ui.BirdQuotationActivity;
 import com.grpc.grpc.era.ui.EnvironmentSelectionActivity;
 import com.grpc.grpc.quotations.ui.GeneralQuotationActivity;
 import com.grpc.grpc.quotations.ui.GeneralQuotationFromCatalogActivity;
-import com.grpc.grpc.generalreports.ui.GeneralReportActivity;
 import com.grpc.grpc.quotations.ui.QuotesActivity;
+import com.grpc.grpc.safety.ui.SafetyStatementActivity;
 import com.grpc.grpc.serviceagreements.ui.ServiceAgreementActivity;
 
 import android.annotation.SuppressLint;
@@ -37,8 +37,8 @@ import androidx.appcompat.app.AppCompatActivity;
 public class ReportSelectionActivity extends AppCompatActivity {
 
     private Button createReportButton, createQuotationButton, createBirdQuotationButton,
-            buttonCreateGeneralQuotation, buttonGeneralQuotationCatalog, buttonGenericReport, buttonActionForm,
-            buttonServiceAgreements, buttonEra;
+            buttonGenericQuotationFromCatalog, buttonCreateGeneralQuotation, buttonGenericReport, buttonActionForm,
+            buttonServiceAgreements, buttonEra, buttonSafetyStatement;
     private TextView welcomeTextView;
     private String userName;
 
@@ -59,15 +59,15 @@ public class ReportSelectionActivity extends AppCompatActivity {
         // Initialize the welcome TextView and set the welcome message
         welcomeTextView = findViewById(R.id.welcomeTextView);
         if (welcomeTextView != null) {
-            welcomeTextView.setText("Welcome!");
+            welcomeTextView.setText(getString(R.string.welcome_back_user, userName != null ? userName : "User"));
         }
         SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
             if (welcomeTextView == null) return;
             String name = SessionManager.getName(this);
             if (name != null && !name.trim().isEmpty()) {
-                welcomeTextView.setText("Welcome, " + name.trim() + "!");
+                welcomeTextView.setText(getString(R.string.welcome_back_user, name.trim()));
             } else {
-                welcomeTextView.setText("Welcome, " + userName + "!");
+                welcomeTextView.setText(getString(R.string.welcome_back_user, userName != null ? userName : "User"));
             }
         }));
 
@@ -75,12 +75,13 @@ public class ReportSelectionActivity extends AppCompatActivity {
         createReportButton = findViewById(R.id.buttonCreateReport);
         createQuotationButton = findViewById(R.id.buttonCreateQuotation);
         createBirdQuotationButton = findViewById(R.id.buttonCreateBirdQuotation);
+        buttonGenericQuotationFromCatalog = findViewById(R.id.buttonGenericQuotationFromCatalog);
         buttonCreateGeneralQuotation = findViewById(R.id.buttonCreateGeneralQuotation);
-        buttonGeneralQuotationCatalog = findViewById(R.id.buttonGeneralQuotationCatalog);
         buttonGenericReport = findViewById(R.id.buttonGenericReport);
         buttonActionForm = findViewById(R.id.buttonActionForm);
         buttonServiceAgreements = findViewById(R.id.buttonServiceAgreements);
         buttonEra = findViewById(R.id.buttonEra);
+        buttonSafetyStatement = findViewById(R.id.buttonSafetyStatement);
 
         // Navigate to ReportActivity
         createReportButton.setOnClickListener(v -> {
@@ -103,29 +104,27 @@ public class ReportSelectionActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // Navigate to GeneralQuotationActivity (Generic Quote - multi-line custom)
-        buttonCreateGeneralQuotation.setOnClickListener(v -> {
-            Intent intent = new Intent(this, GeneralQuotationActivity.class);
-            intent.putExtra("USER_NAME", userName);
-            startActivity(intent);
-        });
-
-        // Navigate to General Quotation (catalog-driven from sales.json)
-        if (buttonGeneralQuotationCatalog != null) {
-            buttonGeneralQuotationCatalog.setOnClickListener(v -> {
+        // Generic Quotation (catalog dropdown from sales.json)
+        if (buttonGenericQuotationFromCatalog != null) {
+            buttonGenericQuotationFromCatalog.setOnClickListener(v -> {
                 Intent intent = new Intent(this, GeneralQuotationFromCatalogActivity.class);
                 intent.putExtra("USER_NAME", userName);
                 startActivity(intent);
             });
         }
 
-        // Navigate to GenericReportActivity
-        buttonGenericReport.setOnClickListener(v -> {
-            Intent intent = new Intent(this, GeneralReportActivity.class);
-            intent.putExtra("USER_NAME", userName); // Pass username
-            startActivity(intent);
+        // Custom Quotation (manual line items and breakdown)
+        if (buttonCreateGeneralQuotation != null) {
+            buttonCreateGeneralQuotation.setOnClickListener(v -> {
+                Intent intent = new Intent(this, GeneralQuotationActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
+            });
+        }
 
-        });
+        if (buttonGenericReport != null) {
+            buttonGenericReport.setVisibility(android.view.View.GONE);
+        }
 
         // Navigate to ActionFormActivity
         buttonActionForm.setOnClickListener(v -> {
@@ -148,6 +147,14 @@ public class ReportSelectionActivity extends AppCompatActivity {
         if (buttonEra != null) {
             buttonEra.setOnClickListener(v -> {
                 Intent intent = new Intent(this, EnvironmentSelectionActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
+            });
+        }
+
+        if (buttonSafetyStatement != null) {
+            buttonSafetyStatement.setOnClickListener(v -> {
+                Intent intent = new Intent(this, SafetyStatementActivity.class);
                 intent.putExtra("USER_NAME", userName);
                 startActivity(intent);
             });

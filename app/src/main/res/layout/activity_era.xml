@@ -41,7 +41,14 @@
             android:id="@+id/ToxicButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Toxic ERA" />
+            android:text="Toxic ERA"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/BirdProofingEraButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bird Proofing ERA" />
 
     </LinearLayout>
 

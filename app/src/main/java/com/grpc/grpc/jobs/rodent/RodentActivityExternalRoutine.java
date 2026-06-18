@@ -3,6 +3,7 @@ package com.grpc.grpc.jobs.rodent;
 import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.reports.pdf.PDFReportGenerator;
+import com.grpc.grpc.reports.pdf.PdfFooterPageNumberStamper;
 
 import android.content.Context;
 import android.content.Intent;
@@ -78,7 +79,10 @@ public class RodentActivityExternalRoutine extends AppCompatActivity {
      */
     private void extractIntentData() {
         Intent intent = getIntent();
-        documentId = intent.getStringExtra("DOCUMENT_ID");
+        documentId = intent.getStringExtra("CONTRACT_ID");
+        if (documentId == null || documentId.trim().isEmpty()) {
+            documentId = intent.getStringExtra("DOCUMENT_ID");
+        }
         userName = intent.getStringExtra("USER_NAME");
         companyName = intent.getStringExtra("COMPANY_NAME");
         address = intent.getStringExtra("ADDRESS");
@@ -174,9 +178,27 @@ public class RodentActivityExternalRoutine extends AppCompatActivity {
             addPdfContent(document, context);
 
             document.close();
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context), null);
         } catch (IOException e) {
             Toast.makeText(context, "Error Creating PDF!", Toast.LENGTH_SHORT).show();
             e.printStackTrace();
+            finish();
+            return;
+        }
+
+        if (ContractStorageUploader.shouldAutoUpload(documentId)) {
+            ContractStorageUploader.uploadContractReport(
+                    pdfFile,
+                    documentId,
+                    "generic_report",
+                    companyName,
+                    this::finish,
+                    error -> {
+                        Toast.makeText(context, "Report saved locally but contract upload failed: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+            );
+            return;
         }
 
         finish();
@@ -186,12 +208,28 @@ public class RodentActivityExternalRoutine extends AppCompatActivity {
      * Returns the appropriate report directory based on Android version.
      */
     private File getReportDirectory(Context context) {
-        String folderName = TenantBranding.reportsFolderName(context);
+        File baseRoot;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return new File(context.getExternalFilesDir(null), folderName);
+            baseRoot = context.getExternalFilesDir(null);
         } else {
-            return new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), folderName);
+            baseRoot = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
         }
+        if (baseRoot == null) baseRoot = context.getFilesDir();
+
+        String routeMode = getIntent() != null ? getIntent().getStringExtra("ROUTE_MODE") : null;
+        String routeFolder = getIntent() != null ? getIntent().getStringExtra("ROUTE_FOLDER") : null;
+
+        if ("job".equalsIgnoreCase(routeMode)) {
+            return new File(baseRoot, "JobWorkReports");
+        }
+        if ("management".equalsIgnoreCase(routeMode)) {
+            File managementRoot = new File(baseRoot, "management jobs");
+            if (routeFolder != null && !routeFolder.trim().isEmpty()) {
+                return new File(managementRoot, routeFolder.trim());
+            }
+            return managementRoot;
+        }
+        return new File(baseRoot, TenantBranding.reportsFolderName(context));
     }
 
     /**
@@ -223,7 +261,7 @@ public class RodentActivityExternalRoutine extends AppCompatActivity {
                 .setTextAlignment(TextAlignment.CENTER)
                 .setFontSize(16)
                 .setBold()
-                .setFontColor(ColorConstants.BLUE));
+                .setFontColor(ColorConstants.BLACK));
 
         document.add(new Paragraph("\n"));  // Spacing
 

@@ -1,252 +1,493 @@
-# PestControlOS (PCOS) – Field Operations Platform
+# PestControlOS — Android Field Operations Platform
 
-This repository contains the **PestControlOS** field operations application for pest control businesses. It is built in **Java** for Android and backed by **Firebase** (Authentication, Firestore, Storage), with optional Cloud Functions and LLM integrations. The app streamlines scheduling, contracts, jobs, reports, messaging, leads, and notifications with role-based access for **administrators** and **technicians**.
+**Version:** 2.1.2 &nbsp;|&nbsp; **Min SDK:** 27 (Android 8.1) &nbsp;|&nbsp; **Target SDK:** 35 &nbsp;|&nbsp; **Language:** Java
 
-This document is the main reference for developers, maintainers, and power users. It describes the **Main Activity** (every button and destination), **Admin vs Technician** behaviour, setup, and security. For architecture and sequence diagrams, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+PestControlOS is a multi-tenant Android application built for pest control field operations. It covers the full service lifecycle: scheduling, contracts, job management, PDF report generation, quotations, service agreements, environmental risk assessments, invoicing, team messaging, lead tracking, site mapping, and staff location monitoring — all backed by Firebase and producing professional PDFs on-device via iText7.
+
+The platform supports multiple independent tenants through Android product flavours (each with its own Firebase project), a full offline mode, and a time-limited demo mode. A companion web CRM shares the same Firestore backend.
 
 ---
 
-## Architecture overview
+## Table of Contents
 
-The app runs on the device and communicates with Firebase (Auth, Firestore, Storage, optional Cloud Functions, App Check) and optional external AI providers (e.g. Groq, Hugging Face).
+1. [Architecture overview](#architecture-overview)
+2. [Feature overview](#feature-overview)
+3. [Build flavours](#build-flavours)
+4. [User roles and permissions](#user-roles-and-permissions)
+5. [Main screen — button reference](#main-screen--button-reference)
+6. [Report creation hub](#report-creation-hub)
+7. [Admin dashboard](#admin-dashboard)
+8. [Data model](#data-model)
+9. [Technology stack](#technology-stack)
+10. [Project structure](#project-structure)
+11. [Setup](#setup)
+12. [Security](#security)
+13. [Background workers](#background-workers)
+14. [Offline mode](#offline-mode)
+16. [Multi-tenant deployment](#multi-tenant-deployment)
+17. [Troubleshooting](#troubleshooting)
+18. [Backlog](#backlog)
 
-![GRPC component diagram](grpc_architecture_component_diagram.png)
+---
 
-*Component diagram (PNG in repo root). Mermaid source: [docs/component_diagram.mmd](docs/component_diagram.mmd).*
+## Architecture Overview
 
-```mermaid
-flowchart LR
-  subgraph Device["Android device"]
-    A["Android app - Java\nActivities + Workers + Widget"]
-    L["Local storage\nSharedPreferences + app files"]
-    WM["WorkManager\nreminders + periodic tasks"]
-    SR["SpeechRecognizer + TTS"]
-  end
-
-  subgraph Firebase["Firebase backend"]
-    AUTH["Auth\nemail/password"]
-    FS["Firestore\nusers, jobs, contracts, leads\nmessages, notifications"]
-    ST["Storage\nReportsYY/... PDFs"]
-    FN["Cloud Functions callable\nadmin key updates etc"]
-    AC["App Check\nPlay Integrity in prod"]
-  end
-
-  subgraph AI["External AI providers"]
-    G["Groq\nOpenAI-compatible Chat Completions"]
-    HF["Hugging Face Router\nOpenAI-compatible Chat Completions"]
-  end
-
-  A --> AUTH
-  A --> FS
-  A --> ST
-  A --> FN
-  A --> AC
-  A --> G
-  A --> HF
-  A --> L
-  A --> WM
-  A --> SR
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Android Client (Java)                        │
+│                                                                     │
+│  UI Layer          Business Logic        Data / Workers             │
+│  ─────────         ──────────────        ────────────               │
+│  Activities        SessionManager        WorkManager tasks          │
+│  RecyclerViews     StaffDirectory        LocationSharing            │
+│  Canvas views      TenantBranding        ReportDatabaseHelper       │
+│  PDF previewer     ContractReportSync    WorkViewLocalEventStore     │
+└───────────┬──────────────┬──────────────────────┬───────────────────┘
+            │              │                      │
+     ┌──────▼──────┐ ┌─────▼──────┐      ┌───────▼────────┐
+     │  Firebase   │ │  Firebase  │      │ Firebase       │
+     │    Auth     │ │ Firestore  │      │ Storage        │
+     │(email/pwd)  │ │(real-time) │      │(PDFs, images)  │
+     └─────────────┘ └─────┬──────┘      └────────────────┘
+                           │
+                    ┌──────▼──────────┐
+                    │ Cloud Functions  │
+                    │ (Node.js —      │
+                    │  message cleanup│
+                    │  scheduled jobs)│
+                    └─────────────────┘
+                           │
+                    ┌──────▼──────────┐
+                    │  External APIs  │
+                    │  Google Maps    │
+                    │  Google Places  │
+                    └─────────────────┘
 ```
 
----
+**Identity resolution on login:**
+`Firebase Auth UID → users/{uid} (StaffID lookup) → users/{StaffID} (profile + RBAC) → SessionManager (in-memory + SharedPreferences cache)`
 
-## Main Activity – Buttons and destinations
+**Offline persistence:** Firestore disk cache (`PersistentCacheSettings`) is enabled at app start. All previously fetched data is served from SQLite when offline; writes are queued and synced automatically on reconnect.
 
-The **Main Activity** is the home screen after login. Visibility of buttons depends on **role** (admin / super_admin / tech) and **permission flags** on the user document in Firestore. The screen is scrollable; the logout button is fixed at the bottom.
-
-### Button reference
-
-| Button | Opens | What you can do | Who sees it |
-|--------|--------|------------------|-------------|
-| **Notifications** | `NotificationsActivity` | View in-app notification history; mark as read; open linked screen (Work View, Contracts, Jobs, Messaging, etc.). | All authenticated users (hidden in offline mode). |
-| **Search** | `SearchActivity` | Global search across jobs, contracts, leads, and reports; open result in the correct activity. | Users with `canSearch` (default: super_admin). |
-| **Dashboard** | `AdminDashboardActivity` | Contracts summary, users summary, bug/feature reports, reports folders, storage metrics. See [Admin Dashboard](#admin-dashboard) below. | **Admin** and **super_admin** only. |
-| **Employee** | `EmployeeManagementActivity` | List users; add/edit employees; change roles and permissions. | **Super_admin** only. |
-| **Create Report** | `ReportSelectionActivity` | Hub for all report types. See [Create Report hub](#create-report-hub) below. | All users (offline: limited). |
-| **View Reports** | `PDFSelectionActivity` | Pick year, then list PDFs in Firebase Storage (or local for offline). Open, share, or delete stored reports. | All users. |
-| **Work View** | `WorkViewActivity` | Daily calendar (08:00–17:30); add/edit/move jobs, contract visits, follow-ups; see reminders; admins see all technicians’ schedules. | All users (hidden in offline). |
-| **Location Finder** | `LocationFinderActivity` | View last known locations of staff (refreshed periodically by devices). | Users with `canUseLocationFinder` (default: super_admin). |
-| **Contracts** | `ContractsActivity` | List contracts (Behind / Due / Up-to-date); open contract → view details, open in Maps, mark visit done, create report, assign (admin). | All users with contract access (hidden in offline). |
-| **Commission** | `LeadsSelectionActivity` | Generate lead or view leads; commission and invoice tracking; mark paid (admin). | Users with `canAccessCommissionLeads`. |
-| **Job Work** | `JobsActivity` | List jobs; add job and assign technician (admin); accept, complete, add follow-up (tech). Management jobs section for admin. | All users (hidden in offline). |
-| **Messaging** | `MessagingConversationsActivity` | List conversations (direct + group); open chat; send/receive messages. | Users with `canMessage`. |
-| **Maps** | (placeholder) | Toast: “Feature coming soon.” | Users with `canMap`. |
-| **Visit …** (website) | Browser | Opens company URL (e.g. staff portal). Configurable; hidden if `show_grpcstaff_portal` is false. | All (or configurable). Offline: label may change to “Get update”. |
-| **How to Use App** | `HelpReadmeActivity` | In-app help / README content. | All users (hidden in offline/demo expired). |
-| **Logout** | `LoginActivity` | Clears session, caches, workers; signs out of Firebase; returns to login. Offline: button may show “Exit”. | All users. |
-
-**Hidden on Main (moved under Create Report):** General Quotes, Service agreement, ERA, and AI Chat are not shown on the main screen in the current build; quotations, service agreements, and ERA are available from **Create Report** → Report Selection.
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full component diagram and Firestore data-flow documentation.
 
 ---
 
-## Create Report hub (Report Selection)
+## Feature Overview
 
-Tapping **Create Report** opens **Report Selection**, which offers:
+| Feature | Description |
+|---------|-------------|
+| **Work View** | Daily calendar (08:00–17:30) with half-hour slots. Add, edit, and drag jobs, contract visits, and follow-ups. Admins see all technicians combined. Home screen widget shows the next 3 events. WorkManager reminders fire ~30 min before each event. |
+| **Contracts** | Per-technician contract collections with Behind / Due / Up-to-date status counters and colour coding. Mark routine done, log call-outs, view per-year visit totals, view individual visit history timeline, create linked reports, and navigate to site via Maps. Behinds and Due list PDF export. Admin can reassign contracts between technicians. |
+| **Visit History Timeline** | Each contract maintains a `visitHistory` subcollection. Every routine or call-out confirmation writes a timestamped log entry (type, date, technician). The "View Visits" button shows a scrollable chronological list alongside yearly counter totals. |
+| **Job Work** | Admins create and assign jobs; technicians accept and complete them. Management jobs track internal office tasks. All jobs feed into Work View and trigger in-app notifications on assignment. |
+| **Service Reports** | Rodent (initial, routine, call-out, external-routine), general (4/6/8/12-point), and action form reports. iText7 PDFs with company logo, optional owner-password encryption, customer signatures, and photo attachments. AI Fix rewrites selected text to professional standard. |
+| **Quotations** | Point-based pest control quotes (4/6/8/12pt), bird-control quotes with optional 30% deposit, catalog-driven general quotes, and custom line-item quotes. Full VAT calculation and PDF generation. |
+| **Service Agreements** | Formal agreements with dual signature fields (technician + client). Generated as encrypted PDF and uploaded to Firebase Storage. |
+| **Environmental Risk Assessment (ERA)** | Toxic, Non-Toxic, and Bird-Proofing ERA workflows with full PDF output for regulatory compliance. |
+| **Invoicing** | Create invoices linked to contracts. Templates for initial setup, monthly maintenance, feature update, and custom. VAT/totals preview. Uploaded to Storage and written to Firestore ledger. |
+| **Leads / Commission** | Technicians log leads with commission values. Admins mark invoices paid and update materials costs. In-app notifications on updates. |
+| **Site Maps** | Draw and annotate site floor plans on a custom canvas (`SiteMapCanvasView`). Import a photo or floor plan image as the canvas background. Add pest control markers (internal, external, fly units, insect), lines, shapes, and text labels. Saved as a full-page landscape PDF. Maps are stored and listed per contract. |
+| **PDF Editor** | Annotate existing PDFs with freehand ink and text overlays. Multi-page viewer with per-page annotation layer. Export a flattened PDF. |
+| **PDF Converter** | Convert any PDF to a Word (.docx) document or extract plain text. Uses ML Kit OCR for scanned pages. Gated by `canConvert` permission. |
+| **Cloud File Browser** | Firebase Storage drill-down browser for reports, contracts, management jobs, and general folders. Multi-select with action bar. Long-press selects all visible files. Move selected files to any folder with a live "X files remaining" counter. Delete selected files. Upload new files. |
+| **Messaging** | Firestore-based 1:1 and group chat. Urgent flag preserves messages from Cloud Function cleanup. Voice dictation via `DictateEditText`. |
+| **Notifications** | In-app notification inbox per user with deep links into Jobs, Contracts, Work View, Messaging, and Leads. |
+| **Location Finder** | Admin-only view of all staff last known GPS positions. Updated every 10–15 minutes by `LastLocationUpdateWorker`. Stale records cleaned periodically. Falls back to local cache when offline so the last known position is always visible. |
+| **Global Search** | Admin search across jobs, contracts, leads, and reports in Firestore. Gated by `canSearch` permission flag. |
+| **Route Planner** | Multi-stop route optimisation via `RouterActivity` and `GoogleDirectionsClient`. PDF export of the best route via `BestRoutePdfGenerator`. |
+| **Bug / Feature Requests** | Staff submit bugs or feature requests. Super_admin sets cost, days, and status. Clients agree or disagree on feature quotes. Full lifecycle management with long-press edit. |
+| **Employee Management** | Super_admin creates, edits, and deactivates staff. Sets role and individual `Can*` permission flags. |
+| **Admin Dashboard** | Contracts summary, users list, bug/feature request tracker, Storage folder management, and upload/download metrics. |
+| **Offline PDF Templates** | Offline users build custom report headers with logo, watermark, colour choice, and ordered header blocks. Templates are saved locally and reused across sessions. |
+| **Email Compose** | In-app email composition with configurable templates. Can attach PDFs from Storage or local files. |
+| **Home Screen Widget** | Displays the next 3 Work View events. Updated automatically whenever Work View changes. |
+| **Session Management** | RBAC session loaded from Firestore on login and persisted to SharedPreferences. Remember Me (7-day token) is auto-enabled on every successful login and cleared on explicit logout. 5-minute background timeout triggers re-authentication. |
 
-| Option | Opens | Description |
-|--------|--------|-------------|
-| **Service Report** | `ReportActivity` | Pest control service report (rodent initial/routine/call-out/external, etc.); PDF with logo, optional password and signatures. |
-| **General Report** | `GeneralReportActivity` | Generic multi-section report; PDF generation. |
-| **Action Form** | `ActionFormActivity` | Action form PDF. |
-| **Contract Quotations** | `QuotesActivity` | 4/6/8/12pt and custom quote options; VAT and totals. |
-| **Bird Quote** | `BirdQuotationActivity` | Bird control quotation; optional deposit. |
-| **Custom Quote** (string) | `GeneralQuotationActivity` | Multi-line custom quotation. |
-| **General Quotation** (catalog) | `GeneralQuotationFromCatalogActivity` | Catalog-driven quotation (e.g. sales.json). |
-| **Service Agreements** | `ServiceAgreementActivity` | Service agreement with signature fields; save as PDF. |
-| **ERA** | `EnvironmentSelectionActivity` | Toxic or Non-Toxic Environmental Risk Assessment; then respective ERA activity and PDF. |
-| **Custom Template** | `PdfTemplateSettingsActivity` | Configure logo, watermark, header blocks for “My Template”. |
-| **Create Custom Report** | `ReportActivity` (with `USE_MY_TEMPLATE`) | Generate report using the custom template. |
+---
+
+## Build Flavours
+
+The app uses a single `tenant` flavour dimension. Each flavour targets a separate Firebase project via its own `google-services.json`.
+
+| Flavour | Notes |
+|---------|-------|
+| `company1` | Primary production tenant. Base `applicationId` unchanged. |
+| `company2` | Separate production tenant. Suffix `.company2`. |
+| `company3` | Separate production tenant. Suffix `.company3`. |
+| `company4` | Separate production tenant. Suffix `.company4`. |
+| `company5` | Separate production tenant. Suffix `.company5`. |
+| `demo` | Firebase access expires after a configurable number of days. Max 3 saved offline templates. 30-day offline trial then redirect. |
+| `offline` | No Firebase. Local SQLite and file system only. Max 3 saved offline templates. 30-day trial then redirect. |
+
+Runtime build flags (`BuildConfig`): `IS_OFFLINE`, `IS_DEMO`, `OFFLINE_TRIAL_DAYS`, `DEMO_FIREBASE_EXPIRY_DAYS`, `MAX_SAVED_TEMPLATES`.
+
+---
+
+## User Roles and Permissions
+
+Role is stored in `users/{StaffID}` and normalised to `tech`, `admin`, or `super_admin`.
+
+| Capability | `tech` | `admin` | `super_admin` |
+|------------|:------:|:-------:|:-------------:|
+| Create / view reports | ✓ | ✓ | ✓ |
+| Work View (own schedule) | ✓ | ✓ | ✓ |
+| Contracts (own) | ✓ | ✓ | ✓ |
+| Jobs (accept, complete) | ✓ | ✓ | ✓ |
+| Notifications | ✓ | ✓ | ✓ |
+| Admin Dashboard | — | ✓ | ✓ |
+| Assign contracts / jobs | — | ✓ | ✓ |
+| View all technicians' Work View | — | ✓ | ✓ |
+| Delete jobs / contracts | — | ✓ | ✓ |
+| Commission / Leads | `canAccessCommissionLeads` | ✓ | ✓ |
+| Messaging | `canMessage` | `canMessage` | ✓ |
+| Global search | `canSearch` | `canSearch` | ✓ |
+| Location Finder | — | `canUseLocationFinder` | ✓ |
+| Move cloud files | `canMove` | `canMove` | ✓ |
+| Employee management | — | — | ✓ |
+| Bug/feature lifecycle | — | Submit + view | Full |
+| PDF converter | `canConvert` | `canConvert` | ✓ |
+| PDF editor | `canConvert` | `canConvert` | ✓ |
+| Invoicing | `canInvoice` | ✓ | ✓ |
+
+Optional `Can*` flags on the user document override role defaults: `canSearch`, `canMessage`, `canMap`, `canRoute`, `canUseLocationFinder`, `canAccessCommissionLeads`, `canBugReport`, `canConvert`, `canInvoice`, `canMove`.
+
+---
+
+## Main Screen — Button Reference
+
+| Button | Destination | Visibility |
+|--------|-------------|------------|
+| Notifications | `NotificationsActivity` | All authenticated users |
+| Search | `SearchActivity` | `canSearch` |
+| Dashboard | `AdminDashboardActivity` | admin, super_admin |
+| Employee | `EmployeeManagementActivity` | super_admin |
+| Create Report | `ReportSelectionActivity` | All users |
+| View Reports | `PDFSelectionActivity` | All users |
+| Work View | `WorkViewActivity` | All authenticated users |
+| Location Finder | `LocationFinderActivity` | `canUseLocationFinder` |
+| Contracts | `ContractsActivity` | All authenticated users |
+| Commission | `LeadsSelectionActivity` | `canAccessCommissionLeads` |
+| Job Work | `JobsActivity` | All authenticated users |
+| Messaging | `MessagingConversationsActivity` | `canMessage` |
+| Maps | `MapsPlaceholderActivity` | `canMap` |
+| Visit (website) | Browser — tenant staff portal | Configurable per flavour |
+| How to Use App | `HelpReadmeActivity` | All (hidden if demo expired / offline) |
+| Logout | `LoginActivity` | All users |
+
+---
+
+## Report Creation Hub
+
+`ReportSelectionActivity` routes to:
+
+| Option | Activity |
+|--------|----------|
+| Service Report | `ReportActivity` |
+| General Report | `GeneralReportActivity` |
+| Action Form | `ActionFormActivity` |
+| Contract Quotations (4/6/8/12pt) | `QuotesActivity` |
+| Bird Quote | `BirdQuotationActivity` |
+| Custom Quote | `GeneralQuotationActivity` |
+| General Quotation (catalog) | `GeneralQuotationFromCatalogActivity` |
+| Service Agreement | `ServiceAgreementActivity` |
+| ERA | `EnvironmentSelectionActivity` → Toxic / Non-Toxic / Bird-Proofing |
+| Custom Template Settings | `PdfTemplateSettingsActivity` |
+| Create Custom Report | `ReportActivity` with `USE_MY_TEMPLATE` flag |
 
 ---
 
 ## Admin Dashboard
 
-**Dashboard** is visible only to **admin** and **super_admin**. It opens **Admin Dashboard**, which contains:
+`AdminDashboardActivity` — visible to admin and super_admin.
 
-| Block | Content | Who |
-|--------|--------|-----|
-| **Contracts summary** | Per-user contract counts; total contracts. Scrollable. | Admin / super_admin |
-| **Users summary** | List of users; tap to change role. Scrollable. | Admin / super_admin |
-| **Bug report / Feature request** | **Submit** → submit bug or feature request. **View** → list and (super_admin) set cost, days, status, mark complete, delete; long-press to edit; feature quotes and client agree/disagree. | Shown when `canBugReport`; submit/view for admin; full management for super_admin |
-| **Reports folders** | **Create Reports folder** → choose year and create `ReportsYY` in Firebase Storage. | Admin / super_admin |
-| **Upload / Download metrics** | Storage metrics (if configured). | Super_admin (often hidden in UI) |
-| **Reports (Storage)** | Report file count and size in Storage. | Super_admin (often hidden) |
-| **Auth / Sign-in summary** | Auth log (if configured). | Often hidden |
+- **Contracts summary** — per-user contract counts and totals.
+- **Users summary** — list all staff; tap to change role.
+- **Bug / Feature requests** — submit, view, set cost/days/status, mark complete, client agree/disagree, long-press edit (super_admin only for management actions).
+- **Reports folders** — create `ReportsYY` folder in Firebase Storage.
+- **Storage metrics** — upload/download counts and file sizes (super_admin).
 
 ---
 
-## Admin vs Technician – Summary
+## Data Model
 
-| Capability | Technician (tech) | Admin | Super_admin |
-|------------|-------------------|--------|-------------|
-| Notifications | Yes | Yes | Yes |
-| Create Report / View Reports | Yes | Yes | Yes |
-| Work View (own schedule) | Yes | Yes | Yes |
-| Contracts (own by default) | Yes (own collection) | Yes (can view all / assign) | Yes |
-| Job Work (own jobs) | Yes (accept, complete) | Yes (assign, view all) | Yes |
-| Commission / Leads | Only if `canAccessCommissionLeads` | Typically yes | Yes |
-| Messaging | Only if `canMessage` | Only if set | Often set |
-| Search (global) | Only if `canSearch` | Only if set (default off) | Default on |
-| Dashboard | No | Yes | Yes |
-| Employee management | No | No | Yes |
-| Location Finder | No | Only if `canUseLocationFinder` | Default on |
-| Assign contracts/jobs | No | Yes | Yes |
-| View all technicians’ Work View | No | Yes | Yes |
-| Bug/feature submit & view | Only if `canBugReport` | Yes | Yes |
-| Bug/feature set cost, complete, delete | No | View only | Full (incl. long-press edit, feature quotes) |
-| Delete jobs/contracts | No (prompt to contact admin) | Yes | Yes |
-| AI API keys (e.g. Settings) | No | No | Yes |
+### Firestore Collections
 
-Role is stored in Firestore `users/{uid}` and normalised to `super_admin`, `admin`, or `tech`. Optional flags (e.g. `canSearch`, `canMessage`, `canUseLocationFinder`, `canAccessCommissionLeads`, `canBugReport`) override defaults per role.
+| Collection / Path | Purpose |
+|-------------------|---------|
+| `users/{StaffID}` | Authoritative staff profile: Role, Name, Email, Number, ContractKey, Can* flags, rememberMeUntilMs, canRemember. |
+| `users/{uid}` | Maps Firebase Auth UID → StaffID on login. |
+| `{ContractKey} Contracts/{contractId}` | Per-technician contracts: client name, address, status, last/next visit, yearly visit counters. |
+| `{ContractKey} Contracts/{contractId}/visitHistory/{id}` | Individual visit log: type (Routine/Callout), date, tech name, server timestamp. |
+| `JobWork/{jobId}` | Service jobs: customer details, assigned tech (ContractKey), status flags, follow-up data. |
+| `user_workview/{tech}/{eventId}` | Work View events by technician: type, start/end timestamps, metadata. |
+| `Leads/{leadId}` | Leads with commission values, payment status, invoice number, materials cost. |
+| `notifications/{StaffID}/items/{itemId}` | In-app notification records with type, deep-link payload, and timestamp. |
+| `messages/{conversationId}/{messageId}` | Chat messages: sender, content, timestamp, urgent flag. |
+| `last_locations/{userKey}` | Last GPS position per technician: lat, lng, accuracy, timestamps. |
+
+### Identity Resolution
+
+On login: `UID → StaffID` → load `users/{StaffID}` → populate `SessionManager` with Role, ContractKey, and Can* flags. ContractKey is the internal identifier used for collection names, job assignment, message routing, and Work View. On logout: session, staff cache, Work View cache, widget cache, and location cache are all cleared to prevent cross-user data leakage on shared devices.
 
 ---
 
-## Roles and user model (Firestore)
-
-User identity and permissions are defined in Firestore `users/{authUid}` (or equivalent user document keyed by auth UID):
-
-| Field | Description |
-|-------|-------------|
-| **StaffID / authUid** | Used as document key; also for notifications and lookups. |
-| **Role** | Normalised to `super_admin`, `admin`, or `tech`. Drives RBAC. |
-| **Name / Email / Number** | Display and contact info; used on quotations and agreements. |
-| **ContractKey** | Stable key for per-technician contract collections (`"{ContractKey} Contracts"`) and for spinners, messaging, assignments. |
-| **Can flags** | Optional booleans: `canSearch`, `canUseLocationFinder`, `canMessage`, `canMap`, `canAccessCommissionLeads`, `canBugReport`, etc. |
-
-On login, the app loads the user document and populates **SessionManager** with role and permissions. ContractKey is the internal identifier for assignments and collections; display names come from Firestore.
-
----
-
-## Key capabilities (overview)
-
-- **Authentication:** Firebase email/password; optional offline user (Create Report, View Reports, exit only).
-- **Work View:** Daily calendar, slots 08:00–17:30; jobs, contract visits, follow-ups; drag-and-drop; custom times; WorkManager reminders; home-screen widget.
-- **Contracts:** Per-technician collections; Behind/Due/Up-to-date; Maps, mark done, create report; admin assign; year-based report browsing in Storage.
-- **Jobs:** Add and assign (admin); accept, complete, follow-ups (tech); management jobs for admin; in-app notifications on assignment.
-- **Reports:** Service, general, action form, quotations (contract, bird, custom, catalog), service agreements, ERA; iText PDFs; optional password and signatures; offline “My Template”.
-- **Leads/Commission:** Lead capture; commission and invoice tracking; admin can mark paid; notifications on updates.
-- **Messaging:** 1:1 and group chat in Firestore; in-app only (no FCM); deep links from notifications.
-- **Location:** Admin/super_admin can view staff last location (periodic updates; optional).
-- **Bug/Feature requests:** Admins with `canBugReport` can submit and view; super_admin sets cost/days, status, feature quotes, client agree/disagree, and long-press edit.
-- **AI:** Optional AI chat and “AI Fix” in reports; keys in Firestore (e.g. AI-Chat/AI-API); super_admin can update.
-
----
-
-## How to use (by role)
-
-- **Technician:** Use **Work View** for schedule; **Job Work** to accept and complete jobs; **Contracts** for visits and reports; **Create Report** / **View Reports** for PDFs; **Notifications** and **Messaging** (if enabled). Cannot delete jobs/contracts or access Dashboard/Employee/Location Finder unless permitted.
-- **Admin:** Same as technician plus **Dashboard**, **Search** (if enabled), assignment of contracts and jobs, view all technicians’ Work View, and full contract/job management.
-- **Super_admin:** Same as admin plus **Employee** management, **Location Finder** (if enabled), full bug/feature workflow, and AI key management.
-
----
-
-## Technology stack
+## Technology Stack
 
 | Layer | Details |
-|-------|--------|
-| Client | Android (Java), XML layouts, RecyclerView, WorkManager, Material components. |
-| Data & Auth | Firebase Authentication, Firestore, Firebase Storage. |
-| PDF | iText; compression and optional owner-password encryption. |
-| Automation | Optional Node.js Cloud Functions (e.g. message retention). |
-| AI | Optional Groq / Hugging Face via HTTP; keys in Firestore. |
+|-------|---------|
+| Language | Java (Android SDK) |
+| UI | XML layouts, RecyclerView, Material Components, custom Canvas views |
+| Auth | Firebase Authentication (email/password) |
+| Database | Firestore with `PersistentCacheSettings` disk cache for offline support |
+| Storage | Firebase Storage (PDFs, images, maps) |
+| Background | WorkManager (reminders, location, widget sync) |
+| PDF generation | iText7 7.1.15 (kernel, layout, io) |
+| PDF to Word | Apache POI OOXML |
+| PDF OCR | Google ML Kit Text Recognition |
+| Location | Google Play Services Fused Location Provider |
+| Networking | OkHttp (AI API calls) |
+| Maps / routing | Google Maps SDK + Directions API |
+| App Check | Play Integrity (production), Debug provider (debug builds) |
+| Cloud Functions | Node.js (message cleanup, scheduled admin tasks) |
 
 ---
 
-## Repository layout
+## Project Structure
 
 ```
 grpc/
-├── app/                    # Android app module
-├── docs/                   # Architecture diagram source (Mermaid)
-├── functions/              # Optional Firebase Cloud Functions
+├── app/
+│   └── src/
+│       ├── main/
+│       │   ├── java/com/grpc/grpc/
+│       │   │   ├── admin/          # AdminDashboardActivity, EmployeeManagement
+│       │   │   ├── billing/        # Invoice creation, PDF generator, list
+│       │   │   ├── bugreport/      # Bug/feature request submit and view
+│       │   │   ├── contracts/      # ContractsActivity, ViewContract, AddContract,
+│       │   │   │                   #   BehindsListView, PDF generators
+│       │   │   ├── converter/      # PDF → Word and PDF → text
+│       │   │   ├── core/           # SessionManager, StaffDirectory, FirebaseHelper,
+│       │   │   │                   #   TenantBranding, RememberMeManager, helpers
+│       │   │   ├── email/          # EmailComposeActivity, EmailTemplateService
+│       │   │   ├── era/            # Toxic / NonTox / BirdProofing ERA + PDF generators
+│       │   │   ├── files/          # FolderContentsActivity, HelpReadmeActivity
+│       │   │   ├── generalreports/ # General 4/6/8/12pt report activities
+│       │   │   ├── jobs/           # JobsActivity, AddJobs, ViewJob, Management jobs
+│       │   │   │   └── rodent/     # Rodent-specific job workflows
+│       │   │   ├── leads/          # LeadsSelectionActivity, ViewLeads, GenerateLeads
+│       │   │   ├── location/       # LocationFinderActivity, LocationSharing, workers
+│       │   │   ├── login/          # LoginActivity (auto Remember Me)
+│       │   │   ├── main/           # MainActivity
+│       │   │   ├── maps/           # SiteMapEditorActivity, SiteMapCanvasView,
+│       │   │   │                   #   MapsListActivity, MapsUtil (full-page PDF)
+│       │   │   ├── messaging/      # MessagingActivity, Conversations, Notifications
+│       │   │   ├── pdfeditor/      # PdfEditorActivity, overlay, page adapter
+│       │   │   ├── quotations/     # BirdQuotation, GeneralQuotation, catalog
+│       │   │   ├── reports/        # ReportActivity, PDFReportGenerator, ActionForm,
+│       │   │   │                   #   FollowUp, templates, CloudStorageBrowserActivity
+│       │   │   ├── routes/         # RouterActivity, BestRoutePdfGenerator
+│       │   │   ├── safety/         # SafetyStatementActivity + PDF generator
+│       │   │   ├── search/         # SearchActivity, GlobalSearchAdapter
+│       │   │   ├── serviceagreements/ # ServiceAgreementActivity + PDF generator
+│       │   │   └── workview/       # WorkViewActivity, widget, events, workers
+│       │   │
+│       │   └── assets/
+│       │       ├── product_lists.json
+│       │       ├── recommendations.json
+│       │       ├── sales.json
+│       │       └── service_report_templates.json
+│       │
+│       ├── grpc/           # Production flavor: google-services.json (gitignored)
+│       ├── demo/           # Demo flavor: google-services.json (gitignored)
+│       ├── offline/        # Offline flavor (no Firebase)
+│       ├── company2/       # Tenant flavor
+│       ├── company3/       # Tenant flavor
+│       ├── company4/       # Tenant flavor
+│       └── company5/       # Tenant flavor
+│
+├── functions/              # Firebase Cloud Functions (Node.js, optional)
 ├── firestore.rules         # Firestore security rules
-├── gradle.properties.template
-├── build-with-env scripts   # Build helpers (Windows & *nix)
-└── .gitignore
+├── firestore.indexes.json  # Composite index definitions
+├── storage.rules           # Firebase Storage security rules
+├── ARCHITECTURE.md         # Full technical architecture and data-flow docs
+├── gradle.properties.template  # Copy to gradle.properties and fill in keys
+└── build-with-env.sh / .bat    # Helper scripts for CI key injection
 ```
 
-Demo flavour uses a separate Firebase project and package; do not use for production.
+---
+
+## Setup
+
+### Prerequisites
+
+- Android Studio Hedgehog (2023.1.1) or later
+- JDK 17
+- Firebase project with Authentication (email/password), Firestore, and Storage enabled
+- Google Maps API key
+
+### Steps
+
+**1. Clone**
+```bash
+git clone <repo-url>
+cd grpc
+```
+
+**2. Configure keys**
+
+Copy the template and fill in your values:
+```bash
+cp gradle.properties.template gradle.properties
+```
+```properties
+MAPS_API_KEY=your_google_maps_key
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_API_KEY=your-api-key
+```
+`gradle.properties` is gitignored. Never commit it.
+
+**3. Add `google-services.json`**
+
+Place the correct file for each flavour:
+```
+app/src/grpc/google-services.json
+app/src/demo/google-services.json
+app/src/company2/google-services.json
+# etc.
+```
+All `google-services.json` files are gitignored.
+
+**4. Firebase Console setup**
+
+- Enable Firestore and Storage.
+- Create Storage folders: `Reports25/`, `Reports26/`, etc. (or use the in-app Dashboard).
+- Seed the first super_admin user at `users/{StaffID}` with `Role: super_admin` and all `Can*` flags set to `true`.
+- Enable App Check with Play Integrity for production.
+
+**5. Deploy Firestore rules**
+```bash
+firebase deploy --only firestore:rules,firestore:indexes
+```
+
+**6. (Optional) Deploy Cloud Functions**
+```bash
+cd functions && npm install && firebase deploy --only functions
+```
+
+**7. Build**
+```bash
+# Debug
+./gradlew assembleGrpcDebug
+
+# Release (requires signing config in gradle.properties)
+./gradlew assembleGrpcRelease
+```
+
+Available variants: `Company1`, `Company2`, `Company3`, `Company4`, `Company5`, `Demo`, `Offline`.
 
 ---
 
-## Setup (summary)
+## Security
 
-1. **Prerequisites:** Android Studio, JDK, Firebase project with Firestore and Storage enabled.
-2. **Package / Application ID:** Refactor package if needed; register in Firebase and place `google-services.json` in the correct module root.
-3. **Firebase:** Enable Firestore and Storage; create Storage folders (e.g. `Reports25/`, `Reports26/`) and contract collections as required.
-4. **Firestore rules:** Harden for production; restrict read/write by role and collection (see `firestore.rules`). Never use `allow read, write: if true` in production.
-5. **Environment:** Use `gradle.properties.template` to create `gradle.properties`; optional `setup-env` and `build-with-env` scripts.
-6. **Cloud Functions:** Optional; `cd functions && npm install && firebase deploy --only functions`.
+- **Never commit** `google-services.json`, `gradle.properties`, API keys, keystores, or service account files. All are covered in `.gitignore`.
+- **Firestore rules** must restrict reads/writes by `request.auth.uid` and role. The `firestore.rules` file is the reference. Never deploy `allow read, write: if true` to production.
+- **App Check** is wired up — enforce it in Firebase Console for Firestore and Storage to block unauthorised clients.
+- **ProGuard/R8 is currently disabled** (`isMinifyEnabled = false`). Enable it for production release builds. Add keep rules for iText7, Firebase, and ML Kit. This prevents bytecode reverse engineering and significantly reduces APK size.
+- **Local data** (offline reports, SQLite, SharedPreferences) is not encrypted at rest. For regulated deployments use `EncryptedSharedPreferences` and SQLCipher.
+- **MFA** is strongly recommended for admin and super_admin accounts. Firebase Authentication supports TOTP MFA.
+- **Rotate** all API keys (LLM, Maps, Firebase service accounts) on a regular schedule.
+- **Firestore subcollection rules** — if you implement visit history or other subcollections, explicitly add security rules for the subcollection path, as parent collection rules do not automatically cascade.
 
 ---
 
-## Security and hygiene
+## Background Workers
 
-- Do **not** commit `google-services.json`, service account keys, API keys, or keystores; use `.gitignore` and secure storage.
-- **Firestore rules:** Restrict by `request.auth.uid` and role; technicians only their own data; admins only where needed.
-- **API keys:** Store LLM keys in Firestore (e.g. AI-Chat/AI-API); restrict write to super_admin; never in code or config.
-- **Local data:** Offline reports and caches are not encrypted; consider EncryptedFile / SQLCipher for sensitive data.
-- **TLS:** Use HTTPS for all APIs; Android defaults for Firebase.
-- **Auth:** Strong passwords; consider MFA for admin accounts.
-- **Input:** Validate and sanitise user input; normalise file names to avoid path traversal.
-- **Logs:** Do not log sensitive data in production; use ProGuard/R8.
-- **Credentials:** Rotate API keys and service accounts periodically.
+| Worker | Trigger | Purpose |
+|--------|---------|---------|
+| `InAppReminderWorker` | Scheduled per event | Shows in-app reminder ~30 min before a Work View event. |
+| `WorkViewPopupReminderWorker` | Scheduled per event | Shows immediate popup when an event is due. |
+| `WorkViewWidgetHelper` | On every Work View change | Updates the home screen widget with the next 3 events. |
+| `LastLocationUpdateWorker` | Periodic (~10–15 min) | Writes device GPS to `last_locations/{userKey}` in Firestore. Caches locally for offline display. |
+| `LastLocationCleanupWorker` | Periodic | Deletes stale location documents. Last known location is always cached locally until a fresh update arrives. |
+| `ContractReminderWorker` | Scheduled | Sends in-app reminders for contracts approaching their due date. |
+
+All workers use Android WorkManager. Disable any by removing the scheduling call in `LocationSharing` or `WorkViewPopupReminderScheduler`.
+
+---
+
+## Offline Mode
+
+When offline login is used (offline flavour or offline login button), no Firestore or Storage calls are made. Everything reads and writes to local SQLite (`ReportDatabaseHelper`), SharedPreferences, and the app's files directory.
+
+**Available offline:** create and view all report types (rodent, general, quotations, ERA, service agreements, action forms), custom PDF templates, and viewing locally stored PDFs.
+
+**Not available offline:** Work View, Contracts, Jobs, Messaging, Notifications, Firebase Storage upload, AI Fix / Chat, Location Finder.
+
+**Firestore offline persistence** (online users): Firestore's `PersistentCacheSettings` disk cache is enabled at app start for all non-offline flavours. Previously fetched data is served from the local SQLite cache when connectivity is lost. Writes are queued and synced automatically on reconnect. This means contract lists, job data, and user profiles remain visible even when connectivity drops mid-shift.
+
+When returning online after an offline session, previously generated PDFs can be uploaded from **Stored Reports**.
+
+---
+
+## Multi-Tenant Deployment
+
+### Option A — Separate Firebase Projects (Recommended)
+
+Each client company gets its own Firebase project, `google-services.json`, and flavour in `build.gradle.kts`. Data is fully isolated, security rules are simple, and tenants scale independently.
+
+### Option B — Multi-Tenant SaaS (Single Project)
+
+Add a `companyId` field to every Firestore document and enforce tenant isolation in security rules. Requires composite indexes on every query. Higher operational efficiency, significantly higher rule complexity.
 
 ---
 
 ## Troubleshooting
 
-| Issue | Check |
-|-------|--------|
-| Contracts “Access Denied” | Firestore rules for `{ContractKey} Contracts`; collection exists; user has correct ContractKey. |
-| No reports found | Storage folders for selected year (e.g. Reports25); PDF names match contract naming; offline: local storage. |
-| Notifications not appearing | User logged in; Firestore writes to `notifications/{staffId}/items` succeed; in-app only (no FCM). |
-| Wrong or duplicate names in spinners | Firestore `users` documents have correct ContractKey and Name; clear app data or re-login to refresh caches. |
+| Symptom | Check |
+|---------|-------|
+| "Access Denied" on Contracts | Firestore rules for `{ContractKey} Contracts`; user's ContractKey matches the collection name; collection exists. |
+| No reports in View Reports | Storage folder for the current year (e.g. `Reports26/`) exists; PDFs were uploaded; offline users should check local files. |
+| Notifications not appearing | Firestore writes to `notifications/{StaffID}/items` are succeeding; this is in-app only — no FCM push. |
+| Wrong names in spinners | `users` documents have correct `ContractKey` and `Name`; clear app data or re-login to flush `StaffDirectory` cache. |
+| Work View widget not updating | `WorkViewWidgetHelper.updateWidget()` is called after every save; check WorkManager logs. |
+| Location not updating | GPS permission granted; `LastLocationUpdateWorker` is scheduled; Firestore rules allow write to `last_locations/{userKey}`. |
+| Build fails — `MAPS_API_KEY` missing | Copy `gradle.properties.template` to `gradle.properties` and fill in the key. |
+| Remember Me not persisting | `canRemember: true` is written to `users/{uid}` on login; check Firestore rules allow that write. |
+| Move files fails silently | Check `finishMoveBatch` is defined in `CloudStorageBrowserActivity`; verify Storage rules allow write to destination folder. |
+
+---
+
+## Backlog
+
+### Quick Wins
+
+- **Enable ProGuard/R8 for release builds.** Set `isMinifyEnabled = true` in the release build type and add keep rules for iText7, Firebase, and ML Kit. Reduces APK size and prevents bytecode reverse engineering.
+- **FCM push notifications.** `FirebaseMessagingServiceGRPC` is wired up but push is not sent. Add a Cloud Function that sends FCM when jobs are assigned, messages arrive, or contracts fall overdue.
+- **Swipe-to-refresh on lists.** Wrap `ContractsActivity`, `JobsActivity`, and `StoredReportsActivity` in `SwipeRefreshLayout`.
+- **Export leads to CSV.** A single "Export CSV" button in `ViewLeadsActivity` with `FileProvider` share. No backend changes needed.
+- **Photo compression.** Compress images before embedding in PDFs and before uploading to Storage (`Bitmap.compress(WEBP_LOSSY, 75, ...)`).
+- **Offline report upload queue indicator.** Show a badge on the main screen for PDFs pending upload. Counter stored in SharedPreferences.
+
+### Medium Effort
+
+- **Contract visit history PDF export.** Add an "Export History" button in the visit history dialog that generates a simple PDF listing all visits for that contract.
+- **Recurring job scheduling.** Add a "Repeat" option (weekly/monthly/custom) when creating a job. Create future `JobWork` and Work View documents at the chosen interval.
+- **Biometric login.** Add `BiometricPrompt` after a successful first email/password login. Pairs well with the existing `RememberMeManager`.
+- **Job completion photos.** Add a camera capture step when marking a job done. Photo is attached to the `JobWork` document and optionally embedded in the report.
+- **Offline sync queue with auto-upload.** `WorkManager` periodic task detects connectivity and auto-uploads queued PDFs, notifying the user on completion.
+
+### Larger Features
+
+- **Time tracking.** Add "Start job" and "End job" timestamps in `ViewJobActivity`. Surface total hours per technician per week in the Dashboard.
+- **Google Calendar sync.** Export Work View events to Google Calendar via the Calendar API.
+- **Address autocomplete.** Call Google Places Autocomplete in `AddJobsActivity` and `AddContractActivity` to suggest addresses as the user types.
+- **Customer-facing report QR code.** Generate a short-lived signed URL when a report is uploaded; encode it as a QR code on the last PDF page.
+- **Equipment maintenance log.** A simple `Equipment` Firestore collection with service intervals and a `MaintenanceDueWorker`.
+- **In-app analytics charts.** Firestore-backed charts: contracts by status over time, jobs completed per week, lead conversion rate.
 
 ---
 
 ## Support
 
-For issues or questions, contact the maintainer or open an issue in the repository. Provide device logs (with sensitive data removed) and steps to reproduce.
-
-The staff CRM/portal that shares this Firebase backend is hosted at [https://pestcontrolos.ie](https://pestcontrolos.ie) (and [https://www.pestcontrolos.ie](https://www.pestcontrolos.ie)).
+For issues, open a ticket in the repository. Include device logs (with sensitive data removed) and exact steps to reproduce.

@@ -23,6 +23,7 @@ import com.grpc.grpc.BuildConfig;
 import com.grpc.grpc.R;
 import com.grpc.grpc.search.ui.SearchActivity;
 import com.grpc.grpc.core.SessionManager;
+import com.grpc.grpc.core.StorageFolderHelper;
 import com.grpc.grpc.core.StaffDirectory;
 import com.grpc.grpc.core.TenantBranding;
 import com.grpc.grpc.main.MainActivity;
@@ -100,7 +101,7 @@ public class ReportViewActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_report_viewer);
+        setContentView(R.layout.activity_era_viewer);
 
 
 
@@ -116,6 +117,9 @@ public class ReportViewActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.report_recycler_view);
         searchBar = findViewById(R.id.search_bar);
         returnButton = findViewById(R.id.buttonreturn);
+        if (searchBar != null) {
+            searchBar.setHint("Search Reports...");
+        }
 
         // Set up RecyclerView with a LinearLayoutManager
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -326,18 +330,7 @@ public class ReportViewActivity extends AppCompatActivity {
      */
     private void showFolderSelectionDialog(File file) {
         if (BuildConfig.IS_OFFLINE) return;
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageRef = storage.getReference();
-
-        storageRef.listAll().addOnSuccessListener(listResult -> {
-            List<String> folderList = new ArrayList<>();
-            for (StorageReference prefix : listResult.getPrefixes()) {
-                String folderName = prefix.getName();
-                if (!folderName.equals("backup")) { // Exclude the backup folder
-                    folderList.add(folderName);
-                }
-            }
-
+        StorageFolderHelper.discoverUploadParentFolders(folderList -> runOnUiThread(() -> {
             if (folderList.isEmpty()) {
                 Toast.makeText(this, "No available folders to select.", Toast.LENGTH_SHORT).show();
                 return;
@@ -347,7 +340,7 @@ public class ReportViewActivity extends AppCompatActivity {
             String[] foldersArray = folderList.toArray(new String[0]);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Select a Parent Folder");
+            builder.setTitle("Select a storage folder");
             builder.setItems(foldersArray, (dialog, which) -> {
                 String selectedFolder = foldersArray[which];
                 showSubFolderSelectionDialog(file, selectedFolder);
@@ -355,10 +348,7 @@ public class ReportViewActivity extends AppCompatActivity {
 
             builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
             builder.show();
-
-        }).addOnFailureListener(e ->
-                Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-        );
+        }));
     }
 
 
@@ -732,7 +722,7 @@ public class ReportViewActivity extends AppCompatActivity {
             document.add(new Paragraph(TenantBranding.reportTitle(this))
                     .setFontSize(18)
                     .setBold()
-                    .setFontColor(com.itextpdf.kernel.colors.ColorConstants.BLUE)
+                    .setFontColor(com.itextpdf.kernel.colors.ColorConstants.BLACK)
                     .setTextAlignment(TextAlignment.CENTER));
 
             // Add the follow-up header

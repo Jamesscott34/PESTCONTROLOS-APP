@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingTop="?attr/actionBarSize"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="16dp"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:background="?android:attr/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/email_compose_title"
+            android:textStyle="bold"
+            android:textSize="22sp"
+            android:gravity="center"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/email_source_section"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="6dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="6dp">
+
+                <Button
+                    android:id="@+id/selectContractButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/email_select_contract"
+                    android:background="@drawable/button_background"
+                    android:textColor="?attr/colorOnPrimary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/selectedContractText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/email_no_contract_selected"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="12sp"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="6dp">
+
+                <Button
+                    android:id="@+id/selectManagementJobButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/email_select_management_job"
+                    android:background="@drawable/button_background"
+                    android:textColor="?attr/colorOnPrimary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/selectedManagementJobText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/email_no_management_job_selected"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="12sp"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/email_template_label"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="6dp" />
+
+        <Spinner
+            android:id="@+id/templateSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/toInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/email_to_hint"
+            android:inputType="textEmailAddress|textMultiLine"
+            android:background="@drawable/edit_text_border"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/subjectInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/email_subject_hint"
+            android:inputType="textCapSentences"
+            android:background="@drawable/edit_text_border"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/bodyInput"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:hint="@string/email_body_hint"
+            android:gravity="top"
+            android:inputType="textMultiLine|textCapSentences"
+            android:background="@drawable/edit_text_border"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/email_attachments_section"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="6dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <Button
+                android:id="@+id/addReportButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/email_add_reports"
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary"
+                android:textSize="12sp"
+                android:layout_marginEnd="6dp" />
+
+            <Button
+                android:id="@+id/addManagementReportButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/email_add_management_report"
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary"
+                android:textSize="12sp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/browseQuotationsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/email_browse_quotations"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/manageManagementFilesButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/email_manage_job_files"
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary"
+                android:textSize="12sp"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/addLocalButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/email_add_local_pdf"
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary"
+                android:textSize="12sp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/attachmentsText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/email_attachments_none"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="12sp"
+            android:paddingTop="8dp"
+            android:paddingBottom="12dp" />
+
+        <Button
+            android:id="@+id/sendEmailButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/email_open_app"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/backButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/email_back"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
+    </LinearLayout>
+</ScrollView>

@@ -2,24 +2,27 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // 1) Reports: keep your current behavior (auth required)
+    // Reports folders (Reports25/January/file.pdf etc.)
     match /Reports/{reportNum}/{allPaths=**} {
       allow read, write, create: if request.auth != null;
     }
 
-    // 2) Public read for JSON files under the folder named "grpc pricing"
-    //    We match the second segment as {fileName} (no .json in the path),
-    //    then enforce the extension via a condition.
+    // Contract-linked auto uploads (contracts/{contractId}/file.pdf)
+    match /contracts/{allPaths=**} {
+      allow read, write, create: if request.auth != null;
+    }
+
+    // Public JSON pricing/config fetches; writes still require auth.
     match /{folder}/{fileName} {
-      allow read: if folder == "grpc pricing"
+      allow read: if (folder == "grpc pricing" || folder == "demo pricing")
                   && fileName.matches('.*\\.json');
 
       allow write, create: if request.auth != null
-                           && folder == "grpc pricing"
+                           && (folder == "grpc pricing" || folder == "demo pricing")
                            && fileName.matches('.*\\.json');
     }
 
-    // 3) Everything else: keep your original default (auth required)
+    // Keep the remaining authenticated storage behavior identical across CRM + GRPC.
     match /{allPaths=**} {
       allow read, write, create: if request.auth != null;
     }

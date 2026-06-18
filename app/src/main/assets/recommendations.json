@@ -1,0 +1,197 @@
+[
+  {
+    "categoryKey": "drainage",
+    "categoryName": "Drainage",
+    "templates": [
+      {
+        "key": "rec_drain_survey",
+        "displayName": "Drain survey recommended",
+        "text": "It is recommended that a professional drain survey / CCTV inspection be carried out to assess the condition of the drainage system and identify any defects or rodent entry points."
+      },
+      {
+        "key": "rec_line_jetting",
+        "displayName": "Line jetting",
+        "text": "Line jetting is recommended to clear grease, scale or debris restricting flow in the affected drain run."
+      },
+      {
+        "key": "rec_drain_unblocking",
+        "displayName": "Drain unblocking",
+        "text": "Drain unblocking is recommended to restore discharge where restriction or blockage has been identified."
+      },
+      {
+        "key": "rec_rat_flap_4_inch",
+        "displayName": "Rat flap – 4 inch",
+        "text": "Installation of a 4 inch (100 mm) non-return rat flap is recommended to reduce the risk of rodents entering the property from the sewer system."
+      },
+      {
+        "key": "rec_rat_flap_6_inch",
+        "displayName": "Rat flap – 6 inch",
+        "text": "Installation of a 6 inch (150 mm) non-return rat flap is recommended on the foul drain connection serving the property."
+      },
+      {
+        "key": "rec_rat_flap_9_inch",
+        "displayName": "Rat flap – 9 inch",
+        "text": "Installation of a 9 inch (225 mm) non-return rat flap is recommended for the larger diameter drain connection identified on site."
+      },
+      {
+        "key": "rec_rat_flap_12_inch",
+        "displayName": "Rat flap – 12 inch",
+        "text": "Installation of a 12 inch (300 mm) non-return rat flap is recommended for the main drainage outlet / commercial sewer connection."
+      },
+      {
+        "key": "rec_drain_benching",
+        "displayName": "Drain benching",
+        "text": "Drain benching repairs are recommended to renew the chamber fillet and direct flow correctly into the channel, reducing pooling and odours."
+      },
+      {
+        "key": "rec_drain_patch",
+        "displayName": "Drain patch repair",
+        "text": "Localised drain patch repair is recommended where structural defects or open joints have been identified."
+      },
+      {
+        "key": "rec_manhole_benching",
+        "displayName": "Manhole / benching repairs",
+        "text": "Manhole benching or chamber repairs are recommended to improve flow and reduce odours / harbourage in the chamber."
+      },
+      {
+        "key": "rec_gully_cleaning",
+        "displayName": "Gully cleaning",
+        "text": "Gully cleaning is recommended to remove debris and restore surface water discharge."
+      },
+      {
+        "key": "rec_pipe_sealing",
+        "displayName": "Pipe sealing",
+        "text": "Pipe sealing / sealing of redundant connections is recommended to close identified entry points in the drainage system."
+      }
+    ]
+  },
+  {
+    "categoryKey": "proofing",
+    "categoryName": "Proofing & Exclusion",
+    "templates": [
+      {
+        "key": "rec_minor_proofing",
+        "displayName": "Minor proofing works",
+        "text": "Minor proofing works are recommended to seal identified gaps, holes and potential rodent entry points noted during this visit."
+      },
+      {
+        "key": "rec_brush_strip",
+        "displayName": "Brush strip / door brush",
+        "text": "Installation of brush strip / door brush is recommended to reduce pest entry at the base of the door(s) noted."
+      },
+      {
+        "key": "rec_bristle_strip",
+        "displayName": "Bristle strip",
+        "text": "Bristle strip proofing is recommended to close gaps at door thresholds and restrict pest ingress."
+      },
+      {
+        "key": "rec_door_brush",
+        "displayName": "Door brushes",
+        "text": "Door brush proofing is recommended to the affected door(s) to minimise gap access at the threshold."
+      },
+      {
+        "key": "rec_sealant",
+        "displayName": "Sealant works",
+        "text": "Sealant works are recommended to close small gaps and cracks identified during inspection."
+      },
+      {
+        "key": "rec_proofing_mesh",
+        "displayName": "Proofing mesh",
+        "text": "Proofing mesh is recommended to protect vented openings / voids and prevent rodent access."
+      },
+      {
+        "key": "rec_wire_wool",
+        "displayName": "Wire wool / copper mesh",
+        "text": "Wire wool or copper mesh exclusion is recommended to block small holes and pipe entry points."
+      },
+      {
+        "key": "rec_drain_cover",
+        "displayName": "Drain cover / grate",
+        "text": "Replacement or securing of drain covers / grates is recommended where covers are damaged, missing or allow access."
+      }
+    ]
+  },
+  {
+    "categoryKey": "rodent",
+    "categoryName": "Rodent Control",
+    "templates": [
+      {
+        "key": "rec_no_recommendations",
+        "displayName": "No recommendations",
+        "text": "No specific recommendations were noted at the time of this visit."
+      },
+      {
+        "key": "rec_hygiene",
+        "displayName": "Improve hygiene / housekeeping",
+        "text": "Improved hygiene and housekeeping are recommended, including secure waste storage and removal of harbourage and food sources."
+      },
+      {
+        "key": "rec_bait_programme",
+        "displayName": "Continue bait programme",
+        "text": "It is recommended that the current monitoring / baiting programme continue and be reviewed on the next scheduled visit."
+      },
+      {
+        "key": "rec_increase_monitoring",
+        "displayName": "Increase monitoring",
+        "text": "Increased monitoring is recommended in high-risk areas until activity is brought under control."
+      }
+    ]
+  },
+  {
+    "categoryKey": "insects",
+    "categoryName": "Insects & Other",
+    "templates": [
+      {
+        "key": "rec_insect_proofing",
+        "displayName": "Insect proofing",
+        "text": "Proofing of gaps around pipe penetrations, doors and windows is recommended to reduce insect ingress."
+      },
+      {
+        "key": "rec_additional_fly_unit",
+        "displayName": "Additional fly unit required",
+        "text": "It is recommended that an additional fly control unit is installed in the affected area to improve coverage and monitoring of flying insect activity."
+      },
+      {
+        "key": "rec_fly_screen",
+        "displayName": "Fly screens",
+        "text": "Fly screens or screen repairs are recommended to windows / doors where flying insects are entering."
+      },
+      {
+        "key": "rec_sticky_monitoring",
+        "displayName": "Monitoring / glue boards",
+        "text": "Additional insect monitoring (e.g. glue boards / monitors) is recommended in affected areas."
+      },
+      {
+        "key": "rec_wasp_proofing",
+        "displayName": "Wasp nest removal follow-up",
+        "text": "It is recommended that the treated nest area is left undisturbed and monitored; further advice can be provided if activity persists."
+      }
+    ]
+  },
+  {
+    "categoryKey": "attic_clean",
+    "categoryName": "Attic Clean",
+    "templates": [
+      {
+        "key": "rec_attic_clean_full",
+        "displayName": "Attic clean (full)",
+        "text": "A full attic clean is recommended, including hoovering of evident droppings, removal of contaminated insulation where required, and application of antibacterial treatment to affected surfaces."
+      },
+      {
+        "key": "rec_attic_hoover_droppings",
+        "displayName": "Hoover evident droppings",
+        "text": "Hoovering / removal of evident droppings in the attic space is recommended to reduce contamination and pest harbourage."
+      },
+      {
+        "key": "rec_attic_insulation_removal",
+        "displayName": "Insulation removal",
+        "text": "Removal of contaminated attic insulation is recommended where droppings, nesting material or urine staining has been identified."
+      },
+      {
+        "key": "rec_attic_antibacterial_spray",
+        "displayName": "Antibacterial spray",
+        "text": "Application of antibacterial spray / sanitation treatment to affected attic surfaces is recommended following droppings removal and cleaning."
+      }
+    ]
+  }
+]

@@ -1,5 +1,5 @@
 <resources>
-    <!-- GRPC production tenant: show the GRPC Staff portal button. -->
-    <bool name="show_grpcstaff_portal">true</bool>
+    <!-- Website / portal shortcut removed for all roles (see main menu Billing / Invoices for admins). -->
+    <bool name="show_grpcstaff_portal">false</bool>
 </resources>
 

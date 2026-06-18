@@ -18,7 +18,11 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.color.MaterialColors;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Source;
 
 import org.json.JSONObject;
 
@@ -60,6 +64,11 @@ public class LocationFinderActivity extends AppCompatActivity {
 
         Button back = findViewById(R.id.locationFinderBackButton);
         if (back != null) back.setOnClickListener(v -> finish());
+
+        Button refresh = findViewById(R.id.locationFinderRefreshButton);
+        if (refresh != null) {
+            refresh.setOnClickListener(v -> refreshAllLocationsFromServer(refresh));
+        }
 
         loadTechListAndBuildUi();
     }
@@ -126,6 +135,93 @@ public class LocationFinderActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Pulls the latest {@code last_locations} docs from the server for every listed technician,
+     * updates the local cache, and refreshes the UI. (GPS is still published by each device;
+     * this only re-reads Firestore.)
+     */
+    private void refreshAllLocationsFromServer(Button refreshButton) {
+        if (db == null || techOptions == null || techOptions.isEmpty()) {
+            Toast.makeText(this, R.string.location_finder_refresh_none, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        java.util.List<String> techKeys = new java.util.ArrayList<>();
+        java.util.List<String> techDisplays = new java.util.ArrayList<>();
+        java.util.List<Task<DocumentSnapshot>> taskList = new java.util.ArrayList<>();
+
+        for (StaffDirectory.OwnerOption opt : techOptions) {
+            String tech = opt != null ? opt.ownerKey : "";
+            if (TextUtils.isEmpty(tech)) continue;
+            final String techKey = (opt != null && opt.staffId != null && opt.staffId.length() >= 15)
+                    ? opt.staffId
+                    : LocationSharing.userKey(tech);
+            if (techKey.isEmpty()) continue;
+
+            techKeys.add(techKey);
+            techDisplays.add(tech);
+            taskList.add(db.collection(LocationSharing.COLLECTION_LAST_LOCATIONS)
+                    .document(techKey)
+                    .get(Source.SERVER));
+        }
+
+        if (taskList.isEmpty()) {
+            Toast.makeText(this, R.string.location_finder_refresh_none, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (refreshButton != null) refreshButton.setEnabled(false);
+        Tasks.whenAllComplete(taskList).addOnCompleteListener(task -> {
+            runOnUiThread(() -> {
+                int failures = 0;
+                for (int i = 0; i < taskList.size(); i++) {
+                    Task<DocumentSnapshot> t = taskList.get(i);
+                    if (t.isSuccessful()) {
+                        applyFirestoreSnapshotToCacheAndUi(t.getResult(), techKeys.get(i), techDisplays.get(i));
+                    } else {
+                        failures++;
+                        updateDetailsFromCache(techKeys.get(i), techDisplays.get(i));
+                    }
+                }
+                if (refreshButton != null) refreshButton.setEnabled(true);
+                if (failures == 0) {
+                    Toast.makeText(this, R.string.location_finder_refresh_done, Toast.LENGTH_SHORT).show();
+                } else if (failures == taskList.size()) {
+                    Toast.makeText(this, R.string.location_finder_refresh_partial, Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, R.string.location_finder_refresh_partial, Toast.LENGTH_LONG).show();
+                }
+            });
+        });
+    }
+
+    private void applyFirestoreSnapshotToCacheAndUi(DocumentSnapshot snap, String techKey, String techDisplay) {
+        if (snap == null || !snap.exists()) {
+            updateDetailsFromCache(techKey, techDisplay);
+            return;
+        }
+        try {
+            Double lat = snap.getDouble("lat");
+            Double lng = snap.getDouble("lng");
+            Long ts = snap.getLong("clientTimestampMs");
+            String lastMapQuery = snap.getString("lastMapQuery");
+            Long lastMapTs = snap.getLong("lastMapClientTimestampMs");
+
+            JSONObject json = new JSONObject();
+            json.put("userKey", techKey);
+            if (lat != null) json.put("lat", lat);
+            if (lng != null) json.put("lng", lng);
+            if (ts != null) json.put("clientTimestampMs", ts);
+            if (!TextUtils.isEmpty(lastMapQuery)) json.put("lastMapQuery", lastMapQuery);
+            if (lastMapTs != null) json.put("lastMapClientTimestampMs", lastMapTs);
+            Boolean stale = snap.getBoolean("stale");
+            if (stale != null) json.put("stale", stale);
+            LocationSharing.cacheLastLocation(this, techKey, json.toString());
+        } catch (Exception ignored) {}
+
+        updateDetailsFromCache(techKey, techDisplay);
+    }
+
     private void attachFirestoreListeners() {
         if (db == null || techOptions == null) return;
         for (StaffDirectory.OwnerOption opt : techOptions) {
@@ -140,29 +236,11 @@ public class LocationFinderActivity extends AppCompatActivity {
             db.collection(LocationSharing.COLLECTION_LAST_LOCATIONS)
                     .document(techKey)
                     .addSnapshotListener((snap, err) -> {
-                        if (snap == null || !snap.exists()) {
-                            // Could be expired; keep cache for offline display
+                        if (err != null) {
                             updateDetailsFromCache(techKey, tech);
                             return;
                         }
-                        try {
-                            Double lat = snap.getDouble("lat");
-                            Double lng = snap.getDouble("lng");
-                            Long ts = snap.getLong("clientTimestampMs");
-                            String lastMapQuery = snap.getString("lastMapQuery");
-                            Long lastMapTs = snap.getLong("lastMapClientTimestampMs");
-
-                            JSONObject json = new JSONObject();
-                            json.put("userKey", techKey);
-                            if (lat != null) json.put("lat", lat);
-                            if (lng != null) json.put("lng", lng);
-                            if (ts != null) json.put("clientTimestampMs", ts);
-                            if (!TextUtils.isEmpty(lastMapQuery)) json.put("lastMapQuery", lastMapQuery);
-                            if (lastMapTs != null) json.put("lastMapClientTimestampMs", lastMapTs);
-                            LocationSharing.cacheLastLocation(this, techKey, json.toString());
-                        } catch (Exception ignored) {}
-
-                        updateDetailsFromCache(techKey, tech);
+                        applyFirestoreSnapshotToCacheAndUi(snap, techKey, tech);
                     });
         }
     }
@@ -173,7 +251,7 @@ public class LocationFinderActivity extends AppCompatActivity {
 
         String cached = LocationSharing.getCachedLastLocation(this, techKey);
         if (TextUtils.isEmpty(cached)) {
-            details.setText("No cached location.");
+            details.setText("Awaiting first location update…");
             return;
         }
 
@@ -194,6 +272,11 @@ public class LocationFinderActivity extends AppCompatActivity {
                 sb.append("GPS: ").append(String.format(Locale.getDefault(), "%.5f, %.5f", lat, lng)).append("\n");
             }
             if (ts > 0) sb.append("Updated: ").append(formatTime(ts));
+            boolean stale = json.optBoolean("stale", false);
+            if (stale && ts > 0) {
+                long ageMin = (System.currentTimeMillis() - ts) / 60000L;
+                sb.append("\n⚠ Location may be outdated (").append(ageMin).append(" min ago)");
+            }
             if (sb.length() == 0) sb.append("No location fields.");
 
             details.setText(sb.toString().trim());

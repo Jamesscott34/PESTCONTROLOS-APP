@@ -29,7 +29,7 @@
             android:layout_height="wrap_content"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:text="Welcome!"
+            android:text="@string/custom_quotation_title"
             android:layout_marginBottom="16dp"
             android:textColor="?android:attr/textColorPrimary" />
 
@@ -107,6 +107,22 @@
                 android:layout_height="wrap_content"
                 android:text="23%" />
         </RadioGroup>
+
+        <CheckBox
+            android:id="@+id/check30PercentDeposit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="30% Deposit Required"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="4dp" />
+
+        <CheckBox
+            android:id="@+id/check50PercentDeposit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="50% Deposit Required"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="12dp" />
 
         <EditText
             android:id="@+id/quoteDescriptionInput"
@@ -194,6 +210,17 @@
             android:textSize="14sp"
             android:checked="false"
             android:textColor="?android:attr/textColorPrimary" />
+
+        <include layout="@layout/include_report_signature_buttons" />
+
+        <Button
+            android:id="@+id/previewPdfButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="PREVIEW QUOTATION PDF"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
         <Button
             android:id="@+id/generatePdfButton"

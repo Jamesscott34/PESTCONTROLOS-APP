@@ -7,12 +7,16 @@ import com.grpc.grpc.core.*;
 import android.content.Intent;
 import android.os.Bundle;
 
+import com.grpc.grpc.billing.ui.InvoiceListActivity;
+import com.grpc.grpc.reports.ui.CloudStorageBrowserActivity;
 import com.grpc.grpc.bugreport.ui.BugReportFeatureRequestSubmitActivity;
 import com.grpc.grpc.bugreport.ui.BugReportFeatureRequestViewActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,7 +33,6 @@ import com.google.firebase.storage.StorageReference;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -49,16 +52,20 @@ public class AdminDashboardActivity extends AppCompatActivity {
     private TextView reportsStorageTextView;
     private TextView authSummaryTextView;
     private Button createReportsFolderButton;
+    private View reportsFolderBlock;
     private View bugReportFeatureRequestBlock;
     private Button submitBugReportFeatureRequestButton;
     private Button viewBugReportFeatureRequestButton;
+    private View invoiceBillingBlock;
+    private Button buttonAdminInvoices;
+    private View fullStorageBrowserBlock;
+    private Button buttonAdminFullStorageBrowser;
 
     private final List<UserItem> userItems = new ArrayList<>();
     private ArrayAdapter<String> usersAdapter;
 
     @Nullable
     private String currentCompanyKey = null;
-    private boolean isSuperAdmin = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -75,9 +82,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
         authSummaryBlock = findViewById(R.id.authSummaryBlock);
         authSummaryTextView = findViewById(R.id.authSummaryTextView);
         createReportsFolderButton = findViewById(R.id.createReportsFolderButton);
+        reportsFolderBlock = findViewById(R.id.reportsFolderBlock);
         bugReportFeatureRequestBlock = findViewById(R.id.bugReportFeatureRequestBlock);
         submitBugReportFeatureRequestButton = findViewById(R.id.submitBugReportFeatureRequestButton);
         viewBugReportFeatureRequestButton = findViewById(R.id.viewBugReportFeatureRequestButton);
+        invoiceBillingBlock = findViewById(R.id.invoiceBillingBlock);
+        buttonAdminInvoices = findViewById(R.id.buttonAdminInvoices);
+        fullStorageBrowserBlock = findViewById(R.id.fullStorageBrowserBlock);
+        buttonAdminFullStorageBrowser = findViewById(R.id.buttonAdminFullStorageBrowser);
 
         // RBAC: only admin / super_admin may view this screen.
         SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
@@ -93,18 +105,72 @@ public class AdminDashboardActivity extends AppCompatActivity {
                 bugReportFeatureRequestBlock.setVisibility(session.canBugReport ? View.VISIBLE : View.GONE);
             }
 
-            // Cache role and company key for filtering.
-            isSuperAdmin = session.isSuperAdmin;
+            // Cache company key for filtering (if needed later).
             String key = session.contractKey != null ? session.contractKey.trim() : "";
             if (key.isEmpty()) {
                 key = session.staffId != null ? session.staffId.trim() : "";
             }
             currentCompanyKey = key.isEmpty() ? null : key.toLowerCase(Locale.getDefault());
 
-            // Hide upload/download reports storage and auth/sign-in summary from admin for now.
+            // Upload/download metrics: hidden for all admin dashboard users.
             if (storageSummaryBlock != null) storageSummaryBlock.setVisibility(View.GONE);
             if (reportsStorageBlock != null) reportsStorageBlock.setVisibility(View.GONE);
             if (authSummaryBlock != null) authSummaryBlock.setVisibility(View.GONE);
+            if (reportsFolderBlock != null) {
+                boolean showReportsFolder = session.isSuperAdmin
+                        && !BuildConfig.IS_OFFLINE
+                        && !(BuildConfig.IS_DEMO && DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this));
+                reportsFolderBlock.setVisibility(showReportsFolder ? View.VISIBLE : View.GONE);
+            }
+            if (createReportsFolderButton != null) {
+                createReportsFolderButton.setOnClickListener(v -> showCreateReportsFolderFlow());
+            }
+
+            // Billing is available to admin/super_admin, or users explicitly granted canInvoice.
+            boolean invoicesAvailable = (session.isAdmin || session.canInvoice)
+                    && !BuildConfig.IS_OFFLINE
+                    && !(BuildConfig.IS_DEMO && DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this));
+            if (invoiceBillingBlock != null) {
+                invoiceBillingBlock.setVisibility(invoicesAvailable ? View.VISIBLE : View.GONE);
+            }
+            if (buttonAdminInvoices != null) {
+                buttonAdminInvoices.setOnClickListener(v -> {
+                    Intent intent = new Intent(AdminDashboardActivity.this, InvoiceListActivity.class);
+                    intent.putExtra(InvoiceListActivity.EXTRA_CAN_CREATE, session.canInvoice);
+                    startActivity(intent);
+                });
+            }
+
+            boolean cloudStorageBrowserOk = session.isAdmin
+                    && !BuildConfig.IS_OFFLINE
+                    && !(BuildConfig.IS_DEMO && DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this));
+            if (fullStorageBrowserBlock != null) {
+                fullStorageBrowserBlock.setVisibility(cloudStorageBrowserOk ? View.VISIBLE : View.GONE);
+            }
+            if (buttonAdminFullStorageBrowser != null) {
+                if (cloudStorageBrowserOk) {
+                    buttonAdminFullStorageBrowser.setOnClickListener(v -> {
+                        String un = getIntent().getStringExtra("USER_NAME");
+                        if (un == null || un.trim().isEmpty()) {
+                            String ck = session.contractKey != null ? session.contractKey.trim() : "";
+                            if (!ck.isEmpty()) {
+                                un = StaffDirectory.capitalizeContractKey(ck);
+                            } else if (session.staffId != null && !session.staffId.trim().isEmpty()) {
+                                un = session.staffId.trim();
+                            } else {
+                                un = "User";
+                            }
+                        }
+                        Intent intent = new Intent(AdminDashboardActivity.this, CloudStorageBrowserActivity.class);
+                        intent.putExtra(CloudStorageBrowserActivity.EXTRA_ENTRY_MODE, CloudStorageBrowserActivity.MODE_STORED_REPORTS);
+                        intent.putExtra(CloudStorageBrowserActivity.EXTRA_USER_NAME, un);
+                        intent.putExtra(CloudStorageBrowserActivity.EXTRA_SHOW_ALL_TOP_LEVEL_STORAGE_FOLDERS, true);
+                        startActivity(intent);
+                    });
+                } else {
+                    buttonAdminFullStorageBrowser.setOnClickListener(null);
+                }
+            }
 
             if (BuildConfig.IS_OFFLINE || DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this)) {
                 if (contractsTotalTextView != null) {
@@ -115,10 +181,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
             loadContractsSummary();
             loadUsersSummary();
-
-            if (createReportsFolderButton != null) {
-                createReportsFolderButton.setOnClickListener(v -> showCreateReportsFolderFlow());
-            }
 
             // Bug report / Feature request: all admins can submit; super_admin can view all and set cost/days.
             if (submitBugReportFeatureRequestButton != null) {
@@ -139,8 +201,8 @@ public class AdminDashboardActivity extends AppCompatActivity {
     }
 
     /**
-     * Lets admins create a ReportsXX folder in Firebase Storage (one per year).
-     * If ReportsXX already exists, does not create it and shows a message.
+     * Lets admins / super_admins create a root folder named {@code Reports}{@code <digits>} (e.g. 27 → Reports27).
+     * Subfolders are created later in Stored Reports or the full storage browser.
      */
     private void showCreateReportsFolderFlow() {
         if (BuildConfig.IS_OFFLINE || DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this)) {
@@ -148,49 +210,54 @@ public class AdminDashboardActivity extends AppCompatActivity {
             return;
         }
 
-        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-        List<Integer> years = new ArrayList<>();
-        for (int y = currentYear - 5; y <= currentYear + 2; y++) {
-            years.add(y);
-        }
-        Collections.sort(years);
-        final String[] labels = new String[years.size()];
-        for (int i = 0; i < years.size(); i++) {
-            labels[i] = String.valueOf(years.get(i));
-        }
+        int pad = (int) (16 * getResources().getDisplayMetrics().density + 0.5f);
+        FrameLayout frame = new FrameLayout(this);
+        frame.setPadding(pad, pad, pad, 0);
+        final EditText input = new EditText(this);
+        input.setHint(R.string.admin_report_folder_number_hint);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        frame.addView(input);
 
-        new AlertDialog.Builder(this)
-                .setTitle("Create Reports folder")
-                .setMessage("Choose the year for the Reports folder (e.g. Reports25 for 2025). Only one folder per year.")
-                .setItems(labels, (dialog, which) -> {
-                    int year = years.get(which);
-                    String folderName = "Reports" + String.format(Locale.getDefault(), "%02d", year % 100);
-                    checkAndCreateReportsFolder(folderName, year);
-                })
+        AlertDialog dlg = new AlertDialog.Builder(this)
+                .setTitle(R.string.admin_report_folder_title)
+                .setMessage(R.string.admin_report_folder_message)
+                .setView(frame)
+                .setPositiveButton(android.R.string.ok, null)
                 .setNegativeButton(android.R.string.cancel, null)
-                .show();
+                .create();
+        dlg.setOnShowListener(di -> dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String raw = input.getText() != null ? input.getText().toString() : "";
+            String digits = raw.replaceAll("\\D+", "");
+            if (digits.isEmpty()) {
+                Toast.makeText(this, R.string.admin_report_folder_invalid, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            dlg.dismiss();
+            checkAndCreateReportsFolder("Reports" + digits);
+        }));
+        dlg.show();
     }
 
-    private void checkAndCreateReportsFolder(String folderName, int year) {
+    private void checkAndCreateReportsFolder(String folderName) {
         StorageReference root = FirebaseStorage.getInstance().getReference();
         root.listAll()
                 .addOnSuccessListener(listResult -> {
                     for (StorageReference prefix : listResult.getPrefixes()) {
                         if (folderName.equals(prefix.getName())) {
                             Toast.makeText(AdminDashboardActivity.this,
-                                    folderName + " already exists. Only one folder per year is allowed.",
+                                    getString(R.string.admin_report_folder_exists, folderName),
                                     Toast.LENGTH_LONG).show();
                             return;
                         }
                     }
-                    // Folder does not exist; create it by uploading a placeholder .keep file
                     StorageReference keepRef = root.child(folderName + "/.keep");
                     byte[] empty = new byte[0];
                     keepRef.putBytes(empty)
                             .addOnSuccessListener(v -> Toast.makeText(AdminDashboardActivity.this,
-                                    "Created " + folderName + " successfully.", Toast.LENGTH_SHORT).show())
+                                    getString(R.string.admin_report_folder_created, folderName), Toast.LENGTH_SHORT).show())
                             .addOnFailureListener(e -> Toast.makeText(AdminDashboardActivity.this,
-                                    "Failed to create " + folderName + ": " + (e != null ? e.getMessage() : "unknown"),
+                                    getString(R.string.admin_report_folder_failed,
+                                            e != null ? e.getMessage() : "unknown"),
                                     Toast.LENGTH_LONG).show());
                 })
                 .addOnFailureListener(e -> Toast.makeText(AdminDashboardActivity.this,
@@ -265,7 +332,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
                         for (DocumentSnapshot ds : snap.getDocuments()) {
                             if (ds == null || !ds.exists()) continue;
                             String uid = ds.getId() != null ? ds.getId().trim() : "";
-                            if (uid.matches("\\d{3}")) continue; // skip numeric staff docs
 
                             String name = safeString(ds.get("name"), ds.get("Name"));
                             String email = safeString(ds.get("email"), ds.get("Email"));
@@ -274,8 +340,18 @@ public class AdminDashboardActivity extends AppCompatActivity {
                             String roleRaw = safeString(ds.get("role"), ds.get("Role"));
                             String roleNorm = SessionManager.normalizeRole(roleRaw);
 
-                            // In grpc flavor, admin can see super_admin; in other flavors, admin must not see super_admin.
-                            if (!isSuperAdmin && "super_admin".equals(roleNorm) && !"grpc".equals(BuildConfig.FLAVOR)) {
+                            // Numeric IDs are often mirrored staff records. Keep them only when they
+                            // actually represent a real account row (name/email/role present).
+                            if (uid.matches("\\d{3}")) {
+                                boolean hasIdentity = !name.isEmpty() || !email.isEmpty();
+                                boolean hasRole = !roleNorm.isEmpty();
+                                if (!hasIdentity && !hasRole) {
+                                    continue;
+                                }
+                            }
+
+                            // GRPC app: user summary may include super_admin. All other flavors: never list super_admin.
+                            if (!"grpc".equalsIgnoreCase(BuildConfig.FLAVOR) && "super_admin".equals(roleNorm)) {
                                 continue;
                             }
 
@@ -305,47 +381,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
                             "Failed to load users.",
                             Toast.LENGTH_SHORT).show();
                 });
-    }
-
-    private void loadStorageSummary() {
-        if (storageSummaryTextView == null) return;
-
-        // Offline / demo-restricted: keep simple message.
-        if (BuildConfig.IS_OFFLINE || DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this)) {
-            storageSummaryTextView.setText("Storage: unavailable (offline or demo restricted)");
-            return;
-        }
-
-        FirebaseFirestore db = FirebaseHelper.getFirestore();
-        db.collection("storage_metadata")
-                .document("summary")
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    if (snapshot == null || !snapshot.exists()) {
-                        storageSummaryTextView.setText("Storage: not configured");
-                        return;
-                    }
-
-                    long upDay = toLong(snapshot.get("uploadsToday"));
-                    long upWeek = toLong(snapshot.get("uploadsThisWeek"));
-                    long upMonth = toLong(snapshot.get("uploadsThisMonth"));
-                    long downDay = toLong(snapshot.get("downloadsToday"));
-                    long downWeek = toLong(snapshot.get("downloadsThisWeek"));
-                    long downMonth = toLong(snapshot.get("downloadsThisMonth"));
-
-                    boolean any =
-                            upDay > 0 || upWeek > 0 || upMonth > 0
-                                    || downDay > 0 || downWeek > 0 || downMonth > 0;
-                    if (!any) {
-                        storageSummaryTextView.setText("Storage: not configured");
-                        return;
-                    }
-
-                    String text = "Uploads: today " + upDay + " / week " + upWeek + " / month " + upMonth
-                            + "\nDownloads: today " + downDay + " / week " + downWeek + " / month " + downMonth;
-                    storageSummaryTextView.setText(text);
-                })
-                .addOnFailureListener(e -> storageSummaryTextView.setText("Storage: not configured"));
     }
 
     private static long toLong(Object v) {

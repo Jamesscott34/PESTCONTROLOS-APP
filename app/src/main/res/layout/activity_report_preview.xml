@@ -17,15 +17,17 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="6dp"
-            android:text="Continue Editing" />
+            android:text="Continue Editing"
+            android:visibility="visible" />
 
         <Button
             android:id="@+id/previewConfirmSaveButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="6dp"
-            android:text="Confirm &amp; Save" />
+            android:layout_marginStart="0dp"
+            android:text="Confirm &amp; Save"
+            android:visibility="visible" />
     </LinearLayout>
 
     <ScrollView

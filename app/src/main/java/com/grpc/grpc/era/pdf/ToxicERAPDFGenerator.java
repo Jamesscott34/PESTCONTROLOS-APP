@@ -3,6 +3,7 @@ package com.grpc.grpc.era.pdf;
 import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.reports.pdf.PDFReportGenerator;
+import com.grpc.grpc.reports.pdf.PdfFooterPageNumberStamper;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -57,8 +58,21 @@ public class ToxicERAPDFGenerator {
 
     @SuppressLint("DefaultLocale")
     public static String generateToxicEnvironmentalRiskAssessment(Context context, String companyName, String address, String email, Bitmap signature) {
+        return generateToxicEnvironmentalRiskAssessment(context, companyName, address, email, signature, null);
+    }
 
-        File assessmentsFolder = new File(context.getExternalFilesDir(null), "EnvironmentalRiskAssessments");
+    public static String generateToxicEnvironmentalRiskAssessment(
+            Context context,
+            String companyName,
+            String address,
+            String email,
+            Bitmap signature,
+            File outputDirectory
+    ) {
+
+        File assessmentsFolder = outputDirectory != null
+                ? outputDirectory
+                : new File(context.getExternalFilesDir(null), "EnvironmentalRiskAssessments");
         if (!assessmentsFolder.exists() && !assessmentsFolder.mkdirs()) {
             Toast.makeText(context, "Error creating folder", Toast.LENGTH_SHORT).show();
             return null;
@@ -88,7 +102,7 @@ public class ToxicERAPDFGenerator {
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(18)
                     .setBold()
-                    .setFontColor(ColorConstants.BLUE);
+                    .setFontColor(ColorConstants.BLACK);
             document.add(title);
             document.add(new Paragraph("\n"));
 
@@ -99,9 +113,14 @@ public class ToxicERAPDFGenerator {
             Table detailsTable = new Table(UnitValue.createPercentArray(2)).useAllAvailableWidth();
 
 // Left Column - Company Details
+            String userName = SessionManager.getName(context);
+            String userTitle = SessionManager.getTitle(context);
+            String userEmail = SessionManager.getEmail(context);
             Cell companyDetails = new Cell()
                     .add(new Paragraph("Company Name: " + TenantBranding.companyName(context)).setBold())
-                    .add(new Paragraph("Address: 35 Limekiln Green,\n Walkinstown,Dublin 12,\n D12V6Y2"))
+                    .add(new Paragraph("Name: " + (userName != null ? userName : "")))
+                    .add(new Paragraph("Title: " + (userTitle != null ? userTitle : "")))
+                    .add(new Paragraph("Email: " + (userEmail != null ? userEmail : "")))
                     .add(new Paragraph("Date: " + date))
                     .setBorder(Border.NO_BORDER)
                     .setTextAlignment(TextAlignment.LEFT);
@@ -189,6 +208,7 @@ public class ToxicERAPDFGenerator {
 
 
             document.close();
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context), null);
             return pdfPath;
 
         } catch (IOException e) {

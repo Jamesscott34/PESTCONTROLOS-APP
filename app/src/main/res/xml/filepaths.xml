@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
+    <!-- Cached invoice PDFs for viewing/sharing -->
+    <cache-path name="invoice_cache" path="invoices/"/>
+    <cache-path name="email_attachments" path="email_attachments/"/>
     <!-- App-specific external files (e.g. GRPEST REPORTS) – used for viewing/sharing reports on device -->
     <external-files-path name="app_external_files" path="."/>
     <external-path name="external_files" path="."/>

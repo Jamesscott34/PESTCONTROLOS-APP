@@ -6,7 +6,6 @@ import com.grpc.grpc.R;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,7 +13,6 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,12 +26,13 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import com.grpc.grpc.core.ActiveUserContext;
-import com.grpc.grpc.core.BrandingAssets;
 import com.grpc.grpc.core.DailyContractPdfHelper;
 import com.grpc.grpc.core.DemoFirebaseExpiryHelper;
 import com.grpc.grpc.core.OfflineTrialHelper;
+import com.grpc.grpc.core.RememberMeManager;
 import com.grpc.grpc.core.SessionManager;
 import com.grpc.grpc.core.StaffDirectory;
+import com.grpc.grpc.email.ui.EmailComposeActivity;
 import com.grpc.grpc.login.LoginActivity;
 
 import com.grpc.grpc.contracts.ui.AddContractActivity;
@@ -43,7 +42,7 @@ import com.grpc.grpc.jobs.ui.AddJobFromCalendarActivity;
 import com.grpc.grpc.jobs.ui.AddJobsActivity;
 import com.grpc.grpc.admin.ui.AdminDashboardActivity;
 import com.grpc.grpc.admin.ui.EmployeeManagementActivity;
-import com.grpc.grpc.messaging.ui.ChatActivity;
+import com.grpc.grpc.billing.ui.InvoiceListActivity;
 import com.grpc.grpc.jobs.ui.JobsActivity;
 import com.grpc.grpc.leads.ui.LeadsSelectionActivity;
 import com.grpc.grpc.location.ui.LocationFinderActivity;
@@ -52,6 +51,7 @@ import com.grpc.grpc.messaging.ui.NotificationsActivity;
 import com.grpc.grpc.reports.ui.PDFSelectionActivity;
 import com.grpc.grpc.reports.ui.ReportActivity;
 import com.grpc.grpc.reports.ui.ReportSelectionActivity;
+import com.grpc.grpc.routes.ui.RouterActivity;
 import com.grpc.grpc.search.ui.SearchActivity;
 import com.grpc.grpc.serviceagreements.ui.ServiceAgreementActivity;
 import com.grpc.grpc.workview.ui.WorkViewActivity;
@@ -63,6 +63,7 @@ import com.grpc.grpc.quotations.ui.QuotesActivity;
 import com.grpc.grpc.workview.data.WorkViewLocalEventStore;
 import com.grpc.grpc.workview.data.WorkViewWidgetHelper;
 import com.grpc.grpc.workview.data.WorkViewPopupReminderScheduler;
+import com.grpc.grpc.converter.ui.ConverterActivity;
 
 /**
  * ============================================================================
@@ -70,7 +71,7 @@ import com.grpc.grpc.workview.data.WorkViewPopupReminderScheduler;
  * ============================================================================
  * 
  * PROJECT OVERVIEW:
- * This is a comprehensive pest control management application for Good Riddance 
+ * This is a comprehensive pest control management application for [Company 1] 
  * Pest Control (GRPC). The app serves as a complete business management solution
  * for pest control operations, allowing technicians and administrators to manage
  * all aspects of the business from a single mobile application.
@@ -148,7 +149,7 @@ import com.grpc.grpc.workview.data.WorkViewPopupReminderScheduler;
  * - Email and SMS notifications
  * 
  * Author: GRPC
- * Company: Good Riddance Pest Control
+ * Company: [Company 1]
  * Version: 1.0
  * Last Updated: 2024
  * ============================================================================
@@ -159,9 +160,9 @@ public class MainActivity extends AppCompatActivity {
     // UI Components - Navigation buttons for all major features
     private Button reportButton, reportViewButton, contractsButton, quotesButton, logoutButton,
                    CommisionButton, ServiceAgreementButton, JobButton, EnviromentButton,
-                   InstantMessage, MapsButton, WebsiteButton, WorkViewButton, ChatButton, HelpButton,
-                   NotificationsButton, LocationFinderButton, SearchButton,
-                   DashboardButton, EmployeeButton;
+                   InstantMessage, MapsButton, InvoicesButton, WorkViewButton, HelpButton,
+                   NotificationsButton, LocationFinderButton, SearchButton, EmailButton,
+                   DashboardButton, EmployeeButton, RouteButton, ConverterButton;
     
     // User information extracted from login
     private String userEmail, userName;
@@ -189,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
+
         // Performance optimizations
         getWindow().setFlags(
             android.view.WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
@@ -257,6 +258,7 @@ public class MainActivity extends AppCompatActivity {
             LocationSharing.ensureScheduled(MainActivity.this, uid);
             WorkViewPopupReminderScheduler.scheduleUpcomingForUser(MainActivity.this, userName);
             DailyContractPdfHelper.scheduleDailyPdfIfNeeded(MainActivity.this, userName);
+            applyInvoicesButtonVisibility(loadedSession);
         }));
         }
 
@@ -271,17 +273,14 @@ public class MainActivity extends AppCompatActivity {
         // Set up welcome message with user's name
         welcomeTextView = findViewById(R.id.welcomeTextView);
 
-        // Logo next to welcome text (prefer assets/logo.png, fallback to drawable)
-        ImageView welcomeLogo = findViewById(R.id.welcomeLogo);
-        BrandingAssets.trySetLogoFromAssets(welcomeLogo);
-        
+        // Logo: @drawable/logo in XML; flavor-specific res/drawable/logo.* overrides GRPC main (demo-style).
         if (welcomeTextView != null) {
-            welcomeTextView.setText("Welcome, " + userName + "!");
+            welcomeTextView.setText(getString(R.string.welcome_back_user, userName));
             SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
                 if (welcomeTextView == null) return;
                 String name = SessionManager.getName(this);
                 if (name != null && !name.trim().isEmpty()) {
-                    welcomeTextView.setText("Welcome, " + name.trim() + "!");
+                    welcomeTextView.setText(getString(R.string.welcome_back_user, name.trim()));
                     Log.d("MainActivity", "Welcome message set from profile Name: " + name);
                 }
             }));
@@ -298,11 +297,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Temporary UI changes / moved features:
         // - General Quotes, Service Agreements, and ERA now live under Create Report section.
-        // - AI Chat is temporarily hidden for all users.
         if (quotesButton != null) quotesButton.setVisibility(View.GONE);
         if (ServiceAgreementButton != null) ServiceAgreementButton.setVisibility(View.GONE);
         if (EnviromentButton != null) EnviromentButton.setVisibility(View.GONE);
-        if (ChatButton != null) ChatButton.setVisibility(View.GONE);
         
         // Set up click listeners for all buttons
         setupButtonClickListeners();
@@ -335,6 +332,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         applyDemoExpiredVisibility();
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> applySearchVisibilityFromSession(session)));
         // Unread indicators: run messaging badge only when user can see Messaging (canMessage).
         if (SessionManager.canMessage(this)) {
             checkHomeUnreadIndicators();
@@ -553,15 +551,17 @@ public class MainActivity extends AppCompatActivity {
         JobButton = findViewById(R.id.JobsButton);
         EnviromentButton = findViewById(R.id.EnviromentButton);
         logoutButton = findViewById(R.id.LogoutButton);
-        WebsiteButton = findViewById(R.id.WebsiteButton);
+        InvoicesButton = findViewById(R.id.InvoicesButton);
         WorkViewButton = findViewById(R.id.WorkViewButton);
         HelpButton = findViewById(R.id.HelpButton);
         NotificationsButton = findViewById(R.id.NotificationsButton);
+        EmailButton = findViewById(R.id.EmailButton);
         LocationFinderButton = findViewById(R.id.LocationFinderButton);
         SearchButton = findViewById(R.id.SearchButton);
-        ChatButton = findViewById(R.id.ChatButton);
         DashboardButton = findViewById(R.id.DashboardButton);
         EmployeeButton = findViewById(R.id.EmployeeButton);
+        RouteButton = findViewById(R.id.RouteButton);
+        ConverterButton = findViewById(R.id.ConverterButton);
     }
 
     /**
@@ -583,13 +583,28 @@ public class MainActivity extends AppCompatActivity {
             boolean showMaps = SessionManager.canMap(this);
             MapsButton.setVisibility(showMaps ? View.VISIBLE : View.GONE);
             if (showMaps) {
-                MapsButton.setOnClickListener(v -> Toast.makeText(this, R.string.maps_feature_coming_soon, Toast.LENGTH_SHORT).show());
+                MapsButton.setOnClickListener(v -> openActivity(com.grpc.grpc.maps.ui.MapsPlaceholderActivity.class));
+            }
+        }
+        if (RouteButton != null) {
+            boolean showRouter = SessionManager.canRoute(this);
+            RouteButton.setVisibility(showRouter ? View.VISIBLE : View.GONE);
+            if (showRouter) {
+                RouteButton.setOnClickListener(v -> openActivity(RouterActivity.class));
             }
         }
 
         // Notification history - see what notifications were received
         if (NotificationsButton != null) {
             NotificationsButton.setOnClickListener(view -> openActivity(NotificationsActivity.class));
+        }
+
+        if (EmailButton != null) {
+            EmailButton.setOnClickListener(view -> {
+                Intent intent = new Intent(MainActivity.this, EmailComposeActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                startActivity(intent);
+            });
         }
 
         // Global search: visibility applied in applySearchVisibilityFromSession after session loads (so canSearch from users/{authUid} is correct)
@@ -628,13 +643,15 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Company website access
-        if (WebsiteButton != null) {
-            boolean showPortal = getResources().getBoolean(R.bool.show_grpcstaff_portal);
-            WebsiteButton.setVisibility(showPortal ? View.VISIBLE : View.GONE);
-            if (showPortal) {
-                WebsiteButton.setOnClickListener(view -> openWebsite());
-            }
+        // Billing / invoices (admin + super_admin; hidden offline / demo-restricted)
+        if (InvoicesButton != null) {
+            InvoicesButton.setVisibility(View.GONE);
+            InvoicesButton.setOnClickListener(v -> {
+                SessionManager.Session session = SessionManager.getCached(MainActivity.this);
+                Intent intent = new Intent(MainActivity.this, InvoiceListActivity.class);
+                intent.putExtra(InvoiceListActivity.EXTRA_CAN_CREATE, session != null && session.canInvoice);
+                startActivity(intent);
+            });
         }
 
         // Report generation and management
@@ -716,15 +733,6 @@ public class MainActivity extends AppCompatActivity {
             HelpButton.setOnClickListener(view -> openActivity(HelpReadmeActivity.class));
         }
 
-        // AI Chat Assistant
-        if (ChatButton != null) {
-            ChatButton.setOnClickListener(view -> {
-                Intent intent = new Intent(MainActivity.this, ChatActivity.class);
-                intent.putExtra("USER_NAME", userName);
-                startActivity(intent);
-            });
-        }
-
         // Secure logout - clears activity stack, clears saved user, and returns to login
         if (logoutButton != null) {
             logoutButton.setOnClickListener(view -> {
@@ -749,6 +757,7 @@ public class MainActivity extends AppCompatActivity {
                 try { WorkViewLocalEventStore.clearAll(MainActivity.this); } catch (Exception ignored) {}
                 try { WorkViewWidgetHelper.clearWidgetCache(MainActivity.this); } catch (Exception ignored) {}
                 try { LocationSharing.clearLocalCache(MainActivity.this); } catch (Exception ignored) {}
+                try { RememberMeManager.disableForCurrentUser(MainActivity.this); } catch (Exception ignored) {}
                 try { com.google.firebase.auth.FirebaseAuth.getInstance().signOut(); } catch (Exception ignored) {}
 
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
@@ -805,9 +814,41 @@ public class MainActivity extends AppCompatActivity {
             boolean canMap = session != null && session.canMap;
             MapsButton.setVisibility(canMap ? View.VISIBLE : View.GONE);
             if (canMap) {
-                MapsButton.setOnClickListener(v -> Toast.makeText(this, R.string.maps_feature_coming_soon, Toast.LENGTH_SHORT).show());
+                MapsButton.setOnClickListener(v -> openActivity(com.grpc.grpc.maps.ui.MapsPlaceholderActivity.class));
             }
         }
+        if (RouteButton != null) {
+            boolean canRoute = session != null && session.canRoute;
+            RouteButton.setVisibility(canRoute ? View.VISIBLE : View.GONE);
+            if (canRoute) {
+                RouteButton.setOnClickListener(v -> openActivity(RouterActivity.class));
+            }
+        }
+        if (ConverterButton != null) {
+            boolean canConvert = session != null && session.canConvert;
+            ConverterButton.setVisibility(canConvert ? View.VISIBLE : View.GONE);
+            if (canConvert) {
+                ConverterButton.setOnClickListener(v -> openActivity(ConverterActivity.class));
+            }
+        }
+        applyInvoicesButtonVisibility(session);
+    }
+
+    /**
+     * Main screen Billing / Invoices: admin/super_admin, or users explicitly granted canInvoice.
+     */
+    private void applyInvoicesButtonVisibility(SessionManager.Session session) {
+        if (InvoicesButton == null) return;
+        if (BuildConfig.IS_OFFLINE || userName == null || userName.equals("Offline") || userName.equals("Offline User")) {
+            InvoicesButton.setVisibility(View.GONE);
+            return;
+        }
+        if (BuildConfig.IS_DEMO && DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this)) {
+            InvoicesButton.setVisibility(View.GONE);
+            return;
+        }
+        boolean show = session != null && (session.isAdmin || session.canInvoice);
+        InvoicesButton.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     /**
@@ -830,21 +871,16 @@ public class MainActivity extends AppCompatActivity {
         if (EnviromentButton != null) EnviromentButton.setVisibility(View.GONE);
         if (InstantMessage != null) InstantMessage.setVisibility(View.GONE);
         if (MapsButton != null) MapsButton.setVisibility(View.GONE);
+        if (RouteButton != null) RouteButton.setVisibility(View.GONE);
+        if (ConverterButton != null) ConverterButton.setVisibility(View.GONE);
         if (DashboardButton != null) DashboardButton.setVisibility(View.GONE);
         if (EmployeeButton != null) EmployeeButton.setVisibility(View.GONE);
-        // Keep Visit website visible for offline (opens pestcontrolos.ie)
+        if (InvoicesButton != null) InvoicesButton.setVisibility(View.GONE);
         if (HelpButton != null) HelpButton.setVisibility(View.GONE);
-        if (ChatButton != null) ChatButton.setVisibility(View.GONE);
         // Keep visible: reportButton (Create Report), reportViewButton (View Reports), logoutButton (Exit)
         if (logoutButton != null) {
             logoutButton.setText(getString(R.string.exit_button_offline));
             logoutButton.setOnClickListener(v -> finish());
-        }
-        // Offline: show website button as "Get update" so users can download new APK or sign up for demo
-        if (WebsiteButton != null) {
-            WebsiteButton.setVisibility(View.VISIBLE);
-            WebsiteButton.setText(getString(R.string.get_update_button));
-            WebsiteButton.setOnClickListener(v -> openWebsite());
         }
     }
 
@@ -867,10 +903,12 @@ public class MainActivity extends AppCompatActivity {
         if (EnviromentButton != null) EnviromentButton.setVisibility(View.GONE);
         if (InstantMessage != null) InstantMessage.setVisibility(View.GONE);
         if (MapsButton != null) MapsButton.setVisibility(View.GONE);
+        if (RouteButton != null) RouteButton.setVisibility(View.GONE);
+        if (ConverterButton != null) ConverterButton.setVisibility(View.GONE);
         if (HelpButton != null) HelpButton.setVisibility(View.GONE);
-        if (ChatButton != null) ChatButton.setVisibility(View.GONE);
         if (DashboardButton != null) DashboardButton.setVisibility(View.GONE);
         if (EmployeeButton != null) EmployeeButton.setVisibility(View.GONE);
+        if (InvoicesButton != null) InvoicesButton.setVisibility(View.GONE);
         if (welcomeTextView != null) welcomeTextView.setText(getString(R.string.demo_expired_message));
     }
 
@@ -885,18 +923,6 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this, targetActivity);
         intent.putExtra("USER_NAME", userName);
         startActivity(intent);
-    }
-
-    /**
-     * Opens the company website in the device's default browser
-     * Provides quick access to company information and resources
-     */
-    private void openWebsite() {
-        String url = getString(R.string.main_website_url);
-        if (url == null || url.trim().isEmpty()) url = "https://www.grpcstaff.ie";
-        url = url.trim();
-        if (!url.startsWith("http://") && !url.startsWith("https://")) url = "https://" + url;
-        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
     }
 
     /**

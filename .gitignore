@@ -159,6 +159,33 @@ lint-report*
 test-results/
 
 # =============================================================================
+# Signing configs that may be generated locally
+# =============================================================================
+app/signing/
+release/
+**/release-key*
+**/debug-key*
+
+# =============================================================================
+# Tenant / branding assets that contain real client data
+# =============================================================================
+# Flavor google-services files are already covered by **/google-services.json above.
+# Add any per-tenant asset folders that contain real logos or unreleased branding:
+# app/src/grpc/res/drawable/logo*
+# app/src/counterpest/res/drawable/logo*
+
+# =============================================================================
+# CI/CD secrets and runner artefacts
+# =============================================================================
+.github/workflows/secrets/
+fastlane/.env
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+output/
+
+# =============================================================================
 # Local docs with sensitive info
 # =============================================================================
 README.local.md

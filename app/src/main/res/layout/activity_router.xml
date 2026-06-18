@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/screen_padding"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/welcome_margin_top">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/router_title"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/router_subtitle"
+            android:layout_marginBottom="@dimen/button_spacing" />
+
+        <TextView
+            android:id="@+id/routerTargetOwnerLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/router_owner_label"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/routerOwnerSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/button_spacing" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Route Day"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/routerSelectedDayText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Today"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginBottom="10dp" />
+
+            <Button
+                android:id="@+id/buttonSelectRouteDay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="Select Day" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Day Jobs"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Add temporary jobs first. Contracts will fill the remaining spaces up to 10 total stops."
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginBottom="10dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+
+                <Button
+                    android:id="@+id/buttonAddRouteJob"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="56dp"
+                    android:text="Add Job"
+                    android:layout_marginEnd="6dp" />
+
+                <Button
+                    android:id="@+id/buttonClearRouteJobs"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="56dp"
+                    android:text="Clear Jobs"
+                    android:layout_marginStart="6dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/routerJobsSummaryText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="No jobs added yet."
+                android:textColor="?android:attr/textColorSecondary" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/buttonCreateBestRoute"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/router_create_button"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="?attr/colorSecondary"
+            android:textColor="?attr/colorOnSecondary" />
+
+        <Button
+            android:id="@+id/buttonOpenGoogleRoute"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Open In Google Maps"
+            android:enabled="false"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/buttonViewCreatedRoutes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/router_view_routes_button"
+            android:layout_marginBottom="@dimen/button_spacing" />
+
+        <TextView
+            android:id="@+id/routerStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/router_status_loading"
+            android:layout_marginBottom="10dp" />
+
+        <TextView
+            android:id="@+id/routerResultsText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textIsSelectable="true"
+            android:padding="12dp"
+            android:background="?attr/colorSurface" />
+
+    </LinearLayout>
+</ScrollView>

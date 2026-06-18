@@ -71,17 +71,14 @@
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
 
-        <EditText
+        <Spinner
             android:id="@+id/editTextVisits"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Visits"
-            android:inputType="number"
             android:layout_marginBottom="16dp"
             android:padding="12dp"
             android:background="@drawable/edit_text_border"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary" />
+            android:spinnerMode="dropdown" />
 
         <TextView
             android:id="@+id/assignTechLabel"
@@ -100,6 +97,14 @@
             android:background="@drawable/edit_text_border"
             android:padding="10dp"
             android:spinnerMode="dropdown" />
+
+        <Button
+            android:id="@+id/buttonImportExcel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Import from Excel"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp" />
 
         <Button
             android:id="@+id/buttonAdd"

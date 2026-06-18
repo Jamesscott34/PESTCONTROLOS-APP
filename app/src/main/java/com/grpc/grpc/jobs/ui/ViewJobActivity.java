@@ -61,7 +61,7 @@
  * - All users: Job viewing and basic status updates
  * 
  * Author: GRPC
- * Company: Good Riddance Pest Control
+ * Company: [Company 1]
  * Version: 1.0
  * Last Updated: 2024
  * ============================================================================
@@ -210,12 +210,29 @@ public class ViewJobActivity extends AppCompatActivity {
         });
     }
 
+    /** Matches AddJobsActivity: AssignedTech is capitalized contractKey display (e.g. "James"). */
+    private String assignedTechDisplayForCurrentUser() {
+        SessionManager.ensureLoaded(this, null);
+        String ck = SessionManager.getContractKey(this);
+        if (ck == null || ck.trim().isEmpty()) {
+            ck = userName != null ? userName : "";
+        }
+        String lower = ck.trim().toLowerCase(Locale.getDefault());
+        if (lower.isEmpty()) return "";
+        return StaffDirectory.capitalizeContractKey(lower);
+    }
+
     private void loadAllJobs() {
         com.google.firebase.firestore.Query baseQuery = db.collection(FirestorePaths.JOBWORK);
         // RBAC: admins (or flag) see all jobs; tech see only assigned jobs
         SessionManager.ensureLoaded(this, null);
         if (!SessionManager.seesAllJobs(this)) {
-            baseQuery = baseQuery.whereEqualTo("AssignedTech", userName);
+            String techDisplay = assignedTechDisplayForCurrentUser();
+            if (!techDisplay.isEmpty()) {
+                baseQuery = baseQuery.whereEqualTo("AssignedTech", techDisplay);
+            } else {
+                baseQuery = baseQuery.whereEqualTo("AssignedTech", userName != null ? userName : "");
+            }
         }
         baseQuery.addSnapshotListener((snapshots, error) -> {
             if (error != null) {
@@ -231,13 +248,14 @@ public class ViewJobActivity extends AppCompatActivity {
             allJobs.clear();
             total = completed = pending = 0;
 
-            for (DocumentChange dc : snapshots.getDocumentChanges()) {
-                QueryDocumentSnapshot document = dc.getDocument();
+            // Rebuild from full snapshot — getDocumentChanges() only lists deltas and would drop jobs after updates.
+            for (DocumentSnapshot document : snapshots.getDocuments()) {
+                if (!(document instanceof QueryDocumentSnapshot)) continue;
                 Map<String, Object> job = document.getData();
+                if (job == null) continue;
                 job.put("documentId", document.getId());
                 allJobs.add(job);
 
-                // Update counters
                 String status = (String) job.get("Status");
                 if ("Completed".equalsIgnoreCase(status)) {
                     completed++;
@@ -245,15 +263,15 @@ public class ViewJobActivity extends AppCompatActivity {
                     pending++;
                 }
 
-                // ✅ Check if reminder needed
                 String techName = getOrDefault(job, "AssignedTech");
                 String followUpDate = getOrDefault(job, "FollowUpDate");
 
                 if (shouldNotifyTechnician(followUpDate)) {
                     String techId = StaffDirectory.getUserId(techName);
                     String mobile = StaffDirectory.getMobileForUserId(techId);
-                    if (mobile != null && !mobile.isEmpty())
+                    if (mobile != null && !mobile.isEmpty()) {
                         sendWhatsAppReminder(mobile, job);
+                    }
                 }
             }
 
@@ -331,8 +349,10 @@ public class ViewJobActivity extends AppCompatActivity {
             String techName = getOrDefault(job, "AssignedTech").toLowerCase();
             String customerName = getOrDefault(job, "CustomerName").toLowerCase();
             String address = getOrDefault(job, "Address").toLowerCase();
+            String issue = getOrDefault(job, "IssueDetails").toLowerCase();
 
-            if (techName.contains(query) || customerName.contains(query) || address.contains(query)) {
+            if (techName.contains(query) || customerName.contains(query) || address.contains(query)
+                    || issue.contains(query)) {
                 filteredJobs.add(job);
             }
         }

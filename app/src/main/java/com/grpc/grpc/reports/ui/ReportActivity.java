@@ -56,7 +56,7 @@
  * - All users: Report viewing and PDF export
  * 
  * Author: GRPC
- * Company: Good Riddance Pest Control
+ * Company: [Company 1]
  * Version: 1.0
  * Last Updated: 2024
  * ============================================================================
@@ -66,7 +66,6 @@ package com.grpc.grpc.reports.ui;
 
 import com.grpc.grpc.BuildConfig;
 import com.grpc.grpc.R;
-import com.grpc.grpc.generalreports.ui.GeneralReportActivity;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
@@ -86,6 +85,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.Spinner;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -101,17 +101,25 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import com.grpc.grpc.core.ContractStorageUploader;
+import com.grpc.grpc.core.ContractStoragePathHelper;
 import com.grpc.grpc.core.DictateEditText;
+import com.grpc.grpc.core.ContractReportSync;
 import com.grpc.grpc.core.HorizontalSwipeGuard;
 import com.grpc.grpc.core.OfflineTrialHelper;
 import com.grpc.grpc.core.SessionManager;
+import com.grpc.grpc.core.StorageFolderHelper;
+import com.grpc.grpc.core.StaffDirectory;
 import com.grpc.grpc.core.TenantBranding;
 import com.grpc.grpc.main.MainActivity;
 import com.grpc.grpc.reports.data.PdfTemplateSettings;
 import com.grpc.grpc.reports.data.PdfTemplateStorage;
 import com.grpc.grpc.reports.data.ReportDatabaseHelper;
 import com.grpc.grpc.reports.data.SavedTemplate;
+import com.grpc.grpc.reports.model.ProductUsageItem;
 import com.grpc.grpc.reports.pdf.PDFReportGeneratorWithTemplate;
+import com.grpc.grpc.reports.util.PrepProductsFormatter;
+import com.grpc.grpc.reports.util.PrepProductsSerializer;
 
 // ✅ AI and Voice Recognition Imports
 import okhttp3.*;
@@ -136,8 +144,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import android.widget.ArrayAdapter;
 
 public class ReportActivity extends AppCompatActivity {
+    private static final String CONTRACT_FILTER_ALL = "All";
 
     // ============================================================================
     // UI COMPONENTS - Input fields for comprehensive report data
@@ -148,14 +158,29 @@ public class ReportActivity extends AppCompatActivity {
     private EditText dateInput;
     
     // Detailed report information
-    private DictateEditText siteInspectionInput, recommendationsInput, followUpInput,
-            prepInput, techInput;
+    private DictateEditText siteInspectionInput, recommendationsInput, followUpInput, techInput;
+    private PrepProductsSectionController prepProductsSection;
 
     // User context and session management
     private String userName;
+    private String contractId;
+    private String contractCompanyName;
+    private CheckBox jobReportCheckbox, managementReportCheckbox, contractReportCheckbox;
+    private Spinner jobFolderSpinner;
+    private Spinner jobRouteSubFolderSpinner;
+    private Spinner jobRouteSubFolderSpinnerLevel3;
+    private Spinner managementFolderSpinner;
+    private Spinner routeSubFolderSpinner;
+    private Spinner routeSubFolderSpinnerLevel3;
+    private String managementRootStorageFolder = defaultManagementRootFolder();
+    private boolean lastUploadSucceeded = false;
+    private Spinner contractFilterSpinner;
+    private Spinner contractSpinner;
+    private final List<ContractOption> contractOptions = new ArrayList<>();
     private GestureDetectorCompat gestureDetector;
     private static final int SWIPE_THRESHOLD = 50;
     private static final int SWIPE_VELOCITY_THRESHOLD = 50;
+    private static final int REQUEST_PREVIEW_REPORT = 901;
     /** Only allow swipe navigation when gesture starts near screen edges (reduces accidental swipes while editing). */
     private int swipeEdgeWidthPx;
     private boolean swipeNavEligible;
@@ -164,7 +189,7 @@ public class ReportActivity extends AppCompatActivity {
     // ACTION BUTTONS - User interface controls
     // ============================================================================
     
-    private Button saveButton, backButton, selectImageButton, aiFixButton, readBackButton;
+    private Button previewButton, saveButton, backButton, selectImageButton, aiFixButton, readBackButton;
 
     // ============================================================================
     // DATA MANAGEMENT - Image and content storage
@@ -210,6 +235,41 @@ public class ReportActivity extends AppCompatActivity {
         "recommendations", "prep steps", "follow up", "technician name"
     };
 
+    private static class ContractOption {
+        String id;
+        String companyName;
+        String address;
+        boolean placeholder;
+        @Override
+        public String toString() {
+            if (placeholder) return "Select contract...";
+            String n = companyName != null ? companyName.trim() : "";
+            String a = getFriendlyLocation(address);
+            if (!n.isEmpty() && !a.isEmpty()) return n + " | " + a;
+            if (!n.isEmpty()) return n;
+            if (!a.isEmpty()) return a;
+            return "Unnamed contract";
+        }
+
+        private String getFriendlyLocation(String rawAddress) {
+            if (rawAddress == null) return "";
+            String clean = rawAddress.trim().replaceAll("\\s+", " ");
+            if (clean.isEmpty()) return "";
+
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("(?i)\\b(?:[AC-FHKNPRTV-Y]\\d{2}|D6W)[\\s-]?[0-9AC-FHKNPRTV-Y]{4}\\b")
+                    .matcher(clean);
+            if (m.find()) {
+                return m.group().replace(" ", "").toUpperCase(java.util.Locale.getDefault());
+            }
+
+            int comma = clean.indexOf(',');
+            String area = comma > 0 ? clean.substring(0, comma).trim() : clean;
+            if (area.length() > 28) area = area.substring(0, 28) + "...";
+            return area;
+        }
+    }
+
     /**
      * Main entry point of the report creation activity
      * Initializes the user interface, sets up data handling,
@@ -254,7 +314,8 @@ public class ReportActivity extends AppCompatActivity {
         // CONTRACT DATA HANDLING - Pre-fill form if coming from ViewContractActivity
         // ============================================================================
         
-        String contractCompanyName = getIntent().getStringExtra("COMPANY_NAME");
+        contractId = getIntent().getStringExtra("CONTRACT_ID");
+        contractCompanyName = getIntent().getStringExtra("COMPANY_NAME");
         String contractAddress = getIntent().getStringExtra("ADDRESS");
         String reportDate = getIntent().getStringExtra("REPORT_DATE"); // Get date from intent
 
@@ -264,16 +325,22 @@ public class ReportActivity extends AppCompatActivity {
         
         initializeInputFields();
 
-        // Auto-fill technician name where possible (manual override preserved)
+        // Auto-fill technician as "name -- title -- number" where possible (manual override preserved)
         SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
             try {
                 if (techInput != null) {
                     android.widget.EditText et = techInput.getEditText();
                     String existing = et != null && et.getText() != null ? et.getText().toString().trim() : "";
                     if (existing.isEmpty()) {
-                        String name = SessionManager.getName(this);
-                        if (name == null || name.trim().isEmpty()) name = userName;
-                        if (et != null) et.setText(name);
+                        String userId = StaffDirectory.getUserId(userName);
+                        String techLabel = StaffDirectory.getTechnicianDisplayLabel(userId);
+                        if (techLabel != null && !techLabel.trim().isEmpty()) {
+                            if (et != null) et.setText(techLabel);
+                        } else {
+                            String name = SessionManager.getName(this);
+                            if (name == null || name.trim().isEmpty()) name = userName;
+                            if (et != null) et.setText(name);
+                        }
                     }
                 }
             } catch (Exception ignored) {
@@ -353,6 +420,7 @@ public class ReportActivity extends AppCompatActivity {
      * If password protect is checked, show password dialog then save; otherwise save without password.
      */
     private void performSaveReport() {
+        lastUploadSucceeded = false;
         ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         saveReport(db, null);
@@ -423,10 +491,19 @@ public class ReportActivity extends AppCompatActivity {
                                 finish(); // Destroy this activity
                                 return true;
                             } else {
-                                // Swipe left - open GeneralReportActivity (previous in sequence)
-                                Log.d("ReportActivity", "Swipe LEFT detected - opening GeneralReportActivity with user: " + userName);
-                                Intent intent = new Intent(ReportActivity.this, GeneralReportActivity.class);
+                                // Swipe left - open Action Form
+                                Log.d("ReportActivity", "Swipe LEFT detected - opening ActionFormActivity with user: " + userName);
+                                Intent intent = new Intent(ReportActivity.this, ActionFormActivity.class);
                                 intent.putExtra("USER_NAME", userName);
+                                if (contractId != null) intent.putExtra("CONTRACT_ID", contractId);
+                                if (nameInput != null && nameInput.getEditText() != null) {
+                                    String n = nameInput.getEditText().getText().toString().trim();
+                                    if (!n.isEmpty()) intent.putExtra("COMPANY_NAME", n);
+                                }
+                                if (addressInput != null && addressInput.getEditText() != null) {
+                                    String a = addressInput.getEditText().getText().toString().trim();
+                                    if (!a.isEmpty()) intent.putExtra("ADDRESS", a);
+                                }
                                 startActivity(intent);
                                 finish(); // Destroy this activity
                                 return true;
@@ -482,8 +559,10 @@ public class ReportActivity extends AppCompatActivity {
         visitTypeInput = findViewById(R.id.visitTypeInput);
         siteInspectionInput = findViewById(R.id.siteInspectionInput);
         recommendationsInput = findViewById(R.id.recommendationsInput);
+        new RecommendationsCatalogController(this, R.id.recommendationsCatalogBar, recommendationsInput);
         followUpInput = findViewById(R.id.followUpInput);
-        prepInput = findViewById(R.id.prepInput);
+        prepProductsSection = new PrepProductsSectionController(this, R.id.prepProductsSection);
+        new ServiceReportCatalogController(this, R.id.serviceReportCatalogBar, 0, siteInspectionInput);
         techInput = findViewById(R.id.techInput);
         
         // Configure each DictateEditText with proper hints and settings
@@ -501,20 +580,15 @@ public class ReportActivity extends AppCompatActivity {
         visitTypeInput.setHint("Visit Type");
         visitTypeInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
         
-        siteInspectionInput.setHint("Enter Site Inspection");
+        siteInspectionInput.setHint("Enter service report (or use template above)");
         siteInspectionInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         siteInspectionInput.setMinLines(3);
         siteInspectionInput.setGravity(android.view.Gravity.TOP);
         
-        recommendationsInput.setHint("Enter Recommendations");
+        recommendationsInput.setHint("Enter recommendations (or use template above)");
         recommendationsInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         recommendationsInput.setMinLines(3);
         recommendationsInput.setGravity(android.view.Gravity.TOP);
-        
-        prepInput.setHint("Enter Prep Steps");
-        prepInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        prepInput.setMinLines(3);
-        prepInput.setGravity(android.view.Gravity.TOP);
         
         followUpInput.setHint("Enter Follow Up Details");
         followUpInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
@@ -549,16 +623,34 @@ public class ReportActivity extends AppCompatActivity {
      * for save, back navigation, image selection, AI polish, and voice dictation
      */
     private void initializeButtons() {
+        previewButton = findViewById(R.id.previewButton);
         saveButton = findViewById(R.id.saveButton);
         backButton = findViewById(R.id.backButton);
         selectImageButton = findViewById(R.id.selectImageButton);
         aiFixButton = findViewById(R.id.aiFixButton);
         readBackButton = findViewById(R.id.readBackButton);
+        jobReportCheckbox = findViewById(R.id.jobReportCheckbox);
+        managementReportCheckbox = findViewById(R.id.managementReportCheckbox);
+        contractReportCheckbox = findViewById(R.id.contractReportCheckbox);
+        jobFolderSpinner = findViewById(R.id.jobFolderSpinner);
+        jobRouteSubFolderSpinner = findViewById(R.id.jobRouteSubFolderSpinner);
+        jobRouteSubFolderSpinnerLevel3 = findViewById(R.id.jobRouteSubFolderSpinnerLevel3);
+        managementFolderSpinner = findViewById(R.id.managementFolderSpinner);
+        routeSubFolderSpinner = findViewById(R.id.routeSubFolderSpinner);
+        routeSubFolderSpinnerLevel3 = findViewById(R.id.routeSubFolderSpinnerLevel3);
+        contractFilterSpinner = findViewById(R.id.contractFilterSpinner);
+        contractSpinner = findViewById(R.id.contractSpinner);
+        setupRoutingControls();
+
+        // Preview button - generates a local temporary PDF only (no upload / no DB write)
+        if (previewButton != null) {
+            previewButton.setOnClickListener(v -> previewReport());
+        }
 
         // Save button - stores report data and generates PDF
         saveButton.setOnClickListener(v -> performSaveReport());
 
-        // General Quotation (catalog-driven from sales.json per flavor)
+        // General Quotation (catalog-driven from shared main assets sales.json)
 
         
         // Back button - returns to previous screen
@@ -581,6 +673,523 @@ public class ReportActivity extends AppCompatActivity {
         
         // Read Back button - reads the entire report
         readBackButton.setOnClickListener(v -> readReportBack());
+    }
+
+    private void setupRoutingControls() {
+        loadJobWorkFolderOptions();
+        loadManagementFolderOptions();
+        setupContractFilterSpinner();
+        if (jobReportCheckbox != null) {
+            jobReportCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    if (managementReportCheckbox != null) managementReportCheckbox.setChecked(false);
+                    if (contractReportCheckbox != null) contractReportCheckbox.setChecked(false);
+                }
+                if (jobFolderSpinner != null) {
+                    jobFolderSpinner.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                    jobFolderSpinner.setEnabled(isChecked);
+                }
+                if (isChecked && jobFolderSpinner != null && jobFolderSpinner.getSelectedItem() != null) {
+                    loadJobRouteSubFolderOptions("JobWorkReports", jobFolderSpinner.getSelectedItem().toString());
+                }
+                if (!isChecked) {
+                    setJobRouteSubFolderSpinnerVisible(false);
+                }
+            });
+        }
+        if (managementReportCheckbox != null) {
+            managementReportCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    if (jobReportCheckbox != null) jobReportCheckbox.setChecked(false);
+                    if (contractReportCheckbox != null) contractReportCheckbox.setChecked(false);
+                }
+                if (managementFolderSpinner != null) {
+                    managementFolderSpinner.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                    managementFolderSpinner.setEnabled(isChecked);
+                }
+                if (jobFolderSpinner != null && isChecked) {
+                    jobFolderSpinner.setVisibility(View.GONE);
+                    jobFolderSpinner.setEnabled(false);
+                }
+                if (isChecked && managementFolderSpinner != null && managementFolderSpinner.getSelectedItem() != null) {
+                    loadRouteSubFolderOptions(managementRootStorageFolder, managementFolderSpinner.getSelectedItem().toString());
+                }
+                if (!isChecked) {
+                    setRouteSubFolderSpinnerVisible(false);
+                }
+            });
+        }
+        if (jobFolderSpinner != null) {
+            jobFolderSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                    if (jobReportCheckbox == null || !jobReportCheckbox.isChecked()) return;
+                    Object item = parent.getItemAtPosition(position);
+                    loadJobRouteSubFolderOptions("JobWorkReports", item != null ? item.toString() : "");
+                }
+                @Override
+                public void onNothingSelected(android.widget.AdapterView<?> parent) {
+                    setJobRouteSubFolderSpinnerVisible(false);
+                }
+            });
+        }
+        if (jobRouteSubFolderSpinner != null) {
+            jobRouteSubFolderSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                    Object item = parent.getItemAtPosition(position);
+                    String selectedSubFolder = item != null ? item.toString().trim() : "";
+                    String basePath = jobRouteSubFolderSpinner.getTag() instanceof String
+                            ? (String) jobRouteSubFolderSpinner.getTag() : "";
+                    loadJobRouteThirdSubFolderOptions(basePath, selectedSubFolder);
+                }
+
+                @Override
+                public void onNothingSelected(android.widget.AdapterView<?> parent) {
+                    setJobRouteSubFolderLevel3SpinnerVisible(false);
+                }
+            });
+        }
+        if (managementFolderSpinner != null) {
+            managementFolderSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                    if (managementReportCheckbox == null || !managementReportCheckbox.isChecked()) return;
+                    Object item = parent.getItemAtPosition(position);
+                    loadRouteSubFolderOptions(managementRootStorageFolder, item != null ? item.toString() : "");
+                }
+                @Override
+                public void onNothingSelected(android.widget.AdapterView<?> parent) {
+                    setRouteSubFolderSpinnerVisible(false);
+                }
+            });
+        }
+        if (routeSubFolderSpinner != null) {
+            routeSubFolderSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                    Object item = parent.getItemAtPosition(position);
+                    String selectedSubFolder = item != null ? item.toString().trim() : "";
+                    String basePath = routeSubFolderSpinner.getTag() instanceof String
+                            ? (String) routeSubFolderSpinner.getTag() : "";
+                    loadRouteThirdSubFolderOptions(basePath, selectedSubFolder);
+                }
+
+                @Override
+                public void onNothingSelected(android.widget.AdapterView<?> parent) {
+                    setRouteSubFolderLevel3SpinnerVisible(false);
+                }
+            });
+        }
+        if (contractReportCheckbox != null && contractId != null && !contractId.trim().isEmpty()) {
+            contractReportCheckbox.setChecked(true);
+        }
+        if (contractReportCheckbox != null) {
+            contractReportCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    if (jobReportCheckbox != null) jobReportCheckbox.setChecked(false);
+                    if (managementReportCheckbox != null) managementReportCheckbox.setChecked(false);
+                }
+                if (contractSpinner != null) {
+                    contractSpinner.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                    contractSpinner.setEnabled(isChecked);
+                }
+                if (contractFilterSpinner != null) {
+                    contractFilterSpinner.setVisibility(isChecked && canChooseAllContracts() ? View.VISIBLE : View.GONE);
+                    contractFilterSpinner.setEnabled(isChecked && canChooseAllContracts());
+                }
+                if (isChecked) {
+                    setRouteSubFolderSpinnerVisible(false);
+                    setJobRouteSubFolderSpinnerVisible(false);
+                }
+                if (!isChecked) return;
+                loadContractsForPicker();
+            });
+        }
+        if (contractSpinner != null) {
+            contractSpinner.setVisibility((contractReportCheckbox != null && contractReportCheckbox.isChecked()) ? View.VISIBLE : View.GONE);
+            contractSpinner.setEnabled(contractReportCheckbox != null && contractReportCheckbox.isChecked());
+            contractSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                    if (position < 0 || position >= contractOptions.size()) return;
+                    if (contractReportCheckbox == null || !contractReportCheckbox.isChecked()) return;
+                    ContractOption option = contractOptions.get(position);
+                    if (option.placeholder) return;
+                    contractId = option.id;
+                    if (option.companyName != null && nameInput != null && nameInput.getEditText() != null) {
+                        nameInput.getEditText().setText(option.companyName);
+                    }
+                    if (option.address != null && addressInput != null && addressInput.getEditText() != null) {
+                        addressInput.getEditText().setText(option.address);
+                    }
+                }
+                @Override
+                public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+            });
+        }
+        String routeMode = getIntent().getStringExtra("ROUTE_MODE");
+        if ("job".equalsIgnoreCase(routeMode) && jobReportCheckbox != null) {
+            jobReportCheckbox.setChecked(true);
+            if (jobFolderSpinner != null) {
+                jobFolderSpinner.setVisibility(View.VISIBLE);
+                jobFolderSpinner.setEnabled(true);
+            }
+        } else if ("management".equalsIgnoreCase(routeMode) && managementReportCheckbox != null) {
+            managementReportCheckbox.setChecked(true);
+            if (managementFolderSpinner != null) {
+                managementFolderSpinner.setVisibility(View.VISIBLE);
+                managementFolderSpinner.setEnabled(true);
+            }
+            String routeFolder = getIntent().getStringExtra("ROUTE_FOLDER");
+            if (routeFolder != null && managementFolderSpinner != null && managementFolderSpinner.getAdapter() != null) {
+                for (int i = 0; i < managementFolderSpinner.getAdapter().getCount(); i++) {
+                    Object item = managementFolderSpinner.getAdapter().getItem(i);
+                    if (item != null && routeFolder.equals(item.toString())) {
+                        managementFolderSpinner.setSelection(i);
+                        break;
+                    }
+                }
+            }
+        }
+        if (contractReportCheckbox != null && contractReportCheckbox.isChecked()) {
+            loadContractsForPicker();
+        }
+    }
+
+    private void loadJobWorkFolderOptions() {
+        if (jobFolderSpinner == null) return;
+        FirebaseStorage.getInstance().getReference().child("JobWorkReports").listAll()
+                .addOnSuccessListener(listResult -> runOnUiThread(() -> {
+                    List<String> folderNames = new ArrayList<>();
+                    for (StorageReference p : listResult.getPrefixes()) {
+                        if (p != null && p.getName() != null && !p.getName().trim().isEmpty()) {
+                            folderNames.add(p.getName().trim());
+                        }
+                    }
+                    if (folderNames.isEmpty()) folderNames.add("JobWorkReports");
+                    jobFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, folderNames));
+                    jobFolderSpinner.setVisibility(View.GONE);
+                    jobFolderSpinner.setEnabled(false);
+                }))
+                .addOnFailureListener(e -> runOnUiThread(() -> {
+                    List<String> fallback = new ArrayList<>();
+                    fallback.add("JobWorkReports");
+                    jobFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, fallback));
+                    jobFolderSpinner.setVisibility(View.GONE);
+                    jobFolderSpinner.setEnabled(false);
+                }));
+    }
+
+    private void loadRouteSubFolderOptions(String rootFolder, String selectedFolder) {
+        if (routeSubFolderSpinner == null) return;
+        String selected = selectedFolder != null ? selectedFolder.trim() : "";
+        if (selected.isEmpty() || rootFolder.equalsIgnoreCase(selected)) {
+            setRouteSubFolderSpinnerVisible(false);
+            return;
+        }
+        String path = rootFolder + "/" + selected;
+        FirebaseStorage.getInstance().getReference().child(path).listAll()
+                .addOnSuccessListener(listResult -> runOnUiThread(() -> {
+                    List<String> folderNames = new ArrayList<>();
+                    for (StorageReference p : listResult.getPrefixes()) {
+                        if (p != null && p.getName() != null && !p.getName().trim().isEmpty()) {
+                            folderNames.add(p.getName().trim());
+                        }
+                    }
+                    if (folderNames.isEmpty()) {
+                        setRouteSubFolderSpinnerVisible(false);
+                        return;
+                    }
+                    routeSubFolderSpinner.setTag(path);
+                    routeSubFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, folderNames));
+                    setRouteSubFolderSpinnerVisible(true);
+                }))
+                .addOnFailureListener(e -> runOnUiThread(() -> setRouteSubFolderSpinnerVisible(false)));
+    }
+
+    private void setRouteSubFolderSpinnerVisible(boolean visible) {
+        if (routeSubFolderSpinner == null) return;
+        routeSubFolderSpinner.setVisibility(visible ? View.VISIBLE : View.GONE);
+        routeSubFolderSpinner.setEnabled(visible);
+        if (!visible) {
+            routeSubFolderSpinner.setTag(null);
+            setRouteSubFolderLevel3SpinnerVisible(false);
+        }
+    }
+
+    private void loadRouteThirdSubFolderOptions(String basePath, String selectedSubFolder) {
+        if (routeSubFolderSpinnerLevel3 == null) return;
+        String base = basePath != null ? basePath.trim() : "";
+        String selected = selectedSubFolder != null ? selectedSubFolder.trim() : "";
+        if (base.isEmpty() || selected.isEmpty()) {
+            setRouteSubFolderLevel3SpinnerVisible(false);
+            return;
+        }
+        String thirdPath = base + "/" + selected;
+        FirebaseStorage.getInstance().getReference().child(thirdPath).listAll()
+                .addOnSuccessListener(listResult -> runOnUiThread(() -> {
+                    List<String> folderNames = new ArrayList<>();
+                    for (StorageReference p : listResult.getPrefixes()) {
+                        if (p != null && p.getName() != null && !p.getName().trim().isEmpty()) {
+                            folderNames.add(p.getName().trim());
+                        }
+                    }
+                    if (folderNames.isEmpty()) {
+                        setRouteSubFolderLevel3SpinnerVisible(false);
+                        return;
+                    }
+                    routeSubFolderSpinnerLevel3.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, folderNames));
+                    setRouteSubFolderLevel3SpinnerVisible(true);
+                }))
+                .addOnFailureListener(e -> runOnUiThread(() -> setRouteSubFolderLevel3SpinnerVisible(false)));
+    }
+
+    private void setRouteSubFolderLevel3SpinnerVisible(boolean visible) {
+        if (routeSubFolderSpinnerLevel3 == null) return;
+        routeSubFolderSpinnerLevel3.setVisibility(visible ? View.VISIBLE : View.GONE);
+        routeSubFolderSpinnerLevel3.setEnabled(visible);
+    }
+
+    private void loadJobRouteSubFolderOptions(String rootFolder, String selectedFolder) {
+        if (jobRouteSubFolderSpinner == null) return;
+        String selected = selectedFolder != null ? selectedFolder.trim() : "";
+        if (selected.isEmpty() || rootFolder.equalsIgnoreCase(selected)) {
+            setJobRouteSubFolderSpinnerVisible(false);
+            return;
+        }
+        String path = rootFolder + "/" + selected;
+        FirebaseStorage.getInstance().getReference().child(path).listAll()
+                .addOnSuccessListener(listResult -> runOnUiThread(() -> {
+                    List<String> folderNames = new ArrayList<>();
+                    for (StorageReference p : listResult.getPrefixes()) {
+                        if (p != null && p.getName() != null && !p.getName().trim().isEmpty()) {
+                            folderNames.add(p.getName().trim());
+                        }
+                    }
+                    if (folderNames.isEmpty()) {
+                        setJobRouteSubFolderSpinnerVisible(false);
+                        return;
+                    }
+                    jobRouteSubFolderSpinner.setTag(path);
+                    jobRouteSubFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, folderNames));
+                    setJobRouteSubFolderSpinnerVisible(true);
+                }))
+                .addOnFailureListener(e -> runOnUiThread(() -> setJobRouteSubFolderSpinnerVisible(false)));
+    }
+
+    private void setJobRouteSubFolderSpinnerVisible(boolean visible) {
+        if (jobRouteSubFolderSpinner == null) return;
+        jobRouteSubFolderSpinner.setVisibility(visible ? View.VISIBLE : View.GONE);
+        jobRouteSubFolderSpinner.setEnabled(visible);
+        if (!visible) {
+            jobRouteSubFolderSpinner.setTag(null);
+            setJobRouteSubFolderLevel3SpinnerVisible(false);
+        }
+    }
+
+    private void loadJobRouteThirdSubFolderOptions(String basePath, String selectedSubFolder) {
+        if (jobRouteSubFolderSpinnerLevel3 == null) return;
+        String base = basePath != null ? basePath.trim() : "";
+        String selected = selectedSubFolder != null ? selectedSubFolder.trim() : "";
+        if (base.isEmpty() || selected.isEmpty()) {
+            setJobRouteSubFolderLevel3SpinnerVisible(false);
+            return;
+        }
+        String thirdPath = base + "/" + selected;
+        FirebaseStorage.getInstance().getReference().child(thirdPath).listAll()
+                .addOnSuccessListener(listResult -> runOnUiThread(() -> {
+                    List<String> folderNames = new ArrayList<>();
+                    for (StorageReference p : listResult.getPrefixes()) {
+                        if (p != null && p.getName() != null && !p.getName().trim().isEmpty()) {
+                            folderNames.add(p.getName().trim());
+                        }
+                    }
+                    if (folderNames.isEmpty()) {
+                        setJobRouteSubFolderLevel3SpinnerVisible(false);
+                        return;
+                    }
+                    jobRouteSubFolderSpinnerLevel3.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, folderNames));
+                    setJobRouteSubFolderLevel3SpinnerVisible(true);
+                }))
+                .addOnFailureListener(e -> runOnUiThread(() -> setJobRouteSubFolderLevel3SpinnerVisible(false)));
+    }
+
+    private void setJobRouteSubFolderLevel3SpinnerVisible(boolean visible) {
+        if (jobRouteSubFolderSpinnerLevel3 == null) return;
+        jobRouteSubFolderSpinnerLevel3.setVisibility(visible ? View.VISIBLE : View.GONE);
+        jobRouteSubFolderSpinnerLevel3.setEnabled(visible);
+    }
+
+    private boolean canChooseAllContracts() {
+        return SessionManager.isAdmin(this) || SessionManager.isSuperAdmin(this);
+    }
+
+    private void setupContractFilterSpinner() {
+        if (contractFilterSpinner == null) return;
+        if (!canChooseAllContracts()) {
+            contractFilterSpinner.setVisibility(View.GONE);
+            contractFilterSpinner.setEnabled(false);
+            return;
+        }
+        List<String> loading = new ArrayList<>();
+        loading.add("Loading users...");
+        contractFilterSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, loading));
+        contractFilterSpinner.setVisibility(View.GONE);
+        contractFilterSpinner.setEnabled(false);
+        contractFilterSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                if (contractReportCheckbox != null && contractReportCheckbox.isChecked()) {
+                    loadContractsForPicker();
+                }
+            }
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+        });
+        FirebaseFirestore.getInstance().collection("users").get().addOnSuccessListener(snap -> runOnUiThread(() -> {
+            java.util.LinkedHashSet<String> keys = new java.util.LinkedHashSet<>();
+            if (snap != null) {
+                for (com.google.firebase.firestore.QueryDocumentSnapshot d : snap) {
+                    String ck = d.getString("contractKey");
+                    if (ck == null || ck.trim().isEmpty()) ck = d.getString("ContractKey");
+                    if (ck == null) continue;
+                    ck = ck.trim();
+                    if (!ck.isEmpty()) keys.add(ck);
+                }
+            }
+            List<String> options = new ArrayList<>(keys);
+            options.sort(String::compareToIgnoreCase);
+            options.add(CONTRACT_FILTER_ALL);
+            contractFilterSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, options));
+            int allIndex = options.indexOf(CONTRACT_FILTER_ALL);
+            contractFilterSpinner.setSelection(allIndex >= 0 ? allIndex : 0);
+        })).addOnFailureListener(e -> runOnUiThread(() -> {
+            List<String> options = new ArrayList<>();
+            options.add(CONTRACT_FILTER_ALL);
+            contractFilterSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, options));
+            contractFilterSpinner.setSelection(0);
+        }));
+    }
+
+    private void loadManagementFolderOptions() {
+        if (managementFolderSpinner == null) return;
+        FirebaseStorage.getInstance().getReference().listAll().addOnSuccessListener(rootList -> {
+            String preferredRoot = defaultManagementRootFolder();
+            String fallbackRoot = alternateManagementRootFolder(preferredRoot);
+            String managementRootName = preferredRoot;
+            for (StorageReference p : rootList.getPrefixes()) {
+                if (p == null || p.getName() == null) continue;
+                String n = p.getName().trim();
+                if (preferredRoot.equalsIgnoreCase(n)) {
+                    managementRootName = n;
+                    break;
+                }
+                if (fallbackRoot.equalsIgnoreCase(n)) {
+                    managementRootName = n;
+                }
+            }
+            final String rootNameFinal = managementRootName;
+            managementRootStorageFolder = rootNameFinal;
+            FirebaseStorage.getInstance().getReference().child(rootNameFinal).listAll()
+                    .addOnSuccessListener(listResult -> runOnUiThread(() -> {
+                        List<String> folderNames = new ArrayList<>();
+                        for (StorageReference p : listResult.getPrefixes()) {
+                            if (p != null && p.getName() != null && !p.getName().trim().isEmpty()) {
+                                folderNames.add(p.getName().trim());
+                            }
+                        }
+                        if (folderNames.isEmpty()) folderNames.add(rootNameFinal);
+                        managementFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, folderNames));
+                        managementFolderSpinner.setVisibility(View.GONE);
+                        managementFolderSpinner.setEnabled(false);
+                    }))
+                    .addOnFailureListener(e -> runOnUiThread(() -> {
+                        List<String> fallback = new ArrayList<>();
+                        fallback.add(rootNameFinal);
+                        managementFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, fallback));
+                        managementFolderSpinner.setVisibility(View.GONE);
+                        managementFolderSpinner.setEnabled(false);
+                    }));
+        }).addOnFailureListener(e -> {
+            managementRootStorageFolder = defaultManagementRootFolder();
+            List<String> fallback = new ArrayList<>();
+            fallback.add(managementRootStorageFolder);
+            managementFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, fallback));
+            managementFolderSpinner.setVisibility(View.GONE);
+            managementFolderSpinner.setEnabled(false);
+        });
+    }
+
+    private String defaultManagementRootFolder() {
+        return "grpc".equalsIgnoreCase(BuildConfig.FLAVOR) ? "managment jobs" : "management jobs";
+    }
+
+    private String alternateManagementRootFolder(String preferred) {
+        return "managment jobs".equalsIgnoreCase(preferred) ? "management jobs" : "managment jobs";
+    }
+
+    private File resolveReportOutputDirectory() {
+        // Keep local persistence stable: all generated reports are stored in Reports.
+        File reports = new File(getExternalFilesDir(null), TenantBranding.reportsFolderName(this));
+        if (!reports.exists()) reports.mkdirs();
+        return reports;
+    }
+
+    private boolean hasRoutingSelection() {
+        return (jobReportCheckbox != null && jobReportCheckbox.isChecked())
+                || (managementReportCheckbox != null && managementReportCheckbox.isChecked())
+                || (contractReportCheckbox != null && contractReportCheckbox.isChecked());
+    }
+
+    private void loadContractsForPicker() {
+        if (contractSpinner == null) return;
+        String contractKey = SessionManager.getContractKey(this);
+        boolean canChooseAll = canChooseAllContracts();
+        String selectedKey = contractFilterSpinner != null && contractFilterSpinner.getSelectedItem() != null
+                ? contractFilterSpinner.getSelectedItem().toString().trim() : "";
+        boolean showAll = canChooseAll && (selectedKey.isEmpty() || CONTRACT_FILTER_ALL.equalsIgnoreCase(selectedKey));
+        com.google.firebase.firestore.Query q = FirebaseFirestore.getInstance().collection("contracts");
+        if (!showAll && canChooseAll && !selectedKey.isEmpty()) {
+            q = q.whereEqualTo("assignedTech", selectedKey.toLowerCase(Locale.getDefault()));
+        } else if (!showAll && contractKey != null && !contractKey.trim().isEmpty()) {
+            q = q.whereEqualTo("assignedTech", contractKey.trim().toLowerCase(Locale.getDefault()));
+        }
+        q.limit(300).get().addOnSuccessListener(snap -> {
+            contractOptions.clear();
+            ContractOption placeholder = new ContractOption();
+            placeholder.placeholder = true;
+            contractOptions.add(placeholder);
+            for (com.google.firebase.firestore.QueryDocumentSnapshot d : snap) {
+                ContractOption option = new ContractOption();
+                option.id = d.getId();
+                String name = d.getString("name");
+                if (name == null || name.trim().isEmpty()) name = d.getString("companyName");
+                option.companyName = name;
+                option.address = d.getString("address");
+                contractOptions.add(option);
+            }
+            if (contractOptions.size() == 1 && contractCompanyName != null && !contractCompanyName.trim().isEmpty()) {
+                ContractOption fallback = new ContractOption();
+                fallback.id = contractId;
+                fallback.companyName = contractCompanyName;
+                fallback.address = addressInput != null && addressInput.getEditText() != null ? addressInput.getEditText().getText().toString() : "";
+                contractOptions.add(fallback);
+            }
+            com.grpc.grpc.core.ContractIconSpinnerAdapter<ContractOption> adapter =
+                    new com.grpc.grpc.core.ContractIconSpinnerAdapter<>(this, contractOptions);
+            contractSpinner.setAdapter(adapter);
+            if (contractId != null) {
+                for (int i = 0; i < contractOptions.size(); i++) {
+                    if (contractId.equals(contractOptions.get(i).id)) {
+                        contractSpinner.setSelection(i);
+                        break;
+                    }
+                }
+            } else {
+                contractSpinner.setSelection(0);
+            }
+        });
     }
 
     /**
@@ -784,8 +1393,7 @@ public class ReportActivity extends AppCompatActivity {
     private void setupKeyboardHandling() {
         // Add focus change listeners to all DictateEditText fields
         DictateEditText[] dictateInputs = {nameInput, addressInput, visitTypeInput,
-                               siteInspectionInput, recommendationsInput, followUpInput,
-                               prepInput, techInput};
+                               siteInspectionInput, recommendationsInput, followUpInput, techInput};
         
         for (DictateEditText input : dictateInputs) {
             if (input != null) {
@@ -841,10 +1449,122 @@ public class ReportActivity extends AppCompatActivity {
      * Opens the Android system image selector for choosing multiple images.
      */
     private void openImageSelector() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.setType("image/*");
-        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);  // Allow multiple image selection
-        startActivityForResult(intent, 1);
+        startActivityForResult(com.grpc.grpc.core.ReportImageStorage.createImagePickerIntent(), 1);
+    }
+
+    private static final class PreviewDraft {
+        final String reportName;
+        final String content;
+        final String reportDate;
+
+        PreviewDraft(String reportName, String content, String reportDate) {
+            this.reportName = reportName;
+            this.content = content;
+            this.reportDate = reportDate;
+        }
+    }
+
+    /** Plain text for PDF content line only; structured products render as lines in the PDF body. */
+    private String formatPrepForContent() {
+        if (prepProductsSection == null) {
+            return "N/A";
+        }
+        if (PrepProductsFormatter.hasStructuredProducts(prepProductsSection.getProducts())) {
+            return "";
+        }
+        String legacy = prepProductsSection.getLegacyPrepText();
+        return legacy != null && !legacy.trim().isEmpty() ? legacy.trim() : "N/A";
+    }
+
+    private String formatPrepForReadback() {
+        if (prepProductsSection == null) {
+            return "";
+        }
+        return PrepProductsFormatter.formatPlainSummary(
+                prepProductsSection.getProducts(),
+                prepProductsSection.getLegacyPrepText());
+    }
+
+    private PreviewDraft buildPreviewDraft() {
+        String reportName;
+        String content;
+        String reportDate;
+
+        if (isTemplateMode()) {
+            StringBuilder sb = new StringBuilder();
+            for (Pair<String, EditText> pair : dynamicTemplateFields) {
+                String value = pair.second.getText() != null ? pair.second.getText().toString().trim() : "";
+                sb.append(pair.first).append(": ").append(value.isEmpty() ? "N/A" : value).append("\n");
+            }
+            content = sb.toString();
+            reportName = dynamicTemplateFields.isEmpty()
+                    ? "Custom Report"
+                    : (dynamicTemplateFields.get(0).second.getText() != null
+                    ? dynamicTemplateFields.get(0).second.getText().toString().trim()
+                    : "Custom Report");
+            if (reportName.isEmpty()) reportName = "Custom Report";
+            reportDate = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+        } else {
+            reportName = nameInput.getEditText().getText().toString();
+            content = "Premise Name: " + nameInput.getEditText().getText().toString() +
+                    "\nAddress: " + addressInput.getEditText().getText().toString() +
+                    "\nDate: " + dateInput.getText().toString() +
+                    "\nVisit Type: " + visitTypeInput.getEditText().getText().toString() +
+                    "\nSite Inspection: " + siteInspectionInput.getEditText().getText().toString() +
+                    "\nRecommendations: " + recommendationsInput.getEditText().getText().toString() +
+                    "\nFollow-Up: " + followUpInput.getEditText().getText().toString() +
+                    "\nPrep: " + formatPrepForContent() +
+                    "\nTech: " + techInput.getEditText().getText().toString();
+            reportDate = dateInput.getText().toString();
+        }
+        return new PreviewDraft(reportName, content, reportDate);
+    }
+
+    private void previewReport() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Toast.makeText(this, "PDF preview requires Android 13 or higher", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        PreviewDraft draft = buildPreviewDraft();
+        PdfTemplateSettings settings;
+        if (selectedTemplateId != null) {
+            SavedTemplate t = new PdfTemplateStorage(this).getSavedTemplateById(userName, selectedTemplateId);
+            settings = t != null ? t.toPdfTemplateSettings() : new PdfTemplateStorage(this).load();
+        } else {
+            settings = new PdfTemplateStorage(this).load();
+            settings.setTemplateSelection(PdfTemplateSettings.GRPC);
+        }
+
+        File previewDir = new File(getCacheDir(), "report_previews");
+        if (!previewDir.exists()) {
+            previewDir.mkdirs();
+        }
+
+        List<ProductUsageItem> prepProducts = prepProductsSection != null
+                ? prepProductsSection.getProducts() : null;
+        String legacyPrep = prepProductsSection != null ? prepProductsSection.getLegacyPrepText() : "";
+        File previewPdf = PDFReportGeneratorWithTemplate.generatePdfToDirectory(
+                "Company",
+                draft.reportName,
+                draft.content,
+                this,
+                !selectedImageUris.isEmpty() ? selectedImageUris : null,
+                draft.reportDate,
+                null,
+                settings,
+                previewDir,
+                prepProducts,
+                legacyPrep
+        );
+        if (previewPdf == null || !previewPdf.exists()) {
+            Toast.makeText(this, "Unable to generate preview.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent previewIntent = new Intent(this, ReportPreviewActivity.class);
+        previewIntent.putExtra(ReportPreviewActivity.EXTRA_PREVIEW_PDF_PATH, previewPdf.getAbsolutePath());
+        startActivityForResult(previewIntent, REQUEST_PREVIEW_REPORT);
     }
 
     /**
@@ -859,16 +1579,17 @@ public class ReportActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        if (requestCode == REQUEST_PREVIEW_REPORT) {
+            if (resultCode == RESULT_OK && data != null && data.getBooleanExtra(ReportPreviewActivity.EXTRA_CONFIRM_SAVE, false)) {
+                performSaveReport();
+            }
+            return;
+        }
+
         if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
-            // Handle multiple image selection
-            if (data.getClipData() != null) {
-                int count = data.getClipData().getItemCount();
-                for (int i = 0; i < count; i++) {
-                    Uri imageUri = data.getClipData().getItemAt(i).getUri();
-                    selectedImageUris.add(imageUri);
-                }
-            } else if (data.getData() != null) {
-                selectedImageUris.add(data.getData());
+            List<Uri> persisted = com.grpc.grpc.core.ReportImageStorage.persistFromPickerResult(this, data);
+            if (!persisted.isEmpty()) {
+                selectedImageUris.addAll(persisted);
             }
             Toast.makeText(this, selectedImageUris.size() + " images selected!", Toast.LENGTH_SHORT).show();
         }
@@ -919,7 +1640,7 @@ public class ReportActivity extends AppCompatActivity {
                     "\nSite Inspection: " + siteInspectionInput.getEditText().getText().toString() +
                     "\nRecommendations: " + recommendationsInput.getEditText().getText().toString() +
                     "\nFollow-Up: " + followUpInput.getEditText().getText().toString() +
-                    "\nPrep: " + prepInput.getEditText().getText().toString() +
+                    "\nPrep: " + formatPrepForContent() +
                     "\nTech: " + techInput.getEditText().getText().toString();
             reportDate = dateInput.getText().toString();
             values.put("name", reportName);
@@ -929,7 +1650,8 @@ public class ReportActivity extends AppCompatActivity {
             values.put("site_inspection", siteInspectionInput.getEditText().getText().toString());
             values.put("recommendations", recommendationsInput.getEditText().getText().toString());
             values.put("follow_up", followUpInput.getEditText().getText().toString());
-            values.put("prep", prepInput.getEditText().getText().toString());
+            values.put("prep", PrepProductsSerializer.toPrepColumnValue(
+                    prepProductsSection.getProducts(), prepProductsSection.getLegacyPrepText()));
             values.put("tech", techInput.getEditText().getText().toString());
         }
 
@@ -947,7 +1669,7 @@ public class ReportActivity extends AppCompatActivity {
                     // PDF template selection removed from this screen; use GRPC by default
                     settings.setTemplateSelection(PdfTemplateSettings.GRPC);
                 }
-                PDFReportGeneratorWithTemplate.generatePdf(
+                PDFReportGeneratorWithTemplate.generatePdfToDirectory(
                         "Company",
                         reportName,
                         content,
@@ -955,14 +1677,82 @@ public class ReportActivity extends AppCompatActivity {
                         !selectedImageUris.isEmpty() ? selectedImageUris : null,
                         reportDate,
                         ownerPassword,
-                        settings
+                        settings,
+                        resolveReportOutputDirectory(),
+                        prepProductsSection.getProducts(),
+                        prepProductsSection.getLegacyPrepText()
                 );
             }
             clearInputFields();
-            showReportOptionsDialog();
+            if (contractReportCheckbox != null
+                    && contractReportCheckbox.isChecked()
+                    && ContractReportSync.hasContractId(contractId)) {
+                uploadReportToFirebase(ContractReportSync.buildContractStorageFolder(contractId));
+            } else if (hasRoutingSelection()) {
+                String autoFolder = resolveAutoRoutingFolderPath();
+                if (autoFolder != null && !autoFolder.trim().isEmpty()) {
+                    uploadReportToFirebase(autoFolder);
+                } else {
+                    String fallbackFolder = (jobReportCheckbox != null && jobReportCheckbox.isChecked()) ? "JobWorkReports"
+                            : (managementReportCheckbox != null && managementReportCheckbox.isChecked()) ? managementRootStorageFolder : "";
+                    if (!fallbackFolder.isEmpty()) {
+                        uploadReportToFirebase(fallbackFolder);
+                    } else {
+                        showRoutedReportOptionsDialog();
+                    }
+                }
+            } else if (shouldAutoUploadContractReport()) {
+                uploadReportToFirebase(ContractReportSync.buildContractStorageFolder(contractId));
+            } else {
+                showReportOptionsDialog();
+            }
         } else {
             Toast.makeText(this, "Error Saving Report!", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private boolean shouldAutoUploadContractReport() {
+        return ContractStorageUploader.shouldAutoUpload(contractId);
+    }
+
+    private String resolveAutoRoutingFolderPath() {
+        if (jobReportCheckbox != null && jobReportCheckbox.isChecked()) {
+            String selected = jobFolderSpinner != null && jobFolderSpinner.getSelectedItem() != null
+                    ? jobFolderSpinner.getSelectedItem().toString().trim() : "";
+            String base = (!selected.isEmpty() && !"JobWorkReports".equalsIgnoreCase(selected))
+                    ? "JobWorkReports/" + selected
+                    : "JobWorkReports";
+            String sub = jobRouteSubFolderSpinner != null
+                    && jobRouteSubFolderSpinner.getVisibility() == View.VISIBLE
+                    && jobRouteSubFolderSpinner.getSelectedItem() != null
+                    ? jobRouteSubFolderSpinner.getSelectedItem().toString().trim() : "";
+            String sub2 = jobRouteSubFolderSpinnerLevel3 != null
+                    && jobRouteSubFolderSpinnerLevel3.getVisibility() == View.VISIBLE
+                    && jobRouteSubFolderSpinnerLevel3.getSelectedItem() != null
+                    ? jobRouteSubFolderSpinnerLevel3.getSelectedItem().toString().trim() : "";
+            if (!sub2.isEmpty()) return base + "/" + sub + "/" + sub2;
+            if (!sub.isEmpty()) return base + "/" + sub;
+            return base;
+        }
+        if (managementReportCheckbox != null && managementReportCheckbox.isChecked()) {
+            String selected = managementFolderSpinner != null && managementFolderSpinner.getSelectedItem() != null
+                    ? managementFolderSpinner.getSelectedItem().toString().trim() : "";
+            String base = (!selected.isEmpty() && !managementRootStorageFolder.equalsIgnoreCase(selected))
+                    ? managementRootStorageFolder + "/" + selected
+                    : managementRootStorageFolder;
+            String sub = routeSubFolderSpinner != null
+                    && routeSubFolderSpinner.getVisibility() == View.VISIBLE
+                    && routeSubFolderSpinner.getSelectedItem() != null
+                    ? routeSubFolderSpinner.getSelectedItem().toString().trim() : "";
+            String sub2 = routeSubFolderSpinnerLevel3 != null
+                    && routeSubFolderSpinnerLevel3.getVisibility() == View.VISIBLE
+                    && routeSubFolderSpinnerLevel3.getSelectedItem() != null
+                    ? routeSubFolderSpinnerLevel3.getSelectedItem().toString().trim() : "";
+            if (!sub2.isEmpty()) return base + "/" + sub + "/" + sub2;
+            if (!sub.isEmpty()) return base + "/" + sub;
+            return base;
+        }
+        return null;
     }
 
     /**
@@ -970,7 +1760,10 @@ public class ReportActivity extends AppCompatActivity {
      */
     private void showReportOptionsDialog() {
         try {
-            boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null && !"Offline User".equals(userName);
+            boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null
+                    && !"Offline User".equals(userName)
+                    && !shouldAutoUploadContractReport()
+                    && !lastUploadSucceeded;
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Report Saved Successfully!")
                     .setMessage("What would you like to do with your report?")
@@ -989,8 +1782,40 @@ public class ReportActivity extends AppCompatActivity {
         }
     }
 
+    private void showRoutedReportOptionsDialog() {
+        try {
+            boolean showUpload = FirebaseAuth.getInstance().getCurrentUser() != null
+                    && !"Offline User".equals(userName)
+                    && !shouldAutoUploadContractReport()
+                    && !lastUploadSucceeded;
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder
+                    .setTitle("Report Saved Successfully!")
+                    .setMessage("What would you like to do with your report?")
+                    .setPositiveButton("View", (dialog, which) -> viewLatestReport())
+                    .setNegativeButton("Share", (dialog, which) -> shareReport())
+                    .setCancelable(true);
+            if (showUpload) {
+                builder.setNeutralButton("Upload to Firebase", (dialog, which) -> showFirebaseFolderSelectionPopup());
+            } else {
+                builder.setNeutralButton("OK", (dialog, which) -> dialog.dismiss());
+            }
+            builder.show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Error showing dialog: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showPostSaveOptionsDialog() {
+        if (hasRoutingSelection()) {
+            showRoutedReportOptionsDialog();
+        } else {
+            showReportOptionsDialog();
+        }
+    }
+
     private void viewLatestReport() {
-        File reportsFolder = new File(getExternalFilesDir(null), TenantBranding.reportsFolderName(this));
+        File reportsFolder = resolveReportOutputDirectory();
         if (!reportsFolder.exists()) {
             Toast.makeText(this, "Report folder not found!", Toast.LENGTH_SHORT).show();
             return;
@@ -1013,7 +1838,7 @@ public class ReportActivity extends AppCompatActivity {
         intent.setDataAndType(uri, "application/pdf");
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         startActivity(Intent.createChooser(intent, "View Report"));
-        showReportOptionsDialog();
+        showPostSaveOptionsDialog();
     }
 
     /**
@@ -1022,7 +1847,7 @@ public class ReportActivity extends AppCompatActivity {
     private void shareReport() {
         try {
             // Find the generated PDF file
-            File reportsFolder = new File(getExternalFilesDir(null), TenantBranding.reportsFolderName(this));
+            File reportsFolder = resolveReportOutputDirectory();
             if (!reportsFolder.exists()) {
                 Toast.makeText(this, "Report folder not found!", Toast.LENGTH_SHORT).show();
                 return;
@@ -1057,7 +1882,7 @@ public class ReportActivity extends AppCompatActivity {
             startActivity(Intent.createChooser(shareIntent, "Share Report"));
             
             // Show the options dialog again after sharing
-            showReportOptionsDialog();
+            showPostSaveOptionsDialog();
         } catch (Exception e) {
             Toast.makeText(this, "No application available to share the report.", Toast.LENGTH_SHORT).show();
         }
@@ -1067,22 +1892,24 @@ public class ReportActivity extends AppCompatActivity {
      * Shows Firebase folder selection popup for uploading the saved report
      */
     private void showFirebaseFolderSelectionPopup() {
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageRef = storage.getReference();
-
-        storageRef.listAll().addOnSuccessListener(listResult -> {
-            List<String> folderList = new ArrayList<>();
-            for (StorageReference prefix : listResult.getPrefixes()) {
-                String folderName = prefix.getName();
-                if (!folderName.equals("backup")) { // Exclude the backup folder
-                    folderList.add(folderName);
-                }
-            }
-
+        if (ContractReportSync.hasContractId(contractId)) {
+            uploadReportToFirebase(ContractReportSync.buildContractStorageFolder(contractId));
+            return;
+        }
+        if (jobReportCheckbox != null && jobReportCheckbox.isChecked()) {
+            showSubFolderSelectionDialog("JobWorkReports");
+            return;
+        }
+        if (managementReportCheckbox != null && managementReportCheckbox.isChecked()) {
+            String autoFolder = resolveAutoRoutingFolderPath();
+            uploadReportToFirebase(autoFolder != null && !autoFolder.trim().isEmpty() ? autoFolder : managementRootStorageFolder);
+            return;
+        }
+        StorageFolderHelper.discoverUploadParentFolders(folderList -> runOnUiThread(() -> {
             if (folderList.isEmpty()) {
                 Toast.makeText(this, "No available folders to select.", Toast.LENGTH_SHORT).show();
                 // Show the options dialog again if no folders found
-                showReportOptionsDialog();
+                showPostSaveOptionsDialog();
                 return;
             }
 
@@ -1090,7 +1917,7 @@ public class ReportActivity extends AppCompatActivity {
             String[] foldersArray = folderList.toArray(new String[0]);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Select a Parent Folder");
+            builder.setTitle("Select a storage folder");
             builder.setItems(foldersArray, (dialog, which) -> {
                 String selectedFolder = foldersArray[which];
                 showSubFolderSelectionDialog(selectedFolder);
@@ -1098,16 +1925,11 @@ public class ReportActivity extends AppCompatActivity {
 
             builder.setNegativeButton("Cancel", (dialog, which) -> {
                 // Show the options dialog again if user cancels
-                showReportOptionsDialog();
+                showPostSaveOptionsDialog();
                 dialog.dismiss();
             });
             builder.show();
-
-        }).addOnFailureListener(e -> {
-            Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            // Show the options dialog again if loading folders fails
-            showReportOptionsDialog();
-        });
+        }));
     }
 
     /**
@@ -1138,12 +1960,12 @@ public class ReportActivity extends AppCompatActivity {
             builder.setTitle("Select a Subfolder");
             builder.setItems(subFolderList.toArray(new String[0]), (dialog, which) -> {
                 String selectedSubFolder = subFolderList.get(which);
-                uploadReportToFirebase(parentFolder + "/" + selectedSubFolder);
+                showSubFolderSelectionDialog(parentFolder + "/" + selectedSubFolder);
             });
 
             builder.setNegativeButton("Cancel", (dialog, which) -> {
                 // Show the options dialog again if user cancels
-                showReportOptionsDialog();
+                showPostSaveOptionsDialog();
                 dialog.dismiss();
             });
             builder.show();
@@ -1151,7 +1973,7 @@ public class ReportActivity extends AppCompatActivity {
         }).addOnFailureListener(e -> {
             Toast.makeText(this, "Failed to load subfolders: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             // Show the options dialog again if loading subfolders fails
-            showReportOptionsDialog();
+            showPostSaveOptionsDialog();
         });
     }
 
@@ -1162,11 +1984,11 @@ public class ReportActivity extends AppCompatActivity {
      */
     private void uploadReportToFirebase(String folderPath) {
         // Find the generated PDF file
-        File reportsFolder = new File(getExternalFilesDir(null), TenantBranding.reportsFolderName(this));
+        File reportsFolder = resolveReportOutputDirectory();
         if (!reportsFolder.exists()) {
             Toast.makeText(this, "Report folder not found!", Toast.LENGTH_SHORT).show();
             // Show the options dialog again if report folder not found
-            showReportOptionsDialog();
+            showPostSaveOptionsDialog();
             return;
         }
 
@@ -1175,7 +1997,7 @@ public class ReportActivity extends AppCompatActivity {
         if (files == null || files.length == 0) {
             Toast.makeText(this, "No PDF report found to upload!", Toast.LENGTH_SHORT).show();
             // Show the options dialog again if no PDF found
-            showReportOptionsDialog();
+            showPostSaveOptionsDialog();
             return;
         }
 
@@ -1186,22 +2008,105 @@ public class ReportActivity extends AppCompatActivity {
                 latestFile = file;
             }
         }
+        if (!com.grpc.grpc.core.ReportImageStorage.validatePdfFile(this, latestFile)) {
+            showPostSaveOptionsDialog();
+            return;
+        }
 
         // Upload to Firebase
         FirebaseStorage storage = FirebaseStorage.getInstance();
         StorageReference storageReference = storage.getReference();
-        StorageReference fileRef = storageReference.child(folderPath + "/" + latestFile.getName());
+        final File latestFileFinal = latestFile;
+        final String targetFolderPath = ContractStoragePathHelper.resolveContractYearFolderPath(
+                folderPath,
+                latestFileFinal,
+                dateInput != null ? dateInput.getText().toString() : null);
+        ContractStoragePathHelper.RunnableCallback doUpload = () -> runOnUiThread(() -> uploadReportToFirebaseStorage(
+                storageReference, latestFileFinal, targetFolderPath));
+        if (ContractReportSync.hasContractId(contractId)
+                && targetFolderPath != null
+                && targetFolderPath.toLowerCase(Locale.ROOT).startsWith("contracts/")) {
+            String yearSegment = ContractStoragePathHelper.yearFromContractFolderPath(targetFolderPath);
+            if (yearSegment == null) {
+                yearSegment = ContractStoragePathHelper.extractYearFromFileName(latestFileFinal.getName());
+            }
+            final String yearForFolder = yearSegment != null ? yearSegment : "";
+            ContractStoragePathHelper.ensureYearFolderExists(
+                    ContractReportSync.buildContractStorageFolder(contractId),
+                    yearForFolder,
+                    doUpload,
+                    e -> doUpload.run()
+            );
+        } else {
+            doUpload.run();
+        }
+    }
 
-        UploadTask uploadTask = fileRef.putFile(Uri.fromFile(latestFile));
-        uploadTask.addOnSuccessListener(taskSnapshot -> {
-            com.grpc.grpc.core.StorageMetricsHelper.recordUpload();
-            Toast.makeText(this, "Report uploaded successfully to " + folderPath, Toast.LENGTH_SHORT).show();
-            // Show the options dialog again after successful upload
-            showReportOptionsDialog();
+    private void uploadReportToFirebaseStorage(
+            StorageReference storageReference,
+            File latestFileFinal,
+            String targetFolderPath
+    ) {
+        String uploadedFileName = latestFileFinal.getName();
+        StorageReference folderRef = storageReference.child(targetFolderPath);
+        folderRef.listAll().addOnSuccessListener(listResult -> {
+            java.util.Set<String> existingNames = new java.util.HashSet<>();
+            for (StorageReference item : listResult.getItems()) {
+                if (item != null && item.getName() != null) existingNames.add(item.getName());
+            }
+            String uniqueNameCandidate = uploadedFileName;
+            if (existingNames.contains(uniqueNameCandidate)) {
+                int dot = uploadedFileName.lastIndexOf('.');
+                String base = dot > 0 ? uploadedFileName.substring(0, dot) : uploadedFileName;
+                String ext = dot > 0 ? uploadedFileName.substring(dot) : "";
+                uniqueNameCandidate = base + "_" + System.currentTimeMillis() + ext;
+            }
+            final String uniqueName = uniqueNameCandidate;
+            String storagePath = targetFolderPath + "/" + uniqueName;
+            StorageReference fileRef = storageReference.child(storagePath);
+            UploadTask uploadTask = fileRef.putFile(Uri.fromFile(latestFileFinal));
+            uploadTask.addOnSuccessListener(taskSnapshot -> {
+                lastUploadSucceeded = true;
+                com.grpc.grpc.core.StorageMetricsHelper.recordUpload();
+                ContractReportSync.syncMetadata(
+                        contractId,
+                        storagePath,
+                        uniqueName,
+                        selectedTemplateId != null && !selectedTemplateId.trim().isEmpty() ? "custom_report" : "company_report",
+                        contractCompanyName,
+                        () -> {
+                            Toast.makeText(this, "Report uploaded successfully to " + targetFolderPath, Toast.LENGTH_SHORT).show();
+                            showPostSaveOptionsDialog();
+                        },
+                        error -> {
+                            Toast.makeText(this, "Report uploaded but contract link failed: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                            showPostSaveOptionsDialog();
+                        }
+                );
+            }).addOnFailureListener(e -> {
+                Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                showPostSaveOptionsDialog();
+            });
         }).addOnFailureListener(e -> {
-            Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            // Show the options dialog again after failed upload
-            showReportOptionsDialog();
+            // Fallback upload if pre-check fails; this still doesn't delete existing files.
+            String storagePath = targetFolderPath + "/" + uploadedFileName;
+            StorageReference fileRef = storageReference.child(storagePath);
+            fileRef.putFile(Uri.fromFile(latestFileFinal))
+                    .addOnSuccessListener(taskSnapshot -> {
+                        lastUploadSucceeded = true;
+                        com.grpc.grpc.core.StorageMetricsHelper.recordUpload();
+                        ContractReportSync.syncMetadata(
+                                contractId, storagePath, uploadedFileName,
+                                selectedTemplateId != null && !selectedTemplateId.trim().isEmpty() ? "custom_report" : "company_report",
+                                contractCompanyName,
+                                () -> showPostSaveOptionsDialog(),
+                                error -> showPostSaveOptionsDialog()
+                        );
+                    })
+                    .addOnFailureListener(err -> {
+                        Toast.makeText(this, "Upload failed: " + err.getMessage(), Toast.LENGTH_SHORT).show();
+                        showPostSaveOptionsDialog();
+                    });
         });
     }
 
@@ -1222,7 +2127,9 @@ public class ReportActivity extends AppCompatActivity {
             siteInspectionInput.getEditText().setText("");
             recommendationsInput.getEditText().setText("");
             followUpInput.getEditText().setText("");
-            prepInput.getEditText().setText("");
+            if (prepProductsSection != null) {
+                prepProductsSection.clear();
+            }
             techInput.getEditText().setText("");
             setCurrentDate();
         }
@@ -1328,7 +2235,7 @@ public class ReportActivity extends AppCompatActivity {
         FirebaseFirestore.getInstance().document("AI-Chat/AI-API").get()
                 .addOnSuccessListener(this, docSnap -> {
                     if (docSnap == null || !docSnap.exists()) {
-                        setAiFixDone("Admin must set an API key in AI Chat (Settings → Update Hugging Face Key or Groq Key).");
+                        setAiFixDone("Admin must set an API key in Firestore (AI-Chat/AI-API document).");
                         return;
                     }
                     Object grogObj = docSnap.get("key-grog");
@@ -1337,7 +2244,7 @@ public class ReportActivity extends AppCompatActivity {
                     String keyHf = hfObj != null ? hfObj.toString().trim() : "";
                     String apiKey = !keyGrog.isEmpty() ? keyGrog : keyHf;
                     if (apiKey.isEmpty()) {
-                        setAiFixDone("Admin must set an API key in AI Chat (Settings → Update Hugging Face Key or Groq Key).");
+                        setAiFixDone("Admin must set an API key in Firestore (AI-Chat/AI-API document).");
                         return;
                     }
                     boolean useGroq = !keyGrog.isEmpty();
@@ -1671,7 +2578,9 @@ public class ReportActivity extends AppCompatActivity {
             } else if (lowerText.contains("prep steps") || lowerText.contains("prep")) {
                 content = extractContentAfterCommand(spokenText, "prep steps", "prep");
                 if (!content.isEmpty()) {
-                    prepInput.getEditText().setText(content);
+                    if (prepProductsSection != null) {
+                        prepProductsSection.setLegacyPrepText(content);
+                    }
                     Toast.makeText(this, "✅ Prep Steps filled: " + content, Toast.LENGTH_SHORT).show();
                     // Auto-progress to next field
                     startAutoProgressionFromField(6); // Start from follow up
@@ -1778,7 +2687,9 @@ public class ReportActivity extends AppCompatActivity {
                 recommendationsInput.getEditText().setText(content);
                 break;
             case "prep steps":
-                prepInput.getEditText().setText(content);
+                if (prepProductsSection != null) {
+                    prepProductsSection.setLegacyPrepText(content);
+                }
                 break;
             case "follow up":
                 followUpInput.getEditText().setText(content);
@@ -1903,7 +2814,7 @@ public class ReportActivity extends AppCompatActivity {
             reportText.append("Visit Type: ").append(visitTypeInput.getEditText().getText().toString()).append(". ");
             reportText.append("Site Inspection: ").append(siteInspectionInput.getEditText().getText().toString()).append(". ");
             reportText.append("Recommendations: ").append(recommendationsInput.getEditText().getText().toString()).append(". ");
-            reportText.append("Prep Steps: ").append(prepInput.getEditText().getText().toString()).append(". ");
+            reportText.append("Prep Steps: ").append(formatPrepForReadback()).append(". ");
             reportText.append("Follow Up: ").append(followUpInput.getEditText().getText().toString()).append(". ");
             reportText.append("Technician Name: ").append(techInput.getEditText().getText().toString()).append(". ");
         }

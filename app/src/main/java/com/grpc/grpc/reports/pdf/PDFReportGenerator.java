@@ -1,12 +1,12 @@
 /**
  * PDFReportGenerator.java
  *
- * This class handles the generation of a PDF report for Good Riddance Pest Control.
+ * This class handles the generation of a PDF report for [Company 1].
  * It allows the user to create a structured PDF document containing event details and images.
  *
  * Key Features:
  * - Generates a PDF with structured text and image content.
- * - Adds a watermark and footer to every page.
+ * - Adds a watermark on every page; footer and page numbers are applied after layout (last page footer, all pages numbered).
  * - Stores the PDF locally and provides user feedback upon successful creation.
  */
 
@@ -18,6 +18,8 @@ import com.grpc.grpc.reports.data.PdfTemplateSettings;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.widget.Toast;
@@ -49,9 +51,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import com.grpc.grpc.reports.model.ProductUsageItem;
+
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -59,7 +65,7 @@ import java.util.Set;
 /**
  * PDFReportGenerator.java
  *
- * This class handles the generation of structured PDF reports for Good Riddance Pest Control.
+ * This class handles the generation of structured PDF reports for [Company 1].
  * Users can create a report containing event details and optional images, with a watermark and footer applied.
  * The generated PDF is saved locally and includes company branding for professional documentation.
  *
@@ -91,16 +97,81 @@ public class PDFReportGenerator {
         return generatePDFReport(reportType, reportName, content, context, imageUris, reportDate, null);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePDFReportToDirectory(
+            String reportType,
+            String reportName,
+            String content,
+            Context context,
+            List<Uri> imageUris,
+            String reportDate,
+            File outputDirectory
+    ) {
+        return generatePDFReportToDirectory(
+                reportType,
+                reportName,
+                content,
+                context,
+                imageUris,
+                reportDate,
+                null,
+                outputDirectory
+        );
+    }
+
     /**
      * Generates a PDF report with optional password protection. Always uses full compression.
      * @param ownerPassword If non-null and non-empty, PDF is encrypted (view/print allowed; editing requires password).
      */
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     public static File generatePDFReport(String reportType, String reportName, String content, Context context, List<Uri> imageUris, String reportDate, String ownerPassword) {
-        // Define the folder for storing reports
-        File pdfFolder = new File(context.getExternalFilesDir(null), TenantBranding.reportsFolderName(context));
+        return generatePDFReportToDirectory(
+                reportType,
+                reportName,
+                content,
+                context,
+                imageUris,
+                reportDate,
+                ownerPassword,
+                null
+        );
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePDFReportToDirectory(
+            String reportType,
+            String reportName,
+            String content,
+            Context context,
+            List<Uri> imageUris,
+            String reportDate,
+            String ownerPassword,
+            File outputDirectory
+    ) {
+        return generatePDFReportToDirectory(
+                reportType, reportName, content, context, imageUris, reportDate,
+                ownerPassword, outputDirectory, null, null);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePDFReportToDirectory(
+            String reportType,
+            String reportName,
+            String content,
+            Context context,
+            List<Uri> imageUris,
+            String reportDate,
+            String ownerPassword,
+            File outputDirectory,
+            List<ProductUsageItem> prepProducts,
+            String legacyPrepText
+    ) {
+        File pdfFolder = outputDirectory;
+        if (pdfFolder == null) {
+            pdfFolder = new File(context.getExternalFilesDir(null), TenantBranding.reportsFolderName(context));
+        }
         if (!pdfFolder.exists()) {
-            pdfFolder.mkdirs();  // Create the directory if it does not exist
+            pdfFolder.mkdirs();
         }
 
         // Generate a timestamped file name for the PDF report
@@ -160,16 +231,16 @@ public class PDFReportGenerator {
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(18)
                     .setBold()
-                    .setFontColor(ColorConstants.BLUE);
+                    .setFontColor(ColorConstants.BLACK);
             document.add(title);
             document.add(new Paragraph("\n"));  // Adding spacing after the title
 
-            addReportBodyToDocument(document, content, context, imageUris);
+            addReportBodyToDocument(document, content, context, imageUris, null, null, prepProducts, legacyPrepText);
 
             document.close();  // Close the document after content is added
+            byte[] ownerBytes = (ownerPassword != null && !ownerPassword.isEmpty()) ? ownerPassword.getBytes() : null;
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context), ownerBytes);
             Toast.makeText(context, "PDF Created Successfully!", Toast.LENGTH_SHORT).show();
-
-
             return pdfFile;
 
         } catch (IOException e) {
@@ -186,7 +257,7 @@ public class PDFReportGenerator {
      * Called by PDFReportGenerator and by PDFReportGeneratorWithTemplate for MY_TEMPLATE.
      */
     public static void addReportBodyToDocument(Document document, String content, Context context, List<Uri> imageUris) {
-        addReportBodyToDocument(document, content, context, imageUris, null, null);
+        addReportBodyToDocument(document, content, context, imageUris, null, null, null, null);
     }
 
     /**
@@ -194,13 +265,28 @@ public class PDFReportGenerator {
      * headerSize may be null for default.
      */
     public static void addReportBodyToDocument(Document document, String content, Context context, List<Uri> imageUris, String headerSize) {
-        addReportBodyToDocument(document, content, context, imageUris, headerSize, null);
+        addReportBodyToDocument(document, content, context, imageUris, headerSize, null, null, null);
     }
 
     /**
      * Parse body text size: DEFAULT or "12" -> 12pt, "8" -> 8pt, "10" -> 10pt, "14" -> 14pt.
      * Legacy SMALLER->10, BIGGER->14. Unknown values default to 12.
      */
+    private static boolean isKnownReportSectionLine(String line) {
+        if (line == null) return false;
+        String trimmed = line.trim();
+        String[] labels = {
+                "Premise Name", "Address", "Date", "Visit Type", "Site Inspection",
+                "Recommendations", "Follow-Up", "Prep", "Prep / Products Used", "Tech"
+        };
+        for (String label : labels) {
+            if (trimmed.startsWith(label + ":")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static float parseBodyTextSize(String bodyTextSize) {
         if (bodyTextSize == null || bodyTextSize.isEmpty()) return 12f;
         if (PdfTemplateSettings.BODY_TEXT_SIZE_DEFAULT.equals(bodyTextSize) || "12".equals(bodyTextSize)) return 12f;
@@ -215,6 +301,10 @@ public class PDFReportGenerator {
      * is capped so body text is never larger than the section header (label) font size.
      */
     public static void addReportBodyToDocument(Document document, String content, Context context, List<Uri> imageUris, String headerSize, String bodyTextSize) {
+        addReportBodyToDocument(document, content, context, imageUris, headerSize, bodyTextSize, null, null);
+    }
+
+    public static void addReportBodyToDocument(Document document, String content, Context context, List<Uri> imageUris, String headerSize, String bodyTextSize, List<ProductUsageItem> prepProducts, String legacyPrepText) {
         float labelFontSize = 14f;
         if (headerSize != null) {
             if (PdfTemplateSettings.HEADER_SIZE_BIGGER.equals(headerSize)) labelFontSize = 17f;
@@ -227,21 +317,38 @@ public class PDFReportGenerator {
 
         LineSeparator blackSeparator = new LineSeparator(new SolidLine()).setStrokeColor(ColorConstants.BLACK);
         Set<String> headingsWithSeparator = new HashSet<>(Arrays.asList(
-                "Address", "Date", "Visit Type", "Site Inspection", "Recommendations", "Follow-Up", "Prep", "Tech"
+                "Address", "Date", "Visit Type", "Site Inspection", "Recommendations", "Follow-Up",
+                "Prep", "Prep / Products Used", "Tech"
         ));
 
+        boolean skipEmbeddedPrepSummary = false;
+        final boolean structuredPrep = prepProducts != null && !prepProducts.isEmpty();
+
         for (String detail : reportDetails) {
+            if (skipEmbeddedPrepSummary) {
+                if (isKnownReportSectionLine(detail)) {
+                    skipEmbeddedPrepSummary = false;
+                } else {
+                    continue;
+                }
+            }
+
             String[] splitDetail = detail.split(":", 2);
 
             if (splitDetail.length == 2) {
                 String labelText = splitDetail[0].trim();
                 String valueText = splitDetail[1].trim().isEmpty() ? "N/A" : splitDetail[1].trim();
 
-                if (headingsWithSeparator.contains(labelText)) {
+                if (headingsWithSeparator.contains(labelText)
+                        || ("Prep".equals(labelText) && structuredPrep)) {
                     document.add(blackSeparator);
                 }
 
-                Paragraph labelParagraph = new Paragraph(labelText)
+                String sectionLabel = ("Prep".equals(labelText) && structuredPrep)
+                        ? "Prep / Products Used"
+                        : labelText;
+
+                Paragraph labelParagraph = new Paragraph(sectionLabel)
                         .setFontColor(ColorConstants.BLACK)
                         .setBackgroundColor(ColorConstants.LIGHT_GRAY)
                         .setBold()
@@ -253,22 +360,36 @@ public class PDFReportGenerator {
                 document.add(labelParagraph);
                 document.add(blackSeparator);
 
-                Paragraph valueParagraph = new Paragraph(valueText)
-                        .setFontColor(ColorConstants.BLACK)
-                        .setFontSize(bodyFontSize)
-                        .setTextAlignment(TextAlignment.LEFT)
-                        .setMargin(0)
-                        .setMultipliedLeading(1.2f);
-
-                document.add(valueParagraph);
+                if ("Prep".equals(labelText) && structuredPrep) {
+                    PrepProductsPdfHelper.addPrepSectionToDocument(
+                            document, prepProducts, legacyPrepText, bodyFontSize);
+                    skipEmbeddedPrepSummary = true;
+                } else {
+                    String displayValue = valueText;
+                    if ("Prep".equals(labelText) && legacyPrepText != null && !legacyPrepText.trim().isEmpty()) {
+                        displayValue = legacyPrepText.trim();
+                    }
+                    if (!("Prep".equals(labelText) && structuredPrep)) {
+                        Paragraph valueParagraph = new Paragraph(displayValue)
+                                .setFontColor(ColorConstants.BLACK)
+                                .setFontSize(bodyFontSize)
+                                .setTextAlignment(TextAlignment.LEFT)
+                                .setMargin(0)
+                                .setMultipliedLeading(1.2f);
+                        document.add(valueParagraph);
+                    }
+                }
 
             } else {
-                document.add(new Paragraph(detail.trim())
-                        .setFontColor(ColorConstants.BLACK)
-                        .setFontSize(bodyFontSize)
-                        .setTextAlignment(TextAlignment.LEFT)
-                        .setMargin(0)
-                        .setMultipliedLeading(1.2f));
+                String trimmed = detail.trim();
+                if (!trimmed.isEmpty()) {
+                    document.add(new Paragraph(trimmed)
+                            .setFontColor(ColorConstants.BLACK)
+                            .setFontSize(bodyFontSize)
+                            .setTextAlignment(TextAlignment.LEFT)
+                            .setMargin(0)
+                            .setMultipliedLeading(1.2f));
+                }
             }
         }
 
@@ -277,18 +398,62 @@ public class PDFReportGenerator {
                 Uri uri = imageUris.get(i);
                 try {
                     document.add(new Paragraph("Images " + (i + 1)).setFontSize(16).setBold());
-                    ImageData imageData = ImageDataFactory.create(context.getContentResolver().openInputStream(uri).readAllBytes());
+                    byte[] compressed = compressImageUri(context, uri);
+                    ImageData imageData = ImageDataFactory.create(compressed);
                     Image image = new Image(imageData).scaleToFit(300, 300).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
                     document.add(image);
-                } catch (IOException e) {
+                } catch (Exception e) {
+                    // Catches both java.io.IOException and iText RuntimeExceptions so a
+                    // bad image skips gracefully rather than aborting the entire PDF.
                     Toast.makeText(context, "Error loading image: " + uri.toString(), Toast.LENGTH_SHORT).show();
                 }
             }
         }
     }
 
+    private static byte[] compressImageUri(Context context, Uri uri) throws IOException {
+        BitmapFactory.Options boundsOptions = new BitmapFactory.Options();
+        boundsOptions.inJustDecodeBounds = true;
+        try (InputStream boundsStream = context.getContentResolver().openInputStream(uri)) {
+            if (boundsStream == null) {
+                throw new IOException("Unable to open image: " + uri);
+            }
+            BitmapFactory.decodeStream(boundsStream, null, boundsOptions);
+        }
+
+        int longestSide = Math.max(boundsOptions.outWidth, boundsOptions.outHeight);
+        int sampleSize = 1;
+        while (longestSide / sampleSize > 1024) {
+            sampleSize *= 2;
+        }
+
+        BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
+        decodeOptions.inSampleSize = sampleSize;
+        Bitmap bitmap;
+        try (InputStream imageStream = context.getContentResolver().openInputStream(uri)) {
+            if (imageStream == null) {
+                throw new IOException("Unable to open image: " + uri);
+            }
+            bitmap = BitmapFactory.decodeStream(imageStream, null, decodeOptions);
+        }
+        if (bitmap == null) {
+            throw new IOException("Unable to decode image: " + uri);
+        }
+
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            // iText does not support WebP. JPEG is universally supported.
+            if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)) {
+                throw new IOException("Unable to compress image: " + uri);
+            }
+            return output.toByteArray();
+        } finally {
+            bitmap.recycle();
+        }
+    }
+
     /**
-     * Custom event handler to apply watermark and footer on every page of the PDF.
+     * Applies the watermark on every page. Footer and "Page x of n" are added by {@link PdfFooterPageNumberStamper}
+     * after the document is closed.
      */
     public static class PdfWatermarkAndFooterHandler implements IEventHandler {
         private final Context context;
@@ -301,9 +466,6 @@ public class PDFReportGenerator {
             this.context = context;
         }
 
-        /**
-         * Handles the event for applying watermark and footer on each page.
-         */
         @Override
         public void handleEvent(com.itextpdf.kernel.events.Event event) {
             PdfDocumentEvent pdfEvent = (PdfDocumentEvent) event;
@@ -316,7 +478,6 @@ public class PDFReportGenerator {
             try {
                 Document doc = new Document(pdfDoc);
 
-                // Applying a watermark image
                 int watermarkResourceId = context.getResources().getIdentifier("bk", "drawable", context.getPackageName());
                 ImageData watermarkData = ImageDataFactory.create(context.getResources().openRawResource(watermarkResourceId).readAllBytes());
                 Image watermark = new Image(watermarkData)
@@ -325,15 +486,8 @@ public class PDFReportGenerator {
                 watermark.setOpacity(0.1f);
                 doc.add(watermark);
 
-                // Adding footer text
-                Paragraph footer = new Paragraph(TenantBranding.footerCompanyWebsiteLine(context))
-                        .setFontSize(12)
-                        .setTextAlignment(TextAlignment.CENTER)
-                        .setFixedPosition(pageWidth / 2 - 150, 20, 300);
-                doc.add(footer);
-
             } catch (Exception e) {
-                Toast.makeText(context, "Error adding watermark or footer!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Error adding watermark!", Toast.LENGTH_SHORT).show();
                 e.printStackTrace();
             }
         }

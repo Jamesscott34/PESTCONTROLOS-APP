@@ -1,7 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="?android:attr/colorBackground"
     android:fillViewport="true">
 
@@ -13,95 +14,380 @@
         android:paddingTop="?attr/actionBarSize"
         android:gravity="top|center_horizontal">
 
-    <!-- Top Spacer to avoid notch -->
-    <View
-        android:id="@+id/statusSpacer"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:background="@android:color/transparent" />
+        <View
+            android:id="@+id/statusSpacer"
+            android:layout_width="0dp"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/transparent" />
 
-    <!-- Welcome Text at the Top -->
-    <TextView
-        android:id="@+id/welcomeTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:text="Welcome!"
-        android:layout_marginBottom="16dp"
-        android:textColor="?android:attr/textColorPrimary" />
+        <TextView
+            android:id="@+id/welcomeTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:text="Welcome!"
+            android:layout_marginBottom="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
 
-    <!-- Input Fields -->
-    <EditText
-        android:id="@+id/companyNameInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Enter Company Name"
-        android:layout_marginBottom="12dp"
-        android:padding="12dp"
-        android:background="@drawable/edit_text_border"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textColorHint="?android:attr/textColorSecondary" />
+        <EditText
+            android:id="@+id/companyNameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/quotation_company_name_hint"
+            android:layout_marginBottom="12dp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_border"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
-    <EditText
-        android:id="@+id/companyAddressInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Enter Company Address"
-        android:layout_marginBottom="12dp"
-        android:padding="12dp"
-        android:background="@drawable/edit_text_border"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textColorHint="?android:attr/textColorSecondary" />
+        <EditText
+            android:id="@+id/companyAddressInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/quotation_company_address_hint"
+            android:layout_marginBottom="12dp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_border"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
-    <EditText
-        android:id="@+id/companyContactInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Enter Company Contact"
-        android:layout_marginBottom="16dp"
-        android:padding="12dp"
-        android:background="@drawable/edit_text_border"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textColorHint="?android:attr/textColorSecondary" />
+        <EditText
+            android:id="@+id/companyContactInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/quotation_company_contact_hint"
+            android:layout_marginBottom="12dp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_border"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
-    <EditText
-        android:id="@+id/annualServiceFeeInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Annual Service Fee (€)"
-        android:layout_marginBottom="16dp"
-        android:padding="12dp"
-        android:inputType="numberDecimal"
-        android:background="@drawable/edit_text_border"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textColorHint="?android:attr/textColorSecondary" />
+        <EditText
+            android:id="@+id/annualServiceFeeInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/quotation_base_price_hint"
+            android:layout_marginBottom="16dp"
+            android:padding="12dp"
+            android:inputType="numberDecimal"
+            android:background="@drawable/edit_text_border"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
 
-    <CheckBox
-        android:id="@+id/passwordProtectCheckbox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:text="Password protect PDF (require password to edit)"
-        android:textSize="14sp"
-        android:checked="false"
-        android:textColor="?android:attr/textColorPrimary" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_on_site_materials"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorPrimary" />
 
-    <!-- Generate PDF Button -->
-    <Button
-        android:id="@+id/generatePdfButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Generate PDF Quote"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:padding="12dp"
-        android:background="@drawable/button_background"
-        android:textColor="?attr/colorOnPrimary" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_externals"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+            <EditText
+                android:id="@+id/externalsQtyInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/quotation_externals_qty_hint"
+                android:inputType="number"
+                android:padding="10dp"
+                android:background="@drawable/edit_text_border"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
+            <TextView
+                android:id="@+id/externalsLineTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:textSize="14sp"
+                android:text="€0.00"
+                android:textColor="?android:attr/textColorPrimary" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_fly_units"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+            <EditText
+                android:id="@+id/flyUnitsQtyInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/quotation_fly_units_qty_hint"
+                android:inputType="number"
+                android:padding="10dp"
+                android:background="@drawable/edit_text_border"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
+            <TextView
+                android:id="@+id/flyUnitsLineTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:textSize="14sp"
+                android:text="€0.00"
+                android:textColor="?android:attr/textColorPrimary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+            <CheckBox
+                android:id="@+id/insectMonitorCheckbox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/quotation_insect_monitor_label"
+                android:textSize="14sp"
+                android:checked="false"
+                android:textColor="?android:attr/textColorPrimary" />
+            <TextView
+                android:id="@+id/insectMonitorLineTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:text="€0.00"
+                android:textColor="?android:attr/textColorPrimary" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_required_materials"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_required_material_type_label"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <Spinner
+            android:id="@+id/requiredMaterialTypeSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/edit_text_border" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <EditText
+                android:id="@+id/requiredMaterialQtyInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="@string/quotation_required_material_qty_hint"
+                android:inputType="number"
+                android:padding="10dp"
+                android:background="@drawable/edit_text_border"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
+
+            <EditText
+                android:id="@+id/requiredMaterialPriceInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/quotation_required_material_price_hint"
+                android:inputType="numberDecimal"
+                android:padding="10dp"
+                android:background="@drawable/edit_text_border"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/updateRequiredMaterialButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/quotation_required_material_update"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_required_material_summary_title"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:id="@+id/requiredMaterialsSummaryText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_required_material_none"
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_required_material_total"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:id="@+id/requiredMaterialsTotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="€0.00"
+            android:layout_marginBottom="16dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_total_excluding_vat"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <TextView
+            android:id="@+id/totalExcludingVat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:text="€0.00"
+            android:layout_marginBottom="12dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_total_including_vat"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <TextView
+            android:id="@+id/totalIncludingVat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:text="€0.00"
+            android:layout_marginBottom="12dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_price_per_quarter"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+        <TextView
+            android:id="@+id/pricePerQuarter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:text="€0.00"
+            android:layout_marginBottom="12dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_first_quarter_due"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:id="@+id/firstQuarterPaymentDue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:text="€0.00"
+            android:layout_marginBottom="24dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <CheckBox
+            android:id="@+id/passwordProtectCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/quotation_password_protect"
+            android:textSize="14sp"
+            android:checked="false"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <Button
+            android:id="@+id/addImageButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_add_image"
+            android:layout_marginBottom="10dp" />
+
+        <Button
+            android:id="@+id/previewPdfButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Preview PDF"
+            android:layout_marginBottom="10dp" />
+
+       <!-- <Button
+            android:id="@+id/saveReportButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_save_report"
+            android:layout_marginBottom="10dp"
+            android:backgroundTint="?attr/colorSecondary"
+            android:textColor="?attr/colorOnSecondary" /> -->
+
+        <Button
+            android:id="@+id/generatePdfButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/quotation_generate_pdf"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:padding="12dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
     </LinearLayout>
 </ScrollView>

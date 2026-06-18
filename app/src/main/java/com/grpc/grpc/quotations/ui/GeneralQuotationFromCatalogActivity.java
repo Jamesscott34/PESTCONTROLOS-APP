@@ -2,6 +2,7 @@ package com.grpc.grpc.quotations.ui;
 
 import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
+import com.grpc.grpc.core.QuotationStorageUploader;
 import com.grpc.grpc.quotations.data.SalesCatalogLoader;
 import com.grpc.grpc.quotations.model.GeneralQuotationPDF;
 import com.grpc.grpc.quotations.model.SalesCatalog;
@@ -15,36 +16,42 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * General Quotation (catalog-driven). Loads sales.json from current flavor (grpc/demo),
+ * General Quotation (catalog-driven). Loads shared sales.json from main assets (all flavors),
  * lets user pick customer, address, date, issue (spinner), base price; shows VAT 13.5% and total;
  * generates PDF via GeneralQuotationPDF.generateCatalogQuotation with filename CustomerName_IssueKey.pdf.
  */
 public class GeneralQuotationFromCatalogActivity extends AppCompatActivity {
-
-    private static final double VAT_RATE = 0.135;
+    private static final int REQUEST_PREVIEW_CATALOG_QUOTATION = 922;
 
     private EditText customerNameInput, customerAddressInput, dateInput, basePriceInput, basePriceInput2, additionalInfoInput;
     private Spinner issueSpinner, issueSpinner2;
     private TextView vatValue, totalValue;
-    private Button generatePdfButton, addSecondIssueButton;
+    private RadioGroup vatRateGroup;
+    private RadioButton vat13_5, vat23;
+    private Button generatePdfButton, previewPdfButton, addSecondIssueButton;
     private CheckBox passwordProtectCheckbox;
     private LinearLayout secondIssueSection;
 
     private SalesCatalog catalog;
     private List<SalesCatalog.SalesItemWithCategory> flatItems;
     private String userName;
+    private boolean additionalInfoEditedByUser;
+    private boolean suppressAdditionalInfoWatcher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,7 +86,11 @@ public class GeneralQuotationFromCatalogActivity extends AppCompatActivity {
         additionalInfoInput = findViewById(R.id.additionalInfoInput);
         vatValue = findViewById(R.id.vatValue);
         totalValue = findViewById(R.id.totalValue);
+        vatRateGroup = findViewById(R.id.vatRateGroup);
+        vat13_5 = findViewById(R.id.vat13_5);
+        vat23 = findViewById(R.id.vat23);
         generatePdfButton = findViewById(R.id.generatePdfButton);
+        previewPdfButton = findViewById(R.id.previewPdfButton);
         passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
 
         // Prefill from intent (Create Report → General Quotation)
@@ -113,10 +124,22 @@ public class GeneralQuotationFromCatalogActivity extends AppCompatActivity {
             updateVatAndTotal();
         });
 
-        // When issue selected, only refresh VAT/Total (no default price prefill)
+        if (additionalInfoInput != null) {
+            additionalInfoInput.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (!suppressAdditionalInfoWatcher) {
+                        additionalInfoEditedByUser = true;
+                    }
+                }
+                @Override public void afterTextChanged(Editable s) {}
+            });
+        }
+
         issueSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+                applySelectedCatalogItem(position);
                 updateVatAndTotal();
             }
 
@@ -168,8 +191,36 @@ public class GeneralQuotationFromCatalogActivity extends AppCompatActivity {
                 generatePdf(null);
             }
         });
+        previewPdfButton.setOnClickListener(v -> previewPdf());
 
+        if (vatRateGroup != null) {
+            vatRateGroup.setOnCheckedChangeListener((group, checkedId) -> updateVatAndTotal());
+        }
+
+        if (issueSpinner.getAdapter() != null && issueSpinner.getAdapter().getCount() > 0) {
+            applySelectedCatalogItem(issueSpinner.getSelectedItemPosition());
+        }
         updateVatAndTotal();
+    }
+
+    private void applySelectedCatalogItem(int position) {
+        if (position < 0 || position >= flatItems.size()) return;
+        SalesCatalog.SalesItem item = flatItems.get(position).getItem();
+        if (item == null) return;
+
+        if (!additionalInfoEditedByUser && additionalInfoInput != null) {
+            String breakdown = item.getQuoteBreakdown();
+            suppressAdditionalInfoWatcher = true;
+            additionalInfoInput.setText(breakdown != null ? breakdown : "");
+            suppressAdditionalInfoWatcher = false;
+        }
+
+        if (item.getDefaultPrice() > 0 && basePriceInput != null) {
+            String current = basePriceInput.getText() != null ? basePriceInput.getText().toString().trim() : "";
+            if (current.isEmpty()) {
+                basePriceInput.setText(String.format(Locale.getDefault(), "%.2f", item.getDefaultPrice()));
+            }
+        }
     }
 
     private void updateVatAndTotal() {
@@ -191,27 +242,46 @@ public class GeneralQuotationFromCatalogActivity extends AppCompatActivity {
             totalValue.setText("");
             return;
         }
-        double vat = Math.round(totalBase * VAT_RATE * 100.0) / 100.0;
+        double vatRate = getSelectedVatRate();
+        double vat = Math.round(totalBase * vatRate * 100.0) / 100.0;
         double total = Math.round((totalBase + vat) * 100.0) / 100.0;
-        vatValue.setText(String.format(Locale.getDefault(), "€%.2f", vat));
-        totalValue.setText(String.format(Locale.getDefault(), "€%.2f", total));
+        vatValue.setText(CurrencyFormatter.formatEuro(vat));
+        totalValue.setText(CurrencyFormatter.formatEuro(total));
+    }
+
+    private double getSelectedVatRate() {
+        if (vat23 != null && vat23.isChecked()) {
+            return GeneralQuotationPDF.VAT_RATE_REDUCED;
+        }
+        return GeneralQuotationPDF.VAT_RATE_STANDARD;
     }
 
     private void generatePdf(String ownerPassword) {
+        File generatedFile = generatePdfInternal(ownerPassword, null, true);
+        if (generatedFile != null) {
+            QuotationStorageUploader.uploadQuotationPdf(
+                    generatedFile,
+                    () -> Toast.makeText(this, R.string.general_quotation_success, Toast.LENGTH_LONG).show(),
+                    e -> Toast.makeText(this, "Quotation upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+            );
+        }
+    }
+
+    private File generatePdfInternal(String ownerPassword, File outputDirectory, boolean persistAndFinish) {
         String customerName = customerNameInput.getText().toString().trim();
         String address = customerAddressInput.getText().toString().trim();
         String dateStr = dateInput.getText().toString().trim();
         int pos = issueSpinner.getSelectedItemPosition();
         if (customerName.isEmpty() || address.isEmpty() || dateStr.isEmpty() || pos < 0 || pos >= flatItems.size()) {
             Toast.makeText(this, R.string.general_quotation_error_fill_required, Toast.LENGTH_SHORT).show();
-            return;
+            return null;
         }
         double basePrice;
         try {
             basePrice = Double.parseDouble(basePriceInput.getText().toString().trim());
         } catch (NumberFormatException e) {
             Toast.makeText(this, R.string.general_quotation_error_invalid_price, Toast.LENGTH_SHORT).show();
-            return;
+            return null;
         }
         SalesCatalog.SalesItem item1 = flatItems.get(pos).getItem();
 
@@ -234,10 +304,35 @@ public class GeneralQuotationFromCatalogActivity extends AppCompatActivity {
         if (mobileNumber == null) mobileNumber = "";
 
         String additionalInfo = additionalInfoInput != null ? additionalInfoInput.getText().toString().trim() : "";
-        GeneralQuotationPDF.generateCatalogQuotation(
+        return GeneralQuotationPDF.generateCatalogQuotation(
                 customerName, address, dateStr,
                 item1, basePrice, item2, basePrice2, additionalInfo,
                 userEmail, mobileNumber, ownerPassword,
-                this);
+                this, outputDirectory, persistAndFinish, getSelectedVatRate());
+    }
+
+    private void previewPdf() {
+        File previewDir = new File(getCacheDir(), "report_previews");
+        if (!previewDir.exists()) previewDir.mkdirs();
+        File previewFile = generatePdfInternal(null, previewDir, false);
+        if (previewFile == null || !previewFile.exists()) return;
+        android.content.Intent previewIntent = new android.content.Intent(this, com.grpc.grpc.reports.ui.ReportPreviewActivity.class);
+        previewIntent.putExtra(com.grpc.grpc.reports.ui.ReportPreviewActivity.EXTRA_PREVIEW_PDF_PATH, previewFile.getAbsolutePath());
+        startActivityForResult(previewIntent, REQUEST_PREVIEW_CATALOG_QUOTATION);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_PREVIEW_CATALOG_QUOTATION
+                && resultCode == RESULT_OK
+                && data != null
+                && data.getBooleanExtra(com.grpc.grpc.reports.ui.ReportPreviewActivity.EXTRA_CONFIRM_SAVE, false)) {
+            if (passwordProtectCheckbox != null && passwordProtectCheckbox.isChecked()) {
+                PdfPasswordPrompt.prompt(this, this::generatePdf);
+            } else {
+                generatePdf(null);
+            }
+        }
     }
 }

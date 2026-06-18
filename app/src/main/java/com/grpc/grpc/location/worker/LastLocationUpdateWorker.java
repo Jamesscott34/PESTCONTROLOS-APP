@@ -51,8 +51,17 @@ public class LastLocationUpdateWorker extends Worker {
             // lastLocation is fast + battery friendly; may be null.
             Location loc = Tasks.await(client.getLastLocation(), 8, TimeUnit.SECONDS);
             if (loc == null) {
-                return Result.success();
+                try {
+                    com.google.android.gms.location.CurrentLocationRequest request =
+                            new com.google.android.gms.location.CurrentLocationRequest.Builder()
+                                    .setPriority(com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+                                    .setMaxUpdateAgeMillis(5 * 60 * 1000L)
+                                    .setDurationMillis(8000L)
+                                    .build();
+                    loc = Tasks.await(client.getCurrentLocation(request, null), 12, TimeUnit.SECONDS);
+                } catch (Exception ignored) {}
             }
+            if (loc == null) return Result.success(); // No fix available; try again next cycle.
 
             long now = System.currentTimeMillis();
             Map<String, Object> update = new HashMap<>();

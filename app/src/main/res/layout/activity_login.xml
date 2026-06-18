@@ -1,90 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" 
-    xmlns:app="http://schemas.android.com/apk/res-auto" 
-    android:layout_width="match_parent" 
-    android:layout_height="match_parent" 
-    android:paddingTop="?attr/actionBarSize" 
-    android:fillViewport="true" 
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingTop="?attr/actionBarSize"
+    android:fillViewport="true"
     android:background="?android:attr/colorBackground"
     android:fitsSystemWindows="true">
 
-    <!-- ✅ Only ONE direct child inside ScrollView -->
-    <LinearLayout 
-        android:layout_width="match_parent" 
-        android:layout_height="wrap_content" 
-        android:orientation="vertical" 
-        android:gravity="center" 
-        android:padding="16dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="24dp">
 
-        <!-- Spacer for status bar or notch -->
-        <View 
-            android:id="@+id/statusSpacer" 
-            android:layout_width="match_parent" 
-            android:layout_height="?attr/actionBarSize" 
-            android:background="@android:color/transparent"/>
+        <View
+            android:id="@+id/statusSpacer"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/transparent" />
 
-        <!-- Logo -->
+        <!-- Logo: clean placement -->
         <ImageView
             android:id="@+id/loginLogo"
-            android:layout_width="120dp"
-            android:layout_height="80dp"
-            android:layout_marginBottom="24dp"
+            android:layout_width="140dp"
+            android:layout_height="100dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="32dp"
             android:adjustViewBounds="true"
             android:scaleType="fitCenter"
             android:src="@drawable/logo"
-            android:contentDescription="Good Riddance Pest Control Logo" />
+            android:contentDescription="@string/login_logo_content_description" />
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/login_title"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Subtitle -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/login_subtitle"
+            android:textSize="16sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="32dp" />
 
         <!-- Email input -->
-        <EditText 
-            android:id="@+id/emailEditText" 
-            android:layout_width="match_parent" 
-            android:layout_height="wrap_content" 
-            android:hint="Email" 
-            android:inputType="textEmailAddress" 
-            android:layout_marginBottom="16dp" 
-            android:textSize="18sp" 
-            android:padding="12dp" 
+        <EditText
+            android:id="@+id/emailEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/login_email_hint"
+            android:inputType="textEmailAddress"
+            android:layout_marginBottom="20dp"
+            android:textSize="18sp"
+            android:padding="14dp"
+            android:minHeight="52dp"
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:textColorHint="?android:attr/textColorSecondary" />
 
         <!-- Password input -->
-        <EditText 
-            android:id="@+id/passwordEditText" 
-            android:layout_width="match_parent" 
-            android:layout_height="wrap_content" 
-            android:hint="Password" 
-            android:inputType="textPassword" 
-            android:layout_marginBottom="24dp" 
-            android:textSize="18sp" 
-            android:padding="12dp" 
+        <EditText
+            android:id="@+id/passwordEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/login_password_hint"
+            android:inputType="textPassword"
+            android:layout_marginBottom="28dp"
+            android:textSize="18sp"
+            android:padding="14dp"
+            android:minHeight="52dp"
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:textColorHint="?android:attr/textColorSecondary" />
 
-        <!-- Login button -->
-        <Button 
-            android:id="@+id/loginButton" 
-            android:layout_width="match_parent" 
-            android:layout_height="wrap_content" 
-            android:text="Login" 
-            android:layout_marginBottom="12dp" 
-            android:textSize="20sp" 
-            android:padding="14dp" 
+        <!-- Login button: improved styling -->
+        <Button
+            android:id="@+id/loginButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/login_button"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:padding="16dp"
+            android:minHeight="56dp"
+            android:layout_marginBottom="16dp"
             android:background="@drawable/button_background"
-            android:textColor="?attr/colorOnPrimary"/>
+            android:textColor="?attr/colorOnPrimary" />
 
-        <!-- Offline login: use app without Firebase (e.g. custom PDF template only) -->
-        <Button 
-            android:id="@+id/offlineLoginButton" 
-            android:layout_width="match_parent" 
-            android:layout_height="wrap_content" 
-            android:text="Offline login" 
-            android:layout_marginBottom="12dp" 
-            android:textSize="18sp" 
-            android:padding="14dp" 
+        <Button
+            android:id="@+id/offlineLoginButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/login_offline_button"
+            android:textSize="16sp"
+            android:padding="14dp"
+            android:minHeight="48dp"
+            android:layout_marginBottom="12dp"
             android:backgroundTint="?attr/colorSecondary"
-            android:textColor="?attr/colorOnSecondary"/>
+            android:textColor="?attr/colorOnSecondary" />
 
     </LinearLayout>
 </ScrollView>

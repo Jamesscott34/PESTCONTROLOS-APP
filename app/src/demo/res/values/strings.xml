@@ -24,9 +24,9 @@
     <!-- Exit button (demo/offline: replaces Logout on home when applicable) -->
     <string name="exit_button_offline">Exit</string>
 
-    <!-- Visit website button (demo opens pestcontrolos.ie) -->
+    <!-- Visit website button (demo opens yourcompany.example) -->
     <string name="website_button_text">Visit website</string>
-    <string name="main_website_url">https://www.pestcontrolos.ie</string>
+    <string name="main_website_url">https://yourcompany.example</string>
 
     <!-- Trial redirect (demo/offline: after N days, Create Report / Custom template open website) -->
     <string name="offline_trial_redirect_message">Your free trial has ended. Visit our website to sign up or learn more.</string>
@@ -53,5 +53,8 @@
     <!-- Local storage folder names (demo) -->
     <string name="reports_folder_name">DEMO REPORTS</string>
     <string name="quotes_folder_name">DEMO_QUOTES</string>
+
+    <string name="tenant_public_name">PestControlOS Demo</string>
+    <string name="tenant_public_website_url">https://yourcompany.example</string>
 </resources>
 

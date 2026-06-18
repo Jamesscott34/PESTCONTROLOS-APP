@@ -112,6 +112,65 @@
                 android:text="View bug reports &amp; feature requests" />
         </LinearLayout>
 
+        <!-- Billing / invoices: view (admin); create from main menu (super_admin) -->
+        <LinearLayout
+            android:id="@+id/invoiceBillingBlock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/invoice_admin_section_title"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/buttonAdminInvoices"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/invoice_admin_open_list"
+                android:backgroundTint="?attr/colorSecondary"
+                android:textColor="?attr/colorOnSecondary" />
+        </LinearLayout>
+
+        <!-- Full Storage browser: same UI as Stored Reports but shows companies/invoices/… at bucket root -->
+        <LinearLayout
+            android:id="@+id/fullStorageBrowserBlock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:layout_marginBottom="@dimen/button_spacing">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/admin_dashboard_full_storage_title"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/admin_dashboard_full_storage_hint"
+                android:textSize="12sp"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/buttonAdminFullStorageBrowser"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/admin_dashboard_full_storage_button"
+                android:backgroundTint="?attr/colorSecondary"
+                android:textColor="?attr/colorOnSecondary" />
+        </LinearLayout>
+
         <!-- Reports folder: create ReportsXX (one per year) in Firebase Storage -->
         <LinearLayout
             android:id="@+id/reportsFolderBlock"
@@ -126,7 +185,7 @@
                 android:id="@+id/reportsFolderLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="REPORTS FOLDERS"
+                android:text="@string/admin_dashboard_reports_folder_title"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
@@ -134,7 +193,7 @@
                 android:id="@+id/createReportsFolderButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Create Reports folder (choose year)"
+                android:text="@string/admin_dashboard_reports_folder_button"
                 android:backgroundTint="?attr/colorSecondary"
                 android:textColor="?attr/colorOnSecondary" />
         </LinearLayout>

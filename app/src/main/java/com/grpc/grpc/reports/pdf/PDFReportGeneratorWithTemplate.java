@@ -36,6 +36,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import com.grpc.grpc.reports.model.ProductUsageItem;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -64,7 +66,7 @@ public class PDFReportGeneratorWithTemplate {
                     reportType, reportName, content, context, imageUris, reportDate, ownerPassword);
         }
 
-        return generateWithMyTemplate(reportType, reportName, content, context, imageUris, reportDate, ownerPassword, settings, compress);
+        return generateWithMyTemplate(reportType, reportName, content, context, imageUris, reportDate, ownerPassword, settings, compress, null);
     }
 
     /** Same as above with compress = true (default). */
@@ -74,10 +76,77 @@ public class PDFReportGeneratorWithTemplate {
         return generatePdf(reportType, reportName, content, context, imageUris, reportDate, ownerPassword, settings, true);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePdfToDirectory(String reportType, String reportName, String content,
+                                              Context context, List<Uri> imageUris, String reportDate,
+                                              String ownerPassword, PdfTemplateSettings settings,
+                                              File outputDirectory) {
+        return generatePdfToDirectory(
+                reportType, reportName, content, context, imageUris, reportDate,
+                ownerPassword, settings, true, outputDirectory, null, null
+        );
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePdfToDirectory(String reportType, String reportName, String content,
+                                              Context context, List<Uri> imageUris, String reportDate,
+                                              String ownerPassword, PdfTemplateSettings settings,
+                                              File outputDirectory,
+                                              List<ProductUsageItem> prepProducts,
+                                              String legacyPrepText) {
+        return generatePdfToDirectory(
+                reportType, reportName, content, context, imageUris, reportDate,
+                ownerPassword, settings, true, outputDirectory, prepProducts, legacyPrepText
+        );
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePdfToDirectory(String reportType, String reportName, String content,
+                                              Context context, List<Uri> imageUris, String reportDate,
+                                              String ownerPassword, PdfTemplateSettings settings,
+                                              boolean compress, File outputDirectory) {
+        return generatePdfToDirectory(
+                reportType, reportName, content, context, imageUris, reportDate,
+                ownerPassword, settings, compress, outputDirectory, null, null);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePdfToDirectory(String reportType, String reportName, String content,
+                                              Context context, List<Uri> imageUris, String reportDate,
+                                              String ownerPassword, PdfTemplateSettings settings,
+                                              boolean compress, File outputDirectory,
+                                              List<ProductUsageItem> prepProducts,
+                                              String legacyPrepText) {
+        if (settings == null || PdfTemplateSettings.GRPC.equals(settings.getTemplateSelection())) {
+            return PDFReportGenerator.generatePDFReportToDirectory(
+                    reportType, reportName, content, context, imageUris, reportDate, ownerPassword,
+                    outputDirectory, prepProducts, legacyPrepText);
+        }
+        return generateWithMyTemplate(
+                reportType, reportName, content, context, imageUris, reportDate,
+                ownerPassword, settings, compress, outputDirectory, prepProducts, legacyPrepText
+        );
+    }
+
     private static File generateWithMyTemplate(String reportType, String reportName, String content,
                                                 Context context, List<Uri> imageUris, String reportDate,
-                                                String ownerPassword, PdfTemplateSettings settings, boolean compress) {
-        File pdfFolder = new File(context.getExternalFilesDir(null), TenantBranding.reportsFolderName(context));
+                                                String ownerPassword, PdfTemplateSettings settings, boolean compress,
+                                                File outputDirectory) {
+        return generateWithMyTemplate(
+                reportType, reportName, content, context, imageUris, reportDate,
+                ownerPassword, settings, compress, outputDirectory, null, null);
+    }
+
+    private static File generateWithMyTemplate(String reportType, String reportName, String content,
+                                                Context context, List<Uri> imageUris, String reportDate,
+                                                String ownerPassword, PdfTemplateSettings settings, boolean compress,
+                                                File outputDirectory,
+                                                List<ProductUsageItem> prepProducts,
+                                                String legacyPrepText) {
+        File pdfFolder = outputDirectory;
+        if (pdfFolder == null) {
+            pdfFolder = new File(context.getExternalFilesDir(null), TenantBranding.reportsFolderName(context));
+        }
         if (!pdfFolder.exists()) pdfFolder.mkdirs();
 
         String dateToUse = formatReportDate(reportDate);
@@ -100,9 +169,19 @@ public class PDFReportGeneratorWithTemplate {
             pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new CustomWatermarkAndFooterHandler(context, settings));
 
             addCustomHeader(document, context, settings);
-            PDFReportGenerator.addReportBodyToDocument(document, content, context, imageUris, settings.getHeaderSize(), settings.getBodyTextSize());
+            PDFReportGenerator.addReportBodyToDocument(
+                    document, content, context, imageUris, settings.getHeaderSize(), settings.getBodyTextSize(),
+                    prepProducts, legacyPrepText);
 
             document.close();
+            String footerStr = settings.getFooterText();
+            if (footerStr == null || footerStr.trim().isEmpty()) {
+                footerStr = TenantBranding.defaultFooterText(context);
+            } else {
+                footerStr = footerStr.trim();
+            }
+            byte[] ownerBytes = (ownerPassword != null && !ownerPassword.isEmpty()) ? ownerPassword.getBytes() : null;
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, footerStr, ownerBytes);
             Toast.makeText(context, "PDF Created Successfully!", Toast.LENGTH_SHORT).show();
             return pdfFile;
         } catch (IOException e) {
@@ -148,14 +227,14 @@ public class PDFReportGeneratorWithTemplate {
     }
 
     private static Color parseHexColor(String hex) {
-        if (hex == null || !hex.startsWith("#") || hex.length() != 7) return ColorConstants.BLUE;
+        if (hex == null || !hex.startsWith("#") || hex.length() != 7) return ColorConstants.BLACK;
         try {
             int r = Integer.parseInt(hex.substring(1, 3), 16);
             int g = Integer.parseInt(hex.substring(3, 5), 16);
             int b = Integer.parseInt(hex.substring(5, 7), 16);
             return new DeviceRgb(r, g, b);
         } catch (Exception e) {
-            return ColorConstants.BLUE;
+            return ColorConstants.BLACK;
         }
     }
 
@@ -212,7 +291,7 @@ public class PDFReportGeneratorWithTemplate {
         if (text == null || text.trim().isEmpty()) return null;
         Paragraph p = new Paragraph(text.trim());
         if (PdfTemplateSettings.STYLE_H1.equals(textStyle)) {
-            p.setFontSize(18).setBold().setFontColor(ColorConstants.BLUE).setTextAlignment(TextAlignment.CENTER);
+            p.setFontSize(18).setBold().setFontColor(ColorConstants.BLACK).setTextAlignment(TextAlignment.CENTER);
         } else if (PdfTemplateSettings.STYLE_H2.equals(textStyle)) {
             p.setFontSize(14).setBold().setTextAlignment(TextAlignment.CENTER);
         } else {
@@ -269,15 +348,8 @@ public class PDFReportGeneratorWithTemplate {
                         }
                     }
                 }
-
-                String footerStr = settings.getFooterText();
-                if (footerStr == null || footerStr.trim().isEmpty()) footerStr = TenantBranding.defaultFooterText(context);
-                Paragraph footer = new Paragraph(footerStr.trim())
-                        .setFontSize(12).setTextAlignment(TextAlignment.CENTER)
-                        .setFixedPosition(pageWidth / 2 - 150, 20, 300);
-                doc.add(footer);
             } catch (Exception e) {
-                Toast.makeText(context, "Error adding watermark or footer!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Error adding watermark!", Toast.LENGTH_SHORT).show();
             }
         }
     }

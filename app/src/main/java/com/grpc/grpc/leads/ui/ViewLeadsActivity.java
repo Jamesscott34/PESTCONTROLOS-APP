@@ -1,14 +1,18 @@
 package com.grpc.grpc.leads.ui;
 
+import com.grpc.grpc.BuildConfig;
 import com.grpc.grpc.R;
 import com.grpc.grpc.search.ui.SearchActivity;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.messaging.NotificationUtils;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.InputType;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,11 +23,17 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -57,9 +67,14 @@ public class ViewLeadsActivity extends AppCompatActivity {
     private EditText searchBar;
     private LinearLayout leadsContainer;
     private Button backButton;
+    private Button exportCsvButton;
     private TextView totalLeads, paidLeads, unpaidLeads;
     private List<Map<String, Object>> allLeads = new ArrayList<>();
     private FirebaseFirestore db;
+    private static final String[] LEAD_CSV_FIELDS = {
+            "Premise Name", "Premise Address", "Added By", "Date", "Price Quoted",
+            "Commission", "Invoice Status", "Payment Date", "Materials Cost", "Reason"
+    };
 
     private String userName;
     private String userId; // StaffID (3 digits) when available
@@ -84,6 +99,7 @@ public class ViewLeadsActivity extends AppCompatActivity {
         searchBar = findViewById(R.id.searchBar);
         leadsContainer = findViewById(R.id.leadsContainer);
         backButton = findViewById(R.id.backButton);
+        exportCsvButton = findViewById(R.id.exportCsvButton);
         totalLeads = findViewById(R.id.totalLeads);
         paidLeads = findViewById(R.id.paidLeads);
         unpaidLeads = findViewById(R.id.unpaidLeads);
@@ -100,6 +116,10 @@ public class ViewLeadsActivity extends AppCompatActivity {
 
         // Back button action
         backButton.setOnClickListener(view -> finish());
+        exportCsvButton.setOnClickListener(view -> exportLeadsToCsv());
+        exportCsvButton.setVisibility(SessionManager.isAdmin(this) ? View.VISIBLE : View.GONE);
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() ->
+                exportCsvButton.setVisibility(SessionManager.isAdmin(this) ? View.VISIBLE : View.GONE)));
 
         // Search bar filter
         searchBar.addTextChangedListener(new TextWatcher() {
@@ -114,6 +134,64 @@ public class ViewLeadsActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {}
         });
+    }
+
+    private void exportLeadsToCsv() {
+        File exportDir = getExternalFilesDir(null);
+        if (exportDir == null) {
+            Toast.makeText(this, "Unable to access export folder", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String dateStamp = new SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(new Date());
+        File csvFile = new File(exportDir, "leads_export_" + dateStamp + ".csv");
+
+        try (FileWriter writer = new FileWriter(csvFile)) {
+            writer.write(buildCsvRow(LEAD_CSV_FIELDS));
+            writer.write("\n");
+
+            for (Map<String, Object> lead : allLeads) {
+                String[] values = new String[LEAD_CSV_FIELDS.length];
+                for (int i = 0; i < LEAD_CSV_FIELDS.length; i++) {
+                    Object value = lead.get(LEAD_CSV_FIELDS[i]);
+                    values[i] = value != null ? String.valueOf(value) : "";
+                }
+                writer.write(buildCsvRow(values));
+                writer.write("\n");
+            }
+        } catch (IOException e) {
+            Toast.makeText(this, "Failed to export leads: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Uri fileUri = FileProvider.getUriForFile(
+                this,
+                BuildConfig.APPLICATION_ID + ".fileprovider",
+                csvFile
+        );
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/csv");
+        intent.putExtra(Intent.EXTRA_STREAM, fileUri);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(Intent.createChooser(intent, "Export Leads CSV"));
+    }
+
+    private String buildCsvRow(String[] values) {
+        StringBuilder row = new StringBuilder();
+        for (int i = 0; i < values.length; i++) {
+            if (i > 0) row.append(',');
+            row.append(escapeCsvValue(values[i]));
+        }
+        return row.toString();
+    }
+
+    private String escapeCsvValue(String value) {
+        String csvValue = value != null ? value : "";
+        boolean needsQuotes = csvValue.contains(",") || csvValue.contains("\n") || csvValue.contains("\r") || csvValue.contains("\"");
+        if (needsQuotes) {
+            return "\"" + csvValue.replace("\"", "\"\"") + "\"";
+        }
+        return csvValue;
     }
 
     private void filterLeads(String query) {
@@ -179,44 +257,149 @@ public class ViewLeadsActivity extends AppCompatActivity {
 
 
     private void loadAllLeads() {
-        // Clear existing data
         allLeads.clear();
         total = 0;
         paid = 0;
         unpaid = 0;
 
-        // Fetch leads from the global "Leads" collection
+        // Firestore rules: admin can read all; tech can only read docs where Added By or Assigned Tech == their contractKey.
+        // An unrestricted get() is denied for tech because the query could return docs they can't read. So we use filtered queries for tech.
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            if (SessionManager.isAdmin(this)) {
+                loadLeadsUnrestricted();
+            } else {
+                String contractKey = SessionManager.getContractKey(this);
+                if (contractKey == null) contractKey = "";
+                loadLeadsForTech(contractKey.trim());
+            }
+        }));
+    }
+
+    private void loadLeadsUnrestricted() {
         db.collection("Leads")
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            Map<String, Object> lead = document.getData();
-                            lead.put("documentId", document.getId());
+                        processLeadDocuments(task.getResult());
+                    } else {
+                        Toast.makeText(this, "Failed to load leads: " + (task.getException() != null ? task.getException().getMessage() : ""), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
 
-                            // RBAC: admins see all; others see only leads they added (Added By matches userName)
-                            String addedBy = (String) lead.get("Added By");
-                            SessionManager.ensureLoaded(this, null);
-                            if (SessionManager.isAdmin(this) || (addedBy != null && addedBy.equalsIgnoreCase(userName))) {
-                                allLeads.add(lead);
+    private void loadLeadsForTech(String contractKey) {
+        // Firestore whereEqualTo is case-sensitive. Query with contractKey, capitalized form, and userName so we match however "Added By" was stored.
+        final List<Map<String, Object>> merged = new ArrayList<>();
+        final java.util.Set<String> seenIds = new java.util.HashSet<>();
+        final String name = userName != null ? userName : "";
+        final List<String> keys = new ArrayList<>();
+        String ck = (contractKey != null) ? contractKey.trim() : "";
+        if (!ck.isEmpty()) {
+            keys.add(ck);
+            String cap = StaffDirectory.capitalizeContractKey(ck);
+            if (!cap.isEmpty() && !keys.contains(cap)) keys.add(cap);
+        }
+        if (!name.isEmpty() && !keys.contains(name)) keys.add(name);
+        // Also query by createdByUid so techs without contractKey (or with mismatch) see leads they created
+        String authUid = null;
+        if (FirebaseAuth.getInstance().getCurrentUser() != null && FirebaseAuth.getInstance().getCurrentUser().getUid() != null) {
+            authUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        final int keyQueries = keys.size() * 2; // Added By + Assigned Tech per key
+        final int createdByQueries = (authUid != null) ? 1 : 0;
+        final int totalQueries = keyQueries + createdByQueries;
+        if (totalQueries <= 0) {
+            finishMergeAndDisplay(merged);
+            return;
+        }
+        final int[] pending = { totalQueries };
 
-                                // Update counts
-                                total++;
-                                String invoiceStatus = (String) lead.get("Invoice Status");
-                                if ("Paid".equalsIgnoreCase(invoiceStatus)) {
-                                    paid++;
-                                } else {
-                                    unpaid++;
+        for (String k : keys) {
+            db.collection("Leads").whereEqualTo("Added By", k).get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                if (seenIds.add(doc.getId())) {
+                                    Map<String, Object> lead = doc.getData();
+                                    if (lead != null) {
+                                        lead.put("documentId", doc.getId());
+                                        merged.add(lead);
+                                    }
                                 }
                             }
                         }
+                        pending[0]--;
+                        if (pending[0] <= 0) finishMergeAndDisplay(merged);
+                    });
+            db.collection("Leads").whereEqualTo("Assigned Tech", k).get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                if (seenIds.add(doc.getId())) {
+                                    Map<String, Object> lead = doc.getData();
+                                    if (lead != null) {
+                                        lead.put("documentId", doc.getId());
+                                        merged.add(lead);
+                                    }
+                                }
+                            }
+                        }
+                        pending[0]--;
+                        if (pending[0] <= 0) finishMergeAndDisplay(merged);
+                    });
+        }
+        if (authUid != null) {
+            db.collection("Leads").whereEqualTo("createdByUid", authUid).get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                if (seenIds.add(doc.getId())) {
+                                    Map<String, Object> lead = doc.getData();
+                                    if (lead != null) {
+                                        lead.put("documentId", doc.getId());
+                                        merged.add(lead);
+                                    }
+                                }
+                            }
+                        }
+                        pending[0]--;
+                        if (pending[0] <= 0) finishMergeAndDisplay(merged);
+                    });
+        }
+    }
 
-                        // Display the leads
-                        displayLeads(allLeads);
-                    } else {
-                        Toast.makeText(this, "Failed to load leads: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
+    private void finishMergeAndDisplay(List<Map<String, Object>> merged) {
+        allLeads.clear();
+        total = 0;
+        paid = 0;
+        unpaid = 0;
+        for (Map<String, Object> lead : merged) {
+            allLeads.add(lead);
+            total++;
+            String invoiceStatus = lead.get("Invoice Status") != null ? lead.get("Invoice Status").toString() : "";
+            if ("Paid".equalsIgnoreCase(invoiceStatus)) paid++;
+            else unpaid++;
+        }
+        displayLeads(allLeads);
+    }
+
+    private void processLeadDocuments(Iterable<QueryDocumentSnapshot> documents) {
+        // Replace list on each successful fetch so overlapping loads (e.g. session refresh) do not duplicate rows.
+        allLeads.clear();
+        total = 0;
+        paid = 0;
+        unpaid = 0;
+        for (QueryDocumentSnapshot document : documents) {
+            Map<String, Object> lead = document.getData();
+            if (lead == null) continue;
+            lead.put("documentId", document.getId());
+            allLeads.add(lead);
+            total++;
+            String invoiceStatus = (String) lead.get("Invoice Status");
+            if ("Paid".equalsIgnoreCase(invoiceStatus)) paid++;
+            else unpaid++;
+        }
+        displayLeads(allLeads);
     }
 
     private void displayLeads(List<Map<String, Object>> leadsList) {

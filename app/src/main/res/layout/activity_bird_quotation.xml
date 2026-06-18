@@ -256,5 +256,14 @@
             android:background="@drawable/button_background"
             android:textColor="?attr/colorOnPrimary" />
 
+        <Button
+            android:id="@+id/previewPdfButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Preview Bird Quotation PDFs"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
+
     </LinearLayout>
 </ScrollView>

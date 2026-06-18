@@ -28,7 +28,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class EnvironmentSelectionActivity extends AppCompatActivity {
 
-    private Button NonToxButton,ToxicButton;
+    private Button NonToxButton,ToxicButton, BirdProofingButton;
     private String userEmail, userName;
     private TextView welcomeTextView;
 
@@ -62,6 +62,7 @@ public class EnvironmentSelectionActivity extends AppCompatActivity {
 
         ToxicButton = findViewById(R.id.ToxicButton);
         NonToxButton = findViewById(R.id.NonToxButton);
+        BirdProofingButton = findViewById(R.id.BirdProofingEraButton);
 
         // Set Button Click Listeners
         if (ToxicButton != null) {
@@ -71,6 +72,9 @@ public class EnvironmentSelectionActivity extends AppCompatActivity {
             NonToxButton.setOnClickListener(view -> openActivity(NonToxERAActivity.class));
 
 
+        }
+        if (BirdProofingButton != null) {
+            BirdProofingButton.setOnClickListener(view -> openActivity(BirdProofingERAActivity.class));
         }
     }
 

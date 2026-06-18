@@ -3,6 +3,7 @@ package com.grpc.grpc.jobs.rodent;
 import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.reports.pdf.PDFReportGenerator;
+import com.grpc.grpc.reports.pdf.PdfFooterPageNumberStamper;
 
 import android.content.Context;
 import android.content.Intent;
@@ -180,6 +181,7 @@ public class RodentJobActivity extends AppCompatActivity {
             addPdfContent(document, context);
 
             document.close();
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context), null);
         } catch (IOException e) {
             Toast.makeText(context, "Error Creating PDF!", Toast.LENGTH_SHORT).show();
             e.printStackTrace();
@@ -229,7 +231,7 @@ public class RodentJobActivity extends AppCompatActivity {
                 .setTextAlignment(TextAlignment.CENTER)
                 .setFontSize(16)
                 .setBold()
-                .setFontColor(ColorConstants.BLUE));
+                .setFontColor(ColorConstants.BLACK));
 
         document.add(new Paragraph("\n"));  // Spacing
 

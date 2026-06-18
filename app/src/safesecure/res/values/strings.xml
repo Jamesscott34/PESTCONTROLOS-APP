@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Safe Secure Pest Control</string>
+
+    <string name="website_button_text">Safe Secure Pest Control</string>
+    <string name="main_website_url">https://safesecure.ie/</string>
+
+    <string name="pdf_company_name">Safe Secure Pest Control</string>
+    <string name="pdf_report_title">Safe Secure Pest Control Report</string>
+    <string name="pdf_action_form_title">Safe Secure Pest Control Action Form</string>
+    <string name="pdf_footer_text">Document generated for Safe Secure Pest Control</string>
+    <string name="pdf_default_watermark_text">SAFE SECURE</string>
+    <string name="pdf_filename_prefix">SS</string>
+    <string name="pdf_company_website">safesecure.ie</string>
+    <string name="pdf_company_website_short">safesecure.ie</string>
+    <string name="pdf_auto_generated_note">This report was automatically generated for Safe Secure Pest Control</string>
+    <string name="pdf_company_name_with_abbrev">Safe Secure Pest Control (SS)</string>
+    <string name="pdf_company_abbrev">SS</string>
+    <string name="pdf_era_title">Safe Secure Pest Control Environmental Risk Assessment</string>
+    <string name="pdf_template_main_header_hint">Main header (e.g. Safe Secure Pest Control)</string>
+    <string name="pdf_template_footer_hint">Leave blank for default footer text</string>
+    <string name="notification_channel_name">Safe Secure Pest Control Alerts</string>
+    <string name="pdf_action_form_footer">This Action Form was generated for Safe Secure Pest Control</string>
+    <string name="quote_saved_toast">Safe Secure Pest Control quote created and saved successfully!</string>
+    <string name="quotation_viewer_search_hint">Safe Secure Quotes…</string>
+    <string name="reports_folder_name">SAFE SECURE REPORTS</string>
+    <string name="quotes_folder_name">SAFE_SECURE_QUOTES</string>
+
+    <string name="tenant_public_name">Safe Secure Pest Control</string>
+    <string name="tenant_public_website_url">https://safesecure.ie/</string>
+</resources>

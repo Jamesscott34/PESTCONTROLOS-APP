@@ -7,24 +7,44 @@ import com.grpc.grpc.messaging.NotificationUtils;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * AddContractActivity.java
@@ -51,11 +71,12 @@ public class AddContractActivity extends AppCompatActivity {
      * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
      *                           this Bundle contains the most recent data.
      */
-    private EditText nameEditText, addressEditText, emailEditText, contactEditText, visitsEditText;
-    private Button addButton, backButton;
+    private EditText nameEditText, addressEditText, emailEditText, contactEditText;
+    private Button addButton, backButton, importExcelButton;
     private FirebaseFirestore db;
     private String userName;
-    private Spinner assignedTechSpinner;
+    private Spinner assignedTechSpinner, visitsSpinner;
+    private ActivityResultLauncher<String> excelImportLauncher;
 
     // Admin assign-to dropdown (UID-based)
     private List<UserRepository.AssignableUser> assignableUsers = new ArrayList<>();
@@ -69,6 +90,15 @@ public class AddContractActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_contract);
+
+        excelImportLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        handleExcelImportUri(uri);
+                    }
+                }
+        );
         
         // Handle keyboard properly
         getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -108,10 +138,21 @@ public class AddContractActivity extends AppCompatActivity {
         addressEditText = findViewById(R.id.editTextAddress);
         emailEditText = findViewById(R.id.editTextEmail);
         contactEditText = findViewById(R.id.editTextContact);
-        visitsEditText = findViewById(R.id.editTextVisits);
+        visitsSpinner = findViewById(R.id.editTextVisits);
         addButton = findViewById(R.id.buttonAdd);
         backButton = findViewById(R.id.buttonBack);
+        importExcelButton = findViewById(R.id.buttonImportExcel);
         assignedTechSpinner = findViewById(R.id.assignedTechSpinner);
+
+        if (visitsSpinner != null) {
+            android.widget.ArrayAdapter<String> visitsAdapter = new android.widget.ArrayAdapter<>(
+                    this,
+                    android.R.layout.simple_spinner_item,
+                    new String[]{"4", "6", "8", "12"}
+            );
+            visitsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            visitsSpinner.setAdapter(visitsAdapter);
+        }
 
         if (assignedTechSpinner != null) {
             android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(
@@ -129,6 +170,7 @@ public class AddContractActivity extends AppCompatActivity {
                 boolean show = isAdmin && !BuildConfig.IS_OFFLINE;
                 assignedTechSpinner.setVisibility(show ? View.VISIBLE : View.GONE);
                 if (label != null) label.setVisibility(show ? View.VISIBLE : View.GONE);
+                if (importExcelButton != null) importExcelButton.setVisibility(show ? View.VISIBLE : View.GONE);
 
                 if (show) {
                     // UID-based assignable users list (admin + tech)
@@ -175,13 +217,26 @@ public class AddContractActivity extends AppCompatActivity {
             }));
         }
 
+        if (importExcelButton != null) {
+            importExcelButton.setVisibility(View.GONE);
+            importExcelButton.setOnClickListener(view -> {
+                if (BuildConfig.IS_OFFLINE || db == null) {
+                    Toast.makeText(this, "Contracts cannot be imported in offline mode.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                excelImportLauncher.launch("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            });
+        }
+
         addButton.setOnClickListener(view -> {
             if (addInProgress) return;
             String name = nameEditText.getText().toString().trim();
             String address = addressEditText.getText().toString().trim();
             String email = emailEditText.getText().toString().trim();
             String contact = contactEditText.getText().toString().trim();
-            String visits = visitsEditText.getText().toString().trim();
+            String visits = visitsSpinner != null && visitsSpinner.getSelectedItem() != null
+                    ? visitsSpinner.getSelectedItem().toString().trim()
+                    : "4";
 
             // Validate required fields
             if (name.isEmpty() || address.isEmpty()) {
@@ -189,20 +244,9 @@ public class AddContractActivity extends AppCompatActivity {
                 return;
             }
 
-            // Validate Visits field
-            if (visits.isEmpty()) {
-                visits = "N/A"; // Default to "N/A" if blank
-            } else {
-                try {
-                    int visitsValue = Integer.parseInt(visits);
-                    if (visitsValue < 1 || visitsValue > 13) {
-                        Toast.makeText(AddContractActivity.this, "Visits must be between 1 and 13.", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                } catch (NumberFormatException e) {
-                    Toast.makeText(AddContractActivity.this, "Visits must be a number between 1 and 13.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            if (!("4".equals(visits) || "6".equals(visits) || "8".equals(visits) || "12".equals(visits))) {
+                Toast.makeText(AddContractActivity.this, "Visits must be 4, 6, 8 or 12.", Toast.LENGTH_SHORT).show();
+                return;
             }
 
             // Default empty email and contact to "N/A"
@@ -281,6 +325,304 @@ public class AddContractActivity extends AppCompatActivity {
             finish();
         });
     }
+
+    private void handleExcelImportUri(Uri uri) {
+        try {
+            ImportParseResult result = parseXlsx(uri);
+            showImportPreviewDialog(result);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to parse contracts import", e);
+            new AlertDialog.Builder(this)
+                    .setTitle("Import Failed")
+                    .setMessage("Could not read file. Make sure it's a valid .xlsx with column headers in row 1.")
+                    .setPositiveButton("OK", null)
+                    .show();
+        }
+    }
+
+    private ImportParseResult parseXlsx(Uri fileUri) throws IOException, ParseException {
+        ImportParseResult result = new ImportParseResult();
+        try (InputStream inputStream = getContentResolver().openInputStream(fileUri);
+             XSSFWorkbook workbook = inputStream != null ? new XSSFWorkbook(inputStream) : null) {
+            if (inputStream == null || workbook == null || workbook.getNumberOfSheets() == 0) {
+                throw new IOException("Could not open workbook");
+            }
+
+            Sheet sheet = workbook.getSheetAt(0);
+            Row headerRow = sheet.getRow(0);
+            if (headerRow == null) {
+                throw new ParseException("No valid headers found", 0);
+            }
+
+            DataFormatter formatter = new DataFormatter();
+            Map<String, Integer> columns = buildImportColumnMap(headerRow, formatter);
+            if (!columns.containsKey("name") && !columns.containsKey("address")
+                    && !columns.containsKey("visits") && !columns.containsKey("assignedTech")) {
+                throw new ParseException("No valid headers found", 0);
+            }
+
+            for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+                if (row == null || isSupportedRowBlank(row, columns, formatter)) {
+                    continue;
+                }
+
+                String name = getCellValue(row, columns.get("name"), formatter);
+                String address = getCellValue(row, columns.get("address"), formatter);
+                String assignedTech = getCellValue(row, columns.get("assignedTech"), formatter);
+                String visitsRaw = getCellValue(row, columns.get("visits"), formatter);
+                if (isBlank(name) || isBlank(address) || isBlank(assignedTech) || isBlank(visitsRaw)) {
+                    result.skippedReasons.add("Row " + (rowIndex + 1) + ": Missing required field");
+                    continue;
+                }
+
+                Object visits = parseVisitsValue(visitsRaw);
+                if (visits == null) {
+                    result.skippedReasons.add("Row " + (rowIndex + 1) + ": Missing required field");
+                    continue;
+                }
+
+                Map<String, Object> contract = new HashMap<>();
+                contract.put("name", name.trim());
+                contract.put("address", address.trim());
+                contract.put("assignedTech", assignedTech.trim());
+                contract.put("status", "Active");
+                contract.put("lastVisit", "");
+                contract.put("nextVisit", "");
+                contract.put("visits", visits);
+
+                String email = getCellValue(row, columns.get("email"), formatter);
+                if (!isBlank(email)) contract.put("email", email.trim());
+
+                String contact = getCellValue(row, columns.get("contact"), formatter);
+                if (!isBlank(contact)) contract.put("contact", contact.trim());
+
+                result.parsedRows.add(contract);
+            }
+        }
+        return result;
+    }
+
+    private Map<String, Integer> buildImportColumnMap(Row headerRow, DataFormatter formatter) {
+        Map<String, Integer> columns = new HashMap<>();
+        for (Cell cell : headerRow) {
+            String field = mapHeaderToField(formatter.formatCellValue(cell));
+            if (field != null && !columns.containsKey(field)) {
+                columns.put(field, cell.getColumnIndex());
+            }
+        }
+        return columns;
+    }
+
+    private String mapHeaderToField(String header) {
+        if (header == null) return null;
+        String normalized = header.trim().toLowerCase(Locale.getDefault());
+        switch (normalized) {
+            case "name":
+            case "premise name":
+            case "company":
+            case "client":
+                return "name";
+            case "address":
+            case "premise address":
+            case "site address":
+                return "address";
+            case "email":
+            case "email address":
+                return "email";
+            case "phone":
+            case "number":
+            case "contact":
+            case "mobile":
+            case "tel":
+                return "contact";
+            case "visits":
+            case "visit count":
+            case "no. of visits":
+                return "visits";
+            case "assigned tech":
+            case "tech":
+            case "technician":
+                return "assignedTech";
+            default:
+                return null;
+        }
+    }
+
+    private boolean isSupportedRowBlank(Row row, Map<String, Integer> columns, DataFormatter formatter) {
+        for (Integer columnIndex : columns.values()) {
+            if (!isBlank(getCellValue(row, columnIndex, formatter))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String getCellValue(Row row, Integer columnIndex, DataFormatter formatter) {
+        if (row == null || columnIndex == null) return "";
+        Cell cell = row.getCell(columnIndex);
+        return cell != null ? formatter.formatCellValue(cell).trim() : "";
+    }
+
+    private Object parseVisitsValue(String raw) {
+        if (isBlank(raw)) return null;
+        try {
+            return Integer.parseInt(raw.replaceAll("\\.0$", "").trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private void showImportPreviewDialog(ImportParseResult result) {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        int padding = (int) (16 * getResources().getDisplayMetrics().density);
+        layout.setPadding(padding, padding, padding, padding);
+
+        TextView summary = new TextView(this);
+        summary.setText(result.parsedRows.size() + " contracts ready to import, "
+                + result.skippedReasons.size() + " rows skipped");
+        summary.setTextSize(16);
+        layout.addView(summary);
+
+        TextView details = new TextView(this);
+        details.setText(buildImportPreviewText(result));
+        details.setTextSize(14);
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.addView(details);
+        layout.addView(scrollView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                (int) (360 * getResources().getDisplayMetrics().density)
+        ));
+
+        new AlertDialog.Builder(this)
+                .setTitle("Import Contracts")
+                .setView(layout)
+                .setPositiveButton("Import", (dialog, which) -> importParsedContracts(result))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private String buildImportPreviewText(ImportParseResult result) {
+        StringBuilder preview = new StringBuilder();
+        if (!result.parsedRows.isEmpty()) {
+            preview.append("\nReady:\n");
+            for (Map<String, Object> contract : result.parsedRows) {
+                preview.append("- ")
+                        .append(contract.get("name"))
+                        .append("\n  ")
+                        .append(contract.get("address"))
+                        .append("\n");
+            }
+        }
+        if (!result.skippedReasons.isEmpty()) {
+            preview.append("\nSkipped:\n");
+            for (String reason : result.skippedReasons) {
+                preview.append("- ").append(reason).append("\n");
+            }
+        }
+        return preview.toString();
+    }
+
+    private void importParsedContracts(ImportParseResult result) {
+        if (result.parsedRows.isEmpty()) {
+            showAllSkippedDialog(result.skippedReasons);
+            return;
+        }
+
+        db.collection(FirestorePaths.CONTRACTS)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    Set<String> existingNames = new HashSet<>();
+                    for (QueryDocumentSnapshot document : snapshot) {
+                        Object name = document.get("name");
+                        if (name != null) {
+                            existingNames.add(String.valueOf(name).trim().toLowerCase(Locale.getDefault()));
+                        }
+                    }
+
+                    List<Map<String, Object>> toWrite = new ArrayList<>();
+                    List<String> skipped = new ArrayList<>(result.skippedReasons);
+                    Set<String> namesInImport = new HashSet<>();
+                    for (Map<String, Object> contract : result.parsedRows) {
+                        String name = String.valueOf(contract.get("name")).trim();
+                        String normalized = name.toLowerCase(Locale.getDefault());
+                        if (existingNames.contains(normalized) || namesInImport.contains(normalized)) {
+                            skipped.add(name + ": Already exists");
+                        } else {
+                            namesInImport.add(normalized);
+                            toWrite.add(contract);
+                        }
+                    }
+
+                    if (toWrite.isEmpty()) {
+                        showAllSkippedDialog(skipped);
+                        return;
+                    }
+                    commitImportBatches(toWrite, skipped, 0, 0, 0);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed duplicate check before import", e);
+                    new AlertDialog.Builder(this)
+                            .setTitle("Import Failed")
+                            .setMessage("Could not check for duplicate contracts. Please try again.")
+                            .setPositiveButton("OK", null)
+                            .show();
+                });
+    }
+
+    private void commitImportBatches(List<Map<String, Object>> contracts, List<String> skipped,
+                                     int startIndex, int added, int errors) {
+        if (startIndex >= contracts.size()) {
+            int skippedCount = skipped.size();
+            String message = "Import complete: " + added + " added, " + skippedCount + " skipped";
+            if (errors > 0) message += ", " + errors + " errors";
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        int endIndex = Math.min(startIndex + 500, contracts.size());
+        WriteBatch batch = db.batch();
+        CollectionReference contractsRef = db.collection(FirestorePaths.CONTRACTS);
+        for (int i = startIndex; i < endIndex; i++) {
+            batch.set(contractsRef.document(), contracts.get(i));
+        }
+
+        int batchSize = endIndex - startIndex;
+        batch.commit()
+                .addOnSuccessListener(unused -> commitImportBatches(
+                        contracts, skipped, endIndex, added + batchSize, errors))
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Contract import batch failed", e);
+                    commitImportBatches(contracts, skipped, endIndex, added, errors + batchSize);
+                });
+    }
+
+    private void showAllSkippedDialog(List<String> skippedReasons) {
+        StringBuilder message = new StringBuilder("No contracts were imported.");
+        if (skippedReasons != null && !skippedReasons.isEmpty()) {
+            message.append("\n\nReasons:\n");
+            for (String reason : skippedReasons) {
+                message.append("- ").append(reason).append("\n");
+            }
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Import Complete")
+                .setMessage(message.toString())
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
+    private static class ImportParseResult {
+        final List<Map<String, Object>> parsedRows = new ArrayList<>();
+        final List<String> skippedReasons = new ArrayList<>();
+    }
+
     /**
      * Adds the contract to the shared contracts collection.
      * Stores technician UID + display fields alongside contract details.
@@ -429,7 +771,7 @@ public class AddContractActivity extends AppCompatActivity {
         addressEditText.setText("");
         emailEditText.setText("");
         contactEditText.setText("");
-        visitsEditText.setText("");
+        if (visitsSpinner != null) visitsSpinner.setSelection(0);
     }
     /**
      * Returns to the ContractsActivity after successfully adding a contract.

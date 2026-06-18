@@ -4,6 +4,7 @@ import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.reports.data.ReportDatabaseHelper;
 import com.grpc.grpc.reports.pdf.PDFReportGenerator;
+import com.grpc.grpc.reports.pdf.PdfFooterPageNumberStamper;
 
 import android.content.Context;
 import android.widget.Toast;
@@ -215,9 +216,9 @@ public class PDFQuotationReportGenerator {
                 }
 
                 table.addCell(new Cell().add(new Paragraph(descriptions.get(i))));
-                table.addCell(new Cell().add(new Paragraph(String.format("€%.2f", lineTotal))));
-                table.addCell(new Cell().add(new Paragraph(String.format("€%.2f", vatAmount))));
-                table.addCell(new Cell().add(new Paragraph(String.format("€%.2f", total))));
+                table.addCell(new Cell().add(new Paragraph(CurrencyFormatter.formatEuro(lineTotal))));
+                table.addCell(new Cell().add(new Paragraph(CurrencyFormatter.formatEuro(vatAmount))));
+                table.addCell(new Cell().add(new Paragraph(CurrencyFormatter.formatEuro(total))));
 
                 grandTotal += total;
             }
@@ -226,9 +227,9 @@ public class PDFQuotationReportGenerator {
 
             // ✅ Additional Section for Payment Summary at the Bottom
             document.add(new Paragraph("\n\nPayment Summary:").setFontSize(16).setBold().setUnderline());
-            document.add(new Paragraph("First Quarter Payment: €" + String.format("%.2f", firstQuarterPayment)).setFontSize(14).setBold());
-            document.add(new Paragraph("Additional Materials Total: €" + String.format("%.2f", additionalLineItemsTotal)).setFontSize(14));
-            document.add(new Paragraph("Total Payment Due: €" + String.format("%.2f", (firstQuarterPayment + additionalLineItemsTotal)))
+            document.add(new Paragraph("First Quarter Payment: " + CurrencyFormatter.formatEuro(firstQuarterPayment)).setFontSize(14).setBold());
+            document.add(new Paragraph("Additional Materials Total: " + CurrencyFormatter.formatEuro(additionalLineItemsTotal)).setFontSize(14));
+            document.add(new Paragraph("Total Payment Due: " + CurrencyFormatter.formatEuro(firstQuarterPayment + additionalLineItemsTotal))
                     .setFontSize(14).setBold());
 
             // ✅ Save the quote data to the database before closing the document (optional; callers may already save)
@@ -247,6 +248,9 @@ public class PDFQuotationReportGenerator {
 
             // ✅ Close the document after successful data saving
             document.close();
+            byte[] stampPw = (ownerPassword != null && !ownerPassword.isEmpty())
+                    ? ownerPassword.getBytes() : null;
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context), stampPw);
 
             // ✅ Notify user
             Toast.makeText(context, context.getString(R.string.quote_saved_toast), Toast.LENGTH_SHORT).show();

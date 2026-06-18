@@ -6,7 +6,7 @@ import android.content.Context;
 
 /**
  * Centralized flavor-aware branding for PDFs and filenames.
- * Production (grpc flavor) uses Good Riddance Pest Control strings; demo/offline override in their res/values.
+ * Production (grpc flavor) uses [Company 1] strings; demo/offline override in their res/values.
  */
 public final class TenantBranding {
     private TenantBranding() {}
@@ -21,6 +21,20 @@ public final class TenantBranding {
 
     public static String actionFormTitle(Context c) {
         return c.getString(R.string.pdf_action_form_title);
+    }
+
+    public static String actionFormDocumentTitle(Context c) {
+        String companyName = companyName(c).trim();
+        String actionFormTitle = actionFormTitle(c).trim();
+        String normalizedCompany = companyName.toLowerCase(java.util.Locale.ROOT);
+        String normalizedTitle = actionFormTitle.toLowerCase(java.util.Locale.ROOT);
+        if (normalizedTitle.startsWith(normalizedCompany)) {
+            actionFormTitle = actionFormTitle.substring(companyName.length()).trim();
+            if (actionFormTitle.startsWith("-")) {
+                actionFormTitle = actionFormTitle.substring(1).trim();
+            }
+        }
+        return companyName + " - " + actionFormTitle;
     }
 
     public static String defaultFooterText(Context c) {
@@ -73,6 +87,26 @@ public final class TenantBranding {
     /** Folder name for quotation PDFs (e.g. GRPEST_QUOTES). Must be filesystem-safe. */
     public static String quotesFolderName(Context c) {
         return c != null ? c.getString(R.string.quotes_folder_name) : "GRPEST_QUOTES";
+    }
+
+    public static String invoiceCompanyAddress(Context c) {
+        return c.getString(R.string.invoice_pdf_company_address);
+    }
+
+    public static String invoiceTelephone(Context c) {
+        return c.getString(R.string.invoice_pdf_telephone);
+    }
+
+    public static String invoiceAccountsEmail(Context c) {
+        return c.getString(R.string.invoice_pdf_accounts_email);
+    }
+
+    public static String invoicePaymentTerms(Context c) {
+        return c.getString(R.string.invoice_pdf_payment_terms);
+    }
+
+    public static String invoiceLineCode(Context c) {
+        return c.getString(R.string.invoice_pdf_line_code);
     }
 }
 

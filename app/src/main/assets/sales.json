@@ -1,0 +1,416 @@
+[
+  {
+    "categoryKey": "rodents",
+    "categoryName": "Rodents",
+    "items": [
+      {
+        "key": "rodent_rats_internal",
+        "displayName": "Rats – Internal (3 Visit Programme)",
+        "quoteBreakdown": "Comprehensive internal rat control programme delivered over three structured visits to ensure effective eradication and long-term prevention.\n\nFirst Visit: A full and detailed inspection of the property is completed to identify signs of activity, entry points, harbourage areas, food sources and contributing factors. Professional-grade, tamper-resistant bait stations are then strategically installed throughout key internal locations. All bait points are positioned discreetly (out of sight where possible) and placed in a safe, controlled manner.\n\nSecond Visit: All bait stations are inspected and monitored. Bait levels are assessed and replenished where necessary to maintain control pressure. Any reachable deceased rodents are safely removed and disposed of in accordance with environmental guidance.\n\nThird Visit: A final inspection is carried out to confirm control has been achieved. Minor proofing works identified during the programme (such as sealing small gaps, repairing minor entry points, or closing accessible void access) will be completed on site where feasible.\n\nThis structured approach provides consistent monitoring, effective control and practical prevention support to reduce the likelihood of re-infestation.",
+        "description": "Three-visit internal rat control programme including inspection, discreet bait placement, monitoring and minor proofing works to reduce re-infestation risk."
+      },
+      {
+        "key": "rodent_rats_external",
+        "displayName": "Rats – External (3 Visit Programme)",
+        "quoteBreakdown": "Structured external rat control programme delivered over three scheduled visits, designed to target rodent activity around the perimeter of the property and reduce the risk of entry indoors.\n\nFirst Visit: A comprehensive external inspection is conducted covering perimeter walls, bin/waste areas, sheds, gardens, boundary lines and potential harbourage zones. Secure, tamper-resistant external bait stations are installed at strategic points to target active travel routes and feeding areas.\n\nSecond Visit: All bait stations are inspected, monitored and replenished where required. Any accessible deceased rodents are safely removed where reachable.\n\nThird Visit: Final inspection to confirm control and complete minor proofing works where practical (e.g., sealing small gaps, addressing minor access points, and advising on environmental improvements).\n\nImportant Drainage Note: For rat activity, drainage systems may require baiting as part of effective control. Additional services such as rat flap installation, drain surveys, camera inspections, or “look-see” investigations may be recommended depending on site findings. Any additional charges will be clearly explained, and pricing will be provided by the technician on site for approval before proceeding.",
+        "description": "Three-visit external rat control programme with perimeter inspection, secured bait stations, monitoring, and optional drainage-related recommendations where required."
+      },
+      {
+        "key": "rodent_mice",
+        "displayName": "Mice (3 Visit Programme)",
+        "quoteBreakdown": "Professional mouse control programme delivered over three structured visits to ensure effective elimination and long-term prevention.\n\nFirst Visit: A detailed inspection is carried out to identify entry points, nesting areas, activity routes and contributing food sources. Discreet bait stations and/or trapping systems are installed strategically throughout affected areas, placed out of sight where possible to minimise disruption while ensuring effective coverage.\n\nSecond Visit: Monitoring of all bait stations and traps is completed. Consumables are replenished where required and any reachable deceased rodents are safely removed and disposed of appropriately.\n\nThird Visit: Final inspection to confirm control. Minor proofing works (such as sealing small gaps and entry points) will be completed on site where feasible.\n\nGuidance is also provided regarding hygiene, food storage practices, and structural improvements to help prevent future infestation.",
+        "description": "Three-visit mouse control programme including inspection, discreet baiting/trapping, monitoring, removal of reachable rodents and minor proofing works where required."
+      },
+      {
+        "key": "rodent_rat_trapping_2_week",
+        "displayName": "Rat Trapping Programme (2 Weeks – 48 Hour Visits)",
+        "quoteBreakdown": "A structured rat trapping programme will be carried out over a two-week period with attendances approximately every 48 hours to maximise capture rates and respond quickly to ongoing activity.\n\nFirst Visit: A full inspection is completed to identify active runs, harbourage, entry points and suitable trap locations. Professional rat traps are installed and secured in agreed internal and/or external areas, with trapping points recorded on site.\n\nSubsequent Visits (every 48 hours throughout the 2-week programme): All traps are inspected, catches are recorded and removed, traps are reset, cleaned and repositioned where required. Activity levels are reviewed and additional trap points may be added if new signs are identified.\n\nFinal Visit: A closing inspection confirms trap removal or handover, activity assessment and recommendations for proofing, baiting or drainage works where appropriate.\n\nThis intensive trapping schedule is designed to reduce rodent numbers rapidly where baiting alone is insufficient or where non-toxic / trapping-first control is required on site.",
+        "description": "Two-week rat trapping programme with site visits every 48 hours: install traps, inspect, clear catches, reset and final review."
+      }
+    ]
+  },
+  {
+    "categoryKey": "birds",
+    "categoryName": "Birds",
+    "items": [
+      {
+        "key": "bird_pigeons_solar_panel",
+        "displayName": "Pigeons – Solar Panel Proofing",
+        "quoteBreakdown": "Specialist pigeon proofing service designed to prevent pigeons nesting and roosting beneath solar panel arrays.\n\nThe service begins with a roof-level inspection to identify access points, nesting activity, and contamination risks. Where required, accessible debris may be removed prior to installation. A high-quality galvanised or stainless-steel solar mesh system is then fitted around the perimeter of the solar panel array. This forms a durable barrier that prevents birds accessing the cavity beneath the panels while maintaining airflow and ensuring the solar system continues to perform efficiently.\n\nInstallations are completed carefully to protect roof integrity and to avoid interference with solar panel function or warranties where applicable.",
+        "description": "Solar panel bird-proofing using durable mesh installation to prevent pigeons nesting under panels while maintaining airflow and system performance."
+      },
+      {
+        "key": "bird_pigeons_chimney",
+        "displayName": "Pigeons – Chimney Proofing",
+        "quoteBreakdown": "Professional chimney bird proofing solution to prevent pigeons roosting and nesting within chimney pots and surrounding roofline areas.\n\nThe service includes inspection of chimney access points and nesting evidence. Where legally appropriate and safely accessible, nesting material may be removed. A durable stainless-steel chimney guard/cap is installed to block entry while maintaining correct ventilation and airflow.\n\nThis solution prevents blockages, odours, nesting debris build-up and long-term contamination issues.",
+        "description": "Chimney bird-proofing using fitted guards/caps to prevent pigeon nesting while maintaining safe ventilation and airflow."
+      },
+      {
+        "key": "bird_seagull_solar_panel",
+        "displayName": "Seagull – Solar Panel Proofing",
+        "quoteBreakdown": "Heavy-duty solar panel bird proofing solution designed specifically for larger species such as seagulls.\n\nThis service includes inspection of roof access points and nesting behaviour, with removal of accessible nesting material where legally permitted. A reinforced solar mesh barrier is then installed around the solar panel array to prevent birds accessing the cavity beneath.\n\nThe system is designed to withstand exposed conditions (including coastal/high-wind environments) while maintaining airflow and solar panel efficiency. This reduces disturbance, contamination, and the risk of roof damage caused by nesting activity.",
+        "description": "Reinforced solar mesh proofing to prevent seagulls nesting beneath panels, reducing contamination and roof damage while maintaining airflow."
+      },
+      {
+        "key": "bird_seagull_chimney",
+        "displayName": "Seagull – Chimney Proofing",
+        "quoteBreakdown": "Reinforced chimney protection system designed to prevent seagulls nesting and roosting on chimney structures.\n\nThe service includes inspection and installation of a heavy-duty chimney guard suited to larger bird species. The guard prevents entry while maintaining ventilation and safe airflow.\n\nThis protects against nesting debris, blockages, contamination and ongoing roofline disturbance.",
+        "description": "Heavy-duty chimney guards installed to prevent seagull nesting/roosting, protecting against debris build-up and contamination."
+      },
+      {
+        "key": "bird_starling_gutter_front",
+        "displayName": "Starling – Front Gutter Protection",
+        "quoteBreakdown": "Targeted starling deterrent and proofing solution for the front gutter and roofline areas of the property.\n\nA site inspection identifies vulnerable perching and nesting points. Professional stainless-steel bird spikes and/or mesh protection is installed where required. Bird spikes are discreet deterrent strips designed to prevent perching and nesting without harming birds, while mesh can be used to close off accessible gaps.\n\nThis service helps prevent gutter blockages, water overflow, staining and structural issues caused by nesting debris.",
+        "description": "Front gutter bird-proofing using stainless-steel spikes and/or mesh to prevent starling nesting and reduce blockages, overflow and damage."
+      },
+      {
+        "key": "bird_starling_gutter_back",
+        "displayName": "Starling – Rear Gutter Protection",
+        "quoteBreakdown": "Rear elevation gutter protection service to prevent starling nesting and debris accumulation.\n\nFollowing inspection, stainless-steel bird spikes are installed along vulnerable perching points and/or mesh is fitted where access gaps require closure. The system prevents nesting and reduces the risk of gutter blockages and water overflow.\n\nThis improves gutter performance and reduces long-term maintenance and property damage risk.",
+        "description": "Rear gutter bird-proofing with spikes and/or mesh to prevent starling nesting, improving drainage performance and reducing maintenance risk."
+      },
+      {
+        "key": "bird_starling_gutter_all",
+        "displayName": "Starling – Full Gutter Protection",
+        "quoteBreakdown": "Comprehensive gutter and roofline protection service covering all elevations (front, rear and sides).\n\nFollowing a full inspection, professional stainless-steel bird spikes are installed along all vulnerable perching areas, and mesh protection is applied where required to prevent nesting access.\n\nThis property-wide solution significantly reduces nesting, protects gutter drainage performance, prevents overflow and damp issues, and reduces maintenance requirements over the long term.",
+        "description": "Property-wide gutter protection using spikes and mesh to prevent starling nesting across all elevations, reducing blockages and long-term damage."
+      }
+    ]
+  },
+  {
+    "categoryKey": "wildlife",
+    "categoryName": "Wildlife",
+    "items": [
+      {
+        "key": "wildlife_foxes",
+        "displayName": "Foxes",
+        "quoteBreakdown": "Humane fox management and deterrent service designed to reduce unwanted fox activity and associated damage.\n\nA full site inspection is carried out to identify access routes, den locations (where present) and attractants such as unsecured waste, food sources or shelter areas. Based on findings, appropriate deterrent measures and practical exclusion recommendations are provided.\n\nCustomers receive guidance on waste control, boundary improvements and environmental changes to reduce repeat activity. All actions are carried out in line with humane wildlife practices.",
+        "description": "Humane fox deterrent service with site inspection, identification of attractants, and practical exclusion guidance to reduce recurring activity."
+      },
+      {
+        "key": "wildlife_squirrels",
+        "displayName": "Squirrels",
+        "quoteBreakdown": "Specialist squirrel control and prevention service for lofts, roof voids and external structures.\n\nThe service includes inspection to identify entry points, nesting areas and damage risk (including insulation disturbance and potential wiring hazards). Appropriate control measures are implemented where permitted, and detailed proofing recommendations are provided to prevent re-entry.\n\nCustomers receive preventative guidance focused on structural sealing, tree access reduction and long-term protection.",
+        "description": "Squirrel inspection, control and prevention service with proofing recommendations to reduce re-entry and protect roof voids and wiring."
+      }
+    ]
+  },
+  {
+    "categoryKey": "insects",
+    "categoryName": "Insects",
+    "items": [
+      {
+        "key": "insect_silverfish_single",
+        "displayName": "Silverfish – Single Visit",
+        "quoteBreakdown": "Professional silverfish treatment suitable for light to moderate activity.\n\nIncludes a detailed inspection focusing on damp and humid environments such as bathrooms, kitchens, utility rooms, skirting boards and void spaces. Targeted application of professional-grade insecticidal products is completed at harbourage points and movement routes.\n\nPractical advice is provided on moisture reduction, ventilation improvements and hygiene actions to reduce conditions that support silverfish activity.",
+        "description": "Targeted silverfish treatment with inspection and professional application to harbourage areas, plus moisture and prevention guidance."
+      },
+      {
+        "key": "insect_silverfish_3_visit",
+        "displayName": "Silverfish – 3 Visit Programme",
+        "quoteBreakdown": "Structured three-visit silverfish control programme designed for persistent or recurring infestations.\n\nFirst Visit: Full inspection and initial targeted treatment of key harbourage zones.\nSecond Visit: Follow-up inspection to assess activity levels, re-treatment of hotspots and adjustment of treatment strategy where required.\nThird Visit: Final inspection and treatment reinforcement where necessary, with preventative recommendations to reduce re-occurrence.\n\nThis programme applies consistent control pressure across the silverfish lifecycle for improved long-term results.",
+        "description": "Three-visit silverfish programme including inspection, follow-up treatments and prevention guidance to improve long-term results."
+      },
+      {
+        "key": "insect_ants_single_visit",
+        "displayName": "Ants – Single Visit",
+        "quoteBreakdown": "Single visit ant control treatment designed to reduce visible activity and treat primary access points.\n\nThe service includes inspection to identify likely nesting zones and entry routes, followed by a professional treatment strategy using residual insecticidal application and/or targeted baiting depending on the environment.\n\nCustomers receive guidance on food storage, sanitation, and reducing attractants to help prevent further activity.",
+        "description": "Single-visit ant treatment with inspection, targeted application and practical prevention guidance to reduce future activity."
+      },
+      {
+        "key": "insect_ants_3_visit",
+        "displayName": "Ants – 3 Visit Programme",
+        "quoteBreakdown": "Three-visit ant control programme recommended for established infestations or recurring activity.\n\nFirst Visit: Detailed inspection, identification of trails and entry routes, and initial treatment strategy (baiting and/or residual treatment).\nSecond Visit: Monitoring and reassessment of activity with follow-up treatment to disrupt colony strength.\nThird Visit: Final inspection and reinforcement treatment where required, with preventative recommendations provided.\n\nThis structured programme improves long-term control by applying consistent pressure across the infestation cycle.",
+        "description": "Three-visit ant programme with inspection, monitoring and follow-up treatments to disrupt colony strength and reduce recurrence."
+      },
+      {
+        "key": "insect_ants_seasonal",
+        "displayName": "Ants – Seasonal (Up to 6 Sprays)",
+        "quoteBreakdown": "Seasonal ant control programme designed for properties that experience recurring ant activity throughout the warmer months.\n\nThis service includes up to 6 treatment visits (sprays) across the active ant season. Treatments are carried out as required until the end of the ant season, typically running through September and in many cases into October depending on activity and weather.\n\nEach visit includes inspection of current activity points, targeted treatment of trails and access routes, and adjustments to the treatment plan where necessary. Ongoing prevention advice is provided throughout the programme to reduce attractants and help prevent recurring infestations.",
+        "description": "Seasonal ant programme including up to 6 sprays, delivered as needed through the ant season (typically until September/October)."
+      },
+      {
+        "key": "insect_wasps_treatment",
+        "displayName": "Wasps – Treatment",
+        "quoteBreakdown": "Professional wasp nest treatment service for active nests located in roof spaces, soffits, sheds, cavity walls and external structures.\n\nThe service includes identification of the nest entry point, safe application of an approved professional insecticidal treatment, and guidance on preventing further nesting in vulnerable areas.\n\nTreatment is designed to neutralise activity effectively and safely with minimal disruption to the property.",
+        "description": "Professional wasp nest treatment with safe application of approved insecticide and preventative guidance to reduce re-nesting risk."
+      },
+      {
+        "key": "insect_wasps_nest_removal",
+        "displayName": "Wasps – Nest Removal",
+        "quoteBreakdown": "Wasp nest removal service carried out once activity has been neutralised and it is safe to remove the nest structure.\n\nWhere accessible and suitable, the nest is removed from the property to reduce contamination risk and prevent re-use of the nest area.\n\nRemoval is subject to safe access and site conditions and is typically performed following a completed treatment.",
+        "description": "Wasp nest removal (where safe and accessible) after treatment has neutralised activity, helping reduce contamination and repeat nesting."
+      },
+      {
+        "key": "insect_bees",
+        "displayName": "Bees",
+        "quoteBreakdown": "Bee management service carried out in line with environmental and wildlife guidance.\n\nThe service includes assessment of bee activity, identification of likely nesting location, and determination of the most appropriate course of action. Where possible, relocation or referral to an appropriate specialist channel is recommended.\n\nBee-related issues are handled with care to protect pollinator populations while addressing safety concerns for occupants.",
+        "description": "Bee assessment and management service with responsible guidance and referral/relocation options where appropriate."
+      },
+      {
+        "key": "insect_cockroaches_single_visit",
+        "displayName": "Cockroaches – Single Visit",
+        "quoteBreakdown": "Professional single-visit cockroach treatment suitable for light or early-stage infestations.\n\nIncludes detailed inspection of harbourage areas such as kitchens, utility rooms, void spaces, behind appliances and drainage points. Specialist professional-grade gel bait formulations are applied strategically to targeted zones, alongside residual insecticide treatment where appropriate.\n\nThis service is designed for minor activity and includes hygiene and sanitation guidance to reduce the risk of recurrence.",
+        "description": "Single-visit cockroach treatment with inspection, targeted gel baiting and hygiene guidance for early-stage or light activity."
+      },
+      {
+        "key": "insect_cockroaches_4_visit",
+        "displayName": "Cockroaches – 4 Visit Programme",
+        "quoteBreakdown": "Structured four-visit cockroach control programme recommended for moderate infestations or properties experiencing ongoing activity.\n\nFirst Visit: Comprehensive inspection and targeted gel bait application to identified harbourage areas and movement routes.\nSecond Visit: Monitoring of bait consumption, reassessment of infestation levels and additional treatment where required.\nThird Visit: Continued monitoring and reinforcement treatment to disrupt breeding cycles.\nFourth Visit: Final inspection to confirm eradication, with preventative recommendations provided.\n\nThis structured approach applies consistent treatment pressure across the cockroach life cycle and improves long-term control outcomes.",
+        "description": "Four-visit cockroach programme with inspection, monitoring and follow-up treatments to disrupt breeding cycles and confirm eradication."
+      },
+      {
+        "key": "insect_cockroaches_6_visit",
+        "displayName": "Cockroaches – 6 Visit Programme",
+        "quoteBreakdown": "Comprehensive six-visit cockroach eradication programme designed for severe, established or high-risk infestations, including commercial environments.\n\nFirst Visit: Detailed inspection and implementation of an intensive treatment strategy using advanced gel bait systems and residual insecticides where appropriate.\nSecond to Fifth Visits: Ongoing monitoring, reinforcement treatments targeting newly emerged nymphs, and bait rotation where necessary to support effectiveness and reduce resistance risks.\nSixth Visit: Final inspection, validation of control and preventative guidance to minimise re-infestation.\n\nThis extended programme is designed to fully disrupt breeding cycles and ensure long-term elimination of persistent cockroach populations.",
+        "description": "Six-visit intensive cockroach eradication programme for severe or commercial infestations, with monitoring, reinforcement and final validation."
+      },
+      {
+        "key": "insect_bedbugs_4_visit",
+        "displayName": "Bedbugs – 4 Visit Programme",
+        "quoteBreakdown": "4 Part Bed Bug Treatment Programme (4 Visits – 1 Week Apart)\n\nVisit 1 – Initial Knockdown & Inspection  \nObjective: Rapid population reduction and identification of harbourages.\n\nInspection  \nMattress seams, bed frame joints, headboard (front and rear), bedside furniture, skirting boards, curtain folds and sofa seams are inspected for bed bug activity including live insects, cast skins and faecal spotting.\n\nSteam Treatment  \nHigh temperature steam is applied to:\n• Mattress seams and tufts  \n• Bed frame joints  \n• Headboard  \n• Upholstered furniture seams  \n• Skirting board edges  \n\nSteam kills all life stages of bed bugs on contact.\n\nResidual Insecticide Application  \nCimetrol Super EW is applied as a residual spray to:\n• Bed frame  \n• Headboard and surrounding wall area  \n• Skirting boards  \n• Bedside furniture  \n• Cracks and crevices within approximately 1–2 metres of the bed  \n\nMonitoring Traps  \nBed bug interception traps are placed under bed legs and sofa legs.\n\nVisit 2 – Follow-Up Treatment (Week 1)  \nEliminate newly hatched nymphs.\n\nVisit 3 – Secondary Follow-Up (Week 2)\n\nVisit 4 – Final Treatment & Clearance\n\nWhy Four Treatments Are Required  \nBed bug eggs hatch within 7–10 days.  \nInsecticides do not penetrate eggs.  \nWeekly treatments ensure full lifecycle elimination.",
+        "description": "Four-visit bed bug programme with inspection, steam, residual treatment and weekly follow-ups."
+      },
+      {
+        "key": "insect_bedbugs_6_visit",
+        "displayName": "Bedbugs – 6 Visit Programme",
+        "quoteBreakdown": "6 Part Bed Bug Treatment Programme (6 Visits – 1 Week Apart)\n\nRecommended for moderate to heavy infestations, multi-room activity, or where reinfestation risk is higher.\n\nVisit 1 – Full inspection, steam treatment of harbourages, residual insecticide application and installation of monitoring traps (as per initial knockdown protocol).\n\nVisits 2–5 – Weekly follow-up treatments targeting newly hatched nymphs, reassessment of activity, steam and residual reinforcement at hotspots, and trap monitoring.\n\nVisit 6 – Final inspection, clearance treatment where required, and written guidance on laundry, proofing and prevention.\n\nWhy Six Treatments Are Required  \nBed bug eggs hatch within 7–10 days and insecticides do not penetrate eggs. Extended weekly visits apply sustained pressure across multiple hatch cycles for improved eradication on established infestations.",
+        "description": "Six-visit bed bug programme for moderate or heavy infestations with weekly follow-ups across hatch cycles."
+      },
+      {
+        "key": "insect_bedbugs_8_visit",
+        "displayName": "Bedbugs – 8 Visit Programme",
+        "quoteBreakdown": "8 Part Bed Bug Treatment Programme (8 Visits – 1 Week Apart)\n\nRecommended for severe, widespread or recurring bed bug infestations, HMOs, multi-occupancy properties and high-risk commercial sleeping areas.\n\nVisit 1 – Comprehensive inspection of all affected and adjacent rooms, steam knockdown, residual treatment and monitoring trap placement.\n\nVisits 2–7 – Weekly structured follow-ups including activity monitoring, steam treatment of harbourages, residual reinforcement, trap checks and adjustment of treatment plan by room.\n\nVisit 8 – Final validation visit, clearance treatment, activity review and detailed prevention guidance.\n\nWhy Eight Treatments Are Required  \nSevere infestations require extended lifecycle coverage. Weekly visits over eight weeks maximise control pressure, reduce spread between rooms and support long-term clearance where egg hatch and harbourage re-use are ongoing risks.",
+        "description": "Eight-visit intensive bed bug programme for severe, multi-room or high-risk infestations."
+      },
+      {
+        "key": "insect_steam_clean_area",
+        "displayName": "Steam Clean – Area Treatment",
+        "quoteBreakdown": "Standalone high-temperature steam treatment of specified affected areas.\n\nProfessional steam equipment is used to treat agreed zones such as mattress seams, bed frames, upholstered furniture, carpet edges, skirting areas or other harbourage locations identified during inspection.\n\nSteam delivers immediate knockdown of insects and eggs on contact where surfaces can safely tolerate heat treatment.\n\nThis service is supplied separately from a full bed bug programme and is scoped to the areas listed on site. Residual insecticide treatment or a multi-visit programme may be recommended where ongoing activity is present.",
+        "description": "Standalone steam treatment of specified areas for immediate knockdown of insects and eggs on contact."
+      }
+    ]
+  },
+  {
+    "categoryKey": "drainage",
+    "categoryName": "Drainage Investigations",
+    "items": [
+      {
+        "key": "drain_survey_required",
+        "displayName": "Drain Survey Required",
+        "quoteBreakdown": "Following our pest control inspection at the above property, evidence indicates that rodent activity may be associated with damaged, defective, or compromised drainage systems serving the site.\n\nRodents can exploit breaks, displaced joints, redundant pipework, or poorly sealed access points within underground drainage networks. Activity may therefore persist despite baiting and proofing works unless the drainage system is properly assessed.\n\nWe recommend a professional CCTV drain survey / inspection to identify structural defects, rodent entry routes, and maintenance requirements. The survey will document the condition of accessible drains and manholes and provide a clear basis for remedial recommendations.\n\nPlease note that further recommendations may follow once the inspection results and survey report are reviewed. Any additional treatment, proofing, or drainage remediation will be discussed with you and quoted separately where required.",
+        "description": "Recommendation for a CCTV drain survey where rodent activity may be linked to defective or compromised drainage systems."
+      },
+      {
+        "key": "drain_cctv_survey",
+        "displayName": "CCTV Drain Survey",
+        "quoteBreakdown": "Full CCTV drain survey of accessible drainage serving the property.\n\nA camera unit is passed through the line to record internal condition, joint alignment, defects, root ingress, scale build-up and evidence of rodent activity or entry points. Findings are reviewed on site where possible and used to produce clear remedial recommendations.\n\nThis survey provides the technical basis for quoting repairs, jetting, patching, rat flap installation or excavation works.",
+        "description": "CCTV inspection of accessible drains to record condition, defects and rodent entry routes, with remedial recommendations."
+      },
+      {
+        "key": "drain_survey_investigation",
+        "displayName": "Drain Survey / Investigation",
+        "quoteBreakdown": "Targeted drain investigation to establish the cause of recurring blockages, odours, slow discharge or suspected rodent access.\n\nIncludes visual inspection of chambers, gullies and accessible pipework, with further CCTV or tracing recommended where required. A clear summary of findings and next steps is provided for approval before additional works proceed.",
+        "description": "Targeted drain investigation including chamber and gully inspection, with recommendations for further survey or repair."
+      },
+      {
+        "key": "drain_tracing",
+        "displayName": "Drain Tracing",
+        "quoteBreakdown": "Drain tracing service to locate unknown, buried or misconnected drainage runs.\n\nSpecialist equipment is used to follow the line of the drain from an access point or chamber, helping identify route, depth and connection points before excavation, repair or proofing works are planned.\n\nReduces unnecessary digging and supports accurate quoting of remedial drainage works.",
+        "description": "Locates buried or unknown drain routes using specialist tracing equipment before repair or excavation."
+      },
+      {
+        "key": "drain_smoke_testing",
+        "displayName": "Drain Smoke Testing",
+        "quoteBreakdown": "Drain smoke testing to identify leaks, open joints, illegal connections or rodent entry points within the drainage system.\n\nNon-toxic smoke is introduced into the line under controlled conditions. Any escape at manholes, gullies, floor wastes, vents or building voids is documented to pinpoint defects requiring repair or sealing.\n\nParticularly useful where intermittent odours or pest activity suggest hidden breaches in the system.",
+        "description": "Smoke testing to detect leaks, open joints and rodent entry points in the drainage network."
+      }
+    ]
+  },
+  {
+    "categoryKey": "drain_repairs",
+    "categoryName": "Drain Repairs & Services",
+    "items": [
+      {
+        "key": "drain_muck_removal",
+        "displayName": "Muck Removal",
+        "quoteBreakdown": "Removal of accumulated silt, sludge and organic muck from drainage chambers, interceptors or heavily fouled line sections.\n\nBuild-up of muck restricts flow, contributes to blockages and can harbour bacteria and pest activity. Accessible deposits are removed and disposed of in accordance with waste regulations.\n\nFlow is checked on completion and further jetting or repair recommendations are provided where required.",
+        "description": "Removal of silt and muck from chambers or fouled drain sections to restore flow and reduce blockage risk."
+      },
+      {
+        "key": "drain_debris_removal",
+        "displayName": "Debris Removal",
+        "quoteBreakdown": "Clearance of debris obstructing drainage lines or chambers, including stones, rubble, collapsed material, waste and foreign objects.\n\nDebris is removed by hand or mechanical means from accessible points. The line is flushed or jetted where appropriate to confirm improved flow.\n\nSuitable for localised obstructions identified during survey, blockage attendance or excavation works.",
+        "description": "Clears rubble, waste and foreign objects from drains or chambers to restore discharge."
+      },
+      {
+        "key": "drain_gully_cleaning",
+        "displayName": "Gully Cleaning",
+        "quoteBreakdown": "Professional cleaning of external gullies and yard gully pots serving the property.\n\nTraps, grids and pots are cleared of leaves, grease, silt and debris. Flow paths are checked to ensure surface water can discharge correctly and reduce flooding or odour issues.\n\nAdvice is provided on ongoing maintenance where repeat blockages are identified.",
+        "description": "Cleaning of gully pots and traps to remove debris and restore surface water discharge."
+      },
+      {
+        "key": "drain_unblocking",
+        "displayName": "Drain Unblocking",
+        "quoteBreakdown": "Emergency or planned drain unblocking service for foul or surface water lines affected by restriction or full blockage.\n\nAppropriate rods, mechanical tools or high-pressure jetting are used depending on pipe size, access and cause of obstruction. Flow is tested on completion.\n\nIf structural damage or rodent access is identified, further survey and repair options will be recommended.",
+        "description": "Unblocks restricted or fully blocked drains using rods, mechanical tools or jetting as appropriate."
+      },
+      {
+        "key": "drain_line_jetting",
+        "displayName": "Line Jetting",
+        "quoteBreakdown": "High-pressure water jetting of drainage lines to remove grease, scale, silt and soft obstructions.\n\nJetting restores bore diameter and flow performance without excavation where the pipe structure remains sound. Particularly effective on foul lines, commercial kitchen runs and repeat blockage areas.\n\nA post-jet flow check is completed and CCTV survey may be recommended if defects are suspected.",
+        "description": "High-pressure jetting to clear grease, scale and silt from drain lines and restore flow."
+      },
+      {
+        "key": "drain_descaling",
+        "displayName": "Drain Descaling",
+        "quoteBreakdown": "Descaling of drainage pipework affected by hardened deposits, uric scale or mineral build-up.\n\nSpecialist jetting or mechanical descaling techniques are used to restore internal diameter and improve flow. Suitable for urinal lines, commercial waste pipes and older systems with reduced capacity.\n\nCondition of the pipe is assessed during works; lining or replacement may be advised if the line is structurally compromised.",
+        "description": "Removes hardened scale and deposits from pipework to improve flow and capacity."
+      },
+      {
+        "key": "drain_sanitation",
+        "displayName": "Drain Sanitation",
+        "quoteBreakdown": "Sanitisation and deodorisation of drainage chambers, interceptors or heavily contaminated line sections following blockage, flooding or pest-related activity.\n\nAffected areas are cleaned, disinfected and flushed to reduce bacterial load, odours and re-infestation risk. Waste is removed and disposed of appropriately.\n\nSupports reinstatement of hygienic conditions in commercial and domestic environments.",
+        "description": "Cleans and disinfects contaminated drains or chambers to reduce odours and hygiene risks."
+      },
+      {
+        "key": "drain_patch_repair",
+        "displayName": "Drain Patch / Localised Repair",
+        "quoteBreakdown": "Localised patch repair to cracked, fractured or defective sections of pipe identified by survey.\n\nA structural patch liner is installed at the defect location to seal the breach and restore integrity without full line replacement. Suitable for isolated cracks, root entry points and joint failures where the remainder of the line is serviceable.\n\nWorks are completed from existing access points where possible to minimise disruption.",
+        "description": "Structural patch repair to seal localised cracks or defects without full pipe replacement."
+      },
+      {
+        "key": "drain_patch_4_inch",
+        "displayName": "Drain Patch – 4 inch",
+        "quoteBreakdown": "Structural patch repair for 4 inch (100 mm) drainage pipe at a surveyed defect location.\n\nA sized patch liner is installed to seal cracks, open joints or localised fractures while maintaining bore diameter and flow. Suitable for small-bore domestic waste connections and branch lines where the remainder of the pipe is serviceable.\n\nPipe size and defect location are confirmed on site before installation.",
+        "description": "4 inch structural drain patch to seal localised defects in small-bore pipework."
+      },
+      {
+        "key": "drain_patch_6_inch",
+        "displayName": "Drain Patch – 6 inch",
+        "quoteBreakdown": "Structural patch repair for 6 inch (150 mm) drainage pipe at a surveyed defect location.\n\nA sized patch liner is installed to seal cracks, displaced joints, root entry points or localised damage without full line replacement. Commonly used on standard domestic and light commercial foul lines.\n\nInstallation is completed from existing access points where possible, with flow checks on completion.",
+        "description": "6 inch structural drain patch for standard foul lines and localised defects."
+      },
+      {
+        "key": "drain_patch_9_inch",
+        "displayName": "Drain Patch – 9 inch",
+        "quoteBreakdown": "Structural patch repair for 9 inch (225 mm) drainage pipe at a surveyed defect location.\n\nA heavy-duty patch liner is fitted to restore watertight integrity on larger diameter runs where isolated defects are identified by CCTV survey. Suitable for commercial and high-capacity foul connections.\n\nScope, access and reinstatement requirements are confirmed on site prior to works.",
+        "description": "9 inch structural drain patch for larger commercial foul connections."
+      },
+      {
+        "key": "drain_patch_12_inch",
+        "displayName": "Drain Patch – 12 inch",
+        "quoteBreakdown": "Structural patch repair for 12 inch (300 mm) drainage pipe at a surveyed defect location.\n\nA reinforced patch liner is installed to seal significant localised defects on major outlets and commercial sewer connections without excavating the full run. Access, safety and chamber arrangements are planned following survey.\n\nPost-installation flow and integrity checks are completed before reinstatement.",
+        "description": "12 inch structural drain patch for major outlets and large-diameter pipework."
+      },
+      {
+        "key": "drain_benching_works",
+        "displayName": "Benching Works",
+        "quoteBreakdown": "Repair or renewal of manhole benching (the shaped cement fillet directing flow into the channel).\n\nDamaged, eroded or incorrectly formed benching causes pooling, silt deposition and odours, and can allow rodents to harbour in voids. Old benching is broken out where required and replaced with new cement fillets formed to direct flow correctly into the channel.\n\nImproves hydraulic performance and long-term chamber hygiene.",
+        "description": "Repairs or renews manhole benching to direct flow correctly and reduce pooling and odours."
+      },
+      {
+        "key": "drain_manhole_repairs",
+        "displayName": "Manhole Repairs",
+        "quoteBreakdown": "Repair works to manhole chambers including frame and cover adjustment, step iron replacement, channel repairs and sealing of redundant connections.\n\nDefective chambers allow infiltration, escape of odours and pest access. Works are scoped following inspection or CCTV survey and completed to restore safe access and watertight performance.\n\nAdditional benching or patch repairs may be included where identified on site.",
+        "description": "Repairs manhole chambers, covers and channels to restore access, sealing and structural integrity."
+      },
+      {
+        "key": "drain_pipe_sealing",
+        "displayName": "Pipe Sealing",
+        "quoteBreakdown": "Sealing of open joints, redundant branch connections, core holes and identified rodent entry points within the drainage system.\n\nAppropriate seals, plugs or cementitious repairs are installed depending on pipe material and location. Smoke testing or CCTV may be used to confirm effectiveness.\n\nReduces infiltration, odour escape and pest access without full line replacement where defects are localised.",
+        "description": "Seals open joints, redundant connections and entry points to reduce leaks and pest access."
+      },
+      {
+        "key": "drain_rat_flap_4_inch",
+        "displayName": "Rat Flap Installation – 4 inch",
+        "quoteBreakdown": "Supply and installation of a 4 inch (100 mm) non-return rat flap within the drainage system.\n\nThe flap allows normal discharge while preventing rodents entering the property from the sewer network. Installed at an appropriate access point identified by survey.\n\nHelps protect against recurring rat activity linked to main sewer connections. Size verified on site before installation.",
+        "description": "4 inch rat flap installed to allow flow while blocking rodent entry from the sewer."
+      },
+      {
+        "key": "drain_rat_flap_6_inch",
+        "displayName": "Rat Flap Installation – 6 inch",
+        "quoteBreakdown": "Supply and installation of a 6 inch (150 mm) non-return rat flap within the drainage system.\n\nSuitable for standard domestic and light commercial foul lines. The unit is fitted to prevent rodents travelling upstream into the property while maintaining normal wastewater discharge.\n\nInstallation position confirmed following inspection or CCTV survey.",
+        "description": "6 inch rat flap installed on the drain line to prevent rodent ingress from the sewer."
+      },
+      {
+        "key": "drain_rat_flap_9_inch",
+        "displayName": "Rat Flap Installation – 9 inch",
+        "quoteBreakdown": "Supply and installation of a 9 inch (225 mm) non-return rat flap for larger diameter drainage connections.\n\nTypically used on commercial, industrial or high-capacity foul lines where rodents may exploit the main sewer. Installed at the agreed point with flow and access checks completed on completion.\n\nPipe size and suitability confirmed on site prior to works.",
+        "description": "9 inch rat flap for larger foul connections, blocking rodent entry while allowing discharge."
+      },
+      {
+        "key": "drain_rat_flap_12_inch",
+        "displayName": "Rat Flap Installation – 12 inch",
+        "quoteBreakdown": "Supply and installation of a 12 inch (300 mm) non-return rat flap for major drainage outlets and commercial sewer connections.\n\nProvides robust protection against rodent ingress on high-flow lines. Installation includes fitting, securing and operational checks from accessible chambers.\n\nMay require specialist access arrangements on larger systems; scoped following survey.",
+        "description": "12 inch rat flap for major outlets and commercial lines to prevent sewer-to-property rodent access."
+      },
+      {
+        "key": "drain_non_return_valve",
+        "displayName": "Non-Return Valve Installation",
+        "quoteBreakdown": "Installation of a non-return valve to prevent backflow and restrict upstream rodent movement within the drainage system.\n\nSuitable where flood risk, surcharge or reverse flow has been identified alongside pest issues. Valve type and location are selected based on pipe size, gradient and access.\n\nOperational checks and maintenance guidance are provided on completion.",
+        "description": "Non-return valve fitted to reduce backflow and restrict rodent movement in the drain."
+      },
+      {
+        "key": "drain_pipe_lining",
+        "displayName": "Pipe Lining",
+        "quoteBreakdown": "Structural lining of drainage pipework to renew the internal bore without excavation.\n\nA resin-impregnated liner is installed along the defective section to seal cracks, joints and root ingress while restoring structural strength. Suitable for longer runs or multiple defects where patch repairs alone are insufficient.\n\nLine is inspected before and after lining; reinstatement of access points included.",
+        "description": "Structural drain lining to seal defects and renew the pipe bore without digging."
+      },
+      {
+        "key": "drain_pipe_replacement",
+        "displayName": "Pipe Replacement",
+        "quoteBreakdown": "Replacement of collapsed, severely fractured or unserviceable sections of drainage pipework.\n\nDefective pipe is excavated and removed, then replaced with new pipe bedded and jointed to current standards. Connections are tested for flow and watertight performance before backfill and reinstatement.\n\nScope, length and depth confirmed following survey or excavation exposure.",
+        "description": "Replaces collapsed or unserviceable drain sections with new pipework to current standards."
+      },
+      {
+        "key": "drain_excavation",
+        "displayName": "Drain Excavation",
+        "quoteBreakdown": "Excavation works to expose buried drainage for repair, replacement, connection or verification of route.\n\nTrenches are dug to safe working depth with appropriate support where required. Exposed pipe is assessed and remedial works completed before backfill and surface reinstatement to match surrounding levels.\n\nUtility and site conditions are checked prior to digging; permits arranged where necessary.",
+        "description": "Excavates to expose buried drains for repair, replacement or connection, with reinstatement."
+      },
+      {
+        "key": "drain_underground_pipe_repairs",
+        "displayName": "Underground Pipe Repairs",
+        "quoteBreakdown": "General repair works to underground drainage including joint renewal, localised replacement, connection repairs and sealing of defects.\n\nWorks are completed following CCTV survey or excavation, targeting identified failures while preserving serviceable sections of the system.\n\nFlow testing and reinstatement of access chambers are included on completion.",
+        "description": "Repairs defective underground pipework including joints, connections and localised failures."
+      },
+      {
+        "key": "drain_foul_line_repairs",
+        "displayName": "Foul Line Repairs",
+        "quoteBreakdown": "Repair works to foul water drainage serving the property, including domestic waste pipes and main runs to the sewer.\n\nAddresses cracks, displaced joints, root damage and rodent-related breaches. Methods may include patching, lining, sealing or sectional replacement depending on condition.\n\nEnsures wastewater is contained within the system and pest access routes are closed.",
+        "description": "Repairs foul drainage defects to restore containment and close rodent access routes."
+      },
+      {
+        "key": "drain_surface_water_repairs",
+        "displayName": "Surface Water Drain Repairs",
+        "quoteBreakdown": "Repair works to surface water drainage including yard gullies, channel drains, aco drains and storm water runs.\n\nCorrects damage, collapse or poor falls that cause ponding, flooding or debris accumulation. Connections to soakaways or mains are checked and restored where accessible.\n\nSupports effective site drainage and reduces standing water that can attract pests.",
+        "description": "Repairs surface water drains, gullies and channels to restore falls and prevent flooding."
+      },
+      {
+        "key": "drain_general_repairs",
+        "displayName": "General Drain Repairs",
+        "quoteBreakdown": "General drainage remedial works scoped following inspection, blockage attendance or CCTV survey.\n\nMay include a combination of jetting, sealing, patching, chamber repairs and localised excavation as required to restore the system to serviceable condition.\n\nA detailed scope and price are confirmed on site before works proceed where additional defects are identified.",
+        "description": "Scoped drain remedial works combining jetting, sealing, patching and repairs as required."
+      }
+    ]
+  },
+  {
+    "categoryKey": "woodworm",
+    "categoryName": "Woodworm & Attic Treatment",
+    "items": [
+      {
+        "key": "woodworm_full_insulation_new",
+        "displayName": "Woodworm Treatment with Full Insulation Removal and New Insulation Installation",
+        "quoteBreakdown": "A comprehensive woodworm treatment and attic restoration service will be carried out throughout the affected areas of the property. Following a detailed inspection of all accessible attic and roof timbers, areas showing evidence of wood-boring insect activity, including active flight holes, bore dust, timber weakening, or historic infestation, will be identified and treated accordingly.\n\nAs part of these works, all existing attic insulation will be carefully removed and disposed of to allow full access to underlying roof timbers, joists, rafters, wall plates, and concealed structural areas. Removal of insulation is essential to ensure all accessible timber surfaces can be properly inspected and treated, particularly where infestations may be concealed beneath insulation layers or within poorly ventilated sections of the attic space.\n\nOnce exposed, all affected and at-risk timber areas will receive a professional-grade insecticidal woodworm treatment designed to penetrate the timber surface and eliminate active larvae and emerging insects within the wood structure. Treatment will be applied using professional application equipment in accordance with manufacturer guidelines and industry best practices to ensure maximum coverage and effectiveness.\n\nThe treatment process is intended not only to eradicate current infestations but also to provide long-term residual protection against future wood-boring insect activity. Particular attention will be given to moisture-prone areas, as elevated humidity and poor ventilation conditions are commonly associated with woodworm infestations. Recommendations may also be provided regarding ventilation improvements or replacement of structurally compromised timbers where required.\n\nFollowing completion of the treatment works and the required ventilation and drying period, new insulation will be professionally installed throughout the attic area to the required coverage depth. The new insulation will improve thermal efficiency, reduce heat loss, and assist in improving the overall energy performance and environmental condition of the property. Care will be taken to ensure ventilation pathways remain unobstructed and insulation is evenly distributed throughout all accessible areas.\n\nFor health and safety reasons, the property must not be occupied for a minimum of 24 hours following treatment application. In addition, there must be no access to the attic space for a minimum of 72 hours after treatment to allow sufficient curing, ventilation, and settling time for the applied products.\n\nDuring treatment and immediately afterwards, chemical odours and airborne particulates may be present. Exposure to treatment products before the advised re-entry period may pose potential health risks, particularly to children, elderly persons, individuals with respiratory conditions, pets, or anyone with sensitivities to chemical treatments. All safety guidance provided following treatment must be strictly adhered to.\n\nUpon completion of the works, a 10-year guarantee will be provided covering the woodworm treatment carried out, subject to normal environmental conditions, no structural alterations affecting treated areas, and continued maintenance of suitable ventilation and moisture control within the property.",
+        "description": "Full attic woodworm treatment: remove and dispose of all insulation, treat timbers, install new insulation, 10-year guarantee. 24 hr vacate / 72 hr no attic access."
+      },
+      {
+        "key": "woodworm_insulation_reinstall",
+        "displayName": "Woodworm Treatment with Insulation Removal and Reinstallation of Existing Insulation",
+        "quoteBreakdown": "A full woodworm treatment service will be carried out to all identified and accessible timber areas within the attic and roof structure of the property. Prior to treatment, a detailed inspection will be undertaken to assess the extent of any active or historic wood-boring insect activity, including visible flight holes, timber dust deposits, weakened timber sections, or evidence of larvae infestation within structural woodwork.\n\nTo allow proper access to all treatment areas, the existing attic insulation will be carefully lifted and temporarily removed from the relevant sections of the attic space. This process allows underlying roof timbers, joists, rafters, supports, and concealed timber sections to be fully exposed for inspection and treatment while preserving the original insulation materials where suitable for reuse.\n\nOnce the timber structure has been fully exposed, all affected and vulnerable timber surfaces will receive a professional-grade insecticidal woodworm treatment specifically formulated to eliminate active infestations and provide ongoing residual protection against future activity. Treatments will be professionally applied using appropriate equipment and in accordance with industry standards and manufacturer recommendations.\n\nParticular attention will be given to moisture-prone areas, poorly ventilated sections, and concealed timber junctions where infestations commonly develop. Recommendations may also be provided where additional ventilation improvements, timber replacement, or remedial works are considered necessary due to excessive moisture exposure or structural deterioration.\n\nFollowing completion of the treatment process and after the required ventilation and curing period has passed, the original insulation will be carefully reinstalled throughout the attic area where suitable for reuse. Insulation will be redistributed evenly to maintain thermal efficiency while ensuring ventilation pathways remain clear and unobstructed. Any insulation found to be excessively contaminated, damp, compacted, damaged, or unsuitable for reuse may be identified separately with recommendations for replacement if required.\n\nFor health and safety reasons, the property must remain unoccupied for a minimum period of 24 hours following treatment application. In addition, no access to the attic space will be permitted for a minimum of 72 hours after treatment to allow the applied treatment products to fully settle and ventilate safely.\n\nTreatment products may produce temporary chemical odours and airborne residues during and immediately after application. Entering treated areas before the recommended re-entry period may present potential health risks, particularly for children, pets, elderly occupants, individuals with respiratory conditions, or persons sensitive to chemical exposure. All post-treatment safety instructions must therefore be followed carefully.\n\nA 10-year guarantee will be provided upon completion covering the woodworm treatment works carried out, subject to the maintenance of suitable environmental conditions within the property, including adequate ventilation and moisture control measures.",
+        "description": "Attic woodworm treatment with insulation lifted for access, then reinstalled where suitable; 10-year guarantee. 24 hr vacate / 72 hr no attic access."
+      }
+    ]
+  }
+]

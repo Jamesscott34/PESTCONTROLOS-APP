@@ -1,224 +1,213 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Tablet (7"+) main layout: same structure as default but content centered with max width -->
+<!-- Tablet: same structure as Create Report / default main; content centered with max width -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="?android:attr/colorBackground"
-    android:padding="@dimen/screen_padding"
     android:paddingTop="?attr/actionBarSize">
 
-    <!-- Content frame: max width and centered on tablet -->
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/main_content_frame"
+    <ScrollView
+        android:id="@+id/scrollView"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:padding="16dp"
+        android:fillViewport="true"
+        android:scrollbars="vertical"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintWidth_max="@dimen/content_max_width">
 
-        <View
-            android:id="@+id/statusSpacer"
-            android:layout_width="0dp"
-            android:layout_height="?attr/actionBarSize"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:background="@android:color/transparent" />
-
-        <ScrollView
-            android:id="@+id/scrollView"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginBottom="@dimen/button_spacing"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/LogoutButton">
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
+            <View
+                android:id="@+id/statusSpacer"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@android:color/transparent" />
+
+            <!-- Header -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:gravity="center">
-
-                <LinearLayout
+                android:gravity="center_horizontal"
+                android:layout_marginBottom="24dp">
+                <ImageView
+                    android:id="@+id/welcomeLogo"
+                    android:layout_width="@dimen/welcome_logo_size"
+                    android:layout_height="@dimen/welcome_logo_size"
+                    android:layout_marginBottom="8dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/logo"
+                    android:contentDescription="@string/main_logo_content_description" />
+                <TextView
+                    android:id="@+id/welcomeTextView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
                     android:gravity="center"
-                    android:layout_marginTop="@dimen/welcome_margin_top"
-                    android:layout_marginBottom="@dimen/welcome_margin_bottom">
-
-                    <ImageView
-                        android:id="@+id/welcomeLogo"
-                        android:layout_width="@dimen/welcome_logo_size"
-                        android:layout_height="@dimen/welcome_logo_size"
-                        android:layout_marginEnd="8dp"
-                        android:adjustViewBounds="true"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/logo"
-                        android:contentDescription="GRPC Logo" />
-
-                    <TextView
-                        android:id="@+id/welcomeTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Welcome, User!"
-                        android:textSize="@dimen/welcome_text_size"
-                        android:textStyle="bold"
-                        android:gravity="center"
-                        android:textColor="?android:attr/textColorPrimary" />
-                </LinearLayout>
-
-                <Button
-                    android:id="@+id/NotificationsButton"
+                    android:textColor="?android:attr/textColorPrimary" />
+                <TextView
+                    android:id="@+id/mainDashboardSubtitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Notifications"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:backgroundTint="?attr/colorSecondary"
-                    android:textColor="?attr/colorOnSecondary"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/SearchButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Search"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:visibility="gone"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/ReportButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Create Report"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/ReportViewButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="View Reports"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/WorkViewButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Work View"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/LocationFinderButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Location Finder"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:visibility="gone"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/ContractsButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Contracts"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/GeneralQuotesButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="General Quotes"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/ServiceAgreementButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Service agreement"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/CommisionButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Commision"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/JobsButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Job Work"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/EnviromentButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="ERA"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/InstantMessage"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Messaging"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/WebsiteButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/website_button_text"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/HelpButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="How to Use App"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:minHeight="56dp" />
-
-                <Button
-                    android:id="@+id/ChatButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="🤖 AI Chat Assistant"
-                    android:layout_marginBottom="@dimen/button_spacing"
-                    android:background="@drawable/button_background"
-                    android:textColor="?attr/colorOnPrimary"
-                    android:minHeight="56dp" />
+                    android:text="@string/main_dashboard_subtitle"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:layout_marginTop="4dp"
+                    android:textColor="?android:attr/textColorSecondary" />
             </LinearLayout>
-        </ScrollView>
 
-        <Button
-            android:id="@+id/LogoutButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Logout"
-            android:backgroundTint="?attr/colorError"
-            android:textColor="?attr/colorOnError"
-            android:layout_marginBottom="@dimen/logout_margin_bottom"
-            android:elevation="8dp"
-            android:minHeight="56dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <!-- QUICK ACTIONS -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/main_section_quick_actions"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:textColor="?android:attr/textColorSecondary" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+                <Button android:id="@+id/ReportButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_create_report" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/ReportViewButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_view_reports" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+            </LinearLayout>
+
+            <!-- OPERATIONS -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/main_section_operations"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:textColor="?android:attr/textColorSecondary" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+                <Button android:id="@+id/WorkViewButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_work_view" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/JobsButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_job_work" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+            </LinearLayout>
+
+            <!-- BUSINESS -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/main_section_business"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:textColor="?android:attr/textColorSecondary" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+                <Button android:id="@+id/ContractsButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_contracts" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/CommisionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_commission" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+                <Button android:id="@+id/LocationFinderButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_location_finder" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/GeneralQuotesButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="General Quotes" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+                <Button android:id="@+id/ServiceAgreementButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="Service agreement" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/EnviromentButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="ERA" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+            </LinearLayout>
+
+            <!-- TOOLS -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/main_section_tools"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:textColor="?android:attr/textColorSecondary" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+                <Button android:id="@+id/NotificationsButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_notifications" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:backgroundTint="?attr/colorSecondary" android:textColor="?attr/colorOnSecondary" />
+                <Button android:id="@+id/InstantMessage" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_messaging" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+                <Button android:id="@+id/DashboardButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_dashboard" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/SearchButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_search" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+                <Button android:id="@+id/MapsButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_maps" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/InvoicesButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_invoices" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+                <Button android:id="@+id/RouteButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_router" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/HelpButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_how_to_use" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+            </LinearLayout>
+            <Button android:id="@+id/ConverterButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:text="@string/main_button_converter" android:textSize="14sp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+
+            <!-- SYSTEM -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/main_section_system"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:textColor="?android:attr/textColorSecondary" />
+            <Button android:id="@+id/EmployeeButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:text="@string/main_button_employee" android:textSize="14sp" android:layout_marginBottom="16dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+
+            <!-- Logout -->
+            <Button
+                android:id="@+id/LogoutButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/main_button_logout"
+                android:textSize="14sp"
+                android:backgroundTint="?attr/colorError"
+                android:textColor="?attr/colorOnError"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="@dimen/logout_margin_bottom"
+                android:elevation="8dp" />
+        </LinearLayout>
+    </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

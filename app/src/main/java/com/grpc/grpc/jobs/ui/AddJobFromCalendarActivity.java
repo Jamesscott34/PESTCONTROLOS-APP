@@ -6,7 +6,7 @@
  * AssignedTech is pre-set from the target user; no technician name input needed.
  *
  * Author: GRPC
- * Company: Good Riddance Pest Control
+ * Company: [Company 1]
  * Version: 1.0
  * Last Updated: 2024
  */
@@ -112,9 +112,11 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
 
         final String emailToUse = customerEmail.isEmpty() ? "N/A" : customerEmail;
         final String addressToUse = address.isEmpty() ? "N/A" : address;
+        final String assignedTechKey = assignedTech != null ? assignedTech.trim().toLowerCase(Locale.getDefault()) : "";
 
         Map<String, Object> job = new HashMap<>();
         job.put("AssignedTech", assignedTech);
+        job.put("AssignedTechKey", assignedTechKey);
         job.put("CustomerName", customerName);
         job.put("CustomerEmail", emailToUse);
         job.put("CustomerContact", customerContact);
@@ -128,7 +130,7 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
           .add(job)
           .addOnSuccessListener(documentReference -> {
               String jobId = documentReference.getId();
-              writeInAppJobNotifications(jobId, customerName, assignedTech, createdBy);
+              writeInAppJobNotifications(jobId, customerName, assignedTech, assignedTechKey, createdBy);
               createWorkEventForJob(jobId, customerName, addressToUse, issueDetails);
           })
           .addOnFailureListener(e -> {
@@ -141,26 +143,23 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
      * - Always notify the assigned technician (if different from creator)
      * - Admin fan-out is handled centrally by NotificationUtils
      */
-    private void writeInAppJobNotifications(String jobId, String customerName, String assignedTech, String createdBy) {
+    private void writeInAppJobNotifications(String jobId, String customerName, String assignedTechDisplay, String assignedTechKey, String createdBy) {
         try {
             String creator = (createdBy != null && !createdBy.trim().isEmpty()) ? createdBy.trim() : "";
             String creatorLower = creator.toLowerCase(Locale.getDefault());
-            String tech = assignedTech != null ? assignedTech.trim() : "";
-            String techLower = tech.toLowerCase(Locale.getDefault());
+            String techDisplay = assignedTechDisplay != null ? assignedTechDisplay.trim() : "";
+            String techKey = assignedTechKey != null ? assignedTechKey.trim() : "";
+            String techLower = techKey.toLowerCase(Locale.getDefault());
 
             // Shared payload for deep links
             Map<String, Object> data = new HashMap<>();
             data.put("jobId", jobId);
-            data.put("assignedTech", tech);
-            data.put("customerName", customerName);
-            data.put("jobType", "Service");
-            data.put("createdBy", creator);
-            data.put("type", "jobwork");
+            data.put("assignedTech", techDisplay);
 
             // 1) Assigned tech notification
             if (!techLower.isEmpty() && (creatorLower.isEmpty() || !techLower.equals(creatorLower))) {
                 NotificationUtils.writeInAppNotification(
-                        tech,
+                        techKey,
                         "jobwork_assign_" + jobId,
                         "🚐 New Job Assignment",
                         "Service job for " + customerName + " assigned to you",

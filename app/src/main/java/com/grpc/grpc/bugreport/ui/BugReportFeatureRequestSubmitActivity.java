@@ -26,6 +26,7 @@ import java.util.Map;
 public class BugReportFeatureRequestSubmitActivity extends AppCompatActivity {
 
     public static final String EXTRA_USER_NAME = "USER_NAME";
+    public static final String EXTRA_DEFAULT_TYPE = "DEFAULT_TYPE";
 
     private Spinner typeSpinner;
     private EditText titleEdit;
@@ -64,6 +65,12 @@ public class BugReportFeatureRequestSubmitActivity extends AppCompatActivity {
                 R.array.bug_report_feature_request_types, android.R.layout.simple_spinner_item);
         typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         typeSpinner.setAdapter(typeAdapter);
+        String defaultType = getIntent().getStringExtra(EXTRA_DEFAULT_TYPE);
+        if ("feature".equalsIgnoreCase(defaultType)) {
+            typeSpinner.setSelection(1);
+        } else if ("bug".equalsIgnoreCase(defaultType)) {
+            typeSpinner.setSelection(0);
+        }
 
         submitButton.setOnClickListener(v -> submit());
         backButton.setOnClickListener(v -> finish());

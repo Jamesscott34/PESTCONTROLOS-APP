@@ -10,6 +10,11 @@ public class ProductUsageItem {
 
     public static final String TYPE_RODENTICIDE = "rodenticide";
     public static final String TYPE_INSECTICIDE = "insecticide";
+    public static final String TYPE_MATERIAL = "material";
+    public static final String TYPE_DRAIN_REPAIR = "drain_repair";
+    public static final String TYPE_CUSTOM = "custom";
+    /** Legacy picker label; resolved via {@link #getCustomProductName()}. */
+    @Deprecated
     public static final String OTHER_CUSTOM_LABEL = "Other / Custom";
 
     private String type;

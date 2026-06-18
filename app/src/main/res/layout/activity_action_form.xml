@@ -44,6 +44,84 @@
             android:gravity="center"
             android:layout_marginBottom="24dp" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
+
+            <CheckBox
+                android:id="@+id/jobReportCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="JobWork" />
+
+            <Spinner
+                android:id="@+id/jobFolderSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/jobRouteSubFolderSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/jobRouteSubFolderSpinnerLevel3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone" />
+
+            <CheckBox
+                android:id="@+id/managementReportCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Management" />
+
+            <Spinner
+                android:id="@+id/managementFolderSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/routeSubFolderSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/routeSubFolderSpinnerLevel3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <CheckBox
+                android:id="@+id/contractReportCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Contract" />
+
+            <Spinner
+                android:id="@+id/contractFilterSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/contractSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+        </LinearLayout>
+
         <!-- Premises Name -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -171,32 +249,12 @@
                 android:hint="Enter Service Number" />
         </LinearLayout>
 
-        <!-- Prep -->
-        <LinearLayout
+        <include
+            android:id="@+id/prepProductsSection"
+            layout="@layout/prep_products_section"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginBottom="16dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Prep"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp" />
-
-            <com.grpc.grpc.core.DictateEditText
-                android:id="@+id/prepInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/edit_text_background"
-                android:padding="12dp"
-                android:textSize="14sp"
-                android:hint="Enter Prep Details"
-                android:minLines="3"
-                android:gravity="top" />
-        </LinearLayout>
+            android:layout_marginBottom="16dp" />
 
         <!-- Service Report -->
         <LinearLayout
@@ -212,6 +270,12 @@
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
+
+            <include
+                android:id="@+id/serviceReportCatalogBar"
+                layout="@layout/service_report_catalog_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
             <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/serviceReportInput"
@@ -239,6 +303,12 @@
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
+
+            <include
+                android:id="@+id/recommendationsCatalogBar"
+                layout="@layout/recommendations_catalog_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
             <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/recommendationsInput"
@@ -368,18 +438,30 @@
                 android:textColor="?attr/colorOnPrimary" />
         </LinearLayout>
 
-        <!-- Action Buttons -->
+        <!-- Action Buttons: 2x2 then Back full width -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="8dp">
 
             <Button
                 android:id="@+id/selectImageButton"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="📷 Add Images"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary" />
+
+            <Button
+                android:id="@+id/readBackButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="📖 Read Back"
+                android:layout_marginStart="4dp"
                 android:background="@drawable/button_background"
                 android:textColor="?attr/colorOnPrimary" />
         </LinearLayout>
@@ -391,22 +473,11 @@
             android:layout_marginBottom="16dp">
 
             <Button
-                android:id="@+id/aiFixButton"
+                android:id="@+id/previewButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="✏️ AI Fix"
-                android:layout_marginEnd="4dp"
-                android:visibility="gone"
-                android:background="@drawable/button_background"
-                android:textColor="?attr/colorOnPrimary" />
-
-            <Button
-                android:id="@+id/readBackButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="📖 Read Back"
+                android:text="👁 Preview"
                 android:layout_marginEnd="4dp"
                 android:background="@drawable/button_background"
                 android:textColor="?attr/colorOnPrimary" />
@@ -420,16 +491,17 @@
                 android:layout_marginStart="4dp"
                 android:background="@drawable/button_background"
                 android:textColor="?attr/colorOnPrimary" />
-        </LinearLayout>
 
-        <!-- Back Button -->
-        <Button
-            android:id="@+id/backButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="← Back"
-            android:background="@drawable/button_background"
-            android:textColor="?attr/colorOnPrimary" />
+            <Button
+                android:id="@+id/backButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="← Back"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary" />
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView> 

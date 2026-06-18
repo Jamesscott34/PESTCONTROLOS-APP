@@ -53,7 +53,7 @@
  * - All users: View their assigned work schedule
  * 
  * Author: GRPC
- * Company: Good Riddance Pest Control
+ * Company: [Company 1]
  * Version: 1.0
  * Last Updated: 2024
  * ============================================================================
@@ -64,7 +64,7 @@ package com.grpc.grpc.workview.ui;
 import com.grpc.grpc.R;
 import com.grpc.grpc.reports.ui.AddFollowUpActivity;
 import com.grpc.grpc.BuildConfig;
-import com.grpc.grpc.generalreports.ui.GeneralReportActivity;
+import com.grpc.grpc.reports.ui.ReportActivity;
 import com.grpc.grpc.location.LocationSharing;
 import com.grpc.grpc.messaging.NotificationUtils;
 import com.grpc.grpc.contracts.ui.ContractSelectionAdapter;
@@ -81,11 +81,13 @@ import com.grpc.grpc.workview.worker.WorkViewPopupReminderWorker;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.CalendarContract;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -304,9 +306,9 @@ public class WorkViewActivity extends AppCompatActivity {
                     if (Math.abs(diffX) > Math.abs(diffY)) {
                         if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                             if (diffX > 0) {
-                                // Swipe right - open GeneralReportActivity
-                                Log.d("WorkViewActivity", "Swipe RIGHT detected - opening GeneralReportActivity with user: " + userName);
-                                Intent intent = new Intent(WorkViewActivity.this, GeneralReportActivity.class);
+                                // Swipe right - open Service Report
+                                Log.d("WorkViewActivity", "Swipe RIGHT detected - opening ReportActivity with user: " + userName);
+                                Intent intent = new Intent(WorkViewActivity.this, ReportActivity.class);
                                 intent.putExtra("USER_NAME", userName);
                                 startActivity(intent);
                                 finish(); // Destroy this activity
@@ -1272,13 +1274,6 @@ public class WorkViewActivity extends AppCompatActivity {
             Map<String, Object> data = new HashMap<>();
             data.put("eventId", workViewDocId);
             data.put("targetUser", targetUser);
-            data.put("eventName", eventName);
-            data.put("eventType", eventType);
-            data.put("eventDate", eventDate);
-            data.put("eventTime", eventTime);
-            data.put("eventAddress", address);
-            data.put("createdBy", userName);
-            data.put("type", "workview_update");
 
             String title = "📅 Work View Updated";
             String body = (eventName != null ? eventName : "Event")
@@ -1308,7 +1303,7 @@ public class WorkViewActivity extends AppCompatActivity {
     private void onEventClicked(WorkEvent event) {
         if ("job".equals(event.getEventType())) {
             // Job actions: Follow-up, Create Report, Edit Time, Finished
-            String[] jobOptions = {"Follow-up", "Create Report", "Edit Time", "Finished"};
+            String[] jobOptions = {"Follow-up", "Create Report", "Edit Time", "Finished", "Add to Calendar"};
             
             new AlertDialog.Builder(this)
                 .setTitle("Job Actions")
@@ -1326,12 +1321,15 @@ public class WorkViewActivity extends AppCompatActivity {
                         case 3:
                             finishJob(event);
                             break;
+                        case 4:
+                            addWorkEventToCalendar(event);
+                            break;
                     }
                 })
                 .show();
         } else if ("contract".equals(event.getEventType())) {
             // Contract actions: Follow-up, Complete, Create Report, Edit Time
-            String[] contractOptions = {"Follow-up", "Complete", "Create Report", "Edit Time"};
+            String[] contractOptions = {"Follow-up", "Complete", "Create Report", "Edit Time", "Add to Calendar"};
             
             new AlertDialog.Builder(this)
                 .setTitle("Contract Actions")
@@ -1349,12 +1347,15 @@ public class WorkViewActivity extends AppCompatActivity {
                         case 3:
                             showEditTimeDialog(event);
                             break;
+                        case 4:
+                            addWorkEventToCalendar(event);
+                            break;
                     }
                 })
                 .show();
         } else {
             // Follow-up actions: Create Report, Edit Time, Mark Done
-            String[] followUpOptions = {"Create Report", "Edit Time", "Mark Done"};
+            String[] followUpOptions = {"Create Report", "Edit Time", "Mark Done", "Add to Calendar"};
             
             new AlertDialog.Builder(this)
                 .setTitle("Follow-up Actions")
@@ -1369,9 +1370,48 @@ public class WorkViewActivity extends AppCompatActivity {
                         case 2:
                             markEventDone(event);
                             break;
+                        case 3:
+                            addWorkEventToCalendar(event);
+                            break;
                     }
                 })
                 .show();
+        }
+    }
+
+    private void addWorkEventToCalendar(WorkEvent event) {
+        try {
+            SimpleDateFormat dateTimeFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            Date startDate = dateTimeFormat.parse(event.getDate() + " " + event.getTime());
+            if (startDate == null) {
+                Toast.makeText(this, "Invalid event date or time", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            long startMillis = startDate.getTime();
+            long endMillis = startMillis + TimeUnit.MINUTES.toMillis(60);
+            String endTime = event.getEndTime();
+            if (endTime != null && !endTime.trim().isEmpty()) {
+                Date endDate = dateTimeFormat.parse(event.getDate() + " " + endTime.trim());
+                if (endDate != null) {
+                    endMillis = endDate.getTime();
+                }
+            }
+
+            Intent intent = new Intent(Intent.ACTION_INSERT)
+                    .setData(CalendarContract.Events.CONTENT_URI)
+                    .putExtra(CalendarContract.Events.TITLE, event.getEventName())
+                    .putExtra(CalendarContract.Events.EVENT_LOCATION, event.getAddress())
+                    .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startMillis)
+                    .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endMillis);
+
+            try {
+                startActivity(intent);
+            } catch (ActivityNotFoundException e) {
+                Toast.makeText(this, "No calendar app found", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Invalid event date or time", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -2122,16 +2162,17 @@ public class WorkViewActivity extends AppCompatActivity {
                   if (!BuildConfig.IS_OFFLINE) {
                       Map<String, Object> data = new HashMap<>();
                       data.put("contractId", event.getEventId());
-                      data.put("eventId", event.getId());
-                      data.put("lastVisit", today);
-                      data.put("eventName", event.getEventName());
+                      data.put("userName", event.getUserName() != null ? event.getUserName() : userName);
+                      data.put("contractName", event.getEventName() != null ? event.getEventName() : "");
                       String docId = "contract_visit_calendar_" + event.getEventId() + "_" + System.currentTimeMillis();
                       String recipient = event.getUserName() != null ? event.getUserName() : userName;
                       NotificationUtils.writeInAppNotification(
                               recipient,
                               docId,
-                              "Contract visit updated from calendar",
-                              "Visit marked complete for " + (event.getEventName() != null ? event.getEventName() : "contract") + ".",
+                              event.getEventName() != null && !event.getEventName().trim().isEmpty()
+                                      ? event.getEventName().trim()
+                                      : "Contract visit updated",
+                              "",
                               "contract_update",
                               data
                       );
@@ -2901,7 +2942,7 @@ public class WorkViewActivity extends AppCompatActivity {
      * Show event options dialog
      */
     private void showEventOptionsDialog(WorkEvent event) {
-        String[] options = {"Update", "Create Report", "Mark Complete", "Add Follow-up", "Directions", "Delete"};
+        String[] options = {"Update", "Create Report", "Mark Complete", "Add Follow-up", "Directions", "Delete", "Add to Calendar"};
         
         new AlertDialog.Builder(this)
             .setTitle("Event Options: " + event.getEventName())
@@ -2930,6 +2971,10 @@ public class WorkViewActivity extends AppCompatActivity {
                     case 5:
                         // Delete event
                         deleteEvent(event);
+                        break;
+                    case 6:
+                        // Add to calendar
+                        addWorkEventToCalendar(event);
                         break;
                 }
             })

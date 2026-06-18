@@ -2,10 +2,14 @@ package com.grpc.grpc.quotations.pdf;
 
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.reports.data.ReportDatabaseHelper;
+import com.grpc.grpc.reports.pdf.PdfFooterPageNumberStamper;
 import com.grpc.grpc.quotations.model.BirdMaterialItem;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -29,9 +33,11 @@ import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -126,15 +132,64 @@ public class BirdQuotationPDFGenerator {
             String ownerPassword,
             Context context
     ) {
+        return generateBirdQuotationPair(
+                companyName,
+                address,
+                quoteDescription,
+                descriptions,
+                lineTotals,
+                materials,
+                userEmail,
+                mobileNumber,
+                depositPercent,
+                vatRate,
+                imageUris,
+                ownerPassword,
+                context,
+                null,
+                true,
+                null
+        );
+    }
 
-        File quotesFolder = new File(context.getExternalFilesDir(null), TenantBranding.quotesFolderName(context));
+    /**
+     * Preview-capable overload: can write to an arbitrary output directory and optionally skip DB insert + finish().
+     *
+     * @param outputDirectory when non-null, the PDFs are written here instead of the permanent app folder
+     * @param persistAndFinish when false, skips DB insert and does NOT finish the calling activity
+     * @param quoteRandomNumOverride when non-null, keeps the quote number deterministic across preview/confirm
+     */
+    public static BirdQuotationResult generateBirdQuotationPair(
+            String companyName,
+            String address,
+            String quoteDescription,
+            List<String> descriptions,
+            List<Double> lineTotals,
+            List<BirdMaterialItem> materials,
+            String userEmail,
+            String mobileNumber,
+            int depositPercent,
+            double vatRate,
+            List<Uri> imageUris,
+            String ownerPassword,
+            Context context,
+            File outputDirectory,
+            boolean persistAndFinish,
+            Integer quoteRandomNumOverride
+    ) {
+
+        File quotesFolder = outputDirectory != null
+                ? outputDirectory
+                : new File(context.getExternalFilesDir(null), TenantBranding.quotesFolderName(context));
         if (!quotesFolder.exists() && !quotesFolder.mkdirs()) {
             Toast.makeText(context, "Error creating quotes folder", Toast.LENGTH_SHORT).show();
             return null;
         }
 
         // Generate a random 4-digit number for the quote number (company abbrev from branding)
-        int randomNum = 1000 + new Random().nextInt(9000);
+        int randomNum = quoteRandomNumOverride != null
+                ? quoteRandomNumOverride
+                : 1000 + new Random().nextInt(9000);
         String abbrev = context != null ? TenantBranding.companyAbbrev(context) : "GRPC";
         String quoteNumber = abbrev + "-" + randomNum;
 
@@ -221,31 +276,35 @@ public class BirdQuotationPDFGenerator {
             );
 
             // Save to database (single row for the quote; totals include VAT and materials)
-            ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(context);
-            String safeDescription = quoteDescription != null ? quoteDescription : "";
-            if (companyName != null && !companyName.trim().isEmpty()) {
-                safeDescription = companyName.trim() + " - " + safeDescription;
-            }
-            dbHelper.insertBirdQuote(
-                    quoteNumber,
-                    currentDate,
-                    address != null ? address : "",
-                    safeDescription,
-                    grandTotal,
-                    userEmail != null ? userEmail : "",
-                    mobileNumber != null ? mobileNumber : ""
-            );
+            if (persistAndFinish) {
+                ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(context);
+                String safeDescription = quoteDescription != null ? quoteDescription : "";
+                if (companyName != null && !companyName.trim().isEmpty()) {
+                    safeDescription = companyName.trim() + " - " + safeDescription;
+                }
+                dbHelper.insertBirdQuote(
+                        quoteNumber,
+                        currentDate,
+                        address != null ? address : "",
+                        safeDescription,
+                        grandTotal,
+                        userEmail != null ? userEmail : "",
+                        mobileNumber != null ? mobileNumber : ""
+                );
 
-            Toast.makeText(context, "Bird Quotation PDFs Generated and Saved Successfully!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Bird Quotation PDFs Generated and Saved Successfully!", Toast.LENGTH_SHORT).show();
 
-            if (context instanceof AppCompatActivity) {
-                ((AppCompatActivity) context).finish();
+                if (context instanceof AppCompatActivity) {
+                    ((AppCompatActivity) context).finish();
+                }
             }
 
             return new BirdQuotationResult(customerPdf, officePdf, grandTotal, quoteNumber, currentDate);
 
         } catch (IOException e) {
-            Toast.makeText(context, "Error Creating Bird Quotation PDF", Toast.LENGTH_SHORT).show();
+            if (persistAndFinish) {
+                Toast.makeText(context, "Error Creating Bird Quotation PDF", Toast.LENGTH_SHORT).show();
+            }
             e.printStackTrace();
             return null;
         }
@@ -377,9 +436,9 @@ public class BirdQuotationPDFGenerator {
                 double total = lineTotal + vatAmount;
 
                 table.addCell(new Cell().add(new Paragraph(descriptions.get(i))));
-                table.addCell(new Cell().add(new Paragraph(String.format("€%.2f", lineTotal))));
-                table.addCell(new Cell().add(new Paragraph(String.format("€%.2f", vatAmount))));
-                table.addCell(new Cell().add(new Paragraph(String.format("€%.2f", total))));
+                table.addCell(new Cell().add(new Paragraph(CurrencyFormatter.formatEuro(lineTotal))));
+                table.addCell(new Cell().add(new Paragraph(CurrencyFormatter.formatEuro(vatAmount))));
+                table.addCell(new Cell().add(new Paragraph(CurrencyFormatter.formatEuro(total))));
 
                 grandTotal += total;
             }
@@ -388,20 +447,17 @@ public class BirdQuotationPDFGenerator {
 
             // Payment Summary
             document.add(new Paragraph("\nPayment Summary:").setFontSize(18).setBold().setUnderline());
-            document.add(new Paragraph("Total Payment: €" + String.format("%.2f", grandTotal)).setFontSize(16).setBold());
+            document.add(new Paragraph("Total Payment: " + CurrencyFormatter.formatEuro(grandTotal)).setFontSize(16).setBold());
             if (include30PercentDeposit) {
-                document.add(new Paragraph("Payment Due (30%): €" + String.format("%.2f", grandTotal * 0.3)).setFontSize(16).setBold());
+                document.add(new Paragraph("Payment Due (30%): " + CurrencyFormatter.formatEuro(grandTotal * 0.3)).setFontSize(16).setBold());
                 document.add(new Paragraph("Note: 30% payment is due before the job commences.").setFontSize(12).setItalic());
-                document.add(new Paragraph("Remaining Payment: €" + String.format("%.2f", grandTotal * 0.7)).setFontSize(16).setBold());
+                document.add(new Paragraph("Remaining Payment: " + CurrencyFormatter.formatEuro(grandTotal * 0.7)).setFontSize(16).setBold());
                 document.add(new Paragraph("Note: The remaining balance must be paid upon completion of the works.").setFontSize(12).setItalic());
             }
 
-            document.add(new Paragraph("\n"));
-            document.add(new Paragraph(TenantBranding.footerCompanyWebsiteLine(context))
-                    .setFontSize(12)
-                    .setTextAlignment(TextAlignment.CENTER));
-
             document.close();
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context),
+                    (ownerPassword != null && !ownerPassword.trim().isEmpty()) ? ownerPassword.trim().getBytes() : null);
 
             // Save to database
             ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(context);
@@ -556,7 +612,7 @@ public class BirdQuotationPDFGenerator {
                         String name = item.getMaterialName() != null ? item.getMaterialName() : "";
                         matTable.addCell(new Cell().add(new Paragraph(name)));
                         matTable.addCell(new Cell().add(new Paragraph(item.getQuantityDisplay())));
-                        matTable.addCell(new Cell().add(new Paragraph(String.format(Locale.ROOT, "€%.2f", item.getUnitPrice()))));
+                        matTable.addCell(new Cell().add(new Paragraph(CurrencyFormatter.formatEuro(item.getUnitPrice()))));
                     }
 
                     document.add(matTable);
@@ -582,9 +638,9 @@ public class BirdQuotationPDFGenerator {
                     double total = base + vat;
 
                     table.addCell(new Cell().add(new Paragraph(desc)));
-                    table.addCell(new Cell().add(new Paragraph(String.format(Locale.ROOT, "€%.2f", base))));
-                    table.addCell(new Cell().add(new Paragraph(String.format(Locale.ROOT, "€%.2f", vat))));
-                    table.addCell(new Cell().add(new Paragraph(String.format(Locale.ROOT, "€%.2f", total))));
+                    table.addCell(new Cell().add(new Paragraph(CurrencyFormatter.formatEuro(base))));
+                    table.addCell(new Cell().add(new Paragraph(CurrencyFormatter.formatEuro(vat))));
+                    table.addCell(new Cell().add(new Paragraph(CurrencyFormatter.formatEuro(total))));
                 }
 
                 document.add(table);
@@ -594,25 +650,25 @@ public class BirdQuotationPDFGenerator {
             document.add(new Paragraph("\nPayment Summary:").setFontSize(18).setBold().setUnderline());
             // Office copy only: combined materials cost (informational, excl. VAT; not part of grand total)
             if (!hideMaterialPrices && materialsBaseTotal > 0) {
-                document.add(new Paragraph("Materials Cost (office, excl. VAT): €" +
-                        String.format(Locale.ROOT, "%.2f", materialsBaseTotal)).setFontSize(14));
+                document.add(new Paragraph("Materials Cost (office, excl. VAT): " +
+                        CurrencyFormatter.formatEuro(materialsBaseTotal)).setFontSize(14));
             }
-            document.add(new Paragraph("Services Total (excl. VAT): €" +
-                    String.format(Locale.ROOT, "%.2f", serviceBaseTotal)).setFontSize(14));
+            document.add(new Paragraph("Services Total (excl. VAT): " +
+                    CurrencyFormatter.formatEuro(serviceBaseTotal)).setFontSize(14));
             document.add(new Paragraph(
-                    String.format(Locale.ROOT, "VAT (%.1f%%): €%.2f", vatRate * 100.0, vatAmountTotal)
+                    String.format(Locale.ROOT, "VAT (%.1f%%): %s", vatRate * 100.0, CurrencyFormatter.formatEuro(vatAmountTotal))
             ).setFontSize(14));
-            document.add(new Paragraph("Total Payment: €" +
-                    String.format(Locale.ROOT, "%.2f", grandTotal)).setFontSize(16).setBold());
+            document.add(new Paragraph("Total Payment: " +
+                    CurrencyFormatter.formatEuro(grandTotal)).setFontSize(16).setBold());
 
             if (depositPercent == 30 || depositPercent == 50) {
                 double rate = depositPercent / 100.0;
                 double depositValue = grandTotal * rate;
                 double balanceValue = grandTotal - depositValue;
-                document.add(new Paragraph("Deposit Due: " + depositPercent + "% ( €" +
-                        String.format(Locale.ROOT, "%.2f", depositValue) + " )").setFontSize(14).setBold());
-                document.add(new Paragraph("Balance Due: €" +
-                        String.format(Locale.ROOT, "%.2f", balanceValue)).setFontSize(14));
+                document.add(new Paragraph("Deposit Due: " + depositPercent + "% (" +
+                        CurrencyFormatter.formatEuro(depositValue) + ")").setFontSize(14).setBold());
+                document.add(new Paragraph("Balance Due: " +
+                        CurrencyFormatter.formatEuro(balanceValue)).setFontSize(14));
             }
 
             // Optional images: include in office copy (hideMaterialPrices == false) for internal use
@@ -622,26 +678,61 @@ public class BirdQuotationPDFGenerator {
                     if (uri == null) continue;
                     try {
                         document.add(new Paragraph("Image " + (i + 1)).setFontSize(12).setBold());
-                        ImageData imageData = ImageDataFactory.create(
-                                context.getContentResolver().openInputStream(uri).readAllBytes()
-                        );
+                        byte[] compressed = compressImageUri(context, uri);
+                        ImageData imageData = ImageDataFactory.create(compressed);
                         Image image = new Image(imageData)
                                 .scaleToFit(300, 300)
                                 .setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
                         document.add(image);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         Toast.makeText(context, "Error loading image: " + uri.toString(), Toast.LENGTH_SHORT).show();
                     }
                 }
             }
 
-            // Footer only on last page (end of content)
-            document.add(new Paragraph("\n"));
-            document.add(new Paragraph(TenantBranding.footerCompanyWebsiteLine(context))
-                    .setFontSize(12)
-                    .setTextAlignment(TextAlignment.CENTER));
-
             document.close();
+        }
+        PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context),
+                (ownerPassword != null && !ownerPassword.trim().isEmpty()) ? ownerPassword.trim().getBytes() : null);
+    }
+
+    private static byte[] compressImageUri(Context context, Uri uri) throws IOException {
+        BitmapFactory.Options boundsOptions = new BitmapFactory.Options();
+        boundsOptions.inJustDecodeBounds = true;
+        try (InputStream boundsStream = context.getContentResolver().openInputStream(uri)) {
+            if (boundsStream == null) {
+                throw new IOException("Unable to open image: " + uri);
+            }
+            BitmapFactory.decodeStream(boundsStream, null, boundsOptions);
+        }
+
+        int longestSide = Math.max(boundsOptions.outWidth, boundsOptions.outHeight);
+        int sampleSize = 1;
+        while (longestSide / sampleSize > 1024) {
+            sampleSize *= 2;
+        }
+
+        BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
+        decodeOptions.inSampleSize = sampleSize;
+        Bitmap bitmap;
+        try (InputStream imageStream = context.getContentResolver().openInputStream(uri)) {
+            if (imageStream == null) {
+                throw new IOException("Unable to open image: " + uri);
+            }
+            bitmap = BitmapFactory.decodeStream(imageStream, null, decodeOptions);
+        }
+        if (bitmap == null) {
+            throw new IOException("Unable to decode image: " + uri);
+        }
+
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            // iText does not support WebP. JPEG is universally supported.
+            if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)) {
+                throw new IOException("Unable to compress image: " + uri);
+            }
+            return output.toByteArray();
+        } finally {
+            bitmap.recycle();
         }
     }
 

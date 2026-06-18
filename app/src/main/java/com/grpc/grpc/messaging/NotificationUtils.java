@@ -60,18 +60,18 @@ public class NotificationUtils {
                 .set(notif);
 
         // Admins should receive notifications for key business events across the app.
-        // This is implemented as a "fan-out" write so admins only ever read their own notifications.
+        // Fan-out uses resolved keys so the same user is not written twice (creator vs admin).
         if (shouldFanOutToAdmins(type)) {
             try {
                 for (String adminId : StaffDirectory.getCachedAdminStaffIds()) {
                     if (adminId == null) continue;
-                    String adminKey = adminId.trim();
-                    if (adminKey.isEmpty() || adminKey.equals(userKey)) continue;
+                    String resolvedAdminKey = resolveNotificationRecipientKey(adminId.trim());
+                    if (resolvedAdminKey.isEmpty() || resolvedAdminKey.equals(userKey)) continue;
                     FirebaseFirestore.getInstance()
                             .collection("notifications")
-                            .document(adminKey)
+                            .document(resolvedAdminKey)
                             .collection("items")
-                            .document(safeDocId + "_a" + adminKey)
+                            .document(safeDocId + "_a" + resolvedAdminKey)
                             .set(notif);
                 }
             } catch (Exception ignored) {}

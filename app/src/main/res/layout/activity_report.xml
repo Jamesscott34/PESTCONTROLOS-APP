@@ -37,6 +37,84 @@
             android:layout_marginBottom="16dp"
             android:textColor="?android:attr/textColorPrimary" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="10dp">
+
+            <CheckBox
+                android:id="@+id/jobReportCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="JobWork" />
+
+            <Spinner
+                android:id="@+id/jobFolderSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/jobRouteSubFolderSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/jobRouteSubFolderSpinnerLevel3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone" />
+
+            <CheckBox
+                android:id="@+id/managementReportCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Management" />
+
+            <Spinner
+                android:id="@+id/managementFolderSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/routeSubFolderSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/routeSubFolderSpinnerLevel3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <CheckBox
+                android:id="@+id/contractReportCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Contract" />
+
+            <Spinner
+                android:id="@+id/contractFilterSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/contractSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+        </LinearLayout>
+
         <!-- Report form choice: Default or Select template (visible when opened via Create Custom Report) -->
         <LinearLayout
             android:id="@+id/reportFormChoiceSection"
@@ -134,6 +212,12 @@
                 android:layout_marginBottom="6dp"
                 android:textColor="?android:attr/textColorPrimary" />
 
+            <include
+                android:id="@+id/serviceReportCatalogBar"
+                layout="@layout/service_report_catalog_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
             <!-- Site inspection -->
             <com.grpc.grpc.core.DictateEditText
                 android:id="@+id/siteInspectionInput"
@@ -141,29 +225,33 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"/>
 
-            <!-- Recommendations -->
-            <com.grpc.grpc.core.DictateEditText
-                android:id="@+id/recommendationsInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"/>
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Next steps"
+                android:text="Recommendations"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="6dp"
                 android:textColor="?android:attr/textColorPrimary" />
 
-            <!-- Prep steps -->
+            <include
+                android:id="@+id/recommendationsCatalogBar"
+                layout="@layout/recommendations_catalog_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
             <com.grpc.grpc.core.DictateEditText
-                android:id="@+id/prepInput"
+                android:id="@+id/recommendationsInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"/>
+
+            <include
+                android:id="@+id/prepProductsSection"
+                layout="@layout/prep_products_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
             <!-- Follow up -->
             <com.grpc.grpc.core.DictateEditText
@@ -218,6 +306,14 @@
             android:visibility="gone"
             android:background="@drawable/button_background"
             android:textColor="?attr/colorOnPrimary"/>
+
+        <!-- Save button -->
+        <Button
+            android:id="@+id/previewButton"
+            android:text="Preview Report"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" />
 
         <!-- Save button -->
         <Button

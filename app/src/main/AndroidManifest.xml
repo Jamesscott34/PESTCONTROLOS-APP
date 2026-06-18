@@ -77,6 +77,10 @@
         android:theme="@style/Theme.Grpc"
         tools:targetApi="31">
 
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
+
         <!-- ============================================================================
              ACTIVITY DECLARATIONS
              ============================================================================
@@ -106,6 +110,21 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
+        <activity
+            android:name="com.grpc.grpc.billing.ui.InvoiceListActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <activity
+            android:name="com.grpc.grpc.billing.ui.CreateInvoiceActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <activity
+            android:name="com.grpc.grpc.email.ui.EmailComposeActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
         <!-- Super admin only: employee creation and profile initialization -->
         <activity
             android:name="com.grpc.grpc.admin.ui.EmployeeManagementActivity"
@@ -114,6 +133,16 @@
 
         <activity
             android:name="com.grpc.grpc.admin.ui.EditEmployeeActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <activity
+            android:name="com.grpc.grpc.routes.ui.RouterActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <activity
+            android:name="com.grpc.grpc.routes.ui.CreatedRoutesActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
@@ -169,12 +198,6 @@
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:exported="true"/>
 
-        <!-- Chat Activity - AI Chat Assistant -->
-        <activity
-            android:name="com.grpc.grpc.messaging.ui.ChatActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:exported="false"/>
-
         <!-- Add Follow-up Activity -->
         <activity
             android:name="com.grpc.grpc.reports.ui.AddFollowUpActivity"
@@ -192,6 +215,10 @@
             android:name="com.grpc.grpc.reports.ui.ReportActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+        <activity
+            android:name="com.grpc.grpc.reports.ui.ReportPreviewActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
 
         <!-- Offline PDF template settings (logo, watermark, header blocks) -->
         <activity
@@ -219,6 +246,11 @@
             android:name="com.grpc.grpc.reports.ui.ReportSelectionActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
+        <activity
+            android:name="com.grpc.grpc.safety.ui.SafetyStatementActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
 
         <activity
             android:name="com.grpc.grpc.reports.ui.PDFSelectionActivity"
@@ -434,6 +466,21 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <activity
+            android:name="com.grpc.grpc.reports.ui.CloudStorageBrowserActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
+        <activity
+            android:name="com.grpc.grpc.converter.ui.ConverterActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
+        <activity
+            android:name="com.grpc.grpc.pdfeditor.PdfEditorActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
         <!-- ============================================================================
              COMMUNICATION & MESSAGING ACTIVITIES
              ============================================================================
@@ -490,6 +537,11 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <!-- Bird proofing ERA creation -->
+        <activity android:name="com.grpc.grpc.era.ui.BirdProofingERAActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"/>
+
         <!-- ERA viewing and management -->
         <activity android:name="com.grpc.grpc.era.ui.ERAViewActivity"
             android:windowSoftInputMode="adjustResize"
@@ -531,6 +583,19 @@
         <activity android:name="com.grpc.grpc.contracts.ui.ContractReportsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
+        <!-- Maps placeholder entry from View Contract -->
+        <activity android:name="com.grpc.grpc.maps.ui.MapsPlaceholderActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
+        <activity android:name="com.grpc.grpc.maps.ui.SiteMapEditorActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
+        <activity android:name="com.grpc.grpc.maps.ui.MapsListActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
 
         <!-- ============================================================================
              FIREBASE CLOUD MESSAGING SERVICE

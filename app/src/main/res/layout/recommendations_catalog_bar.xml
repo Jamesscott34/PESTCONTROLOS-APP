@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/recommendationsCatalogBarRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_marginBottom="8dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/recommendations_catalog_label"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <Spinner
+        android:id="@+id/recommendationsCatalogSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/edit_text_background"
+        android:padding="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/recommendations_catalog_hint"
+        android:textSize="11sp"
+        android:layout_marginTop="4dp"
+        android:textColor="?android:attr/textColorSecondary" />
+</LinearLayout>

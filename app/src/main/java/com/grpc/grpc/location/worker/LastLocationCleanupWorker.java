@@ -46,11 +46,15 @@ public class LastLocationCleanupWorker extends Worker {
             if (ts == null) return Result.success();
 
             long age = System.currentTimeMillis() - ts;
-            if (age >= EXPIRE_MS) {
-                db.collection(LocationSharing.COLLECTION_LAST_LOCATIONS)
-                        .document(userKey)
-                        .delete();
-            }
+            boolean isStale = age >= EXPIRE_MS;
+
+            // Mark stale but never delete — admin should always see the last known position.
+            java.util.Map<String, Object> update = new java.util.HashMap<>();
+            update.put("stale", isStale);
+            db.collection(LocationSharing.COLLECTION_LAST_LOCATIONS)
+                    .document(userKey)
+                    .set(update, com.google.firebase.firestore.SetOptions.merge());
+
             return Result.success();
         } catch (Exception e) {
             return Result.retry();

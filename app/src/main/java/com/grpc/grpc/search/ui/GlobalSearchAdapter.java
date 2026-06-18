@@ -16,7 +16,7 @@ import java.util.List;
 
 enum GlobalSearchItemType { HEADER, RESULT }
 
-enum GlobalSearchKind { JOB, CONTRACT, LEAD, REPORT, STORED_REPORTS, WORKVIEW }
+enum GlobalSearchKind { JOB, CONTRACT, LEAD, LOCAL_REPORT, REMOTE_REPORT, STORED_REPORTS, WORKVIEW, STORAGE_FOLDER }
 
 final class GlobalSearchItem {
     final GlobalSearchItemType type;
@@ -26,27 +26,45 @@ final class GlobalSearchItem {
     final String owner; // contractKey for contracts (e.g. "ian")
     /** Document ID in shared contracts collection; used to open that contract from search. */
     final String contractDocumentId;
+    final String reportPath;
+    final String localFilePath;
 
-    private GlobalSearchItem(GlobalSearchItemType type, GlobalSearchKind kind, String title, String subtitle, String owner, String contractDocumentId) {
+    private GlobalSearchItem(GlobalSearchItemType type, GlobalSearchKind kind, String title, String subtitle,
+                             String owner, String contractDocumentId, String reportPath, String localFilePath) {
         this.type = type;
         this.kind = kind;
         this.title = title;
         this.subtitle = subtitle;
         this.owner = owner;
         this.contractDocumentId = contractDocumentId;
+        this.reportPath = reportPath;
+        this.localFilePath = localFilePath;
     }
 
     static GlobalSearchItem header(String title) {
-        return new GlobalSearchItem(GlobalSearchItemType.HEADER, GlobalSearchKind.JOB, title, null, null, null);
+        return new GlobalSearchItem(GlobalSearchItemType.HEADER, GlobalSearchKind.JOB, title, null, null, null, null, null);
     }
 
     static GlobalSearchItem result(GlobalSearchKind kind, String title, String subtitle, String owner) {
-        return new GlobalSearchItem(GlobalSearchItemType.RESULT, kind, title, subtitle, owner, null);
+        return new GlobalSearchItem(GlobalSearchItemType.RESULT, kind, title, subtitle, owner, null, null, null);
     }
 
     /** Contract result with document id so ViewContractActivity can open it directly. */
     static GlobalSearchItem resultContract(String title, String subtitle, String owner, String contractDocumentId) {
-        return new GlobalSearchItem(GlobalSearchItemType.RESULT, GlobalSearchKind.CONTRACT, title, subtitle, owner, contractDocumentId);
+        return new GlobalSearchItem(GlobalSearchItemType.RESULT, GlobalSearchKind.CONTRACT, title, subtitle, owner, contractDocumentId, null, null);
+    }
+
+    static GlobalSearchItem resultLocalReport(String title, String subtitle, String localFilePath) {
+        return new GlobalSearchItem(GlobalSearchItemType.RESULT, GlobalSearchKind.LOCAL_REPORT, title, subtitle, null, null, null, localFilePath);
+    }
+
+    static GlobalSearchItem resultRemoteReport(String title, String subtitle, String reportPath) {
+        return new GlobalSearchItem(GlobalSearchItemType.RESULT, GlobalSearchKind.REMOTE_REPORT, title, subtitle, null, null, reportPath, null);
+    }
+
+    /** Firebase Storage folder path (no file); opens CloudStorageBrowser at this prefix. */
+    static GlobalSearchItem resultStorageFolder(String title, String subtitle, String folderPath) {
+        return new GlobalSearchItem(GlobalSearchItemType.RESULT, GlobalSearchKind.STORAGE_FOLDER, title, subtitle, null, null, folderPath, null);
     }
 }
 

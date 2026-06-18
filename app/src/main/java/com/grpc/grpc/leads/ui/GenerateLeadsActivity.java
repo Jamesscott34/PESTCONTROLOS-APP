@@ -23,7 +23,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -63,6 +66,8 @@ public class GenerateLeadsActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private String userName;
     private String selectedReason = "Job"; // Default reason
+    private boolean addLeadInProgress = false;
+    private String pendingLeadRequestId;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -178,7 +183,12 @@ public class GenerateLeadsActivity extends AppCompatActivity {
             }
         });
 
-        addLeadButton.setOnClickListener(view -> addLead(currentDate));
+        addLeadButton.setOnClickListener(view -> {
+            if (addLeadInProgress) return;
+            addLeadInProgress = true;
+            if (addLeadButton != null) addLeadButton.setEnabled(false);
+            addLead(currentDate);
+        });
 
         // Back Button Listener
         backButton.setOnClickListener(view -> {
@@ -192,21 +202,28 @@ public class GenerateLeadsActivity extends AppCompatActivity {
     // Method to save the lead to Firestore
     // NOTE: "Added By" = owner/assignee of the lead (used for filtering),
     //       "Created By" = the user who actually created the lead (used for notifications/audit).
-    private void saveLeadToFirestore(String premiseName, String premiseAddress, double priceQuoted, double commission, String date, String reason, String addedBy, String createdBy) {
+    private void saveLeadToFirestore(String premiseName, String premiseAddress, double priceQuoted, double commission, String date, String reason, String addedBy, String createdBy, String requestId) {
         CollectionReference leadsCollection = db.collection("Leads");
-        leadsCollection.add(createLeadObject(premiseName, premiseAddress, priceQuoted, commission, date, reason, addedBy, createdBy))
-                .addOnSuccessListener(documentReference -> {
+        addLeadInProgress = true;
+        String effectiveRequestId = requestId != null && !requestId.trim().isEmpty()
+                ? requestId.trim()
+                : leadsCollection.document().getId();
+        DocumentReference documentReference = leadsCollection.document(effectiveRequestId);
+        documentReference.set(createLeadObject(premiseName, premiseAddress, priceQuoted, commission, date, reason, addedBy, createdBy))
+                .addOnSuccessListener(aVoid -> {
                     if (commission > 0) {
-                        notifyOversightLeadAdded(createdBy, premiseName, documentReference.getId(), commission);
+                        notifyOversightLeadAdded(createdBy, premiseName, effectiveRequestId, commission);
                     }
+                    pendingLeadRequestId = null;
                     Toast.makeText(this, "Lead added successfully", Toast.LENGTH_SHORT).show();
-                    // Redirect to ViewLeadsActivity
                     Intent intent = new Intent(GenerateLeadsActivity.this, ViewLeadsActivity.class);
-                    intent.putExtra("USER_NAME", userName); // Pass the username
+                    intent.putExtra("USER_NAME", userName);
                     startActivity(intent);
                     finish();
                 })
                 .addOnFailureListener(e -> {
+                    addLeadInProgress = false;
+                    if (addLeadButton != null) addLeadButton.setEnabled(true);
                     Toast.makeText(this, "Failed to add lead: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
@@ -218,6 +235,8 @@ public class GenerateLeadsActivity extends AppCompatActivity {
         String priceQuotedStr = priceQuotedEditText.getText().toString().trim();
 
         if (premiseName.isEmpty() || premiseAddress.isEmpty() || priceQuotedStr.isEmpty()) {
+            addLeadInProgress = false;
+            if (addLeadButton != null) addLeadButton.setEnabled(true);
             Toast.makeText(this, "All fields are required.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -226,17 +245,20 @@ public class GenerateLeadsActivity extends AppCompatActivity {
         try {
             priceQuoted = Double.parseDouble(priceQuotedStr);
         } catch (NumberFormatException e) {
+            addLeadInProgress = false;
+            if (addLeadButton != null) addLeadButton.setEnabled(true);
             Toast.makeText(this, "Please enter a valid price.", Toast.LENGTH_SHORT).show();
             return;
         }
 
         double commission = "Contract".equalsIgnoreCase(selectedReason) ? priceQuoted * 0.10 : 0.0;
+        pendingLeadRequestId = buildLeadRequestId();
 
         SessionManager.ensureLoaded(this, null);
         if (SessionManager.isAdmin(this)) {
             showAssignToDialog(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason);
         } else {
-            saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason, userName, userName);
+            saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, currentDate, selectedReason, userName, userName, pendingLeadRequestId);
         }
     }
 
@@ -259,26 +281,52 @@ public class GenerateLeadsActivity extends AppCompatActivity {
                     .setTitle("Assign Lead")
                     .setItems(display, (dialog, which) -> {
                         if (which >= 0 && which < keys.length && keys[which] != null && !keys[which].trim().isEmpty()) {
-                            saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, date, reason, keys[which].trim(), userName);
+                            saveLeadToFirestore(premiseName, premiseAddress, priceQuoted, commission, date, reason, keys[which].trim(), userName, pendingLeadRequestId);
+                        } else {
+                            addLeadInProgress = false;
+                            if (addLeadButton != null) addLeadButton.setEnabled(true);
                         }
                     })
-                    .setNegativeButton("Cancel", null)
+                    .setNegativeButton("Cancel", (dialog, which) -> {
+                        addLeadInProgress = false;
+                        if (addLeadButton != null) addLeadButton.setEnabled(true);
+                    })
+                    .setOnCancelListener(dialog -> {
+                        addLeadInProgress = false;
+                        if (addLeadButton != null) addLeadButton.setEnabled(true);
+                    })
                     .show();
         }));
     }
 
 
-    private Map<String, Object> createLeadObject(String premiseName, String premiseAddress, double priceQuoted, double commission, String date, String reason, String userName, String createdBy) {
+    private Map<String, Object> createLeadObject(String premiseName, String premiseAddress, double priceQuoted, double commission, String date, String reason, String addedBy, String createdBy) {
         Map<String, Object> lead = new HashMap<>();
         lead.put("Premise Name", premiseName);
         lead.put("Premise Address", premiseAddress);
         lead.put("Price Quoted", priceQuoted);
         lead.put("Commission", commission);
         lead.put("Date", date);
-        lead.put("Reason", reason); // Add reason to the database object
-        lead.put("Added By", userName); // Add username to the database object
+        lead.put("Reason", reason);
+        lead.put("Added By", addedBy);
         lead.put("Created By", createdBy);
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null && user.getUid() != null) {
+            lead.put("createdByUid", user.getUid());
+        }
         return lead;
+    }
+
+    private String buildLeadRequestId() {
+        String authUid = "";
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null && user.getUid() != null) {
+            authUid = user.getUid().trim();
+        }
+        if (authUid.isEmpty()) {
+            authUid = userName != null ? userName.trim().toLowerCase(Locale.getDefault()) : "lead";
+        }
+        return "lead_" + authUid + "_" + System.currentTimeMillis();
     }
 
     /** Write lead notification (admin fan-out handled by NotificationUtils). */

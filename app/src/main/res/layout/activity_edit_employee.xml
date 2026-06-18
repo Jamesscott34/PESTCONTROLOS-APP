@@ -146,6 +146,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Can map (Maps)"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanRoute"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can route (Router)"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanConvert"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can convert PDF to Word"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanMove"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can move cloud storage files"
+            android:layout_marginBottom="2dp" />
+        <CheckBox
+            android:id="@+id/checkCanRemember"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Can remember login for 7 days"
             android:layout_marginBottom="@dimen/button_spacing" />
 
         <Button

@@ -1,0 +1,136 @@
+[
+  {
+    "categoryKey": "routine",
+    "categoryName": "Routine Visits",
+    "templates": [
+      {
+        "key": "routine_no_activity",
+        "displayName": "No Activity",
+        "text": "A routine inspection of the above site was carried out today. All monitors were inspected, and no evidence of rodent activity was detected during this visit."
+      }
+    ]
+  },
+  {
+    "categoryKey": "routine_internal",
+    "categoryName": "Routine – Internal Activity",
+    "templates": [
+      {
+        "key": "routine_internal_activity",
+        "displayName": "Internal activity noted",
+        "text": "A routine inspection of the site was carried out today. All monitors were inspected and light internal rodent activity was noted at the time of visit. Monitors were replenished as required during this visit."
+      }
+    ]
+  },
+  {
+    "categoryKey": "routine_external",
+    "categoryName": "Routine – External Activity",
+    "templates": [
+      {
+        "key": "routine_external_activity",
+        "displayName": "External activity noted",
+        "text": "A routine inspection of the site was carried out today. All external monitors were inspected and light external rodent activity was noted. No evident rodent activity was observed internally during this visit. Monitors were replenished as required during this visit."
+      }
+    ]
+  },
+  {
+    "categoryKey": "initial",
+    "categoryName": "Initial & Setup",
+    "templates": [
+      {
+        "key": "initial_setup",
+        "displayName": "Initial Setup",
+        "text": "An initial setup was carried out on the above site. New monitors and labels were installed as required. The site plan / checklist was updated during this visit."
+      },
+      {
+        "key": "initial_survey",
+        "displayName": "Initial Survey / Assessment",
+        "text": "An initial survey and assessment of the site was completed today. Harbourage, entry points, monitoring locations and environmental factors were reviewed. A control plan and monitoring layout were discussed / implemented as appropriate."
+      }
+    ]
+  },
+  {
+    "categoryKey": "callout",
+    "categoryName": "Call Out / Emergency",
+    "templates": [
+      {
+        "key": "callout_internal",
+        "displayName": "Call Out – Internal",
+        "text": "An emergency call-out was carried out due to a suspected rodent sighting internally. All monitors on site were inspected. As a precaution, baits were replenished throughout the affected area. Baits will be inspected on follow-up to confirm control is being achieved."
+      },
+      {
+        "key": "callout_external",
+        "displayName": "Call Out – External",
+        "text": "An emergency call-out was carried out due to a suspected rodent sighting externally. All external monitors on site were inspected. As a precaution, baits were replenished throughout the affected area. Baits will be inspected on follow-up to confirm control is being achieved."
+      },
+      {
+        "key": "callout_no_activity_found",
+        "displayName": "Call Out – No Activity Found",
+        "text": "A call-out attendance was made following a reported concern. A full inspection of the affected and adjacent areas was completed. No evidence of pest activity was found at the time of visit. Monitoring points were checked and left secure."
+      }
+    ]
+  },
+  {
+    "categoryKey": "general",
+    "categoryName": "General Service Reports",
+    "templates": [
+    
+      {
+        "key": "follow_up_inspection",
+        "displayName": "Follow-Up Inspection",
+        "text": "A follow-up inspection was completed today to assess the previous visit / treatment. Activity levels were reviewed, monitoring points were checked and additional works were carried out where required during this visit."
+      },
+      {
+        "key": "follow_up_no_activity",
+        "displayName": "Follow-Up – No Activity",
+        "text": "A follow-up visit was completed today to assess the previous visit / treatment. All agreed areas and monitoring points were inspected and no pest activity was noted at the time of this visit. Control points were checked and left in satisfactory condition."
+      },
+      {
+        "key": "follow_up_activity",
+        "displayName": "Follow-Up – Activity",
+        "text": "A follow-up visit was completed today to assess the previous visit / treatment. Pest activity was noted during inspection. Monitoring and control points were serviced as required and further recommendations are detailed below where applicable."
+      },
+      {
+        "key": "proofing_works",
+        "displayName": "Proofing / Exclusion Works",
+        "text": "Proofing and exclusion works were carried out on site today. Identified gaps, holes and potential entry points were sealed or protected as agreed. A walk-through was completed on completion of works."
+      }
+    ]
+  },
+  {
+    "categoryKey": "rodent_bait_trapping",
+    "categoryName": "Rodent Bait & Trapping",
+    "templates": [
+      {
+        "key": "rodent_toxic_bait_replenished",
+        "displayName": "Toxic bait replenished",
+        "text": "Due to rodent activity, additional baits have been replenished with toxic bait so that rodent control can be achieved. All bait points were inspected, secured and recorded during this visit."
+      },
+      {
+        "key": "rodent_non_tox_in_place",
+        "displayName": "Non-toxic bait in place",
+        "text": "All toxic bait has been removed and non-toxic monitoring bait has been placed in position. Bait stations were inspected and left secure to allow monitoring without toxic load on site."
+      },
+      {
+        "key": "rodent_rat_trapping_programme",
+        "displayName": "Rat trapping programme in place",
+        "text": "Due to ongoing issues, a rat trapping programme is in place. Traps have been utilised in agreed locations, inspected during this visit and reset or relocated where required."
+      }
+    ]
+  },
+  {
+    "categoryKey": "insects",
+    "categoryName": "Insects & Specialist",
+    "templates": [
+      {
+        "key": "wasp_attendance",
+        "displayName": "Wasp Attendance",
+        "text": "A wasp-related attendance was carried out today. The nest / activity point was located and treated using appropriate professional products and methods. Safety considerations and access restrictions on site were observed during this visit."
+      },
+      {
+        "key": "silverfish_treatment",
+        "displayName": "Silverfish Treatment",
+        "text": "A silverfish treatment was carried out today. Affected and high-risk areas were inspected and treated using appropriate professional insecticidal products. Harbourage, moisture sources and access routes were reviewed during this visit."
+      }
+    ]
+  }
+]

@@ -176,6 +176,13 @@
                 android:text="Generate PDF"
                 android:layout_marginTop="16dp" />
 
+            <Button
+                android:id="@+id/btnPreviewPdf"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Preview PDF"
+                android:layout_marginTop="8dp" />
+
         </LinearLayout>
     </ScrollView>
 

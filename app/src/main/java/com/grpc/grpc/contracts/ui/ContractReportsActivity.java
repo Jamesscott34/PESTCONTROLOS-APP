@@ -1,5 +1,6 @@
 package com.grpc.grpc.contracts.ui;
 
+import com.grpc.grpc.BuildConfig;
 import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.search.ui.SearchResultsAdapter;
@@ -14,11 +15,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.EditText;
@@ -40,11 +47,21 @@ import android.widget.EditText;
 
 public class ContractReportsActivity extends AppCompatActivity {
 
+    private static final String REPORTS_SUBCOLLECTION = "reports";
+    private static final String EXTRA_OPEN_CONTRACT_FOLDER_ONLY = "OPEN_CONTRACT_FOLDER_ONLY";
+
+    private static final String EXTRA_REPORTS_FOLDER = "REPORTS_FOLDER";
+    private static final String ROOT_FILES_LABEL = "(Root files)";
+
+    private String contractId;
     private String contractName;
     private String userName;
     private String reportsFolder; // e.g. Reports26
     private int reportYear; // e.g. 2026
-    private List<String> foundReports = new ArrayList<>();
+    private boolean openContractFolderOnly;
+    private boolean browseContractByYearFolders;
+    private final List<String> foundReports = new ArrayList<>();
+    private final Map<String, String> reportDisplayNames = new LinkedHashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,12 +69,18 @@ public class ContractReportsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_contract_reports);
 
         // Get contract name and username from intent
+        contractId = getIntent().getStringExtra("CONTRACT_ID");
         contractName = getIntent().getStringExtra("CONTRACT_NAME");
         userName = getIntent().getStringExtra("USER_NAME");
-        reportsFolder = getIntent().getStringExtra("REPORTS_FOLDER");
+        reportsFolder = getIntent().getStringExtra(EXTRA_REPORTS_FOLDER);
         reportYear = getIntent().getIntExtra("REPORT_YEAR", 0);
+        openContractFolderOnly = getIntent().getBooleanExtra(EXTRA_OPEN_CONTRACT_FOLDER_ONLY, false);
+        browseContractByYearFolders = openContractFolderOnly
+                || (ContractReportSync.useContractReportsOnly()
+                && ContractReportSync.hasContractId(contractId)
+                && getIntent().getStringExtra(EXTRA_REPORTS_FOLDER) == null);
 
-        if (reportsFolder == null || reportsFolder.trim().isEmpty()) {
+        if (!browseContractByYearFolders && (reportsFolder == null || reportsFolder.trim().isEmpty())) {
             // Fallback to current year folder if not provided
             int y = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
             reportsFolder = "Reports" + String.format(java.util.Locale.getDefault(), "%02d", y % 100);
@@ -70,8 +93,193 @@ public class ContractReportsActivity extends AppCompatActivity {
             return;
         }
 
-        // Search for reports related to this contract
-        searchContractReports();
+        if (browseContractByYearFolders) {
+            showContractYearFolders();
+        } else {
+            searchContractReports();
+        }
+    }
+
+    private void showContractYearFolders() {
+        AlertDialog loadingDialog = new AlertDialog.Builder(this)
+                .setTitle("Contract Reports")
+                .setMessage("Loading folders for: " + contractName)
+                .setCancelable(false)
+                .show();
+
+        String contractFolder = ContractReportSync.buildContractStorageFolder(contractId);
+        ContractStoragePathHelper.listContractYearFolders(contractId, yearFolders -> runOnUiThread(() ->
+                ContractStoragePathHelper.listFilesInFolder(contractFolder, (subfolders, rootFiles) -> runOnUiThread(() -> {
+                    loadingDialog.dismiss();
+                    List<SearchResultsAdapter.ListItem> folderItems = new ArrayList<>();
+                    if (!rootFiles.isEmpty()) {
+                        folderItems.add(new SearchResultsAdapter.ListItem(ROOT_FILES_LABEL, ROOT_FILES_LABEL));
+                    }
+                    if (yearFolders != null) {
+                        for (String year : yearFolders) {
+                            folderItems.add(new SearchResultsAdapter.ListItem(year, year));
+                        }
+                    }
+                    if (folderItems.isEmpty()) {
+                        Toast.makeText(this, "No contract report folders found for: " + contractName, Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+                    showFolderPickerDialog(folderItems, contractFolder);
+                }))));
+    }
+
+    private void showFolderPickerDialog(List<SearchResultsAdapter.ListItem> folderItems, String contractFolder) {
+        android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_search_with_list, null);
+        EditText searchBar = dialogView.findViewById(R.id.searchBar);
+        RecyclerView resultsRecyclerView = dialogView.findViewById(R.id.resultsRecyclerView);
+        resultsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        List<SearchResultsAdapter.ListItem> visibleFolders = new ArrayList<>(folderItems);
+        SearchResultsAdapter adapter = SearchResultsAdapter.forLabeledItems(visibleFolders, selected -> {
+            String folderPath = ROOT_FILES_LABEL.equals(selected)
+                    ? contractFolder
+                    : contractFolder + "/" + selected;
+            String folderLabel = ROOT_FILES_LABEL.equals(selected) ? "Root files" : selected;
+            openContractFolderFiles(folderPath, folderLabel);
+        }, true);
+        resultsRecyclerView.setAdapter(adapter);
+
+        searchBar.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s.toString().trim().toLowerCase(Locale.ROOT);
+                List<SearchResultsAdapter.ListItem> filtered = new ArrayList<>();
+                for (SearchResultsAdapter.ListItem item : folderItems) {
+                    if (query.isEmpty() || item.displayLabel.toLowerCase(Locale.ROOT).contains(query)) {
+                        filtered.add(item);
+                    }
+                }
+                adapter.updateListItems(filtered);
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Select folder — " + contractName)
+                .setView(dialogView)
+                .setNegativeButton("Cancel", (d, w) -> finish())
+                .create();
+        dialog.setOnCancelListener(d -> finish());
+        dialog.show();
+    }
+
+    private void openContractFolderFiles(String folderPath, String folderLabel) {
+        AlertDialog loadingDialog = new AlertDialog.Builder(this)
+                .setTitle(folderLabel)
+                .setMessage("Loading reports...")
+                .setCancelable(false)
+                .show();
+
+        LinkedHashMap<String, String> reports = new LinkedHashMap<>();
+        final int[] pending = {2};
+        Runnable finish = () -> {
+            pending[0]--;
+            if (pending[0] > 0) {
+                return;
+            }
+            loadingDialog.dismiss();
+            if (reports.isEmpty()) {
+                Toast.makeText(this, "No reports found in " + folderLabel, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showFileListDialog(reports, folderLabel);
+        };
+
+        ContractStoragePathHelper.listFilesInFolder(folderPath, (ignored, files) -> runOnUiThread(() -> {
+            for (Map.Entry<String, String> entry : files.entrySet()) {
+                String name = entry.getValue();
+                if (name != null && name.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
+                    reports.put(entry.getKey(), name);
+                }
+            }
+            finish.run();
+        }));
+
+        String folderPrefix = folderPath.endsWith("/") ? folderPath : folderPath + "/";
+        FirebaseFirestore.getInstance()
+                .collection(FirestorePaths.CONTRACT_REPORTS)
+                .document(contractId)
+                .collection(REPORTS_SUBCOLLECTION)
+                .get()
+                .addOnSuccessListener(snapshot -> runOnUiThread(() -> {
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
+                        String storagePath = doc.getString("storagePath");
+                        if (storagePath == null || storagePath.trim().isEmpty()) {
+                            continue;
+                        }
+                        String trimmedPath = storagePath.trim();
+                        if (!trimmedPath.equals(folderPath) && !trimmedPath.startsWith(folderPrefix)) {
+                            continue;
+                        }
+                        String fileName = doc.getString("fileName");
+                        String displayName = (fileName != null && !fileName.trim().isEmpty())
+                                ? fileName.trim()
+                                : fileNameFromStoragePath(trimmedPath);
+                        reports.put(trimmedPath, displayName);
+                    }
+                    finish.run();
+                }))
+                .addOnFailureListener(e -> runOnUiThread(finish));
+    }
+
+    private void showFileListDialog(Map<String, String> reports, String folderLabel) {
+        List<SearchResultsAdapter.ListItem> items = new ArrayList<>();
+        for (Map.Entry<String, String> entry : reports.entrySet()) {
+            items.add(new SearchResultsAdapter.ListItem(entry.getValue(), entry.getKey()));
+        }
+        Collections.sort(items, (a, b) -> a.displayLabel.compareToIgnoreCase(b.displayLabel));
+
+        android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_search_with_list, null);
+        EditText searchBar = dialogView.findViewById(R.id.searchBar);
+        RecyclerView resultsRecyclerView = dialogView.findViewById(R.id.resultsRecyclerView);
+        resultsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        List<SearchResultsAdapter.ListItem> visibleItems = new ArrayList<>(items);
+        SearchResultsAdapter adapter = SearchResultsAdapter.forLabeledItems(visibleItems, storagePath -> {
+            String fileName = reports.get(storagePath);
+            if (fileName == null) {
+                fileName = fileNameFromStoragePath(storagePath);
+            }
+            int slash = storagePath.lastIndexOf('/');
+            String folderPath = slash >= 0 ? storagePath.substring(0, slash) : storagePath;
+            showReportOptions(folderPath, fileName);
+        }, false);
+        resultsRecyclerView.setAdapter(adapter);
+
+        searchBar.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s.toString().trim().toLowerCase(Locale.ROOT);
+                List<SearchResultsAdapter.ListItem> filtered = new ArrayList<>();
+                for (SearchResultsAdapter.ListItem item : items) {
+                    if (query.isEmpty() || item.displayLabel.toLowerCase(Locale.ROOT).contains(query)) {
+                        filtered.add(item);
+                    }
+                }
+                adapter.updateListItems(filtered);
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+
+        new AlertDialog.Builder(this)
+                .setTitle(folderLabel + " — " + contractName)
+                .setView(dialogView)
+                .setNegativeButton("Back", null)
+                .show();
+    }
+
+    private static String fileNameFromStoragePath(String storagePath) {
+        if (storagePath == null || storagePath.trim().isEmpty()) {
+            return "report.pdf";
+        }
+        int slash = storagePath.lastIndexOf('/');
+        return slash >= 0 ? storagePath.substring(slash + 1) : storagePath;
     }
 
     /**
@@ -79,69 +287,157 @@ public class ContractReportsActivity extends AppCompatActivity {
      * Uses normalized, flexible contract name matching (ignores spaces, underscores, and case).
      */
     private void searchContractReports() {
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageRef = storage.getReference();
-        StorageReference reportsRoot = storageRef.child(reportsFolder);
-
         // Show loading dialog
         AlertDialog loadingDialog = new AlertDialog.Builder(this)
                 .setTitle("Searching Reports")
-                .setMessage("Searching " + reportsFolder + " for reports related to: " + contractName)
+                .setMessage(buildLoadingMessage())
                 .setCancelable(false)
                 .show();
 
         foundReports.clear();
+        LinkedHashSet<String> uniqueReports = new LinkedHashSet<>();
+        final int[] pendingSources = {0};
+        Runnable finishSource = () -> {
+            pendingSources[0]--;
+            if (pendingSources[0] <= 0) {
+                LinkedHashMap<String, String> metadataNames = new LinkedHashMap<>(reportDisplayNames);
+                foundReports.clear();
+                reportDisplayNames.clear();
+                for (String path : uniqueReports) {
+                    foundReports.add(path);
+                    String name = metadataNames.get(path);
+                    reportDisplayNames.put(path, name != null ? name : fileNameFromStoragePath(path));
+                }
+                loadingDialog.dismiss();
+                showSearchResults();
+            }
+        };
+
+        boolean includeLegacyReports = "grpc".equalsIgnoreCase(BuildConfig.FLAVOR);
+        boolean includeContractReports = ContractReportSync.hasContractId(contractId);
+
+        if (includeLegacyReports && !openContractFolderOnly) {
+            pendingSources[0]++;
+            searchLegacyReports(uniqueReports, finishSource);
+        }
+
+        if (includeContractReports) {
+            pendingSources[0]++;
+            searchContractStorage(uniqueReports, finishSource);
+
+            pendingSources[0]++;
+            searchContractReportMetadata(uniqueReports, finishSource);
+        }
+
+        if (pendingSources[0] == 0) {
+            loadingDialog.dismiss();
+            showSearchResults();
+        }
+    }
+
+    private String buildLoadingMessage() {
+        if (openContractFolderOnly) {
+            return "Searching contracts folder for: " + contractName;
+        }
+        if ("grpc".equalsIgnoreCase(BuildConfig.FLAVOR) && reportsFolder != null && !reportsFolder.trim().isEmpty()) {
+            return "Searching " + reportsFolder + " and linked contract reports for: " + contractName;
+        }
+        return "Searching linked contract reports for: " + contractName;
+    }
+
+    private void searchLegacyReports(LinkedHashSet<String> uniqueReports, Runnable finishSource) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageRef = storage.getReference();
+        StorageReference reportsRoot = storageRef.child(reportsFolder);
         String normalizedContractName = normalizeName(contractName);
 
-        // Search only inside the selected year folder (ReportsYY)
         reportsRoot.listAll().addOnSuccessListener(listResult -> {
-            // Search files directly in ReportsYY folder
             for (StorageReference file : listResult.getItems()) {
-                String fileName = file.getName();
-                int dot = fileName.lastIndexOf(".");
-                String base = (dot > 0) ? fileName.substring(0, dot) : fileName;
-                String normalizedFileName = normalizeName(base);
-                if (normalizedFileName.contains(normalizedContractName)) {
-                    foundReports.add(reportsFolder + "/" + fileName);
-                }
+                addLegacyMatch(uniqueReports, normalizedContractName, reportsFolder, file.getName());
             }
 
             List<StorageReference> monthFolders = listResult.getPrefixes();
             if (monthFolders == null || monthFolders.isEmpty()) {
-                loadingDialog.dismiss();
-                showSearchResults();
+                finishSource.run();
                 return;
             }
 
-            final int[] pending = {monthFolders.size()};
+            final int[] pendingFolders = {monthFolders.size()};
             for (StorageReference monthFolder : monthFolders) {
                 monthFolder.listAll().addOnSuccessListener(monthResult -> {
                     for (StorageReference file : monthResult.getItems()) {
-                        String fileName = file.getName();
-                        int dot = fileName.lastIndexOf(".");
-                        String base = (dot > 0) ? fileName.substring(0, dot) : fileName;
-                        String normalizedFileName = normalizeName(base);
-                        if (normalizedFileName.contains(normalizedContractName)) {
-                            foundReports.add(reportsFolder + "/" + monthFolder.getName() + "/" + fileName);
-                        }
+                        addLegacyMatch(uniqueReports, normalizedContractName, reportsFolder + "/" + monthFolder.getName(), file.getName());
                     }
-                    pending[0]--;
-                    if (pending[0] <= 0) {
-                        loadingDialog.dismiss();
-                        showSearchResults();
+                    pendingFolders[0]--;
+                    if (pendingFolders[0] <= 0) {
+                        finishSource.run();
                     }
                 }).addOnFailureListener(e -> {
-                    pending[0]--;
-                    if (pending[0] <= 0) {
-                        loadingDialog.dismiss();
-                        showSearchResults();
+                    pendingFolders[0]--;
+                    if (pendingFolders[0] <= 0) {
+                        finishSource.run();
                     }
                 });
             }
-        }).addOnFailureListener(e -> {
-            loadingDialog.dismiss();
-            showSearchResults();
+        }).addOnFailureListener(e -> finishSource.run());
+    }
+
+    private void addLegacyMatch(LinkedHashSet<String> uniqueReports, String normalizedContractName, String folderPath, String fileName) {
+        int dot = fileName.lastIndexOf(".");
+        String base = (dot > 0) ? fileName.substring(0, dot) : fileName;
+        String normalizedFileName = normalizeName(base);
+        if (normalizedFileName.contains(normalizedContractName)) {
+            uniqueReports.add(folderPath + "/" + fileName);
+        }
+    }
+
+    private void searchContractStorage(LinkedHashSet<String> uniqueReports, Runnable finishSource) {
+        String contractFolder = ContractReportSync.buildContractStorageFolder(contractId);
+        ContractStoragePathHelper.listFilesInFolder(contractFolder, (subfolders, rootFiles) -> {
+            for (Map.Entry<String, String> entry : rootFiles.entrySet()) {
+                uniqueReports.add(entry.getKey());
+            }
+            if (subfolders == null || subfolders.isEmpty()) {
+                finishSource.run();
+                return;
+            }
+            final int[] pending = {subfolders.size()};
+            for (String subfolder : subfolders) {
+                String childPath = contractFolder + "/" + subfolder;
+                ContractStoragePathHelper.listFilesInFolder(childPath, (ignored, files) -> {
+                    for (String storagePath : files.keySet()) {
+                        uniqueReports.add(storagePath);
+                    }
+                    pending[0]--;
+                    if (pending[0] <= 0) {
+                        finishSource.run();
+                    }
+                });
+            }
         });
+    }
+
+    private void searchContractReportMetadata(LinkedHashSet<String> uniqueReports, Runnable finishSource) {
+        FirebaseFirestore.getInstance()
+                .collection(FirestorePaths.CONTRACT_REPORTS)
+                .document(contractId)
+                .collection(REPORTS_SUBCOLLECTION)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
+                        String storagePath = doc.getString("storagePath");
+                        if (storagePath != null && !storagePath.trim().isEmpty()) {
+                            String trimmedPath = storagePath.trim();
+                            uniqueReports.add(trimmedPath);
+                            String fileName = doc.getString("fileName");
+                            if (fileName != null && !fileName.trim().isEmpty()) {
+                                reportDisplayNames.put(trimmedPath, fileName.trim());
+                            }
+                        }
+                    }
+                    finishSource.run();
+                })
+                .addOnFailureListener(e -> finishSource.run());
     }
 
     /**
@@ -156,13 +452,16 @@ public class ContractReportsActivity extends AppCompatActivity {
      */
     private void showSearchResults() {
         if (foundReports.isEmpty()) {
-            Toast.makeText(this, "No reports found for: " + contractName + " in " + reportsFolder, Toast.LENGTH_SHORT).show();
+            String message = openContractFolderOnly
+                    ? "No contract reports found for: " + contractName
+                    : "No reports found for: " + contractName + " in " + reportsFolder;
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        String yearLabel = (reportYear > 0) ? String.valueOf(reportYear) : reportsFolder;
+        String yearLabel = openContractFolderOnly ? "Contracts" : ((reportYear > 0) ? String.valueOf(reportYear) : "linked");
         builder.setTitle("Reports (" + yearLabel + ") for: " + contractName + " (" + foundReports.size() + " found)");
 
         // Create custom layout for search and results
@@ -172,14 +471,21 @@ public class ContractReportsActivity extends AppCompatActivity {
         
         // Set up RecyclerView
         resultsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        SearchResultsAdapter adapter = new SearchResultsAdapter(foundReports, selectedItem -> {
-            String[] pathParts = selectedItem.split("/");
-            if (pathParts.length >= 2) {
-                String folderPath = selectedItem.substring(0, selectedItem.lastIndexOf("/"));
-                String fileName = pathParts[pathParts.length - 1];
-                showReportOptions(folderPath, fileName);
-            }
-        });
+        List<SearchResultsAdapter.ListItem> listItems = new ArrayList<>();
+        for (String path : foundReports) {
+            String label = reportDisplayNames.containsKey(path)
+                    ? reportDisplayNames.get(path)
+                    : fileNameFromStoragePath(path);
+            listItems.add(new SearchResultsAdapter.ListItem(label, path));
+        }
+        SearchResultsAdapter adapter = SearchResultsAdapter.forLabeledItems(listItems, selectedPath -> {
+            String fileName = reportDisplayNames.containsKey(selectedPath)
+                    ? reportDisplayNames.get(selectedPath)
+                    : fileNameFromStoragePath(selectedPath);
+            int slash = selectedPath.lastIndexOf('/');
+            String folderPath = slash >= 0 ? selectedPath.substring(0, slash) : selectedPath;
+            showReportOptions(folderPath, fileName);
+        }, false);
         resultsRecyclerView.setAdapter(adapter);
         
         builder.setView(dialogView);
@@ -191,13 +497,16 @@ public class ContractReportsActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                List<String> filteredList = new ArrayList<>();
-                for (String report : foundReports) {
-                    if (report.toLowerCase().contains(s.toString().toLowerCase())) {
-                        filteredList.add(report);
+                String query = s.toString().trim().toLowerCase(Locale.ROOT);
+                List<SearchResultsAdapter.ListItem> filteredList = new ArrayList<>();
+                for (SearchResultsAdapter.ListItem item : listItems) {
+                    if (query.isEmpty()
+                            || item.displayLabel.toLowerCase(Locale.ROOT).contains(query)
+                            || item.value.toLowerCase(Locale.ROOT).contains(query)) {
+                        filteredList.add(item);
                     }
                 }
-                adapter.updateResults(filteredList);
+                adapter.updateListItems(filteredList);
             }
 
             @Override

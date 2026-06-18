@@ -47,7 +47,11 @@ public final class SessionManager {
     private static final String KEY_CAN_VIEW_ALL_CONTRACTS = "SESSION_CAN_VIEW_ALL_CONTRACTS";
     private static final String KEY_CAN_MESSAGE = "SESSION_CAN_MESSAGE";
     private static final String KEY_CAN_MAP = "SESSION_CAN_MAP";
+    private static final String KEY_CAN_ROUTE = "SESSION_CAN_ROUTE";
     private static final String KEY_CAN_BUG_REPORT = "SESSION_CAN_BUG_REPORT";
+    private static final String KEY_CAN_CONVERT = "SESSION_CAN_CONVERT";
+    private static final String KEY_CAN_INVOICE = "SESSION_CAN_INVOICE";
+    private static final String KEY_CAN_MOVE = "SESSION_CAN_MOVE";
     private static final String KEY_DEMO_RELEASE = "SESSION_DEMO_RELEASE";
     private static final String KEY_DEMO_DAYS_NUMBER = "SESSION_DEMO_DAYS_NUMBER";
 
@@ -81,8 +85,15 @@ public final class SessionManager {
         public final boolean canViewAllContracts;
         public final boolean canMessage;
         public final boolean canMap;
+        public final boolean canRoute;
         /** True if user can submit/view bug reports and feature requests (super_admin/admin = true, tech = false unless set). */
         public final boolean canBugReport;
+        /** True if user can use PDF → Word converter (Firestore users/{uid} canConvert). */
+        public final boolean canConvert;
+        /** True if user can access billing/invoices (Firestore users/{uid} canInvoice). */
+        public final boolean canInvoice;
+        /** True if user can move files in cloud storage browsers (Firestore users/{uid} canMove). */
+        public final boolean canMove;
 
         public final boolean demoRelease;
         public final int demoDaysNumber;
@@ -104,7 +115,11 @@ public final class SessionManager {
                 boolean canViewAllContracts,
                 boolean canMessage,
                 boolean canMap,
+                boolean canRoute,
                 boolean canBugReport,
+                boolean canConvert,
+                boolean canInvoice,
+                boolean canMove,
                 boolean demoRelease,
                 int demoDaysNumber) {
 
@@ -126,7 +141,11 @@ public final class SessionManager {
             this.canViewAllContracts = canViewAllContracts;
             this.canMessage = canMessage;
             this.canMap = canMap;
+            this.canRoute = canRoute;
             this.canBugReport = canBugReport;
+            this.canConvert = canConvert;
+            this.canInvoice = canInvoice;
+            this.canMove = canMove;
             this.demoRelease = demoRelease;
             this.demoDaysNumber = demoDaysNumber <= 0 ? 0 : demoDaysNumber;
 
@@ -196,7 +215,11 @@ public final class SessionManager {
                 sp.getBoolean(KEY_CAN_VIEW_ALL_CONTRACTS, false),
                 sp.getBoolean(KEY_CAN_MESSAGE, false),
                 sp.getBoolean(KEY_CAN_MAP, false),
+                sp.getBoolean(KEY_CAN_ROUTE, false),
                 sp.getBoolean(KEY_CAN_BUG_REPORT, false),
+                sp.getBoolean(KEY_CAN_CONVERT, false),
+                sp.getBoolean(KEY_CAN_INVOICE, false),
+                sp.getBoolean(KEY_CAN_MOVE, false),
                 sp.getBoolean(KEY_DEMO_RELEASE, false),
                 sp.getInt(KEY_DEMO_DAYS_NUMBER, 0)
         );
@@ -234,7 +257,11 @@ public final class SessionManager {
                     .remove(KEY_CAN_VIEW_ALL_CONTRACTS)
                     .remove(KEY_CAN_MESSAGE)
                     .remove(KEY_CAN_MAP)
+                    .remove(KEY_CAN_ROUTE)
                     .remove(KEY_CAN_BUG_REPORT)
+                    .remove(KEY_CAN_CONVERT)
+                    .remove(KEY_CAN_INVOICE)
+                    .remove(KEY_CAN_MOVE)
                     .remove(KEY_DEMO_RELEASE)
                     .remove(KEY_DEMO_DAYS_NUMBER)
                     .apply();
@@ -279,12 +306,17 @@ public final class SessionManager {
                     Session session = null;
                     if (uidDoc != null && uidDoc.exists()) {
                         session = buildSessionFromDocument(uidDoc, uid, email);
-                        // Ensure bugReport field exists on doc (for Firestore rules). If missing, write default: admin/super_admin = true, tech = false.
-                        if (session != null && uidDoc.get("bugReport") == null && uidDoc.get("BugReport") == null) {
-                            Map<String, Object> patch = new HashMap<>();
+                        // Backfill missing RBAC flags so users see the correct buttons without needing a manual profile rewrite.
+                        Map<String, Object> patch = new HashMap<>();
+                        if (uidDoc.get("bugReport") == null && uidDoc.get("BugReport") == null) {
                             patch.put("bugReport", session.canBugReport);
+                        }
+                        if (uidDoc.get("canRoute") == null && uidDoc.get("CanRoute") == null) {
+                            patch.put("canRoute", session.canRoute);
+                        }
+                        if (!patch.isEmpty()) {
                             db.collection("users").document(uid).set(patch, SetOptions.merge())
-                                    .addOnFailureListener(e -> Log.w(TAG, "Failed to set bugReport on users/" + uid + ": " + (e != null ? e.getMessage() : "")));
+                                    .addOnFailureListener(e -> Log.w(TAG, "Failed to backfill RBAC flags on users/" + uid + ": " + (e != null ? e.getMessage() : "")));
                         }
                     }
                     if (session == null) {
@@ -313,7 +345,7 @@ public final class SessionManager {
     /** Minimal session when users/{authUid} is missing or has no role (login will block if required flags not met). */
     private static Session buildMinimalSession(String uid, String email) {
         return new Session(uid, "", "unknown", "", email != null ? email : "", "", "",
-                false, false, false, false, false, false, false, false, false, false, false, false, 0);
+                false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 0);
     }
 
     /**
@@ -343,7 +375,11 @@ public final class SessionManager {
         Boolean canViewAllContractsFlag = pickBoolean(ds, "CanViewAllContracts", "canViewAllContracts");
         Boolean canMessageFlag = pickBoolean(ds, "CanMessage", "canMessage");
         Boolean canMapFlag = pickBoolean(ds, "CanMap", "canMap");
+        Boolean canRouteFlag = pickBoolean(ds, "CanRoute", "canRoute");
         Boolean canBugReportFlag = pickBoolean(ds, "BugReport", "bugReport");
+        Boolean canConvertFlag = pickBoolean(ds, "CanConvert", "canConvert");
+        Boolean canInvoiceFlag = pickBoolean(ds, "CanInvoice", "canInvoice");
+        Boolean canMoveFlag = pickBoolean(ds, "CanMove", "canMove");
         boolean isSuperAdmin = "super_admin".equals(roleNorm);
         boolean isAdmin = isSuperAdmin || "admin".equals(roleNorm);
         boolean defaultCanBugReport = isAdmin;
@@ -355,6 +391,7 @@ public final class SessionManager {
         boolean defaultSeesAllJobs = isAdmin;
         boolean defaultCanSeeContracts = isSuperAdmin || "admin".equals(roleNorm) || "tech".equals(roleNorm);
         boolean defaultCanViewAllContracts = isAdmin;
+        boolean defaultCanRoute = isAdmin;
         boolean canSearch = canSearchFlag != null ? canSearchFlag : defaultCanSearch;
         boolean canLocation = canLocationFlag != null ? canLocationFlag : defaultCanLocation;
         boolean canHardPressContracts = hardPressFlag != null ? hardPressFlag : defaultHardPressContracts;
@@ -365,14 +402,18 @@ public final class SessionManager {
         boolean canViewAllContracts = canViewAllContractsFlag != null ? canViewAllContractsFlag : defaultCanViewAllContracts;
         boolean canMessage = canMessageFlag != null ? canMessageFlag : false;
         boolean canMap = canMapFlag != null ? canMapFlag : false;
+        boolean canRoute = canRouteFlag != null ? canRouteFlag : defaultCanRoute;
         boolean canBugReport = canBugReportFlag != null ? canBugReportFlag : defaultCanBugReport;
+        boolean canConvert = canConvertFlag != null ? canConvertFlag : false;
+        boolean canInvoice = canInvoiceFlag != null ? canInvoiceFlag : isAdmin;
+        boolean canMove = canMoveFlag != null ? canMoveFlag : isSuperAdmin;
         Boolean demoReleaseFlag = pickBoolean(ds, "DemoRelease", "demoRelease", "demo_release");
         Integer demoDaysNumberVal = pickInteger(ds, "DemoDaysNumber", "demoDaysNumber", "demo_days_number");
         boolean demoRelease = demoReleaseFlag != null ? demoReleaseFlag : false;
         int demoDaysNumber = demoDaysNumberVal != null && demoDaysNumberVal > 0 ? demoDaysNumberVal : 0;
         return new Session(staffId, contractKey, roleNorm, name, email, number, title,
                 canSearch, canLocation, canHardPressContracts, canMarkPaidLeads, canAccessCommission,
-                seesAllJobs, canSeeContracts, canViewAllContracts, canMessage, canMap, canBugReport, demoRelease, demoDaysNumber);
+                seesAllJobs, canSeeContracts, canViewAllContracts, canMessage, canMap, canRoute, canBugReport, canConvert, canInvoice, canMove, demoRelease, demoDaysNumber);
     }
 
     private static void persist(Context context, Session s) {
@@ -407,7 +448,11 @@ public final class SessionManager {
             e.putBoolean(KEY_CAN_VIEW_ALL_CONTRACTS, s.canViewAllContracts);
             e.putBoolean(KEY_CAN_MESSAGE, s.canMessage);
             e.putBoolean(KEY_CAN_MAP, s.canMap);
+            e.putBoolean(KEY_CAN_ROUTE, s.canRoute);
             e.putBoolean(KEY_CAN_BUG_REPORT, s.canBugReport);
+            e.putBoolean(KEY_CAN_CONVERT, s.canConvert);
+            e.putBoolean(KEY_CAN_INVOICE, s.canInvoice);
+            e.putBoolean(KEY_CAN_MOVE, s.canMove);
             e.putBoolean(KEY_DEMO_RELEASE, s.demoRelease);
             e.putInt(KEY_DEMO_DAYS_NUMBER, s.demoDaysNumber);
             e.apply();
@@ -435,6 +480,10 @@ public final class SessionManager {
                 true,
                 false,
                 true,
+                false,
+                false,
+                false,
+                false,
                 false,
                 false,
                 false,
@@ -507,6 +556,26 @@ public final class SessionManager {
     public static boolean canMap(Context context) {
         Session s = getCached(context);
         return s != null && s.canMap;
+    }
+
+    public static boolean canRoute(Context context) {
+        Session s = getCached(context);
+        return s != null && s.canRoute;
+    }
+
+    public static boolean canConvert(Context context) {
+        Session s = getCached(context);
+        return s != null && s.canConvert;
+    }
+
+    public static boolean canInvoice(Context context) {
+        Session s = getCached(context);
+        return s != null && s.canInvoice;
+    }
+
+    public static boolean canMove(Context context) {
+        Session s = getCached(context);
+        return s != null && s.canMove;
     }
 
     public static boolean canSearch(Context context) {

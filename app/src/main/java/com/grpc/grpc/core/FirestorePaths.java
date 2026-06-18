@@ -39,5 +39,17 @@ public final class FirestorePaths {
 
     /** Contract reminders: user wants 12h in-app reminder until unchecked. Doc id: userId_contractId. */
     public static final String CONTRACT_REMINDERS = "contract_reminders";
+
+    /** Contract quotations: PDF quotes (4/6/8/12pt) saved to cloud. */
+    public static final String CONTRACT_QUOTATIONS = "contract_quotations";
+
+    /** Contract-linked report metadata: contractreports/{contractId}/reports/{reportId}. */
+    public static final String CONTRACT_REPORTS = "contractreports";
+
+    /** Platform invoice metadata (PDFs live under Storage companies/{companyId}/invoices/). */
+    public static final String INVOICE_LEDGER = "invoice_ledger";
+
+    /** Per-tenant sequence for invoice numbers: invoice_counters/{companyId}. */
+    public static final String INVOICE_COUNTERS = "invoice_counters";
 }
 

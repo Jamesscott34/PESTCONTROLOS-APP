@@ -1,10 +1,20 @@
 <resources>
-    <!-- Tenant brand: Good Riddance Pest Control (GRPC). Demo overrides in src/demo/. -->
-    <string name="app_name">Good Riddance Pest Control</string>
+    <!-- Tenant brand: Company 1. Demo / viking / primal / discreet override in src/&lt;flavor&gt;/. -->
+    <string name="app_name">Company 1</string>
+    <string name="tenant_public_name">Company 1</string>
+    <string name="tenant_public_website_url">https://yourcompany.example</string>
+    <string name="tenant_viking_name">Tenant B</string>
+    <string name="tenant_viking_website_url">https://tenantb.example/</string>
+    <string name="tenant_primal_name">Tenant C</string>
+    <string name="tenant_primal_website_url">https://tenantc.example/</string>
+    <string name="tenant_discreet_name">Tenant D</string>
+    <string name="tenant_discreet_website_url">https://tenantd.example/</string>
+    <string name="tenant_safesecure_name">Tenant E</string>
+    <string name="tenant_safesecure_website_url">https://tenante.example/</string>
     <string name="widget_workview_description">WorkView: next 3 upcoming jobs</string>
     <string name="exit_button_offline">Exit</string>
-    <string name="website_button_text">Visit Good Riddance Pest Control Staff</string>
-    <string name="main_website_url">https://www.grpcstaff.ie</string>
+    <string name="website_button_text">Visit Company 1 Staff</string>
+    <string name="main_website_url">https://yourcompany.example</string>
     <!-- Offline trial: message when redirecting to website after trial ends -->
     <string name="offline_trial_redirect_message">Trial period has ended. Visit our website to continue.</string>
     <!-- Template limit (demo/offline only) -->
@@ -16,38 +26,367 @@
     <string name="get_update_button">Get update</string>
     <string name="maps_feature_coming_soon">Maps feature coming soon.</string>
 
+    <!-- Login screen -->
+    <string name="login_title">Sign in</string>
+    <string name="login_subtitle">Enter your credentials to continue</string>
+    <string name="login_email_hint">Email</string>
+    <string name="login_password_hint">Password</string>
+    <string name="login_button">Login</string>
+    <string name="login_offline_button">Offline login</string>
+    <string name="login_error_empty">Please enter email and password</string>
+    <string name="login_welcome_toast">Welcome %1$s!</string>
+    <string name="login_failed">Login Failed: %1$s</string>
+    <string name="login_profile_unavailable">Login succeeded, but profile could not be loaded. Please try again.</string>
+    <string name="login_profile_access_title">Profile access issue</string>
+    <string name="login_profile_access_message">Please contact support if you cannot access your profile.</string>
+    <string name="login_session_expired">Login session expired. Please try again.</string>
+    <string name="login_offline_toast">Using app in offline mode</string>
+    <string name="login_logo_content_description">Company logo</string>
+
+    <!-- Main dashboard -->
+    <string name="welcome_back_user">Welcome back, %1$s</string>
+    <string name="main_dashboard_subtitle">Check notifications, work view, commissions, and contracts</string>
+    <string name="main_section_quick_actions">QUICK ACTIONS</string>
+    <string name="main_section_operations">OPERATIONS</string>
+    <string name="main_section_business">BUSINESS</string>
+    <string name="main_section_tools">TOOLS</string>
+    <string name="main_section_system">SYSTEM</string>
+    <string name="main_section_bottom">BOTTOM</string>
+    <string name="main_button_create_report">Create Report</string>
+    <string name="main_button_view_reports">View Reports</string>
+    <string name="main_button_work_view">Work View</string>
+    <string name="main_button_job_work">Job Work</string>
+    <string name="main_button_contracts">Contracts</string>
+    <string name="main_button_commission">Commission</string>
+    <string name="main_button_location_finder">Location Finder</string>
+    <string name="location_finder_refresh_all">Refresh all locations</string>
+    <string name="location_finder_refresh_done">Locations updated from the server.</string>
+    <string name="location_finder_refresh_partial">Some locations could not be refreshed. Check your connection.</string>
+    <string name="location_finder_refresh_none">No technicians to refresh.</string>
+    <string name="main_button_notifications">Notifications</string>
+    <string name="main_button_dashboard">Dashboard</string>
+    <string name="main_button_invoices">Billing / Invoices</string>
+    <string name="main_button_search">Search</string>
+    <string name="main_button_messaging">Messaging</string>
+    <string name="main_button_maps">Maps</string>
+    <string name="main_button_router">Router</string>
+    <string name="main_button_converter">PDF → Word</string>
+    <string name="main_button_pdf_editor">Edit PDF</string>
+    <string name="pdf_editor_title">Edit PDF</string>
+    <string name="pdf_editor_pick_device">From phone</string>
+    <string name="pdf_editor_pick_cloud">From Firebase</string>
+    <string name="pdf_editor_mode_text">Text</string>
+    <string name="pdf_editor_mode_draw">Draw</string>
+    <string name="pdf_editor_color_black">Blk</string>
+    <string name="pdf_editor_color_red">Red</string>
+    <string name="pdf_editor_color_blue">Blu</string>
+    <string name="pdf_editor_export">Export PDF</string>
+    <string name="pdf_editor_page_image">PDF page</string>
+    <string name="pdf_editor_hint_empty">Pick a PDF from your phone or Firebase. Then use Text or Draw, and tap Export PDF to save and share.</string>
+    <string name="pdf_editor_page_up">Page ↑</string>
+    <string name="pdf_editor_page_down">Page ↓</string>
+    <string name="pdf_editor_hint_text">Text mode: tap the page to place text. Use Page ↑ / ↓ to move between pages.</string>
+    <string name="pdf_editor_hint_draw">Draw mode: drag with your finger to mark up the page.</string>
+    <string name="pdf_editor_text_dialog_title">Text to place</string>
+    <string name="pdf_editor_no_permission">PDF editing is not enabled for your account.</string>
+    <string name="pdf_editor_not_available">PDF editing is not available offline.</string>
+    <string name="pdf_editor_session_loading">Signing in… try again in a moment.</string>
+    <string name="pdf_editor_open_failed">Could not open PDF: %1$s</string>
+    <string name="pdf_editor_loaded_pages">Loaded %1$d page(s).</string>
+    <string name="pdf_editor_downloading">Downloading…</string>
+    <string name="pdf_editor_download_failed">Download failed: %1$s</string>
+    <string name="pdf_editor_cloud_source_title">Open from</string>
+    <string name="pdf_editor_cloud_contracts">Contract files (cloud)</string>
+    <string name="pdf_editor_cloud_reports">Report folders (cloud)</string>
+    <string name="pdf_editor_cloud_pick_pdf_only">Choose a PDF file.</string>
+    <string name="pdf_editor_nothing_to_export">Open a PDF first.</string>
+    <string name="pdf_editor_export_working">Building PDF…</string>
+    <string name="pdf_editor_export_done">Saved: %1$s (in app folder pdf_editor). Sharing…</string>
+    <string name="pdf_editor_export_failed">Export failed: %1$s</string>
+    <string name="pdf_editor_share">Share PDF</string>
+    <string name="converter_title">PDF to Word</string>
+    <string name="converter_intro">Build a Word document from a PDF (each page as an image). Use Convert to Word to pick a file, then Open or Share the .docx.</string>
+    <string name="converter_pick_pdf">Choose PDF</string>
+    <string name="converter_ready">Tap Convert to Word to pick a PDF, or use Text from PDF below.</string>
+    <string name="converter_open">Open</string>
+    <string name="converter_convert_to_word">Convert to Word</string>
+    <string name="converter_working">Converting… this may take a minute for large files.</string>
+    <string name="converter_done">Saved %1$d page(s) to: %2$s\nFolder: Android/data/…/files/converter</string>
+    <string name="converter_failed">Conversion failed: %1$s</string>
+    <string name="converter_success">Word file saved.</string>
+    <string name="converter_no_permission">PDF to Word is not enabled for your account.</string>
+    <string name="converter_not_available">Converter is not available offline or in restricted mode.</string>
+    <string name="converter_how_it_works">How it works</string>
+    <string name="converter_how_it_works_detail">Each PDF page becomes a picture inside the Word file so layout matches the original. Editable text is not extracted automatically—use Word or Docs to add a text box or overlay. For very long PDFs, only the first 40 pages are converted.</string>
+    <string name="converter_open_docx">Open in Word</string>
+    <string name="converter_share">Share</string>
+    <string name="converter_open_with">Open with</string>
+    <string name="converter_no_output">Convert a PDF first.</string>
+    <string name="converter_no_app">No app found to open Word files. Install Word or Google Docs.</string>
+    <string name="converter_text_section_title">Text from PDF</string>
+    <string name="converter_text_section_intro">Uses the PDF text layer when present, ML Kit OCR when a page looks scanned, and optional password for protected files. Edit below: Copy copies all text; Save as saves .txt or .pdf; Share sends the text.</string>
+    <string name="converter_pick_pdf_text">Choose PDF → extract text</string>
+    <string name="converter_extracted_hint">Extracted text will appear here…</string>
+    <string name="converter_copy_text">Copy</string>
+    <string name="converter_share_text">Share</string>
+    <string name="converter_save_as">Save as</string>
+    <string name="converter_save_as_title">Save as</string>
+    <string name="converter_save_as_txt">Plain text (.txt)</string>
+    <string name="converter_save_as_pdf">PDF (.pdf)</string>
+    <string name="converter_text_working">Extracting text…</string>
+    <string name="converter_text_done">Extracted text (%1$d page markers). You can edit it above.</string>
+    <string name="converter_text_failed">Text extract failed: %1$s</string>
+    <string name="converter_text_empty_clipboard">Nothing to copy.</string>
+    <string name="converter_text_copied">Copied to clipboard.</string>
+    <string name="converter_text_saved">Saved: %1$s</string>
+    <string name="converter_share_text_chooser">Share text</string>
+    <string name="converter_text_saved_pdf">Saved PDF: %1$s</string>
+    <string name="converter_password_title">PDF password</string>
+    <string name="converter_password_message">This PDF is protected. Enter the password to extract text and use OCR.</string>
+    <string name="converter_password_hint">Password</string>
+    <string name="converter_password_wrong">That password did not work. Try again.</string>
+    <string name="main_button_how_to_use">How To Use App</string>
+    <string name="main_button_staff_portal">Staff Portal</string>
+    <string name="main_button_employee">Super Admin</string>
+    <string name="main_button_logout">Logout</string>
+    <string name="main_logo_content_description">Company logo</string>
+    <string name="router_title">Router</string>
+    <string name="router_subtitle">Build a best-route PDF from the 10 highest-priority nearby contracts.</string>
+    <string name="router_owner_label">Choose a user</string>
+    <string name="router_create_button">Create Best Route</string>
+    <string name="router_view_routes_button">View Created Routes</string>
+    <string name="router_status_loading">Loading router...</string>
+
+    <!-- Create Report screen (ReportSelectionActivity) -->
+    <string name="create_report_subtitle">Create a report or quotation using any of the following</string>
+    <string name="create_report_section_reports">REPORTS</string>
+    <string name="create_report_section_quotations">QUOTATIONS</string>
+    <string name="create_report_section_agreements">AGREEMENTS &amp; COMPLIANCE</string>
+    <string name="create_report_section_templates">TEMPLATES</string>
+    <string name="create_report_service_report">Service Report</string>
+    <string name="create_report_general_report">General Report</string>
+    <string name="create_report_action_form">Action Form</string>
+    <string name="service_report_catalog_label">Quick template (optional)</string>
+    <string name="service_report_catalog_hint">Select templates one at a time to add paragraphs (blank line between each). Or type your own in the box below.</string>
+    <string name="service_report_catalog_prompt">— Select template (optional) —</string>
+    <string name="recommendations_catalog_label">Quick recommendation (optional)</string>
+    <string name="recommendations_catalog_hint">Or type your own recommendations below — dropdown is not required.</string>
+    <string name="recommendations_catalog_prompt">— Add recommendation (optional) —</string>
+    <string name="create_report_contract_quotation">Contract Quotation</string>
+    <string name="create_report_bird_quote">Bird Quote</string>
+    <string name="create_report_service_agreements">Service Agreements</string>
+    <string name="create_report_era">ERA</string>
+    <string name="create_report_custom_template">Custom Template</string>
+    <string name="create_report_create_custom_report">Create Custom Report</string>
+    <string name="view_reports_subtitle">Open saved reports, stored files, quotations, agreements, and ERA documents</string>
+    <string name="view_reports_section_local">LOCAL REPORTS</string>
+    <string name="view_reports_section_storage">CLOUD &amp; STORAGE</string>
+    <string name="view_reports_section_other">OTHER DOCUMENTS</string>
+    <string name="view_reports_section_local_description">Open reports saved on this device or browse stored PDFs pulled from Firebase.</string>
+    <string name="view_reports_section_storage_description">Browse quotations on this device, or open Firebase folders: contract IDs under contracts/, and annual Reports folders with subfolders and PDFs.</string>
+    <string name="view_reports_section_other_description">Access service agreement and ERA documents from one place.</string>
+    <string name="view_reports_reports">Reports</string>
+    <string name="view_reports_stored_reports">Stored Reports</string>
+    <string name="stored_reports_no_root_folders">No top-level storage folders found. Check your connection. For only Reports year folders (ReportsXX), use Report folders (cloud).</string>
+    <string name="stored_reports_root_list_denied_fallback">Cannot list all storage from the app (permissions). Showing reachable Reports year folders only — use Report folders (cloud) for the filtered browser.</string>
+    <string name="stored_reports_screen_subtitle">Browse folders in your Firebase bucket. Tap a row to open subfolders or files.</string>
+    <string name="stored_reports_path_bucket_root">All top-level folders</string>
+    <string name="stored_reports_offline_unavailable">Stored Reports is not available in offline mode.</string>
+    <string name="stored_reports_search_hint">Search folders…</string>
+    <string name="stored_reports_row_subtitle">Folder · Tap to open</string>
+    <string name="dialog_search_hint">Search…</string>
+    <string name="cloud_storage_row_type_folder">Folder</string>
+    <string name="cloud_storage_row_type_file">File</string>
+    <string name="cloud_storage_screen_hint">Open a folder or file. Use Back to go up one level.</string>
+    <string name="stored_reports_dialog_subfolders">Choose a subfolder</string>
+    <string name="stored_reports_dialog_files_in_path">Files — %1$s</string>
+    <string name="view_reports_quotations">Quotations</string>
+    <string name="view_reports_cloud_contracts">Contract files (cloud)</string>
+    <string name="view_reports_cloud_reports">Report folders (cloud)</string>
+    <string name="cloud_storage_title_contracts">Contract storage</string>
+    <string name="cloud_storage_title_reports">Report storage</string>
+    <string name="cloud_storage_back">Back</string>
+    <string name="cloud_storage_new_folder_button">New folder</string>
+    <string name="cloud_storage_new_folder_title">Create folder in cloud</string>
+    <string name="cloud_storage_new_folder_hint">Folder name (no slashes)</string>
+    <string name="cloud_storage_new_folder_invalid">Enter a valid folder name (no slashes or reserved names).</string>
+    <string name="cloud_storage_new_folder_created">Folder created.</string>
+    <string name="cloud_storage_new_folder_failed">Could not create folder: %1$s</string>
+    <string name="cloud_storage_upload_file_button">Upload file from phone</string>
+    <string name="cloud_storage_upload_need_folder">Open a folder first, then upload files into it.</string>
+    <string name="cloud_storage_upload_working">Uploading…</string>
+    <string name="cloud_storage_upload_done">Upload complete.</string>
+    <string name="cloud_storage_upload_failed">Upload failed: %1$s</string>
+
+    <string name="admin_report_folder_title">Create report root folder</string>
+    <string name="admin_report_folder_message">Enter a number only (e.g. 27). A root folder named Reports27 will be created. You can add any subfolders and files inside Stored Reports.</string>
+    <string name="admin_report_folder_number_hint">e.g. 27</string>
+    <string name="admin_report_folder_invalid">Enter at least one digit.</string>
+    <string name="admin_report_folder_exists">%1$s already exists.</string>
+    <string name="admin_report_folder_created">Created %1$s.</string>
+    <string name="admin_report_folder_failed">Could not create folder: %1$s</string>
+    <string name="cloud_storage_creating_folder">Creating folder…</string>
+    <string name="cloud_storage_pick_report_folder">Choose a report folder, then open subfolders or files.</string>
+    <string name="cloud_storage_reports_filtered_root">Reports/ — year folders only (Reports26, two digits)</string>
+    <string name="cloud_storage_no_report_folders">No report folders found for this account.</string>
+    <string name="cloud_storage_empty_folder">This folder is empty.</string>
+    <string name="cloud_storage_list_failed">Could not list folder: </string>
+    <string name="cloud_storage_open_failed">Could not open file: </string>
+    <string name="cloud_storage_no_viewer">No app found to open this file.</string>
+    <string name="cloud_storage_unavailable_offline">Cloud browsing is not available in offline mode.</string>
+    <string name="cloud_storage_entry_folder">Folder · %1$s</string>
+    <string name="cloud_storage_entry_file">File · %1$s</string>
+    <string name="cloud_storage_action_view">View</string>
+    <string name="cloud_storage_action_download">Download</string>
+    <string name="cloud_storage_action_share">Share link</string>
+    <string name="cloud_storage_share_chooser">Share file link</string>
+    <string name="cloud_storage_share_message">%1$s\n%2$s</string>
+    <string name="cloud_storage_share_failed">Could not create share link: %1$s</string>
+    <string name="cloud_storage_contract_folder_subtitle">Contract folder · ID %1$s</string>
+    <string name="cloud_storage_contract_search_hint">Search contract files and folders…</string>
+    <string name="cloud_storage_reports_search_hint">Search all report files by name…</string>
+    <string name="cloud_storage_searching_reports">Searching report folders…</string>
+    <string name="cloud_storage_search_no_report_files">No matching report files found.</string>
+    <string name="cloud_storage_move_files">Move</string>
+    <string name="cloud_storage_move_select_folder">Select destination folder</string>
+    <string name="cloud_storage_move_here">Move here</string>
+    <string name="cloud_storage_move_confirm">Move %1$d file(s) to %2$s?</string>
+    <string name="cloud_storage_move_done">Moved %1$d file(s).</string>
+    <string name="cloud_storage_move_failed">Move failed: %1$s</string>
+    <string name="cloud_storage_move_super_admin_only">Only super admins can move cloud files.</string>
+    <string name="cloud_storage_move_not_allowed">You do not have permission to move cloud files.</string>
+    <string name="cloud_storage_move_here_hint">Tap Move here to use this folder, or open a subfolder first.</string>
+    <string name="cloud_storage_select_files">Select files</string>
+    <string name="cloud_storage_selected_count">%1$d selected</string>
+    <string name="cloud_storage_share_working">Preparing share links…</string>
+    <string name="cloud_storage_share_multiple_subject">%1$d cloud files</string>
+    <string name="cloud_storage_admin_only_delete">Only admins can delete cloud files.</string>
+    <string name="cloud_storage_search_result_folder">In %1$s</string>
+    <string name="email_select_management_job">Select Management Job</string>
+    <string name="email_no_management_jobs">No management jobs found.</string>
+    <string name="email_no_management_job_selected">No management job selected</string>
+    <string name="email_add_management_report">Add Mgmt Report</string>
+    <string name="email_select_year_folder">Select year folder</string>
+    <string name="email_select_report_folder">Select folder</string>
+    <string name="email_no_year_folders">No year folders found for this contract.</string>
+    <string name="email_no_files_in_folder">No files found in this folder.</string>
+    <string name="email_management_jobs_loading">Loading management jobs…</string>
+    <string name="email_manage_management_files">Manage Job Files</string>
+    <string name="email_compose_title">Compose Email</string>
+    <string name="email_source_section">Source</string>
+    <string name="email_select_contract">Select Contract</string>
+    <string name="email_no_contract_selected">No contract selected</string>
+    <string name="email_template_label">Template</string>
+    <string name="email_to_hint">To emails, comma separated</string>
+    <string name="email_subject_hint">Subject</string>
+    <string name="email_body_hint">Email body</string>
+    <string name="email_attachments_section">Attachments</string>
+    <string name="email_add_reports">Add Reports</string>
+    <string name="email_browse_quotations">Browse Quotations</string>
+    <string name="email_manage_job_files">Manage Job Files</string>
+    <string name="email_add_local_pdf">Add Local PDF</string>
+    <string name="email_attachments_none">Attachments: none</string>
+    <string name="email_open_app">Open Email App</string>
+    <string name="email_back">Back</string>
+    <string name="cloud_storage_action_rename">Rename</string>
+    <string name="cloud_storage_action_delete">Delete</string>
+    <string name="cloud_storage_download_saved">Saved: %1$s</string>
+    <string name="cloud_storage_download_failed">Download failed: %1$s</string>
+    <string name="cloud_storage_delete_confirm_title">Delete file?</string>
+    <string name="cloud_storage_delete_confirm_message">Remove \"%1$s\" from cloud storage? This cannot be undone.</string>
+    <string name="cloud_storage_delete_failed">Delete failed: %1$s</string>
+    <string name="cloud_storage_delete_done">File deleted.</string>
+    <string name="cloud_storage_rename_done">File renamed.</string>
+    <string name="cloud_storage_rename_title">Rename file</string>
+    <string name="cloud_storage_rename_hint">New file name</string>
+    <string name="cloud_storage_rename_apply">Rename</string>
+    <string name="cloud_storage_rename_invalid">Enter a valid file name (no slashes).</string>
+    <string name="cloud_storage_rename_failed">Rename failed: %1$s</string>
+    <string name="cloud_storage_rename_same">Choose a different name.</string>
+    <string name="view_reports_service_agreements">Service Agreements</string>
+    <string name="view_reports_era">ERA</string>
+
+    <!-- Quotes (contract type selection) -->
+    <string name="quotes_title">Contract Quotations</string>
+    <string name="quotes_subtitle">Create a quotation – choose a contract type</string>
+    <string name="quotes_4_part">4 Part</string>
+    <string name="quotes_6_part">6 Part</string>
+    <string name="quotes_8_part">8 Part</string>
+    <string name="quotes_12_part">12 Part</string>
+
+    <!-- Quotation screens (4pt/6pt/8pt/12pt) -->
+    <string name="quotation_externals">Externals</string>
+    <string name="quotation_externals_qty_hint">Qty</string>
+    <string name="quotation_fly_units">Fly Units</string>
+    <string name="quotation_fly_units_qty_hint">Qty</string>
+    <string name="quotation_insect_monitors">Insect Monitors</string>
+    <string name="quotation_insect_monitor_label">Insect monitor</string>
+    <string name="quotation_on_site_materials">On Site Materials</string>
+    <string name="quotation_required_materials">Required Materials</string>
+    <string name="quotation_required_material_type_label">Required material type</string>
+    <string name="quotation_required_material_qty_hint">Qty</string>
+    <string name="quotation_required_material_price_hint">Price (€)</string>
+    <string name="quotation_required_material_update">Update Required Material</string>
+    <string name="quotation_required_material_none">No required materials added.</string>
+    <string name="quotation_required_material_summary_title">Required Materials Summary</string>
+    <string name="quotation_required_material_total">Required Materials Total (Incl. VAT)</string>
+    <string name="quotation_first_quarter_due">First Quarter Payment Due</string>
+    <string name="quotation_required_material_externals">Externals</string>
+    <string name="quotation_required_material_fly_units">Fly Units</string>
+    <string name="quotation_required_material_insect_monitor">Insect Monitor</string>
+    <string name="quotation_total_excluding_vat">Total Price Excluding VAT</string>
+    <string name="quotation_total_including_vat">Total Price Including VAT</string>
+    <string name="quotation_price_per_quarter">Price Per Quarter</string>
+    <string name="quotation_password_protect">Password protect PDF</string>
+    <string name="quotation_add_image">Add Image</string>
+    <string name="quotation_save_report">Save Report</string>
+    <string name="quotation_generate_pdf">Generate PDF Quote</string>
+    <string name="quotation_profile_loading">Loading your profile email from Firebase. Please try again in a moment.</string>
+    <string name="quotation_fill_company_details">Please fill in all company details</string>
+    <string name="quotation_invalid_annual_fee">Invalid annual service fee</string>
+    <string name="quotation_pdf_failed">Failed to generate PDF quote</string>
+    <string name="quotation_sign_in_to_save">Please sign in to save to cloud</string>
+    <string name="quotation_saved_to_cloud">Quotation saved to cloud</string>
+    <string name="quotation_firestore_save_failed">Saved to storage but failed to save record</string>
+    <string name="quotation_upload_failed">Upload failed:</string>
+    <string name="quotation_base_price_hint">Base price (€)</string>
+    <string name="quotation_company_name_hint">Company Name</string>
+    <string name="quotation_company_address_hint">Company Address</string>
+    <string name="quotation_company_contact_hint">Company Contact</string>
+
     <!-- PDF branding (GRPC defaults; demo overrides in src/demo/) -->
-    <string name="pdf_company_name">Good Riddance Pest Control</string>
-    <string name="pdf_report_title">Good Riddance Pest Control Report</string>
+    <string name="pdf_company_name">Company 1</string>
+    <string name="pdf_report_title">Company 1 Report</string>
     <string name="pdf_action_form_title">Action Form</string>
     <string name="pdf_footer_text">Created by reporting system</string>
-    <string name="pdf_default_watermark_text">Good Riddance Pest Control</string>
+    <string name="pdf_default_watermark_text">Company 1</string>
     <string name="pdf_filename_prefix">GRPC</string>
 
     <!-- Additional PDF strings that were previously hardcoded in multiple generators -->
     <string name="pdf_company_website">www.grpestcontrol.ie</string>
     <string name="pdf_company_website_short">grpestcontrol.ie</string>
-    <string name="pdf_auto_generated_note">This report was automatically generated by Good Riddance Pest Control</string>
-    <string name="pdf_company_name_with_abbrev">Good Riddance Pest Control (GRPC)</string>
+    <string name="pdf_auto_generated_note">This report was automatically generated by Company 1</string>
+    <string name="pdf_company_name_with_abbrev">Company 1</string>
     <string name="pdf_company_abbrev">GRPC</string>
-    <string name="pdf_era_title">Good Riddance Pest Control Environmental Risk Assessment</string>
+    <string name="pdf_era_title">Company 1 Environmental Risk Assessment</string>
 
     <!-- Action form footer (company-specific) -->
-    <string name="pdf_action_form_footer">This Action Form was generated by Good Riddance Pest Control Reporting System</string>
+    <string name="pdf_page_number_format">Page %1$d of %2$d</string>
+    <string name="pdf_action_form_footer">This Action Form was generated by Company 1 Reporting System</string>
     <string name="pdf_action_form_footer_password_protected"> - Password Protected</string>
 
     <!-- Quotation success toast and filename prefix (company abbrev for quote numbers) -->
-    <string name="quote_saved_toast">Good Riddance Pest Control quote created and saved successfully!</string>
+    <string name="quote_saved_toast">Company 1 quote created and saved successfully!</string>
 
     <!-- Push notification channel (company-specific) -->
-    <string name="notification_channel_name">Good Riddance Pest Control Alerts</string>
+    <string name="notification_channel_name">Company 1 Alerts</string>
 
     <!-- Local storage folder names (reports and quotes). Use short, filesystem-safe names; demo overrides. -->
     <string name="reports_folder_name">GRPEST REPORTS</string>
     <string name="quotes_folder_name">GRPEST_QUOTES</string>
 
     <!-- PDF Template Settings UI hints (default GRPC examples; demo overrides) -->
-    <string name="pdf_template_main_header_hint">Main header (e.g. Good Riddance Pest Control)</string>
+    <string name="pdf_template_main_header_hint">Main header (e.g. Company 1)</string>
     <string name="pdf_template_footer_hint">Leave blank for default: Created by reporting system</string>
 
     <string-array name="reason_options">
@@ -59,22 +398,24 @@
     <string name="general_quotation_button">Generic Quotation</string>
     <string name="general_quotation_title">Generic Quotation</string>
     <!-- Custom Quote (multi-line custom items) -->
-    <string name="custom_quote_button">Custom Quote</string>
+    <string name="custom_quote_button">Custom Quotation</string>
+    <string name="custom_quotation_title">Custom Quotation</string>
     <string name="general_quotation_customer_name_hint">Customer Name</string>
     <string name="general_quotation_customer_address_hint">Customer Address</string>
     <string name="general_quotation_date_hint">Date</string>
     <string name="general_quotation_issue_hint">Issue</string>
     <string name="general_quotation_base_price_hint">Base Price (€)</string>
     <string name="general_quotation_vat_label">VAT (13.5%)</string>
+    <string name="general_quotation_vat_amount_label">VAT amount</string>
     <string name="general_quotation_total_label">Total</string>
     <string name="general_quotation_generate_pdf">Generate PDF</string>
     <string name="general_quotation_error_no_catalog">Sales catalog could not be loaded.</string>
     <string name="general_quotation_error_fill_required">Please fill in customer name, address, date, issue and base price.</string>
     <string name="general_quotation_error_invalid_price">Please enter a valid base price.</string>
     <string name="general_quotation_success">Quotation PDF generated and saved.</string>
-    <string name="general_quotation_additional_info_hint">Additional info (optional – included in PDF)</string>
+    <string name="general_quotation_additional_info_hint">Quotation details (editable – pre-filled from selected issue)</string>
     <string name="general_quotation_add_second_issue">Add second issue</string>
-    <string name="quotation_viewer_search_hint">Good Riddance Pest Control Quotes…</string>
+    <string name="quotation_viewer_search_hint">Company 1 Quotes…</string>
     <string name="general_quotation_remove_second_issue">Remove second issue</string>
     <string name="general_quotation_issue_2_hint">Second issue (optional)</string>
     <string name="general_quotation_base_price_2_hint">Second issue price (€)</string>
@@ -83,7 +424,7 @@
     <!-- Help README section content -->
     <!-- Generic (unknown user) -->
     <string name="help_section1_generic">How to Use the Pest Control App\n\n1. Login and main dashboard\n\n• Login: Sign in with your email and password. Your role (technician, admin, or super admin) and permissions are loaded from your profile (e.g. canSearch, canSeeContracts, canViewAllContracts).\n\n• Main menu: After login you see the main dashboard with buttons for Work View, Jobs, Contracts, Create Report, View Reports, Leads (if enabled), Notifications, and Search (if your account has search enabled). Use Help (this screen) anytime.</string>
-    <string name="help_section2_generic">2. Reports and quotations\n\n• Create Report: From the main menu open Create Report. You can open Company Report (service report), Contract Quotation (including Custom Quote), Bird Quotation, Generic Quotation, Action Form, Service Agreements, ERA, or Create Custom Report (with your saved template). Each opens the same way; fill the form and save to generate a PDF.\n\n• View Reports: Open View Reports to see saved or uploaded PDFs. Upload PDFs to Firebase Storage using the folder path ReportsYY/Month (e.g. Reports26/January).</string>
+    <string name="help_section2_generic">2. Reports and quotations\n\n• Create Report: From the main menu open Create Report. You can open Company Report (service report), Contract Quotation (including Custom Quote), Bird Quotation, Action Form, Service Agreements, ERA, Invoice, or Create Custom Report (with your saved template). Each opens the same way; fill the form and save to generate a PDF.\n\n• View Reports: Open View Reports to see saved or uploaded PDFs. Upload PDFs to Firebase Storage using the folder path ReportsYY/Month (e.g. Reports26/January).</string>
     <string name="help_section3_generic">3. Contracts\n\nContracts hold customer and visit information. Add and service customer contracts. Mark visits done when you complete a visit so Last Visit and Next Visit stay correct. From a contract you can create reports (fields auto-fill), view past reports by year folder, and add the contract to your Work View schedule.</string>
     <string name="help_section4_generic">4. Work View and Jobs\n\n- Use Work View to schedule your day and mark work complete.\n- Use Jobs to manage assigned work items.\n\nCustom times and drag-and-drop\n- Create with custom duration: Add Job/Contract/Follow-up → when the time dialog appears choose “Custom time…”, enter start (e.g. 08:30) and end (e.g. 15:00).\n- Change event time: Tap event → Edit Time → set start/end and save.\n- Move event: In daily view, long-press an event, drag to another time slot and release; start moves to that slot, duration is kept.</string>
     <string name="help_section5_generic">5. Commission (Leads)\n\nUse Leads to add and track leads and commission where this is enabled for your account. Add a lead, assign a technician or added-by, and track invoices and commission as allowed by your role.</string>
@@ -91,7 +432,7 @@
     <string name="help_section7_generic">7. Support and saving\n\nWhen you save a report, the PDF is stored on the device and you can upload it to Storage. When you save a job or add a Work View event, data is saved to the cloud. If something looks wrong, try logging out and back in. Contact your support contact for help.</string>
 
     <!-- Role-based help (no hardcoded staff names) -->
-    <string name="help_section1_admin">How to Use the Pest Control App\n\n1. Login and main dashboard (Admin / Super Admin)\n\n• Login and roles: Sign in with email and password. Your role (admin or super_admin) and permissions are loaded from your profile. Admins can see contracts, assign work, and use the Admin Dashboard; super admins also have Employee Management, Location Finder, and Messaging.\n\n• Main menu: Work View, Jobs, Contracts, Create Report, View Reports, Leads, Notifications, Search (if enabled), Admin Dashboard, and (super admin only) Employee Management. Use Help anytime.</string>
+    <string name="help_section1_admin">How to Use the Pest Control App\n\n1. Login and main dashboard (Admin / Super Admin)\n\n• Login and roles: Sign in with email and password. Your role (admin or super_admin) and permissions are loaded from your profile. Admins can see contracts, assign work, and use the Admin Dashboard; super admins also have the Super Admin screen, Location Finder, and Messaging.\n\n• Main menu: Work View, Jobs, Contracts, Create Report, View Reports, Leads, Notifications, Search (if enabled), Admin Dashboard, and (super admin only) Super Admin. Use Help anytime.</string>
     <string name="help_section2_admin">2. Reports and quotations (Admin)\n\n• Create Report: Same flow as technicians — Company Report, Contract Quotation (incl. Custom Quote), Action Form, Create Custom Report, etc. Create reports from Contracts/Jobs or from the main menu.\n\n• Upload PDFs to Firebase Storage: ReportsYY/Month/&lt;PDF&gt;. Use View Reports to share with customers/office.</string>
     <string name="help_section3_admin">3. Contracts (Admin)\n\nAdd contracts from the main menu. Use the Assign-to dropdown to assign a technician; the assigned technician receives an in-app notification. You can view, edit, and delete contracts where your role permits. From a contract you can create reports, view past reports by year folder, and add the contract to a technician’s Work View schedule.</string>
     <string name="help_section4_admin">4. Work View and Jobs (Admin)\n\nWork View: Schedule events and mark complete.\n- Reminders are scheduled ~30 minutes before jobs/contracts.\n- Custom duration: Add Job/Contract/Follow-up → “Custom time…” → enter start and end (e.g. 08:30 and 15:00).\n- Edit time: Tap event → Edit Time → change start/end and save.\n- Move event: Long-press in daily view, drag to another slot, release; duration is kept.\n\nJobs\n- Create jobs and assign technician via dropdown.\n- Admins may have additional delete/edit capabilities depending on role flags.</string>
@@ -122,6 +463,109 @@
 
     <string name="help_section7">7. Support and saving\n\nWhen you save a report, the PDF is stored on the device and you can upload it to Storage. When you save a job or add a Work View event, data is saved to the cloud. If something looks wrong, try logging out and back in. Contact your support contact for help.</string>
 
-    <!-- Admin-only: AI Chat API keys in Firestore AI-Chat/AI-API -->
-    <string name="help_section8_admin_ai_key">AI Chat uses keys stored in Firestore (collection AI-Chat, document AI-API). Only a super admin can update them.\n\n• KEY = Hugging Face token. Get it at: https://huggingface.co/settings/tokens (create a token with Inference permissions). Used with Hugging Face Router.\n\n• key-grog = Groq API key. Get it at: https://console.groq.com (sign in, go to API Keys, create a key). Used with Groq.\n\nThe app uses Groq if key-grog is set; otherwise it uses Hugging Face if KEY is set. Set at least one.\n\nTo update in the app:\n1. Open AI Chat\n2. Tap the settings (gear) icon top-right\n3. Choose \"Update Hugging Face Key\" or \"Update Groq Key\"\n4. Enter the new key and tap Update\n\nThe keys are stored in Firestore only; the app never displays them.</string>
+    <!-- Admin-only: API keys in Firestore for AI Fix feature -->
+    <string name="help_section8_admin_ai_key">API keys for the AI Fix feature are stored in Firestore (collection AI-Chat, document AI-API). Only a super admin can update them via Firebase Console.\n\n• KEY = Hugging Face token (Inference permissions).\n• key-grog = Groq API key.\n\nThe app uses Groq if key-grog is set; otherwise Hugging Face if KEY is set. Set at least one in Firestore.</string>
+
+    <!-- Platform invoices (super_admin create; admin view — PDFs in Storage companies/{tenant}/invoices/) -->
+    <string name="invoice_screen_list_title">Billing / Invoices</string>
+    <string name="invoice_screen_create_title">Create invoice</string>
+    <string name="invoice_admin_section_title">BILLING / INVOICES</string>
+    <string name="invoice_admin_open_list">View invoices</string>
+    <string name="admin_dashboard_reports_folder_title">REPORTS FOLDERS</string>
+    <string name="admin_dashboard_reports_folder_button">Create Reports folder (choose year)</string>
+    <string name="admin_dashboard_full_storage_title">FULL STORAGE (admin)</string>
+    <string name="admin_dashboard_full_storage_hint">Open Stored Reports with all top-level folders (companies, invoices, contract trees, etc.). The normal View Reports → Stored Reports list hides these for safety.</string>
+    <string name="admin_dashboard_full_storage_button">Browse all Firebase folders</string>
+    <string name="invoice_list_empty">No invoices yet.</string>
+    <string name="invoice_list_load_failed">Could not load invoices.</string>
+    <string name="invoice_action_open">View PDF</string>
+    <string name="invoice_action_download">Download</string>
+    <string name="invoice_action_email">Email</string>
+    <string name="invoice_action_share">Share</string>
+    <string name="invoice_action_delete">Delete</string>
+    <string name="invoice_delete_confirm">Delete this invoice record and file?</string>
+    <string name="invoice_deleted">Invoice removed.</string>
+    <string name="invoice_delete_failed">Could not delete invoice.</string>
+    <string name="invoice_download_failed">Could not load PDF.</string>
+    <string name="invoice_download_started">Downloading invoice to Downloads…</string>
+    <string name="invoice_not_available_offline">Invoices require an online build.</string>
+    <string name="invoice_admin_only_list">Invoices are available to admin users only.</string>
+    <string name="invoice_super_admin_only_list">Invoices and billing are available to users with invoice access.</string>
+    <string name="invoice_super_admin_only_create">Invoice access is required to create invoices.</string>
+    <string name="invoice_access_denied">You do not have permission to access invoices.</string>
+    <string name="invoice_create_button">Generate PDF &amp; save</string>
+    <string name="invoice_field_customer_name">Customer name</string>
+    <string name="invoice_field_customer_email">Customer email</string>
+    <string name="invoice_field_title">Invoice title / description</string>
+    <string name="invoice_field_body">Body / service details</string>
+    <string name="invoice_field_amount">Amount (e.g. €1,234.56)</string>
+    <string name="invoice_field_notes">Notes</string>
+    <string name="invoice_field_template">Template</string>
+    <string name="invoice_saved">Invoice saved.</string>
+    <string name="invoice_save_failed">Could not save invoice.</string>
+    <string name="invoice_validation_required">Please enter customer name, title, and amount.</string>
+    <string name="invoice_create_hint">Contract is optional. Enter customer details, subtotal, and VAT rate.</string>
+    <string name="invoice_contract_prefill">Contract prefill</string>
+    <string name="invoice_contract_none">No contract selected</string>
+    <string name="invoice_search_contract_button">Search &amp; select contract</string>
+    <string name="invoice_select_contract_title">Select contract</string>
+
+    <string name="report_signature_technician_button">Technician Signature</string>
+    <string name="report_signature_customer_button">Customer Signature</string>
+    <string name="report_signature_dialog_technician">Draw Technician Signature</string>
+    <string name="report_signature_dialog_customer">Draw Customer Signature</string>
+    <string name="report_signature_draw_hint">Draw your signature in the box above</string>
+    <string name="report_signature_save">Save</string>
+    <string name="report_signature_clear">Clear</string>
+    <string name="report_signature_empty">Please draw a signature first</string>
+    <string name="report_signature_save_failed">Error saving signature</string>
+    <string name="report_signature_technician_saved">Technician signature saved!</string>
+    <string name="report_signature_customer_saved">Customer signature saved!</string>
+    <string name="invoice_field_vat_rate">VAT rate %</string>
+    <string name="invoice_totals_preview">Subtotal: %1$s\nVAT (%2$s%%): %3$s\nTotal: %4$s</string>
+
+    <string name="invoice_pdf_sales_title">SALES INVOICE</string>
+    <string name="invoice_pdf_company_address">35 Limekiln Green, Dublin 12, Dublin, D12 V6Y2, Ireland</string>
+    <string name="invoice_pdf_telephone">0879134971</string>
+    <string name="invoice_pdf_accounts_email">accounts@grpestcontrol.ie</string>
+    <string name="invoice_pdf_invoice_to">Invoice To:</string>
+    <string name="invoice_pdf_deliver_to">Deliver To:</string>
+    <string name="invoice_pdf_invoice_date">Invoice Date: %1$s</string>
+    <string name="invoice_pdf_due_date">Due Date: %1$s</string>
+    <string name="invoice_pdf_invoice_number">Invoice Number: %1$s</string>
+    <string name="invoice_pdf_payment_terms">Payment can be made via bank transfer into the following account — IBAN: IE06 BOFI 9002 8726 8406 22. Alternatively, call 0879134971 if you wish to make a card payment.</string>
+    <string name="invoice_pdf_company_registration">Registered in Republic of Ireland No. IE732110</string>
+    <string name="invoice_pdf_vat_registration">VAT Registration Number IE 4098908TH</string>
+    <string name="invoice_pdf_registered_address">Registered Address 35 Limekiln Green, Dublin 12, Dublin, D12 V6Y2, Ireland</string>
+    <string name="invoice_pdf_thank_you">Thank you for your business.</string>
+    <string name="invoice_pdf_line_code">SC</string>
+    <string name="invoice_pdf_from_header">From</string>
+    <string name="invoice_pdf_bill_to_header">Bill To</string>
+    <string name="invoice_pdf_issue_date">Issue date: %1$s</string>
+    <string name="invoice_pdf_template_line">Template: %1$s</string>
+    <string name="invoice_pdf_customer_header">Customer</string>
+    <string name="invoice_pdf_amount_label">Amount due: %1$s</string>
+    <string name="invoice_pdf_notes_header">Notes</string>
+    <string name="invoice_pdf_footer_note">Thank you for your business. — %1$s</string>
+
+    <string name="invoice_template_initial_setup">Initial Setup</string>
+    <string name="invoice_template_monthly_maintenance">Monthly Maintenance</string>
+    <string name="invoice_template_feature_update">Feature Update</string>
+    <string name="invoice_template_custom">Custom Invoice</string>
+
+    <string name="invoice_tpl_initial_title">Initial setup invoice</string>
+    <string name="invoice_tpl_initial_body">Initial pest control setup and onboarding service.</string>
+    <string name="invoice_tpl_initial_notes">Payment due on receipt.</string>
+
+    <string name="invoice_tpl_monthly_title">Monthly maintenance invoice</string>
+    <string name="invoice_tpl_monthly_body">Monthly pest control maintenance and support service.</string>
+    <string name="invoice_tpl_monthly_notes">Payment due within agreed terms.</string>
+
+    <string name="invoice_tpl_feature_title">Feature update invoice</string>
+    <string name="invoice_tpl_feature_body">Additional pest control service or agreed feature update.</string>
+    <string name="invoice_tpl_feature_notes">Thank you for your business.</string>
+
+    <string name="invoice_tpl_custom_title">Pest control invoice</string>
+    <string name="invoice_tpl_custom_body">Pest control service as described below.</string>
+    <string name="invoice_tpl_custom_notes">Payment due on receipt.</string>
 </resources>

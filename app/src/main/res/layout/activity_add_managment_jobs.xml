@@ -30,6 +30,7 @@
 
         <!-- Technician Information (dropdown prevents typos -> notifications go to correct user) -->
         <TextView
+            android:id="@+id/assignedTechLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Assigned Technician"

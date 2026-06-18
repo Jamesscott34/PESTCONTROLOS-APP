@@ -1,79 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
     android:paddingTop="?attr/actionBarSize"
     android:padding="16dp"
     android:background="?android:attr/colorBackground">
 
-    <!-- Top Spacer to avoid notch -->
-    <View
-        android:id="@+id/statusSpacer"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:background="@android:color/transparent" />
-
-    <!-- Welcome Message -->
-    <TextView
-        android:id="@+id/welcomeTextView"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Welcome, User!"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="24dp"
-        android:textColor="?android:attr/textColorPrimary" />
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
+        <View
+            android:id="@+id/statusSpacer"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/transparent" />
 
+        <TextView
+            android:id="@+id/welcomeTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Welcome, User!"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorPrimary" />
 
-    <!-- Button to create a new report -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Service jobs (field work)"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="4dp"
+            android:layout_marginTop="8dp" />
 
-    <!-- Button to create a quotation -->
-    <Button
-        android:id="@+id/buttonCreateJobs"
-        android:layout_width="wrap_content"
-        android:layout_height="58dp"
-        android:text="Create Job"
-        android:textSize="18sp"
-        tools:layout_editor_absoluteX="119dp"
-        tools:layout_editor_absoluteY="427dp" />
+        <Button
+            android:id="@+id/buttonCreateJobs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="52dp"
+            android:text="Create service job"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
 
-    <Button
-        android:id="@+id/buttonViewJobs"
-        android:layout_width="wrap_content"
-        android:layout_height="58dp"
-        android:text="View Jobs"
-        android:textSize="18sp"
-        tools:layout_editor_absoluteX="117dp"
-        tools:layout_editor_absoluteY="203dp" />
+        <Button
+            android:id="@+id/buttonViewJobs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="52dp"
+            android:text="View service jobs"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp" />
 
-    <Button
-        android:id="@+id/buttonCreateManagmentJob"
-        android:layout_width="wrap_content"
-        android:layout_height="58dp"
-        android:text="Managment Job"
-        android:textSize="18sp"
-        tools:layout_editor_absoluteX="117dp"
-        tools:layout_editor_absoluteY="203dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Management jobs (follow-ups, setup)"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="4dp" />
 
-    <Button
-        android:id="@+id/buttonViewManagmentJob"
-        android:layout_width="wrap_content"
-        android:layout_height="58dp"
-        android:text="View  Management Jobs"
-        android:textSize="18sp"
-        tools:layout_editor_absoluteX="117dp"
-        tools:layout_editor_absoluteY="203dp" />
+        <Button
+            android:id="@+id/buttonCreateManagmentJob"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="52dp"
+            android:text="Create management job"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
 
+        <Button
+            android:id="@+id/buttonViewManagmentJob"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="52dp"
+            android:text="View management jobs"
+            android:textSize="16sp" />
 
-
-</LinearLayout>
-
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingTop="?attr/actionBarSize"
+    android:padding="16dp"
+    android:fillViewport="true"
+    android:background="?android:attr/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/converter_intro"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <Button
+                android:id="@+id/converterOpenDocxButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="52dp"
+                android:layout_marginEnd="4dp"
+                android:enabled="false"
+                android:text="@string/converter_open" />
+
+            <Button
+                android:id="@+id/converterShareDocxButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="52dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:enabled="false"
+                android:text="@string/converter_share" />
+
+            <Button
+                android:id="@+id/converterConvertToWordButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="52dp"
+                android:layout_marginStart="4dp"
+                android:enabled="false"
+                android:text="@string/converter_convert_to_word" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/converterStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:layout_marginTop="12dp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <Button
+            android:id="@+id/converterHowItWorksButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/converter_how_it_works" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/converter_text_section_title"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/converter_text_section_intro"
+            android:textSize="13sp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <Button
+            android:id="@+id/converterPickPdfTextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="56dp"
+            android:enabled="false"
+            android:text="@string/converter_pick_pdf_text" />
+
+        <EditText
+            android:id="@+id/converterExtractedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="200dp"
+            android:gravity="top|start"
+            android:hint="@string/converter_extracted_hint"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine|textCapSentences|textLongMessage"
+            android:scrollbars="vertical" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <Button
+                android:id="@+id/converterCopyTextButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:enabled="false"
+                android:text="@string/converter_copy_text" />
+
+            <Button
+                android:id="@+id/converterSaveTextButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:enabled="false"
+                android:text="@string/converter_save_as" />
+
+            <Button
+                android:id="@+id/converterShareTextButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:enabled="false"
+                android:text="@string/converter_share_text"
+ />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

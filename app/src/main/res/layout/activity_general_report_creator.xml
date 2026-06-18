@@ -24,6 +24,52 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="8dp">
+
+            <CheckBox
+                android:id="@+id/jobReportCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="JobWork" />
+
+            <CheckBox
+                android:id="@+id/managementReportCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Management" />
+
+            <Spinner
+                android:id="@+id/managementFolderSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_marginBottom="6dp" />
+
+            <CheckBox
+                android:id="@+id/contractReportCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Contract" />
+
+            <Spinner
+                android:id="@+id/contractFilterSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_marginBottom="6dp" />
+
+            <Spinner
+                android:id="@+id/contractSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_marginBottom="6dp" />
+        </LinearLayout>
+
         <!-- Property Name -->
         <EditText
             android:id="@+id/nameInput"
@@ -56,7 +102,7 @@
             android:hint="Date"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="false"
+            android:enabled="true"
             android:padding="12dp"
             android:layout_marginBottom="8dp"
             android:background="?attr/colorSurface"
@@ -78,6 +124,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp" />
+
+        <Button
+            android:id="@+id/previewButton"
+            android:text="Preview Report"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
         <!-- Save Button -->
         <Button

@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * Loads sales.json from the current flavor's assets (grpc or demo).
- * No fallback in main/assets; each flavor has its own sales.json.
+ * Loads shared sales.json from {@code app/src/main/assets} (all tenant flavors).
+ * Flavor-specific {@code sales.json} files are not used; maintain a single catalog in main assets.
  */
 public final class SalesCatalogLoader {
 

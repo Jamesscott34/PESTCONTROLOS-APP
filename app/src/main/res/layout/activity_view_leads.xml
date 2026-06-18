@@ -79,6 +79,17 @@
             android:orientation="vertical" />
     </ScrollView>
 
+    <Button
+        android:id="@+id/exportCsvButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Export CSV"
+        android:background="@drawable/button_background"
+        android:textColor="?attr/colorOnPrimary"
+        android:layout_marginTop="16dp"
+        android:padding="12dp"
+        android:visibility="gone" />
+
     <!-- Back Button -->
     <Button
         android:id="@+id/backButton"

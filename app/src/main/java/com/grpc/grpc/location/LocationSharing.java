@@ -74,7 +74,7 @@ public final class LocationSharing {
         // Update: every 15 minutes (WorkManager minimum)
         PeriodicWorkRequest updateWork = new PeriodicWorkRequest.Builder(
                 LastLocationUpdateWorker.class,
-                15, TimeUnit.MINUTES
+                10, TimeUnit.MINUTES   // was 15
         )
                 .setInputData(new androidx.work.Data.Builder()
                         .putString(LastLocationUpdateWorker.KEY_USER_NAME, userName)

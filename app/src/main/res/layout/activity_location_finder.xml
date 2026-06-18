@@ -32,6 +32,15 @@
             android:textColor="?android:attr/textColorSecondary"
             android:layout_marginBottom="12dp" />
 
+        <Button
+            android:id="@+id/locationFinderRefreshButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/location_finder_refresh_all"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
+
         <LinearLayout
             android:id="@+id/techniciansContainer"
             android:layout_width="match_parent"

@@ -270,7 +270,7 @@
                     android:text="@string/help_section7" />
             </LinearLayout>
 
-            <!-- Section 8: Admin-only - AI Chat API Key -->
+            <!-- Section 8: Admin-only - API keys in Firestore (AI Fix feature) -->
             <LinearLayout
                 android:id="@+id/section8"
                 android:layout_width="match_parent"
@@ -283,7 +283,7 @@
                     android:id="@+id/section8Header"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="8. Admin: AI Chat API Key"
+                    android:text="8. Admin: API Keys (Firestore)"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:padding="10dp"

@@ -95,15 +95,12 @@ public class FollowUpActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault());
         dateInput.setText(sdf.format(new Date()));
 
-        // List to store selected image URIs
-        List<Uri> selectedImageUris = new ArrayList<>();
-
         // Retrieve the selected PDF file path
         Intent intent = getIntent();
         String pdfFilePath = intent.getStringExtra("selected_pdf");
 
         // Set up button actions
-        selectImageButton.setOnClickListener(view -> openImageSelector(selectedImageUris));
+        selectImageButton.setOnClickListener(view -> openImageSelector());
         saveButton.setOnClickListener(view -> {
             if (pdfFilePath != null) {
                 saveFollowUpToPDF(pdfFilePath, selectedImageUris);
@@ -119,11 +116,8 @@ public class FollowUpActivity extends AppCompatActivity {
      *
      * @param selectedImageUris List of selected image URIs to store user-selected images.
      */
-    private void openImageSelector(List<Uri> selectedImageUris) {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.setType("image/*");
-        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        startActivityForResult(intent, 1);
+    private void openImageSelector() {
+        startActivityForResult(com.grpc.grpc.core.ReportImageStorage.createImagePickerIntent(), 1);
     }
 
     /**
@@ -139,14 +133,9 @@ public class FollowUpActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
-            if (data.getClipData() != null) { // Multiple images selected
-                int count = data.getClipData().getItemCount();
-                for (int i = 0; i < count; i++) {
-                    Uri imageUri = data.getClipData().getItemAt(i).getUri();
-                    selectedImageUris.add(imageUri);
-                }
-            } else if (data.getData() != null) { // Single image selected
-                selectedImageUris.add(data.getData());
+            java.util.List<Uri> persisted = com.grpc.grpc.core.ReportImageStorage.persistFromPickerResult(this, data);
+            if (!persisted.isEmpty()) {
+                selectedImageUris.addAll(persisted);
             }
             Toast.makeText(this, selectedImageUris.size() + " images selected!", Toast.LENGTH_SHORT).show();
         }
@@ -202,7 +191,7 @@ public class FollowUpActivity extends AppCompatActivity {
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(20)
                     .setBold()
-                    .setFontColor(ColorConstants.BLUE);
+                    .setFontColor(ColorConstants.BLACK);
             document.add(title);
             document.add(new Paragraph("\n"));
 

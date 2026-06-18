@@ -81,7 +81,7 @@ public class QuotationViewActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_report_viewer);
+        setContentView(R.layout.activity_era_viewer);
 
         // Retrieve the user's name passed from ContractsActivity
         userName = getIntent().getStringExtra("USER_NAME");
@@ -95,6 +95,9 @@ public class QuotationViewActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.report_recycler_view);
         searchBar = findViewById(R.id.search_bar);
         returnButton = findViewById(R.id.buttonreturn);
+        if (searchBar != null) {
+            searchBar.setHint("Search Quotations...");
+        }
 
         // Set up RecyclerView with a LinearLayoutManager
         recyclerView.setLayoutManager(new LinearLayoutManager(this));

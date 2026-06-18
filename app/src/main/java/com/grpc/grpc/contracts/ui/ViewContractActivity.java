@@ -2,14 +2,18 @@ package com.grpc.grpc.contracts.ui;
 
 import com.grpc.grpc.BuildConfig;
 import com.grpc.grpc.R;
+import com.grpc.grpc.billing.ui.CreateInvoiceActivity;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.contracts.pdf.ContractListPDFGenerator;
+import com.grpc.grpc.email.ui.EmailComposeActivity;
 import com.grpc.grpc.main.MainActivity;
+import com.grpc.grpc.maps.ui.MapsPlaceholderActivity;
+import com.grpc.grpc.era.ui.BirdProofingERAActivity;
 import com.grpc.grpc.reports.ui.ActionFormActivity;
-import com.grpc.grpc.generalreports.ui.GeneralReportActivity;
 import com.grpc.grpc.location.LocationSharing;
 import com.grpc.grpc.messaging.NotificationUtils;
 import com.grpc.grpc.reports.ui.ReportActivity;
+import com.grpc.grpc.safety.ui.SafetyStatementActivity;
 import com.grpc.grpc.jobs.rodent.RodentRoutineActivity;
 import com.grpc.grpc.jobs.rodent.RodentActivityRoutine;
 import com.grpc.grpc.jobs.rodent.RodentCallOutActivity;
@@ -48,6 +52,7 @@ import androidx.core.view.GestureDetectorCompat;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.storage.FirebaseStorage;
@@ -62,6 +67,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import android.content.SharedPreferences;
 import java.util.Collections;
@@ -133,7 +139,7 @@ import androidx.work.WorkManager;
  * - External app integration (Maps, WhatsApp)
  * 
  * Author: GRPC
- * Company: Good Riddance Pest Control
+ * Company: [Company 1]
  * Version: 1.0
  * Last Updated: 2024
  * ============================================================================
@@ -1014,6 +1020,7 @@ public class ViewContractActivity extends AppCompatActivity {
         String contact = contract.get("contact") != null ? contract.get("contact").toString() : "N/A";
         String visits = contract.get("visits") != null ? contract.get("visits").toString() : "0";
         String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
+        String notes = getOptionalContractNotes(contract);
         String nextVisit = calculateNextVisit(contract);
 
         // Determine background color based on nextVisit conditions
@@ -1027,6 +1034,7 @@ public class ViewContractActivity extends AppCompatActivity {
                         "Address: " + address + "\n" +
                         "Email: " + email + "\n" +
                         "Contact: " + contact + "\n" +
+                        (notes.isEmpty() ? "" : "Notes: " + notes + "\n") +
                         "Last Visit: " + lastVisit + "\n" +
                         "Next Visit: " + nextVisit
         );
@@ -1034,9 +1042,9 @@ public class ViewContractActivity extends AppCompatActivity {
         int preferred = resolveColorAttr(android.R.attr.textColorPrimary, contractDetails.getCurrentTextColor());
         contractDetails.setTextColor(pickReadableTextColor(bgColor, preferred));
 
-        // ✅ Add the "Mark as Done" Checkbox
+        // ✅ Add the "Mark as Routine" Checkbox
         CheckBox markDoneCheckBox = new CheckBox(this);
-        markDoneCheckBox.setText("Mark as Done");
+        markDoneCheckBox.setText("Mark as Routine");
         try {
             markDoneCheckBox.setTextColor(pickReadableTextColor(bgColor,
                     resolveColorAttr(android.R.attr.textColorPrimary, markDoneCheckBox.getCurrentTextColor())));
@@ -1047,6 +1055,18 @@ public class ViewContractActivity extends AppCompatActivity {
             if (markDoneCheckBox.isChecked()) {
                 // Ensure the correct technician's collection is updated
                 showRoutinePopup(name, documentId, owner, visits, markDoneCheckBox);
+            }
+        });
+
+        CheckBox markCallOutCheckBox = new CheckBox(this);
+        markCallOutCheckBox.setText("Mark as Call Out");
+        try {
+            markCallOutCheckBox.setTextColor(pickReadableTextColor(bgColor,
+                    resolveColorAttr(android.R.attr.textColorPrimary, markCallOutCheckBox.getCurrentTextColor())));
+        } catch (Exception ignored) {}
+        markCallOutCheckBox.setOnClickListener(v -> {
+            if (markCallOutCheckBox.isChecked()) {
+                showCallOutCounterPopup(name, documentId, markCallOutCheckBox);
             }
         });
 
@@ -1091,14 +1111,40 @@ public class ViewContractActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.WRAP_CONTENT
         ));
         viewReportsButton.setOnClickListener(v -> {
-            showReportYearPickerAndOpen(name);
+            showReportYearPickerAndOpen(name, documentId);
         });
+
+        Button viewMapsButton = new Button(this);
+        viewMapsButton.setText("View Maps");
+        viewMapsButton.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+        viewMapsButton.setOnClickListener(v -> {
+            Intent mapsIntent = new Intent(ViewContractActivity.this, MapsPlaceholderActivity.class);
+            mapsIntent.putExtra("USER_NAME", userName);
+            mapsIntent.putExtra("CONTRACT_ID", documentId);
+            mapsIntent.putExtra("COMPANY_NAME", name);
+            mapsIntent.putExtra("ADDRESS", address);
+            startActivity(mapsIntent);
+        });
+
+        Button viewVisitsButton = new Button(this);
+        viewVisitsButton.setText("View Visits");
+        viewVisitsButton.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+        viewVisitsButton.setOnClickListener(v -> showVisitsDialog(contract, documentId));
 
         // ✅ Add views to contract box
         contractBox.addView(contractDetails);
         contractBox.addView(markDoneCheckBox);
+        contractBox.addView(markCallOutCheckBox);
         contractBox.addView(remindMeCheckBox);
         contractBox.addView(viewReportsButton);
+        contractBox.addView(viewMapsButton);
+        contractBox.addView(viewVisitsButton);
 
         // ✅ Add the contract box to the container
         contractsContainer.addView(contractBox);
@@ -1108,7 +1154,16 @@ public class ViewContractActivity extends AppCompatActivity {
      * Shows a year picker based on available Firebase Storage folders (Reports25/Reports26/...).
      * If storage folders can't be listed, falls back to current year and previous year.
      */
-    private void showReportYearPickerAndOpen(String contractName) {
+    private void showReportYearPickerAndOpen(String contractName, String contractId) {
+        if (ContractReportSync.useContractReportsOnly() && ContractReportSync.hasContractId(contractId)) {
+            Intent intent = new Intent(ViewContractActivity.this, ContractReportsActivity.class);
+            intent.putExtra("CONTRACT_ID", contractId);
+            intent.putExtra("CONTRACT_NAME", contractName);
+            intent.putExtra("USER_NAME", userName);
+            startActivity(intent);
+            return;
+        }
+
         AlertDialog loading = new AlertDialog.Builder(this)
                 .setTitle("View Reports")
                 .setMessage("Checking available years…")
@@ -1134,45 +1189,62 @@ public class ViewContractActivity extends AppCompatActivity {
                 finalYearFolders = yearFolders;
             }
 
-            String[] labels = new String[finalYearFolders.size()];
-            for (int i = 0; i < finalYearFolders.size(); i++) {
-                labels[i] = String.valueOf(finalYearFolders.get(i).year);
-            }
-
             new AlertDialog.Builder(this)
                     .setTitle("Select report year")
-                    .setItems(labels, (d, which) -> {
-                        YearFolder selected = finalYearFolders.get(which);
-                        Intent intent = new Intent(ViewContractActivity.this, ContractReportsActivity.class);
-                        intent.putExtra("CONTRACT_NAME", contractName);
-                        intent.putExtra("USER_NAME", userName);
-                        intent.putExtra("REPORTS_FOLDER", selected.folderName);
-                        intent.putExtra("REPORT_YEAR", selected.year);
-                        startActivity(intent);
-                    })
+                    .setItems(buildReportPickerLabels(finalYearFolders, contractId), (d, which) ->
+                            openSelectedReportPickerOption(which, finalYearFolders, contractName, contractId))
                     .setNegativeButton("Cancel", null)
                     .show();
         }).addOnFailureListener(e -> {
             loading.dismiss();
             List<YearFolder> fallback = buildFallbackYears();
-            String[] labels = new String[fallback.size()];
-            for (int i = 0; i < fallback.size(); i++) labels[i] = String.valueOf(fallback.get(i).year);
 
             new AlertDialog.Builder(this)
                     .setTitle("Select report year")
                     .setMessage("Could not list Storage folders. Showing default years.")
-                    .setItems(labels, (d, which) -> {
-                        YearFolder selected = fallback.get(which);
-                        Intent intent = new Intent(ViewContractActivity.this, ContractReportsActivity.class);
-                        intent.putExtra("CONTRACT_NAME", contractName);
-                        intent.putExtra("USER_NAME", userName);
-                        intent.putExtra("REPORTS_FOLDER", selected.folderName);
-                        intent.putExtra("REPORT_YEAR", selected.year);
-                        startActivity(intent);
-                    })
+                    .setItems(buildReportPickerLabels(fallback, contractId), (d, which) ->
+                            openSelectedReportPickerOption(which, fallback, contractName, contractId))
                     .setNegativeButton("Cancel", null)
                     .show();
         });
+    }
+
+    private String[] buildReportPickerLabels(List<YearFolder> yearFolders, String contractId) {
+        int extra = ContractReportSync.hasContractId(contractId) ? 1 : 0;
+        String[] labels = new String[yearFolders.size() + extra];
+        int index = 0;
+        if (extra == 1) {
+            labels[index++] = "Contracts";
+        }
+        for (YearFolder folder : yearFolders) {
+            labels[index++] = String.valueOf(folder.year);
+        }
+        return labels;
+    }
+
+    private void openSelectedReportPickerOption(int which, List<YearFolder> yearFolders, String contractName, String contractId) {
+        boolean hasContractReports = ContractReportSync.hasContractId(contractId);
+        if (hasContractReports && which == 0) {
+            Intent intent = new Intent(ViewContractActivity.this, ContractReportsActivity.class);
+            intent.putExtra("CONTRACT_ID", contractId);
+            intent.putExtra("CONTRACT_NAME", contractName);
+            intent.putExtra("USER_NAME", userName);
+            intent.putExtra("OPEN_CONTRACT_FOLDER_ONLY", true);
+            startActivity(intent);
+            return;
+        }
+
+        int yearIndex = hasContractReports ? which - 1 : which;
+        if (yearIndex < 0 || yearIndex >= yearFolders.size()) return;
+
+        YearFolder selected = yearFolders.get(yearIndex);
+        Intent intent = new Intent(ViewContractActivity.this, ContractReportsActivity.class);
+        intent.putExtra("CONTRACT_ID", contractId);
+        intent.putExtra("CONTRACT_NAME", contractName);
+        intent.putExtra("USER_NAME", userName);
+        intent.putExtra("REPORTS_FOLDER", selected.folderName);
+        intent.putExtra("REPORT_YEAR", selected.year);
+        startActivity(intent);
     }
 
     private List<YearFolder> buildFallbackYears() {
@@ -1242,6 +1314,220 @@ public class ViewContractActivity extends AppCompatActivity {
         // Default background should respect theme in dark mode
         return resolveColorAttr(com.google.android.material.R.attr.colorSurface,
                 resolveColorAttr(android.R.attr.colorBackground, 0));
+    }
+
+    private String buildYearlyCounterKey(String prefix) {
+        int year = Calendar.getInstance().get(Calendar.YEAR);
+        return prefix + String.format(Locale.getDefault(), "%02d", year % 100);
+    }
+
+    private String buildYearlyCounterKey(String prefix, String visitDate) {
+        String suffix = extractTwoDigitYear(visitDate);
+        return prefix + (suffix.isEmpty() ? String.format(Locale.getDefault(), "%02d", Calendar.getInstance().get(Calendar.YEAR) % 100) : suffix);
+    }
+
+    private String extractTwoDigitYear(String visitDate) {
+        if (visitDate == null) return "";
+        String trimmed = visitDate.trim();
+        if (trimmed.matches("^\\d{2}/\\d{2}/\\d{2}$")) {
+            return trimmed.substring(trimmed.length() - 2);
+        }
+        if (trimmed.matches("^\\d{2}/\\d{2}/\\d{4}$")) {
+            return trimmed.substring(trimmed.length() - 2);
+        }
+        return "";
+    }
+
+    private int readCounterNumber(Object raw) {
+        if (raw instanceof Number) {
+            return ((Number) raw).intValue();
+        }
+        if (raw != null) {
+            try {
+                return Integer.parseInt(raw.toString().trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0;
+    }
+
+    private void incrementYearlyCounter(String documentId, String prefix, String label, Runnable onComplete) {
+        incrementYearlyCounter(documentId, prefix, label, null, onComplete);
+    }
+
+    private void incrementYearlyCounter(String documentId, String prefix, String label, String visitDate, Runnable onComplete) {
+        if (db == null || documentId == null || documentId.trim().isEmpty()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        DocumentReference ref = db.collection(FirestorePaths.CONTRACTS).document(documentId);
+        String counterKey = visitDate != null && !visitDate.trim().isEmpty()
+                ? buildYearlyCounterKey(prefix, visitDate)
+                : buildYearlyCounterKey(prefix);
+        String numberPath = counterKey + ".number";
+
+        db.runTransaction(transaction -> {
+            com.google.firebase.firestore.DocumentSnapshot snapshot = transaction.get(ref);
+            int current = readCounterNumber(snapshot.get(numberPath));
+            transaction.update(ref, numberPath, current + 1);
+            return current + 1;
+        }).addOnSuccessListener(value -> {
+            Toast.makeText(this, label + " counter updated.", Toast.LENGTH_SHORT).show();
+            if (onComplete != null) onComplete.run();
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Failed to update " + label.toLowerCase(Locale.getDefault()) + " counter: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            if (onComplete != null) onComplete.run();
+        });
+    }
+
+    private void showVisitsDialog(Map<String, Object> loadedContract, String documentId) {
+        if (db == null || documentId == null || documentId.trim().isEmpty()) {
+            showVisitsDialogFromData(loadedContract);
+            return;
+        }
+
+        AlertDialog loading = new AlertDialog.Builder(this)
+                .setTitle("Visit History")
+                .setMessage("Loading history...")
+                .setCancelable(false)
+                .show();
+
+        db.collection(FirestorePaths.CONTRACTS)
+                .document(documentId)
+                .collection("visitHistory")
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(100)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    loading.dismiss();
+                    if (snapshot == null || snapshot.isEmpty()) {
+                        // Fall back to yearly counter totals if no history entries yet
+                        showVisitsDialogFromData(loadedContract);
+                        return;
+                    }
+
+                    // Build a scrollable list of visit entries
+                    android.widget.LinearLayout listLayout = new android.widget.LinearLayout(this);
+                    listLayout.setOrientation(android.widget.LinearLayout.VERTICAL);
+                    listLayout.setPadding(32, 16, 32, 16);
+
+                    for (com.google.firebase.firestore.QueryDocumentSnapshot doc : snapshot) {
+                        String type = doc.getString("type") != null ? doc.getString("type") : "Visit";
+                        String date = doc.getString("date") != null ? doc.getString("date") : "Unknown date";
+                        String tech = doc.getString("tech") != null ? doc.getString("tech") : "";
+
+                        String label = "● " + type + "  –  " + date
+                                + (tech.isEmpty() ? "" : "  (" + tech + ")");
+
+                        android.widget.TextView entry = new android.widget.TextView(this);
+                        entry.setText(label);
+                        entry.setTextSize(14f);
+                        entry.setPadding(0, 10, 0, 10);
+                        listLayout.addView(entry);
+
+                        // Divider
+                        android.view.View divider = new android.view.View(this);
+                        divider.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 1));
+                        divider.setBackgroundColor(android.graphics.Color.LTGRAY);
+                        listLayout.addView(divider);
+                    }
+
+                    android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+                    scrollView.addView(listLayout);
+
+                    // Fixed height so the dialog doesn't fill the screen
+                    int maxHeightPx = (int) (getResources().getDisplayMetrics().heightPixels * 0.6f);
+                    scrollView.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                            android.widget.LinearLayout.LayoutParams.MATCH_PARENT, maxHeightPx));
+
+                    new androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setTitle("Visit History (" + snapshot.size() + " entries)")
+                            .setView(scrollView)
+                            .setPositiveButton("OK", null)
+                            .show();
+                })
+                .addOnFailureListener(e -> {
+                    loading.dismiss();
+                    showVisitsDialogFromData(loadedContract);
+                });
+    }
+
+    private void writeVisitHistoryEntry(String documentId, String type, String date) {
+        if (db == null || documentId == null || documentId.trim().isEmpty()) return;
+        try {
+            java.util.Map<String, Object> entry = new java.util.HashMap<>();
+            entry.put("type", type);
+            entry.put("date", date);
+            entry.put("tech", SessionManager.getName(this));
+            entry.put("timestamp", com.google.firebase.firestore.FieldValue.serverTimestamp());
+            db.collection(FirestorePaths.CONTRACTS)
+                    .document(documentId)
+                    .collection("visitHistory")
+                    .add(entry)
+                    .addOnFailureListener(e -> Log.w("VisitHistory",
+                            "Failed to write visit history entry: " + e.getMessage()));
+        } catch (Exception e) {
+            Log.w("VisitHistory", "Error writing visit history: " + e.getMessage());
+        }
+    }
+
+    private void showVisitsDialogFromData(Map<String, Object> contract) {
+        String routineLines = buildCounterDisplayLines(contract, "Routines", "Routine");
+        String callOutLines = buildCounterDisplayLines(contract, "Callout", "Callout");
+
+        StringBuilder message = new StringBuilder();
+        message.append("Routine visits:\n");
+        message.append(routineLines.isEmpty() ? "No routine visits recorded." : routineLines);
+        message.append("\n\nCall outs:\n");
+        message.append(callOutLines.isEmpty() ? "No call outs recorded." : callOutLines);
+
+        new AlertDialog.Builder(this)
+                .setTitle("View Visits")
+                .setMessage(message.toString())
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
+    private String buildCounterDisplayLines(Map<String, Object> contract, String storagePrefix, String displayPrefix) {
+        if (contract == null || contract.isEmpty()) return "";
+
+        TreeMap<Integer, String> newestFirst = new TreeMap<>(Collections.reverseOrder());
+        for (Map.Entry<String, Object> entry : contract.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || !key.startsWith(storagePrefix)) continue;
+            String suffix = key.substring(storagePrefix.length());
+            if (!suffix.matches("\\d{2}")) continue;
+
+            int count = readCounterNumberFromEntry(entry.getValue());
+            if (count <= 0) continue;
+
+            int year = 2000 + Integer.parseInt(suffix);
+            newestFirst.put(year, displayPrefix + suffix + " - " + count);
+        }
+
+        StringBuilder out = new StringBuilder();
+        for (String line : newestFirst.values()) {
+            if (out.length() > 0) out.append("\n");
+            out.append(line);
+        }
+        return out.toString();
+    }
+
+    private int readCounterNumberFromEntry(Object entryValue) {
+        if (entryValue instanceof Map) {
+            Object number = ((Map<?, ?>) entryValue).get("number");
+            return readCounterNumber(number);
+        }
+        return readCounterNumber(entryValue);
+    }
+
+    private String getOptionalContractNotes(Map<String, Object> contract) {
+        if (contract == null) return "";
+        Object raw = contract.get("notes");
+        if (raw == null) return "";
+        return raw.toString().trim();
     }
 
     /**
@@ -1334,6 +1620,15 @@ public class ViewContractActivity extends AppCompatActivity {
             visitsInput.setPadding(16, 16, 16, 16);
             layout.addView(visitsInput);
 
+            EditText notesInput = new EditText(this);
+            notesInput.setHint("Notes");
+            notesInput.setText(getOptionalContractNotes(contract));
+            notesInput.setBackgroundResource(R.drawable.edit_text_border);
+            notesInput.setPadding(16, 16, 16, 16);
+            notesInput.setMinLines(3);
+            notesInput.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
+            layout.addView(notesInput);
+
             // Owner / technician selector: use contractKey list with autocomplete dropdown.
             AutoCompleteTextView ownerInput = new AutoCompleteTextView(this);
             ownerInput.setHint("Owner (contractKey)");
@@ -1379,6 +1674,7 @@ public class ViewContractActivity extends AppCompatActivity {
                         String newEmail = emailInput.getText().toString().trim();
                         String newContact = contactInput.getText().toString().trim();
                         String newVisits = visitsInput.getText().toString().trim();
+                        String newNotes = notesInput.getText().toString().trim();
                         String newOwner = ownerInput.getText().toString().trim();
 
                         // Validate required fields
@@ -1394,17 +1690,17 @@ public class ViewContractActivity extends AppCompatActivity {
                         // Normalize owner/contractKey to lowercase for storage in assignedTech.
                         String normalizedOwner = newOwner.toLowerCase(java.util.Locale.getDefault());
 
-                        // Reassign owner when changed.
+                        Map<String, Object> updates = new HashMap<>();
                         if (!newOwner.equalsIgnoreCase(currentOwnerLocal)) {
-                            updateContractField(currentOwnerLocal, documentId, "assignedTech", normalizedOwner, contractNameForNotif);
+                            updates.put("assignedTech", normalizedOwner);
                         }
-
-                        // Update other editable fields on the same contract document.
-                        updateContractField(currentOwnerLocal, documentId, "name", newName, contractNameForNotif);
-                        updateContractField(currentOwnerLocal, documentId, "address", newAddress, contractNameForNotif);
-                        updateContractField(currentOwnerLocal, documentId, "email", newEmail, contractNameForNotif);
-                        updateContractField(currentOwnerLocal, documentId, "contact", newContact, contractNameForNotif);
-                        updateContractField(currentOwnerLocal, documentId, "visits", newVisits, contractNameForNotif);
+                        updates.put("name", newName);
+                        updates.put("address", newAddress);
+                        updates.put("email", newEmail);
+                        updates.put("contact", newContact);
+                        updates.put("visits", newVisits);
+                        updates.put("notes", newNotes);
+                        updateContractFields(currentOwnerLocal, documentId, updates, contractNameForNotif);
                     })
                     .setNegativeButton("Delete", (dialog, which) -> {
                         String owner = contract.get("owner") != null ? contract.get("owner").toString() : "Unknown";
@@ -1457,6 +1753,7 @@ public class ViewContractActivity extends AppCompatActivity {
 
             // Update Firestore with the new lastVisit and calculate nextVisit
             updateVisitDates(owner, documentId, currentDate, visits, contractName != null ? contractName : "");
+            writeVisitHistoryEntry(documentId, "Routine", currentDate);
 
             // Reset checkbox to be clickable again
             checkBox.setChecked(false);
@@ -1470,12 +1767,34 @@ public class ViewContractActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    private void showCallOutCounterPopup(String contractName, String documentId, CheckBox checkBox) {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setTitle("Call Out Confirmation");
+        dialog.setMessage("Was a call out done on " + contractName + "?");
+
+        dialog.setPositiveButton("Yes", (dialogInterface, which) -> {
+            checkBox.setChecked(false);
+            checkBox.setEnabled(false);
+            incrementYearlyCounter(documentId, "Callout", "Call out", () -> {
+                checkBox.setEnabled(true);
+                loadContracts();
+            });
+            String calloutDate = new SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+                    .format(Calendar.getInstance().getTime());
+            writeVisitHistoryEntry(documentId, "Callout", calloutDate);
+        });
+
+        dialog.setNegativeButton("No", (dialogInterface, which) -> checkBox.setChecked(false));
+        dialog.setOnCancelListener(dialogInterface -> checkBox.setChecked(false));
+        dialog.show();
+    }
+
     private void showContractOptions(Map<String, Object> contract, String lastVisit, String documentId) {
         AlertDialog.Builder dialog = new AlertDialog.Builder(this);
         dialog.setTitle("Contract Options");
 
 
-        dialog.setItems(new CharSequence[]{"Update Last Visit", "Create Report", "Generic Report", "Action Form", "Route"}, (dialogInterface, which) -> {
+        dialog.setItems(new CharSequence[]{"Update Last Visit", "Create Report", "Action Form", "Route"}, (dialogInterface, which) -> {
             String companyName = contract.get("name") != null ? contract.get("name").toString() : "N/A";
             String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
 
@@ -1492,26 +1811,21 @@ public class ViewContractActivity extends AppCompatActivity {
                 case 1: // Create Report
                     Intent createReportIntent = new Intent(ViewContractActivity.this, ReportActivity.class);
                     createReportIntent.putExtra("USER_NAME", userName);
+                    createReportIntent.putExtra("CONTRACT_ID", documentId);
                     createReportIntent.putExtra("COMPANY_NAME", companyName);
                     createReportIntent.putExtra("ADDRESS", address);
                     startActivity(createReportIntent);
                     break;
 
-                case 2: // Generic Report
-                    Intent genericReportIntent = new Intent(ViewContractActivity.this, GeneralReportActivity.class);
-                    genericReportIntent.putExtra("USER_NAME", userName);
-                    genericReportIntent.putExtra("COMPANY_NAME", companyName);
-                    genericReportIntent.putExtra("ADDRESS", address);
-                    startActivity(genericReportIntent);
-                    break;
-                case 3: // Action Form
+                case 2: // Action Form
                     Intent actionFormIntent = new Intent(ViewContractActivity.this, ActionFormActivity.class);
                     actionFormIntent.putExtra("USER_NAME", userName);
+                    actionFormIntent.putExtra("CONTRACT_ID", documentId);
                     actionFormIntent.putExtra("COMPANY_NAME", companyName);
                     actionFormIntent.putExtra("ADDRESS", address);
                     startActivity(actionFormIntent);
                     break;
-                case 4: // Route
+                case 3: // Route
                     if (!address.equals("N/A")) {
                         openInMaps(address);
                     } else {
@@ -1660,11 +1974,12 @@ public class ViewContractActivity extends AppCompatActivity {
 
 
     private void showUpdateVisitDialog(String documentId, String owner, String visits, String contractName) {
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        dialog.setTitle("Update Last Visit");
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Update Last Visit");
 
         EditText dateInput = new EditText(this);
-        dateInput.setHint("Enter Last Visit Date (dd/MM/yy)");
+        dateInput.setHint("Enter Last Visit Date (dd/MM/yy or dd/MM/yyyy)");
+        dateInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
         dateInput.setSingleLine();
 
         LinearLayout layout = new LinearLayout(this);
@@ -1672,19 +1987,47 @@ public class ViewContractActivity extends AppCompatActivity {
         layout.setPadding(16, 16, 16, 16);
         layout.addView(dateInput);
 
-        dialog.setView(layout);
+        builder.setView(layout);
+        builder.setPositiveButton("Update", null);
+        builder.setNegativeButton("Cancel", null);
 
-        dialog.setPositiveButton("Update", (dialogInterface, which) -> {
-            String newDate = dateInput.getText().toString().trim();
-            if (!newDate.isEmpty() && newDate.matches("^\\d{2}/\\d{2}/\\d{2}$")) {
-                updateVisitDates(owner, documentId, newDate, visits, contractName != null ? contractName : "");
-            } else {
-                Toast.makeText(this, "Invalid date format! Use dd/MM/yy.", Toast.LENGTH_SHORT).show();
+        AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(d -> {
+            Button updateButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            if (updateButton != null) {
+                updateButton.setOnClickListener(v -> {
+                    String normalizedDate = normalizeManualVisitDate(dateInput.getText().toString().trim());
+                    if (!normalizedDate.isEmpty()) {
+                        updateVisitDates(owner, documentId, normalizedDate, visits, contractName != null ? contractName : "");
+                        dialog.dismiss();
+                    } else {
+                        Toast.makeText(this, "Invalid date. Use dd/MM/yy or dd/MM/yyyy.", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
-
-        dialog.setNegativeButton("Cancel", null);
         dialog.show();
+    }
+
+    private String normalizeManualVisitDate(String rawDate) {
+        if (rawDate == null || rawDate.trim().isEmpty()) return "";
+
+        String[] acceptedFormats = {"dd/MM/yy", "dd/MM/yyyy"};
+        SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
+        outputFormat.setLenient(false);
+
+        for (String format : acceptedFormats) {
+            try {
+                SimpleDateFormat parser = new SimpleDateFormat(format, Locale.getDefault());
+                parser.setLenient(false);
+                Date parsed = parser.parse(rawDate.trim());
+                if (parsed != null) {
+                    return outputFormat.format(parsed);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return "";
     }
 
 
@@ -1788,10 +2131,8 @@ public class ViewContractActivity extends AppCompatActivity {
                 if (!BuildConfig.IS_OFFLINE) {
                     Map<String, Object> data = new HashMap<>();
                     data.put("contractId", documentId);
-                    data.put("owner", owner);
                     data.put("userName", owner);
                     data.put("contractName", contractName != null ? contractName : "");
-                    data.put("lastVisit", lastVisit);
                     String docId = "contract_visit_" + documentId + "_" + System.currentTimeMillis();
                     NotificationUtils.writeInAppNotification(
                             owner != null ? owner : SessionManager.getName(this),
@@ -1804,7 +2145,7 @@ public class ViewContractActivity extends AppCompatActivity {
                 }
             } catch (Exception ignored) { }
 
-            loadContracts();
+            incrementYearlyCounter(documentId, "Routines", "Routine", lastVisit, this::loadContracts);
         }).addOnFailureListener(e -> {
             Toast.makeText(this, "Failed to update visit: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
@@ -1867,12 +2208,8 @@ public class ViewContractActivity extends AppCompatActivity {
                         if (!BuildConfig.IS_OFFLINE) {
                             Map<String, Object> data = new HashMap<>();
                             data.put("contractId", documentId);
-                            data.put("owner", owner);
                             data.put("userName", owner);
                             data.put("contractName", contractName != null ? contractName : "");
-                            data.put("field", field);
-                            data.put("newValue", newValue);
-                            data.put("updatedBy", SessionManager.getName(this));
                             String docId = "contract_field_" + field + "_" + documentId + "_" + System.currentTimeMillis();
                             NotificationUtils.writeInAppNotification(
                                     owner != null ? owner : SessionManager.getName(this),
@@ -1888,6 +2225,70 @@ public class ViewContractActivity extends AppCompatActivity {
                     loadContracts();
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to update contract: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void updateContractFields(String owner, String documentId, Map<String, Object> updates, String contractName) {
+        if (updates == null || updates.isEmpty()) return;
+
+        Object visitsValue = updates.get("visits");
+        if (visitsValue != null) {
+            try {
+                int visits = Integer.parseInt(String.valueOf(visitsValue).trim());
+                if (visits < 1 || visits > 99) {
+                    Toast.makeText(this, "Visits must be a number between 1 and 99.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                Toast.makeText(this, "Invalid number format for Visits.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        db.collection(FirestorePaths.CONTRACTS).document(documentId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    Map<String, Object> finalUpdates = new HashMap<>(updates);
+
+                    String lastVisit = snapshot != null && snapshot.get("lastVisit") != null
+                            ? String.valueOf(snapshot.get("lastVisit"))
+                            : "N/A";
+                    Object visitsRaw = finalUpdates.containsKey("visits")
+                            ? finalUpdates.get("visits")
+                            : (snapshot != null ? snapshot.get("visits") : "0");
+
+                    Map<String, Object> temp = new HashMap<>();
+                    temp.put("lastVisit", lastVisit);
+                    temp.put("visits", visitsRaw != null ? visitsRaw : "0");
+                    finalUpdates.put("nextVisit", calculateNextVisit(temp));
+
+                    db.collection(FirestorePaths.CONTRACTS).document(documentId)
+                            .update(finalUpdates)
+                            .addOnSuccessListener(aVoid -> {
+                                Toast.makeText(this, "Contract updated successfully.", Toast.LENGTH_SHORT).show();
+
+                                try {
+                                    if (!BuildConfig.IS_OFFLINE) {
+                                        Map<String, Object> data = new HashMap<>();
+                                        data.put("contractId", documentId);
+                                        data.put("userName", owner);
+                                        data.put("contractName", contractName != null ? contractName : "");
+                                        String docId = "contract_update_" + documentId;
+                                        NotificationUtils.writeInAppNotification(
+                                                owner != null ? owner : SessionManager.getName(this),
+                                                docId,
+                                                contractName != null && !contractName.isEmpty() ? contractName : "Contract updated",
+                                                "",
+                                                "contract_update",
+                                                data
+                                        );
+                                    }
+                                } catch (Exception ignored) { }
+
+                                loadContracts();
+                            })
+                            .addOnFailureListener(e -> Toast.makeText(this, "Failed to update contract: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Failed to load contract: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     /** Deletes the contract from the shared contracts collection. Only super admin can trigger this. */
@@ -1910,185 +2311,151 @@ public class ViewContractActivity extends AppCompatActivity {
         try {
             SessionManager.ensureLoaded(this, null);
             boolean isAdmin = SessionManager.isAdmin(this);
-
-            // Admins can load/export by choice from Firestore; others need current list
-            if (!isAdmin && (currentDisplayedContracts == null || currentDisplayedContracts.isEmpty())) {
-                Toast.makeText(this, "No contracts to export.", Toast.LENGTH_SHORT).show();
-                return;
-            }
+            boolean canExportFromFirebase = isAdmin || SessionManager.seesAllJobs(this);
 
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                 Toast.makeText(this, "PDF export requires Android 13 or higher.", Toast.LENGTH_LONG).show();
                 return;
             }
 
-            if (isAdmin) {
-                showExportChoiceDialog();
-                return;
-            }
-            // Non-admin: export only currently displayed list
-            if (currentDisplayedContracts == null || currentDisplayedContracts.isEmpty()) {
+            List<Map<String, Object>> contractsToExport = canExportFromFirebase && allLoadedContracts != null && !allLoadedContracts.isEmpty()
+                    ? new ArrayList<>(allLoadedContracts)
+                    : (currentDisplayedContracts != null ? new ArrayList<>(currentDisplayedContracts) : new ArrayList<>());
+
+            if (contractsToExport.isEmpty()) {
                 Toast.makeText(this, "No contracts to export.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            if (SessionManager.seesAllJobs(this)) {
-                if (currentDisplayedContracts == null || currentDisplayedContracts.isEmpty()) {
-                    Toast.makeText(this, "No contracts to export.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                Map<String, List<Map<String, Object>>> grouped = new HashMap<>();
-                for (Map<String, Object> contract : currentDisplayedContracts) {
-                    String owner = contract.get("owner") != null ? contract.get("owner").toString() : "Unknown";
-                    grouped.computeIfAbsent(owner, k -> new ArrayList<>()).add(contract);
-                }
-
-                Map<String, File> ownerPdfs = new HashMap<>();
-                for (Map.Entry<String, List<Map<String, Object>>> entry : grouped.entrySet()) {
-                    String owner = entry.getKey();
-                    List<Map<String, Object>> list = entry.getValue();
-                    File pdf = ContractListPDFGenerator.generateContractsListPDF(
-                            owner + " Contracts", list, this);
-                    if (pdf != null) {
-                        ownerPdfs.put(owner, pdf);
-                    }
-                }
-
-                File allPdf = ContractListPDFGenerator.generateContractsListPDF(
-                        "All Contracts", currentDisplayedContracts, this);
-                if (allPdf != null) {
-                    ownerPdfs.put("All", allPdf);
-                }
-
-                if (ownerPdfs.isEmpty()) {
-                    Toast.makeText(this, "Failed to generate contracts PDFs.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                showContractsPdfOptionsForUser004(ownerPdfs);
-            } else {
-                String title = StaffDirectory.getContractsCollectionNameFromAnyKey(userName);
-                File pdfFile = ContractListPDFGenerator.generateContractsListPDF(title, currentDisplayedContracts, this);
-                if (pdfFile == null) {
-                    Toast.makeText(this, "Failed to generate contracts PDF.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                showContractsPdfOptions(pdfFile);
+            String title = getCurrentContractsExportTitle();
+            File pdfFile = ContractListPDFGenerator.generateContractsListPDF(
+                    title,
+                    deduplicateContractsForExport(contractsToExport),
+                    this
+            );
+            if (pdfFile == null) {
+                Toast.makeText(this, "Failed to generate contracts PDF.", Toast.LENGTH_SHORT).show();
+                return;
             }
+            showContractsPdfOptions(pdfFile);
         } catch (Exception e) {
             Log.e("ViewContractActivity", "Error exporting contracts to PDF", e);
             Toast.makeText(this, "Error exporting contracts: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void showExportChoiceDialog() {
-        // Dynamic staff list (ContractKey) for export dialog too.
-        UserRepository.fetchAssignableUsers(users -> runOnUiThread(() -> {
-            List<UserRepository.AssignableUser> opts = users != null ? users : new ArrayList<>();
-            java.util.List<String> displayList = new ArrayList<>();
-            java.util.List<String> ids = new ArrayList<>();
-            for (UserRepository.AssignableUser u : opts) {
-                if (u == null) continue;
-                if (u.contractKey == null || u.contractKey.trim().isEmpty()) continue;
-                displayList.add(u.contractKey.trim());
-                ids.add(u.uid != null ? u.uid : "");
+    private String getCurrentContractsExportTitle() {
+        if (canSelectTechnician() && technicianSpinner != null && technicianSpinner.getSelectedItem() != null) {
+            String selected = technicianSpinner.getSelectedItem().toString().trim();
+            if (!selected.isEmpty()) {
+                return "All".equalsIgnoreCase(selected) ? "All Contracts" : selected + " Contracts";
             }
-            displayList.add("All");
-            ids.add(TECH_ID_ALL);
-
-            String[] display = displayList.toArray(new String[0]);
-            String[] idArray = ids.toArray(new String[0]);
-
-            new AlertDialog.Builder(this)
-                    .setTitle("Export contracts to PDF")
-                    .setMessage("Whose contracts do you want to export?")
-                    .setItems(display, (dialog, which) -> {
-                        if (which >= 0 && which < idArray.length) {
-                            if (TECH_ID_ALL.equals(idArray[which])) {
-                                loadAllTechniciansContractsAndExportPdf();
-                            } else {
-                                loadTechnicianContractsAndExportPdfById(idArray[which]);
-                            }
-                        }
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
-        }));
+        }
+        return StaffDirectory.getContractsCollectionNameFromAnyKey(userName);
     }
 
-    private void loadTechnicianContractsAndExportPdfById(String techUid) {
+    private void showExportChoiceDialog() {
         if (db == null) {
             Toast.makeText(this, "Firestore not available.", Toast.LENGTH_SHORT).show();
             return;
         }
-        final List<Map<String, Object>> merged = Collections.synchronizedList(new ArrayList<>());
-        final int[] remaining = {2};
 
-        // Resolve contractKey for this technician for shared collection exports.
-        String contractKey = null;
-        if (staffOptionsForSpinner != null) {
-            for (UserRepository.AssignableUser u : staffOptionsForSpinner) {
-                if (u != null && u.uid != null && u.uid.equals(techUid)) {
-                    if (u.contractKey != null && !u.contractKey.trim().isEmpty()) {
-                        contractKey = u.contractKey.trim();
+        db.collection(FirestorePaths.CONTRACTS).get().addOnCompleteListener(task -> {
+            java.util.TreeSet<String> contractKeys = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+            if (task.isSuccessful() && task.getResult() != null) {
+                for (QueryDocumentSnapshot doc : task.getResult()) {
+                    String key = doc.getString("assignedTech");
+                    if (key != null && !key.trim().isEmpty()) {
+                        contractKeys.add(key.trim());
                     }
-                    break;
                 }
             }
+
+            if (contractKeys.isEmpty()) {
+                UserRepository.fetchAssignableUsers(users -> runOnUiThread(() -> showExportChoiceDialogForKeys(users)));
+            } else {
+                runOnUiThread(() -> showExportChoiceDialogForKeys(new ArrayList<>(), contractKeys));
+            }
+        });
+    }
+
+    private void showExportChoiceDialogForKeys(List<UserRepository.AssignableUser> users) {
+        java.util.TreeSet<String> contractKeys = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        if (users != null) {
+            for (UserRepository.AssignableUser u : users) {
+                if (u == null || u.contractKey == null || u.contractKey.trim().isEmpty()) continue;
+                contractKeys.add(u.contractKey.trim());
+            }
         }
-        if (contractKey == null || contractKey.trim().isEmpty()) {
-            String ck = SessionManager.getContractKey(this);
-            if (ck != null && !ck.trim().isEmpty()) {
-                contractKey = ck.trim();
+        showExportChoiceDialogForKeys(users, contractKeys);
+    }
+
+    private void showExportChoiceDialogForKeys(List<UserRepository.AssignableUser> users, java.util.Set<String> contractKeys) {
+        java.util.List<String> displayList = new ArrayList<>();
+        java.util.List<String> keyList = new ArrayList<>();
+        displayList.add("All");
+        keyList.add(TECH_ID_ALL);
+
+        if (contractKeys != null) {
+            for (String key : contractKeys) {
+                if (key == null || key.trim().isEmpty()) continue;
+                displayList.add(key.trim());
+                keyList.add(key.trim().toLowerCase(Locale.getDefault()));
             }
         }
 
-        // 1) Shared contracts collection: filter by assignedTech (contractKey, stored normalized to lowercase).
+        String[] display = displayList.toArray(new String[0]);
+        String[] keyArray = keyList.toArray(new String[0]);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Export contracts to PDF")
+                .setMessage("Select a contractKey or export All Firebase contracts.")
+                .setItems(display, (dialog, which) -> {
+                    if (which >= 0 && which < keyArray.length) {
+                        if (TECH_ID_ALL.equals(keyArray[which])) {
+                            loadAllTechniciansContractsAndExportPdf();
+                        } else {
+                            loadTechnicianContractsAndExportPdfByContractKey(keyArray[which]);
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void loadTechnicianContractsAndExportPdfByContractKey(String contractKey) {
+        if (db == null) {
+            Toast.makeText(this, "Firestore not available.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         String keyFilter = contractKey != null ? contractKey.trim().toLowerCase(Locale.getDefault()) : "";
+        if (keyFilter.isEmpty()) {
+            Toast.makeText(this, "No contractKey selected.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final List<Map<String, Object>> contracts = Collections.synchronizedList(new ArrayList<>());
         db.collection(FirestorePaths.CONTRACTS)
                 .whereEqualTo("assignedTech", keyFilter)
                 .get()
                 .addOnCompleteListener(task -> {
-                    try {
-                        if (task.isSuccessful() && task.getResult() != null) {
-                            for (QueryDocumentSnapshot doc : task.getResult()) {
-                                Map<String, Object> c = doc.getData();
-                                c.put("documentId", doc.getId());
-                                String owner = c.get("assignedTech") != null
-                                        ? c.get("assignedTech").toString()
-                                        : "Technician";
-                                c.put("owner", owner);
-                                merged.add(c);
-                            }
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            Map<String, Object> c = doc.getData();
+                            c.put("documentId", doc.getId());
+                            c.put("contractKey", keyFilter);
+                            String owner = c.get("assignedTech") != null
+                                    ? c.get("assignedTech").toString()
+                                    : keyFilter;
+                            c.put("owner", owner);
+                            contracts.add(c);
                         }
-                    } finally {
-                        remaining[0]--;
-                        if (remaining[0] <= 0) {
-                            exportMergedContractsPdf("Contracts", merged);
-                        }
+                    } else if (task.getException() != null) {
+                        Toast.makeText(this, "Failed to load contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        return;
                     }
+                    exportMergedContractsPdf(keyFilter + " Contracts", contracts);
                 });
-
-        // 2) Legacy per-tech collection.
-        String legacyCollection = StaffDirectory.getContractsCollectionNameFromAnyKey(contractKey != null ? contractKey : techUid);
-        final String legacyOwnerName = legacyCollection.replace(" Contracts", "");
-        db.collection(legacyCollection).get().addOnCompleteListener(task -> {
-            try {
-                if (task.isSuccessful() && task.getResult() != null) {
-                    for (QueryDocumentSnapshot doc : task.getResult()) {
-                        Map<String, Object> c = doc.getData();
-                        c.put("documentId", doc.getId());
-                        c.put("owner", legacyOwnerName);
-                        merged.add(c);
-                    }
-                }
-            } finally {
-                remaining[0]--;
-                if (remaining[0] <= 0) {
-                    exportMergedContractsPdf("Contracts", merged);
-                }
-            }
-        });
     }
 
     private void loadAllTechniciansContractsAndExportPdf() {
@@ -2097,64 +2464,28 @@ public class ViewContractActivity extends AppCompatActivity {
             return;
         }
         final List<Map<String, Object>> allContracts = Collections.synchronizedList(new ArrayList<>());
-        final int[] remaining = {2};
 
-        // 1) Shared contracts collection.
+        // Export every contract in the current Firebase contracts collection.
         db.collection(FirestorePaths.CONTRACTS).get().addOnCompleteListener(task -> {
-            try {
-                if (task.isSuccessful() && task.getResult() != null) {
-                    for (QueryDocumentSnapshot doc : task.getResult()) {
-                        Map<String, Object> c = doc.getData();
-                        c.put("documentId", doc.getId());
-                        String owner = c.get("assignedTechName") != null
-                                ? c.get("assignedTechName").toString()
-                                : "Technician";
-                        c.put("owner", owner);
-                        allContracts.add(c);
+            if (task.isSuccessful() && task.getResult() != null) {
+                for (QueryDocumentSnapshot doc : task.getResult()) {
+                    Map<String, Object> c = doc.getData();
+                    c.put("documentId", doc.getId());
+                    String owner = c.get("assignedTechName") != null
+                            ? c.get("assignedTechName").toString()
+                            : (c.get("assignedTech") != null ? c.get("assignedTech").toString() : "Technician");
+                    c.put("owner", owner);
+                    if (c.get("assignedTech") != null) {
+                        c.put("contractKey", c.get("assignedTech").toString());
                     }
+                    allContracts.add(c);
                 }
-            } finally {
-                remaining[0]--;
-                if (remaining[0] <= 0) {
-                    exportMergedContractsPdf("All Contracts", allContracts);
-                }
+            } else if (task.getException() != null) {
+                Toast.makeText(this, "Failed to load all contracts: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                return;
             }
+            exportMergedContractsPdf("All Contracts", allContracts);
         });
-
-        // 2) Legacy per-tech collections.
-        String[] techIds = getAllStaffIdsForContracts();
-        if (techIds == null || techIds.length == 0) {
-            remaining[0]--;
-            if (remaining[0] <= 0) {
-                exportMergedContractsPdf("All Contracts", allContracts);
-            }
-            return;
-        }
-        final int totalLegacy = techIds.length;
-        final int[] completedLegacy = {0};
-        for (String techId : techIds) {
-            String collectionName = StaffDirectory.getContractsCollectionName(techId);
-            String ownerName = collectionName.replace(" Contracts", "");
-            db.collection(collectionName).get().addOnCompleteListener(task -> {
-                try {
-                    if (task.isSuccessful() && task.getResult() != null) {
-                        for (QueryDocumentSnapshot doc : task.getResult()) {
-                            Map<String, Object> c = doc.getData();
-                            c.put("documentId", doc.getId());
-                            c.put("owner", ownerName);
-                            allContracts.add(c);
-                        }
-                    }
-                } finally {
-                    if (++completedLegacy[0] == totalLegacy) {
-                        remaining[0]--;
-                        if (remaining[0] <= 0) {
-                            exportMergedContractsPdf("All Contracts", allContracts);
-                        }
-                    }
-                }
-            });
-        }
     }
 
     private void showContractsPdfOptions(File pdfFile) {
@@ -2169,11 +2500,12 @@ public class ViewContractActivity extends AppCompatActivity {
     private void exportMergedContractsPdf(String title, List<Map<String, Object>> contracts) {
         runOnUiThread(() -> {
             try {
-                if (contracts == null || contracts.isEmpty()) {
+                List<Map<String, Object>> exportContracts = deduplicateContractsForExport(contracts);
+                if (exportContracts == null || exportContracts.isEmpty()) {
                     Toast.makeText(this, "No contracts to export.", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                File pdf = ContractListPDFGenerator.generateContractsListPDF(title, contracts, this);
+                File pdf = ContractListPDFGenerator.generateContractsListPDF(title, exportContracts, this);
                 if (pdf != null) {
                     showContractsPdfOptions(pdf);
                 } else {
@@ -2186,70 +2518,23 @@ public class ViewContractActivity extends AppCompatActivity {
         });
     }
 
-    private void viewContractsPdf(File file) {
-        try {
-            Uri fileUri = FileProvider.getUriForFile(
-                    this,
-                    BuildConfig.APPLICATION_ID + ".fileprovider",
-                    file
-            );
+    private List<Map<String, Object>> deduplicateContractsForExport(List<Map<String, Object>> contracts) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (contracts == null || contracts.isEmpty()) return out;
 
-            Intent viewIntent = new Intent(Intent.ACTION_VIEW);
-            viewIntent.setDataAndType(fileUri, "application/pdf");
-            viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            startActivity(viewIntent);
-        } catch (Exception e) {
-            Toast.makeText(this, "No application found to view this PDF.", Toast.LENGTH_SHORT).show();
+        Set<String> seen = new HashSet<>();
+        for (Map<String, Object> contract : contracts) {
+            if (contract == null) continue;
+            String key = buildContractExportDedupKey(contract);
+            if (key.isEmpty()) {
+                key = "row:" + out.size();
+            }
+            if (seen.add(key)) {
+                out.add(contract);
+            }
         }
+        return out;
     }
 
-    private void shareContractsPdf(File file) {
-        try {
-            Uri fileUri = FileProvider.getUriForFile(
-                    this,
-                    BuildConfig.APPLICATION_ID + ".fileprovider",
-                    file
-            );
-
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("application/pdf");
-            shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            startActivity(Intent.createChooser(shareIntent, "Share Contracts PDF"));
-        } catch (Exception e) {
-            Toast.makeText(this, "No application available to share the PDF.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    /**
-     * Admin export: allow choosing which PDF to open/share: per-technician or All.
-     */
-    private void showContractsPdfOptionsForUser004(Map<String, File> ownerPdfs) {
-        List<String> owners = new ArrayList<>(ownerPdfs.keySet());
-        owners.sort((a, b) -> {
-            if ("All".equalsIgnoreCase(a)) return -1;
-            if ("All".equalsIgnoreCase(b)) return 1;
-            return a.compareToIgnoreCase(b);
-        });
-
-        CharSequence[] items = owners.toArray(new CharSequence[0]);
-
-        new AlertDialog.Builder(this)
-                .setTitle("Contracts PDFs Generated")
-                .setMessage("Select a PDF to view or share. \"All\" contains every contract.")
-                .setItems(items, (dialog, which) -> {
-                    String owner = owners.get(which);
-                    File pdf = ownerPdfs.get(owner);
-                    if (pdf != null) {
-                        showContractsPdfOptions(pdf);
-                    } else {
-                        Toast.makeText(this, "PDF not found for " + owner, Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Close", null)
-                .show();
-    }
-
-}
+    private String buildContractExportDedupKey(Map<String, Object> contract) {
+        String displayName = firstNo

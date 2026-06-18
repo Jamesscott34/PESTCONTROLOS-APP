@@ -45,9 +45,11 @@ public class QuotesActivity extends AppCompatActivity {
             userName = getSharedPreferences("GRPC", MODE_PRIVATE).getString("USER_NAME", "User");
         }
 
-        // Set the welcome message
+        // Title is set from strings (quotes_title) in layout
         TextView welcomeTextView = findViewById(R.id.welcomeTextView);
-        welcomeTextView.setText("Contract Quotations");
+        if (welcomeTextView != null) {
+            welcomeTextView.setText(getString(R.string.quotes_title));
+        }
 
         // Initialize buttons
         Button button8ptContact = findViewById(R.id.button8ptContact);

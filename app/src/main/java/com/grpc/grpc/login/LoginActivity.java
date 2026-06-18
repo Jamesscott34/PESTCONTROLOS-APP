@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,8 +20,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import com.grpc.grpc.core.ActiveUserContext;
-import com.grpc.grpc.core.BrandingAssets;
 import com.grpc.grpc.core.FirestorePaths;
+import com.grpc.grpc.core.RememberMeManager;
 import com.grpc.grpc.core.SessionManager;
 import com.grpc.grpc.core.StaffDirectory;
 import com.grpc.grpc.core.UserRepository;
@@ -76,14 +75,14 @@ public class LoginActivity extends AppCompatActivity {
         try { WorkViewLocalEventStore.clearAll(this); } catch (Exception ignored) {}
         try { WorkViewWidgetHelper.clearWidgetCache(this); } catch (Exception ignored) {}
         try { LocationSharing.clearLocalCache(this); } catch (Exception ignored) {}
+        RememberMeManager.handleExpiryIfNeeded(this);
 
-        // Logo (prefer assets/logo.png, fallback to drawable)
-        ImageView loginLogo = findViewById(R.id.loginLogo);
-        BrandingAssets.trySetLogoFromAssets(loginLogo);
-
+        // Logo: @drawable/logo in XML; background stays theme default like GRPC (see layouts).
         emailEditText = findViewById(R.id.emailEditText);
         passwordEditText = findViewById(R.id.passwordEditText);
         loginButton = findViewById(R.id.loginButton);
+
+        attemptAutoLogin();
 
         // Login Button Action (Firebase)
         loginButton.setOnClickListener(view -> {
@@ -91,7 +90,7 @@ public class LoginActivity extends AppCompatActivity {
             String password = passwordEditText.getText().toString().trim();
 
             if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(LoginActivity.this, "Please enter email and password", Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this, getString(R.string.login_error_empty), Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -103,12 +102,12 @@ public class LoginActivity extends AppCompatActivity {
                             String userName = extractNameFromEmail(email);
 
                             // Display a welcome message
-                            Toast.makeText(LoginActivity.this, "Welcome " + userName + "!", Toast.LENGTH_LONG).show();
+                            Toast.makeText(LoginActivity.this, getString(R.string.login_welcome_toast, userName), Toast.LENGTH_LONG).show();
 
                             // Ensure RBAC session is loaded for this Firebase user BEFORE showing UI.
                             SessionManager.ensureLoaded(LoginActivity.this, session -> runOnUiThread(() -> {
                                 if (session == null) {
-                                    Toast.makeText(LoginActivity.this, "Login succeeded, but profile could not be loaded. Please try again.", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(LoginActivity.this, getString(R.string.login_profile_unavailable), Toast.LENGTH_SHORT).show();
                                     return;
                                 }
 
@@ -174,8 +173,8 @@ public class LoginActivity extends AppCompatActivity {
 
                                                         if (Boolean.FALSE.equals(viewProfile)) {
                                                             new androidx.appcompat.app.AlertDialog.Builder(LoginActivity.this)
-                                                                    .setTitle("Profile access issue")
-                                                                    .setMessage("Please contact PestControlOS if you cannot access your profile.")
+                                                                    .setTitle(getString(R.string.login_profile_access_title))
+                                                                    .setMessage(getString(R.string.login_profile_access_message))
                                                                     .setPositiveButton("OK", (d, which) -> {
                                                                         try {
                                                                             FirebaseAuth.getInstance().signOut();
@@ -186,6 +185,17 @@ public class LoginActivity extends AppCompatActivity {
                                                             return;
                                                         }
 
+                                                        // Always enable Remember Me on successful login. canRemember is patched to true so
+                                                        // auto-login works on next app open. Explicit logout sets canRemember: false via
+                                                        // RememberMeManager.disableForCurrentUser(), which re-login will restore.
+                                                        java.util.Map<String, Object> rememberPatch = new java.util.HashMap<>();
+                                                        rememberPatch.put("canRemember", true);
+                                                        FirebaseFirestore.getInstance()
+                                                                .collection(FirestorePaths.USERS)
+                                                                .document(uid)
+                                                                .set(rememberPatch, com.google.firebase.firestore.SetOptions.merge());
+                                                        RememberMeManager.enable(LoginActivity.this, uid, email);
+
                                                         // Allowed to proceed: open MainActivity as before.
                                                         openMainActivityWithUserExtras(email);
                                                     })
@@ -195,7 +205,7 @@ public class LoginActivity extends AppCompatActivity {
                                                     });
                                         } else {
                                             // No auth user; fail safe by not proceeding.
-                                            Toast.makeText(LoginActivity.this, "Login session expired. Please try again.", Toast.LENGTH_SHORT).show();
+                                            Toast.makeText(LoginActivity.this, getString(R.string.login_session_expired), Toast.LENGTH_SHORT).show();
                                         }
                                     } else {
                                         // Offline flavor never reaches here in practice, but keep behavior consistent.
@@ -204,7 +214,7 @@ public class LoginActivity extends AppCompatActivity {
                                 }));
                             }));
                         } else {
-                            Toast.makeText(LoginActivity.this, "Login Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(LoginActivity.this, getString(R.string.login_failed, task.getException() != null ? task.getException().getMessage() : ""), Toast.LENGTH_SHORT).show();
                         }
                     });
         });
@@ -213,13 +223,39 @@ public class LoginActivity extends AppCompatActivity {
         Button offlineLoginButton = findViewById(R.id.offlineLoginButton);
         if (offlineLoginButton != null) {
             offlineLoginButton.setOnClickListener(view -> {
-                Toast.makeText(LoginActivity.this, "Using app in offline mode", Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this, getString(R.string.login_offline_toast), Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                 intent.putExtra("USER_NAME", "Offline User");
                 startActivity(intent);
                 finish();
             });
         }
+    }
+
+    private void attemptAutoLogin() {
+        if (mAuth.getCurrentUser() == null || !RememberMeManager.isActive(this)) {
+            return;
+        }
+        String uid = mAuth.getCurrentUser().getUid();
+        FirebaseFirestore.getInstance()
+                .collection(FirestorePaths.USERS)
+                .document(uid)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot == null || !snapshot.exists()) {
+                        RememberMeManager.clear(LoginActivity.this);
+                        return;
+                    }
+                    SessionManager.ensureLoaded(LoginActivity.this, session -> runOnUiThread(() -> {
+                        String email = mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getEmail() != null
+                                ? mAuth.getCurrentUser().getEmail()
+                                : RememberMeManager.getRememberedEmail(LoginActivity.this);
+                        openMainActivityWithUserExtras(email);
+                    }));
+                })
+                .addOnFailureListener(e -> {
+                    // Stay on login screen if profile cannot be read.
+                });
     }
 
     private void openMainActivityWithUserExtras(String email) {
@@ -246,3 +282,4 @@ public class LoginActivity extends AppCompatActivity {
         return "User";
     }
 }
+                                                                                                                                                                                                                        

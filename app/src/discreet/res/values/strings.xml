@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Company 4</string>
+
+    <string name="website_button_text">Company 4</string>
+    <string name="main_website_url">https://tenantd.example/</string>
+
+    <string name="pdf_company_name">Company 4</string>
+    <string name="pdf_report_title">Company 4 Report</string>
+    <string name="pdf_action_form_title">Company 4 Action Form</string>
+    <string name="pdf_footer_text">Document generated for Company 4</string>
+    <string name="pdf_default_watermark_text">COMPANY_4</string>
+    <string name="pdf_filename_prefix">C4</string>
+    <string name="pdf_company_website">discreetpestcontrol.ie</string>
+    <string name="pdf_company_website_short">discreetpestcontrol.ie</string>
+    <string name="pdf_auto_generated_note">This report was automatically generated for Company 4</string>
+    <string name="pdf_company_name_with_abbrev">Company 4</string>
+    <string name="pdf_company_abbrev">C4</string>
+    <string name="pdf_era_title">Company 4 Environmental Risk Assessment</string>
+    <string name="pdf_template_main_header_hint">Main header (e.g. Company 4)</string>
+    <string name="pdf_template_footer_hint">Leave blank for default footer text</string>
+    <string name="notification_channel_name">Company 4 Alerts</string>
+    <string name="pdf_action_form_footer">This Action Form was generated for Company 4</string>
+    <string name="quote_saved_toast">Company 4 quote created and saved successfully!</string>
+    <string name="quotation_viewer_search_hint">Discreet Quotes…</string>
+    <string name="reports_folder_name">COMPANY_4 REPORTS</string>
+    <string name="quotes_folder_name">COMPANY_4_QUOTES</string>
+
+    <string name="tenant_public_name">Company 4</string>
+    <string name="tenant_public_website_url">https://tenantd.example/</string>
+</resources>

@@ -1,7 +1,9 @@
 package com.grpc.grpc.reports.ui;
 
+import com.grpc.grpc.BuildConfig;
 import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
+import com.grpc.grpc.contracts.ui.BehindsListViewActivity;
 import com.grpc.grpc.era.ui.ERAViewActivity;
 import com.grpc.grpc.quotations.ui.QuotationViewActivity;
 import com.grpc.grpc.serviceagreements.ui.ServiceAgreementViewActivity;
@@ -33,7 +35,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class PDFSelectionActivity extends AppCompatActivity {
 
-    private Button buttonViewReports, buttonViewQuotation,buttonViewAgreements,buttonStoredReports, buttonViewERA;
+    private Button buttonViewReports, buttonViewQuotation, buttonViewAgreements, buttonStoredReports, buttonViewERA;
     private TextView welcomeTextView;
     private String userName;
 
@@ -49,13 +51,13 @@ public class PDFSelectionActivity extends AppCompatActivity {
         // Initialize the welcome TextView
         welcomeTextView = findViewById(R.id.welcomeTextView);
         if (welcomeTextView != null) {
-            welcomeTextView.setText("Welcome, " + userName + "!");
+            welcomeTextView.setText(getString(R.string.welcome_back_user, userName != null ? userName : "User"));
         }
         SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
             if (welcomeTextView == null) return;
             String name = SessionManager.getName(this);
             if (name != null && !name.trim().isEmpty()) {
-                welcomeTextView.setText("Welcome, " + name.trim() + "!");
+                welcomeTextView.setText(getString(R.string.welcome_back_user, name.trim()));
             }
         }));
 
@@ -65,6 +67,12 @@ public class PDFSelectionActivity extends AppCompatActivity {
         buttonViewAgreements = findViewById(R.id.buttonViewAgreements);
         buttonViewERA = findViewById(R.id.buttonViewERA);
         buttonStoredReports = findViewById(R.id.buttonStoredReports);
+        Button cloudContractsBtn = findViewById(R.id.buttonCloudContracts);
+        Button cloudQuotationsBtn = findViewById(R.id.buttonCloudQuotations);
+        Button cloudReportsBtn = findViewById(R.id.buttonCloudReports);
+        Button managementJobsBtn = findViewById(R.id.buttonManagementJobs);
+        Button jobWorkReportsBtn = findViewById(R.id.buttonJobWorkReports);
+        Button viewBehindsBtn = findViewById(R.id.buttonViewBehinds);
 
         // Set button listeners
         buttonViewReports.setOnClickListener(v -> {
@@ -75,7 +83,7 @@ public class PDFSelectionActivity extends AppCompatActivity {
 
         buttonViewQuotation.setOnClickListener(v -> {
             Intent intent = new Intent(PDFSelectionActivity.this, QuotationViewActivity.class);
-            intent.putExtra("USER_NAME", userName); // Pass username to the next activity
+            intent.putExtra("USER_NAME", userName);
             startActivity(intent);
         });
         buttonViewAgreements.setOnClickListener(v -> {
@@ -89,14 +97,95 @@ public class PDFSelectionActivity extends AppCompatActivity {
             startActivity(intent);
         });
         buttonStoredReports.setOnClickListener(v -> {
-            Intent intent = new Intent(PDFSelectionActivity.this, StoredReportsActivity.class);
-            intent.putExtra("USER_NAME", userName); // Pass username to the next activity
+            Intent intent = new Intent(PDFSelectionActivity.this, CloudStorageBrowserActivity.class);
+            intent.putExtra(CloudStorageBrowserActivity.EXTRA_ENTRY_MODE, CloudStorageBrowserActivity.MODE_STORED_REPORTS);
+            intent.putExtra(CloudStorageBrowserActivity.EXTRA_USER_NAME, userName);
             startActivity(intent);
         });
 
-        // Offline user: hide Stored Reports in View Reports
-        if ("Offline User".equals(userName) && buttonStoredReports != null) {
-            buttonStoredReports.setVisibility(View.GONE);
+        if (cloudContractsBtn != null) {
+            cloudContractsBtn.setOnClickListener(v -> {
+                Intent intent = new Intent(PDFSelectionActivity.this, CloudStorageBrowserActivity.class);
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_ENTRY_MODE, CloudStorageBrowserActivity.MODE_CONTRACTS);
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_USER_NAME, userName);
+                startActivity(intent);
+            });
+        }
+        if (cloudQuotationsBtn != null) {
+            cloudQuotationsBtn.setOnClickListener(v -> {
+                Intent intent = new Intent(PDFSelectionActivity.this, CloudStorageBrowserActivity.class);
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_ENTRY_MODE, CloudStorageBrowserActivity.MODE_FIXED_ROOT);
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_FIXED_ROOT_PATH, "quotations");
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_FIXED_ROOT_TITLE, "Cloud Quotations");
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_USER_NAME, userName);
+                startActivity(intent);
+            });
+        }
+        if (cloudReportsBtn != null) {
+            cloudReportsBtn.setOnClickListener(v -> {
+                Intent intent = new Intent(PDFSelectionActivity.this, CloudStorageBrowserActivity.class);
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_ENTRY_MODE, CloudStorageBrowserActivity.MODE_REPORTS);
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_USER_NAME, userName);
+                startActivity(intent);
+            });
+        }
+        if (managementJobsBtn != null) {
+            managementJobsBtn.setOnClickListener(v -> {
+                Intent intent = new Intent(PDFSelectionActivity.this, CloudStorageBrowserActivity.class);
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_ENTRY_MODE, CloudStorageBrowserActivity.MODE_FIXED_ROOT);
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_FIXED_ROOT_PATH,
+                        com.grpc.grpc.core.ContractStoragePathHelper.preferredManagementJobsRootName());
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_FIXED_ROOT_TITLE, "Management Jobs");
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_USER_NAME, userName);
+                startActivity(intent);
+            });
+        }
+        if (jobWorkReportsBtn != null) {
+            jobWorkReportsBtn.setOnClickListener(v -> {
+                Intent intent = new Intent(PDFSelectionActivity.this, CloudStorageBrowserActivity.class);
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_ENTRY_MODE, CloudStorageBrowserActivity.MODE_FIXED_ROOT);
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_FIXED_ROOT_PATH, "JobWorkReports");
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_FIXED_ROOT_TITLE, "Jobs Folder");
+                intent.putExtra(CloudStorageBrowserActivity.EXTRA_USER_NAME, userName);
+                startActivity(intent);
+            });
+        }
+        if (viewBehindsBtn != null) {
+            viewBehindsBtn.setOnClickListener(v -> {
+                Intent intent = new Intent(PDFSelectionActivity.this, BehindsListViewActivity.class);
+                intent.putExtra("USER_NAME", userName);
+                intent.putExtra(BehindsListViewActivity.EXTRA_FOLDER_NAME, "BEHINDS LIST");
+                intent.putExtra(BehindsListViewActivity.EXTRA_SCREEN_TITLE, "View Behinds");
+                intent.putExtra(BehindsListViewActivity.EXTRA_BACK_TO_VIEW_REPORTS, true);
+                startActivity(intent);
+            });
+        }
+
+        boolean cloudBlocked = BuildConfig.IS_OFFLINE
+                || "Offline".equals(userName)
+                || "Offline User".equals(userName);
+        if (cloudBlocked) {
+            if (buttonStoredReports != null) {
+                buttonStoredReports.setVisibility(View.GONE);
+            }
+            if (cloudContractsBtn != null) {
+                cloudContractsBtn.setVisibility(View.GONE);
+            }
+            if (cloudQuotationsBtn != null) {
+                cloudQuotationsBtn.setVisibility(View.GONE);
+            }
+            if (cloudReportsBtn != null) {
+                cloudReportsBtn.setVisibility(View.GONE);
+            }
+            if (managementJobsBtn != null) {
+                managementJobsBtn.setVisibility(View.GONE);
+            }
+            if (jobWorkReportsBtn != null) {
+                jobWorkReportsBtn.setVisibility(View.GONE);
+            }
+            if (buttonViewQuotation != null) {
+                buttonViewQuotation.setVisibility(View.GONE);
+            }
         }
     }
 }

@@ -21,6 +21,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -164,6 +165,8 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
 
         // Display the report name in the TextView
         holder.reportName.setText(reportFile.getName());
+        holder.reportSubtitle.setText("File");
+        holder.reportIcon.setImageResource(R.drawable.ic_list_file);
 
         boolean isSelected = reportFile != null && selectedPaths.contains(reportFile.getAbsolutePath());
         holder.selectCheckbox.setVisibility(selectionMode ? View.VISIBLE : View.GONE);
@@ -203,6 +206,8 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
     public static class ReportViewHolder extends RecyclerView.ViewHolder {
         // TextView for displaying the report name
         TextView reportName;
+        TextView reportSubtitle;
+        ImageView reportIcon;
         CheckBox selectCheckbox;
 
         /**
@@ -213,6 +218,8 @@ public class ReportAdapter extends RecyclerView.Adapter<ReportAdapter.ReportView
         public ReportViewHolder(@NonNull View itemView) {
             super(itemView);
             reportName = itemView.findViewById(R.id.reportName);
+            reportSubtitle = itemView.findViewById(R.id.reportSubtitle);
+            reportIcon = itemView.findViewById(R.id.reportIcon);
             selectCheckbox = itemView.findViewById(R.id.selectCheckbox);
         }
     }

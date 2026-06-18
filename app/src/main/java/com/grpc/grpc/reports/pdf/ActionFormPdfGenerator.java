@@ -4,6 +4,8 @@ import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.widget.Toast;
@@ -11,8 +13,6 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.WriterProperties;
 import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
@@ -35,10 +35,14 @@ import com.itextpdf.layout.property.UnitValue;
 import com.itextpdf.layout.property.HorizontalAlignment;
 import com.itextpdf.layout.borders.SolidBorder;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import com.grpc.grpc.reports.model.ProductUsageItem;
+
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -49,7 +53,7 @@ import java.util.Set;
 /**
  * ActionFormPdfGenerator.java
  *
- * This class handles the generation of password-protected PDF Action Forms for Good Riddance Pest Control.
+ * This class handles the generation of password-protected PDF Action Forms for [Company 1].
  * Users can create a professional Action Form containing service details with encryption protection.
  * The generated PDF is saved locally and includes company branding for professional documentation.
  *
@@ -94,7 +98,33 @@ public class ActionFormPdfGenerator {
             Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn) {
         return generateActionFormPDF(premisesName, dateTime, serviceType, serviceNumber, premisesAddress,
                 prep, serviceReport, recommendations, followUp1, followUp2, followUp3, role,
-                ownerPassword, context, imageUris, technicianSignatureUri, customerSignatureUri, followUpToggleOn);
+                ownerPassword, context, imageUris, technicianSignatureUri, customerSignatureUri, followUpToggleOn, null);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePasswordProtectedPDFToDirectory(String premisesName, String dateTime,
+            String serviceType, String serviceNumber, String premisesAddress, String prep,
+            String serviceReport, String recommendations, String followUp1, String followUp2,
+            String followUp3, String role, String ownerPassword, Context context, List<Uri> imageUris,
+            Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn,
+            File outputDirectory) {
+        return generatePasswordProtectedPDFToDirectory(premisesName, dateTime, serviceType, serviceNumber,
+                premisesAddress, prep, serviceReport, recommendations, followUp1, followUp2, followUp3, role,
+                ownerPassword, context, imageUris, technicianSignatureUri, customerSignatureUri,
+                followUpToggleOn, outputDirectory, null);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePasswordProtectedPDFToDirectory(String premisesName, String dateTime,
+            String serviceType, String serviceNumber, String premisesAddress, String prep,
+            String serviceReport, String recommendations, String followUp1, String followUp2,
+            String followUp3, String role, String ownerPassword, Context context, List<Uri> imageUris,
+            Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn,
+            File outputDirectory, List<ProductUsageItem> prepProducts) {
+        return generateActionFormPDF(premisesName, dateTime, serviceType, serviceNumber, premisesAddress,
+                prep, serviceReport, recommendations, followUp1, followUp2, followUp3, role,
+                ownerPassword, context, imageUris, technicianSignatureUri, customerSignatureUri,
+                followUpToggleOn, outputDirectory, prepProducts);
     }
 
     /**
@@ -108,25 +138,87 @@ public class ActionFormPdfGenerator {
             Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn) {
         return generateActionFormPDF(premisesName, dateTime, serviceType, serviceNumber, premisesAddress,
                 prep, serviceReport, recommendations, followUp1, followUp2, followUp3, role,
-                null, context, imageUris, technicianSignatureUri, customerSignatureUri, followUpToggleOn);
+                null, context, imageUris, technicianSignatureUri, customerSignatureUri, followUpToggleOn, null);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePDFToDirectory(String premisesName, String dateTime,
+            String serviceType, String serviceNumber, String premisesAddress, String prep,
+            String serviceReport, String recommendations, String followUp1, String followUp2,
+            String followUp3, String role, Context context, List<Uri> imageUris,
+            Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn,
+            File outputDirectory) {
+        return generatePDFToDirectory(premisesName, dateTime, serviceType, serviceNumber, premisesAddress,
+                prep, serviceReport, recommendations, followUp1, followUp2, followUp3, role,
+                context, imageUris, technicianSignatureUri, customerSignatureUri, followUpToggleOn,
+                outputDirectory, null);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    public static File generatePDFToDirectory(String premisesName, String dateTime,
+            String serviceType, String serviceNumber, String premisesAddress, String prep,
+            String serviceReport, String recommendations, String followUp1, String followUp2,
+            String followUp3, String role, Context context, List<Uri> imageUris,
+            Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn,
+            File outputDirectory, List<ProductUsageItem> prepProducts) {
+        return generateActionFormPDF(premisesName, dateTime, serviceType, serviceNumber, premisesAddress,
+                prep, serviceReport, recommendations, followUp1, followUp2, followUp3, role,
+                null, context, imageUris, technicianSignatureUri, customerSignatureUri, followUpToggleOn,
+                outputDirectory, prepProducts);
     }
 
     private static File generateActionFormPDF(String premisesName, String dateTime, 
             String serviceType, String serviceNumber, String premisesAddress, String prep, 
             String serviceReport, String recommendations, String followUp1, String followUp2, 
             String followUp3, String role, String ownerPassword, Context context, List<Uri> imageUris, 
-            Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn) {
-        
-        // Define the folder for storing reports
-        File pdfFolder = new File(context.getExternalFilesDir(null), TenantBranding.reportsFolderName(context));
+            Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn,
+            File outputDirectory) {
+        return generateActionFormPDF(premisesName, dateTime, serviceType, serviceNumber, premisesAddress,
+                prep, serviceReport, recommendations, followUp1, followUp2, followUp3, role,
+                ownerPassword, context, imageUris, technicianSignatureUri, customerSignatureUri,
+                followUpToggleOn, outputDirectory, null);
+    }
+
+    private static File generateActionFormPDF(String premisesName, String dateTime,
+            String serviceType, String serviceNumber, String premisesAddress, String prep,
+            String serviceReport, String recommendations, String followUp1, String followUp2,
+            String followUp3, String role, String ownerPassword, Context context, List<Uri> imageUris,
+            Uri technicianSignatureUri, Uri customerSignatureUri, boolean followUpToggleOn,
+            File outputDirectory, List<ProductUsageItem> prepProducts) {
+
+        File pdfFolder = outputDirectory;
+        if (pdfFolder == null) {
+            pdfFolder = new File(context.getExternalFilesDir(null), TenantBranding.reportsFolderName(context));
+        }
         if (!pdfFolder.exists()) {
             pdfFolder.mkdirs();
         }
 
-        // Generate a timestamped file name for the PDF report
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
-        String currentDate = sdf.format(new Date());
-        String sanitizedPremisesName = premisesName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + currentDate + ".pdf";
+        // Keep the existing name_date.pdf format, but use the date entered in the form when available.
+        String dateToUse;
+        if (dateTime != null && !dateTime.trim().isEmpty()) {
+            try {
+                String trimmedDate = dateTime.trim();
+                String datePortion = trimmedDate.contains(" ")
+                        ? trimmedDate.substring(0, trimmedDate.indexOf(' '))
+                        : trimmedDate;
+                if (datePortion.contains("/")) {
+                    SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                    SimpleDateFormat outputFormat = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+                    Date parsedDate = inputFormat.parse(datePortion);
+                    dateToUse = outputFormat.format(parsedDate);
+                } else {
+                    dateToUse = datePortion;
+                }
+            } catch (Exception e) {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+                dateToUse = sdf.format(new Date());
+            }
+        } else {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+            dateToUse = sdf.format(new Date());
+        }
+        String sanitizedPremisesName = premisesName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + dateToUse + ".pdf";
         File pdfFile = new File(pdfFolder, sanitizedPremisesName);
 
         try {
@@ -145,9 +237,8 @@ public class ActionFormPdfGenerator {
             Document document = new Document(pdfDocument, com.itextpdf.kernel.geom.PageSize.A4, false);
             document.setMargins(20, 20, 20, 20); // Tight margins for single page
 
-            // Apply watermark and footer event handler
+            pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new ActionFormWatermarkAndFooterHandler(context));
             boolean passwordProtected = (ownerPassword != null && !ownerPassword.isEmpty());
-            pdfDocument.addEventHandler(PdfDocumentEvent.END_PAGE, new ActionFormWatermarkAndFooterHandler(context, passwordProtected));
 
             // Adding a logo image at the top of the report (smaller for single page)
             int logoResourceId = context.getResources().getIdentifier("logo", "drawable", context.getPackageName());
@@ -156,11 +247,11 @@ public class ActionFormPdfGenerator {
             document.add(logo);
 
             // Adding a title to the report (smaller for single page)
-            Paragraph title = new Paragraph(TenantBranding.companyName(context) + " - " + TenantBranding.actionFormTitle(context))
+            Paragraph title = new Paragraph(TenantBranding.actionFormDocumentTitle(context))
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(14)
                     .setBold()
-                    .setFontColor(ColorConstants.BLUE);
+                    .setFontColor(ColorConstants.BLACK);
             document.add(title);
             document.add(new Paragraph("\n"));
 
@@ -175,7 +266,7 @@ public class ActionFormPdfGenerator {
 
             // Add header information in rows as requested
             addHeaderRow(document, blackSeparator, dateTime, serviceType, serviceNumber);
-            addPremisesAndPrepRow(document, blackSeparator, premisesName, premisesAddress, prep);
+            addPremisesAndPrepRow(document, blackSeparator, premisesName, premisesAddress, prep, prepProducts);
             addFormSection(document, blackSeparator, headingsWithSeparator, "Service Report", serviceReport);
             addFormSection(document, blackSeparator, headingsWithSeparator, "Recommendations", recommendations);
             
@@ -193,16 +284,21 @@ public class ActionFormPdfGenerator {
                     Uri uri = imageUris.get(i);
                     try {
                         document.add(new Paragraph("Images " + (i + 1)).setFontSize(10).setBold());
-                        ImageData imageData = ImageDataFactory.create(context.getContentResolver().openInputStream(uri).readAllBytes());
+                        byte[] compressed = compressImageUri(context, uri);
+                        ImageData imageData = ImageDataFactory.create(compressed);
                         Image image = new Image(imageData).scaleToFit(200, 200).setHorizontalAlignment(com.itextpdf.layout.property.HorizontalAlignment.CENTER);
                         document.add(image);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         Toast.makeText(context, "Error loading image: " + uri.toString(), Toast.LENGTH_SHORT).show();
                     }
                 }
             }
 
             document.close();
+            String footerLine = context.getString(R.string.pdf_action_form_footer)
+                    + (passwordProtected ? context.getString(R.string.pdf_action_form_footer_password_protected) : "");
+            byte[] ownerBytes = (ownerPassword != null && !ownerPassword.isEmpty()) ? ownerPassword.getBytes() : null;
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, footerLine, ownerBytes);
             Toast.makeText(context, "Action Form PDF Created Successfully!", Toast.LENGTH_SHORT).show();
 
             return pdfFile;
@@ -211,6 +307,46 @@ public class ActionFormPdfGenerator {
             e.printStackTrace();
             Toast.makeText(context, "Error Creating PDF!", Toast.LENGTH_SHORT).show();
             return null;
+        }
+    }
+
+    private static byte[] compressImageUri(Context context, Uri uri) throws IOException {
+        BitmapFactory.Options boundsOptions = new BitmapFactory.Options();
+        boundsOptions.inJustDecodeBounds = true;
+        try (InputStream boundsStream = context.getContentResolver().openInputStream(uri)) {
+            if (boundsStream == null) {
+                throw new IOException("Unable to open image: " + uri);
+            }
+            BitmapFactory.decodeStream(boundsStream, null, boundsOptions);
+        }
+
+        int longestSide = Math.max(boundsOptions.outWidth, boundsOptions.outHeight);
+        int sampleSize = 1;
+        while (longestSide / sampleSize > 1024) {
+            sampleSize *= 2;
+        }
+
+        BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
+        decodeOptions.inSampleSize = sampleSize;
+        Bitmap bitmap;
+        try (InputStream imageStream = context.getContentResolver().openInputStream(uri)) {
+            if (imageStream == null) {
+                throw new IOException("Unable to open image: " + uri);
+            }
+            bitmap = BitmapFactory.decodeStream(imageStream, null, decodeOptions);
+        }
+        if (bitmap == null) {
+            throw new IOException("Unable to decode image: " + uri);
+        }
+
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            // iText does not support WebP. JPEG is universally supported.
+            if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)) {
+                throw new IOException("Unable to compress image: " + uri);
+            }
+            return output.toByteArray();
+        } finally {
+            bitmap.recycle();
         }
     }
 
@@ -342,32 +478,34 @@ public class ActionFormPdfGenerator {
     /**
      * Add horizontal layout for Premises and Prep (like the image)
      */
-    private static void addPremisesAndPrepRow(Document document, LineSeparator separator, String premisesName, String premisesAddress, String prep) {
+    private static void addPremisesAndPrepRow(Document document, LineSeparator separator, String premisesName,
+                                            String premisesAddress, String prep,
+                                            List<ProductUsageItem> prepProducts) {
         document.add(separator);
-        
-        // Create a 2-column table for Premises and Prep (60:40 ratio)
+
         Table premisesTable = new Table(UnitValue.createPercentArray(new float[]{3, 2})).useAllAvailableWidth();
-        
-        // Add header cells
+
         premisesTable.addHeaderCell(new Cell().add(new Paragraph("Premises Name & Address").setBold().setFontSize(14))
                 .setBackgroundColor(ColorConstants.LIGHT_GRAY)
                 .setBorder(new com.itextpdf.layout.borders.SolidBorder(ColorConstants.BLACK, 1))
                 .setPadding(8));
-        premisesTable.addHeaderCell(new Cell().add(new Paragraph("Prep").setBold().setFontSize(14))
+        premisesTable.addHeaderCell(new Cell().add(new Paragraph("Prep / Products Used").setBold().setFontSize(14))
                 .setBackgroundColor(ColorConstants.LIGHT_GRAY)
                 .setBorder(new com.itextpdf.layout.borders.SolidBorder(ColorConstants.BLACK, 1))
                 .setPadding(8));
-        
-        // Add data cells
+
         premisesTable.addCell(new Cell().add(new Paragraph(premisesName + "\n" + premisesAddress).setFontSize(13))
                 .setBorder(new com.itextpdf.layout.borders.SolidBorder(ColorConstants.BLACK, 1))
                 .setPadding(8));
-        premisesTable.addCell(new Cell().add(new Paragraph(prep).setFontSize(13))
+
+        Cell prepCell = new Cell()
                 .setBorder(new com.itextpdf.layout.borders.SolidBorder(ColorConstants.BLACK, 1))
-                .setPadding(8));
-        
+                .setPadding(8);
+        PrepProductsPdfHelper.addPrepContentToCell(prepCell, prepProducts, prep, 11f);
+        premisesTable.addCell(prepCell);
+
         document.add(premisesTable);
-        document.add(new Paragraph("\n")); // Add spacing
+        document.add(new Paragraph("\n"));
     }
 
     /**
@@ -433,30 +571,14 @@ public class ActionFormPdfGenerator {
         document.add(new Paragraph("\n")); // Add spacing
     }
 
-    /**
-     * Custom event handler to apply watermark and footer on every page of the Action Form PDF.
-     */
+    /** Watermark on every page; footer and page numbers are applied after the PDF is finalized. */
     static class ActionFormWatermarkAndFooterHandler implements IEventHandler {
         private final Context context;
-        private final boolean passwordProtected;
 
-        public ActionFormWatermarkAndFooterHandler(Context context) {
-            this(context, false);
-        }
-
-        /**
-         * Constructor initializes the event handler with the application context.
-         * @param context The Android application context for resource access.
-         * @param passwordProtected Whether the PDF is password protected (affects footer text).
-         */
-        public ActionFormWatermarkAndFooterHandler(Context context, boolean passwordProtected) {
+        ActionFormWatermarkAndFooterHandler(Context context) {
             this.context = context;
-            this.passwordProtected = passwordProtected;
         }
 
-        /**
-         * Handles the event for applying watermark and footer on each page.
-         */
         @Override
         public void handleEvent(com.itextpdf.kernel.events.Event event) {
             PdfDocumentEvent pdfEvent = (PdfDocumentEvent) event;
@@ -482,16 +604,8 @@ public class ActionFormPdfGenerator {
                 watermark.setOpacity(0.1f);
                 doc.add(watermark);
 
-                // Adding footer text (company-specific from strings)
-                String footerText = context.getString(R.string.pdf_action_form_footer) + (passwordProtected ? context.getString(R.string.pdf_action_form_footer_password_protected) : "");
-                Paragraph footer = new Paragraph(footerText)
-                        .setFontSize(12)
-                        .setTextAlignment(TextAlignment.CENTER)
-                        .setFixedPosition(pageWidth / 2 - 200, 20, 400);
-                doc.add(footer);
-
             } catch (Exception e) {
-                Toast.makeText(context, "Error adding watermark or footer!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Error adding watermark!", Toast.LENGTH_SHORT).show();
                 e.printStackTrace();
             }
         }

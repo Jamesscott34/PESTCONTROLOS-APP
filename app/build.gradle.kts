@@ -14,9 +14,10 @@ android {
         minSdk = 27
         targetSdk = 35
         versionCode = 4
-        versionName = "2.1.1"
+        versionName = "2.1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["MAPS_API_KEY"] = project.findProperty("MAPS_API_KEY") as String? ?: ""
         
         // Enable BuildConfig generation (flavor buildConfigField overrides these per variant)
         buildConfigField("boolean", "DEBUG", "true")
@@ -85,6 +86,62 @@ android {
             buildConfigField("int", "DEMO_FIREBASE_EXPIRY_DAYS", "0")
             buildConfigField("int", "MAX_SAVED_TEMPLATES", "3")
         }
+        // Additional production tenants (same online model as grpc; replace google-services.json per flavor).
+        create("viking") {
+            dimension = "tenant"
+            applicationIdSuffix = ".viking"
+            versionNameSuffix = "-viking"
+            buildConfigField("String", "FLAVOR", "\"viking\"")
+            buildConfigField("boolean", "IS_OFFLINE", "false")
+            buildConfigField("boolean", "IS_DEMO", "false")
+            buildConfigField("int", "OFFLINE_TRIAL_DAYS", "0")
+            buildConfigField("int", "DEMO_FIREBASE_EXPIRY_DAYS", "0")
+            buildConfigField("int", "MAX_SAVED_TEMPLATES", "0")
+        }
+        create("primal") {
+            dimension = "tenant"
+            applicationIdSuffix = ".primal"
+            versionNameSuffix = "-primal"
+            buildConfigField("String", "FLAVOR", "\"primal\"")
+            buildConfigField("boolean", "IS_OFFLINE", "false")
+            buildConfigField("boolean", "IS_DEMO", "false")
+            buildConfigField("int", "OFFLINE_TRIAL_DAYS", "0")
+            buildConfigField("int", "DEMO_FIREBASE_EXPIRY_DAYS", "0")
+            buildConfigField("int", "MAX_SAVED_TEMPLATES", "0")
+        }
+        create("discreet") {
+            dimension = "tenant"
+            applicationIdSuffix = ".discreet"
+            versionNameSuffix = "-discreet"
+            buildConfigField("String", "FLAVOR", "\"discreet\"")
+            buildConfigField("boolean", "IS_OFFLINE", "false")
+            buildConfigField("boolean", "IS_DEMO", "false")
+            buildConfigField("int", "OFFLINE_TRIAL_DAYS", "0")
+            buildConfigField("int", "DEMO_FIREBASE_EXPIRY_DAYS", "0")
+            buildConfigField("int", "MAX_SAVED_TEMPLATES", "0")
+        }
+        create("counterpest") {
+            dimension = "tenant"
+            applicationIdSuffix = ".counterpest"
+            versionNameSuffix = "-counterpest"
+            buildConfigField("String", "FLAVOR", "\"counterpest\"")
+            buildConfigField("boolean", "IS_OFFLINE", "false")
+            buildConfigField("boolean", "IS_DEMO", "false")
+            buildConfigField("int", "OFFLINE_TRIAL_DAYS", "0")
+            buildConfigField("int", "DEMO_FIREBASE_EXPIRY_DAYS", "0")
+            buildConfigField("int", "MAX_SAVED_TEMPLATES", "0")
+        }
+        create("safesecure") {
+            dimension = "tenant"
+            applicationIdSuffix = ".safesecure"
+            versionNameSuffix = "-safesecure"
+            buildConfigField("String", "FLAVOR", "\"safesecure\"")
+            buildConfigField("boolean", "IS_OFFLINE", "false")
+            buildConfigField("boolean", "IS_DEMO", "false")
+            buildConfigField("int", "OFFLINE_TRIAL_DAYS", "0")
+            buildConfigField("int", "DEMO_FIREBASE_EXPIRY_DAYS", "0")
+            buildConfigField("int", "MAX_SAVED_TEMPLATES", "0")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -100,6 +157,22 @@ android {
     
     buildFeatures {
         buildConfig = true
+    }
+
+    packaging {
+        resources {
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/LICENSE"
+            excludes += "META-INF/LICENSE.txt"
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/license.txt"
+            excludes += "META-INF/NOTICE"
+            excludes += "META-INF/NOTICE.txt"
+            excludes += "META-INF/NOTICE.md"
+            excludes += "META-INF/notice.txt"
+            excludes += "META-INF/ASL2.0"
+            excludes += "META-INF/*.kotlin_module"
+        }
     }
 
 }
@@ -129,6 +202,7 @@ dependencies {
     implementation("com.google.firebase:firebase-functions")
     implementation("com.google.firebase:firebase-appcheck")
     implementation("com.google.firebase:firebase-appcheck-debug")
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
 
 
    
@@ -149,6 +223,12 @@ dependencies {
 
     // ✅ OkHttp for AI API calls
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
+
+    // PDF → Word (.docx): page images in OOXML
+    implementation("org.apache.poi:poi-ooxml:5.2.5")
+
+    // PDF text extraction: OCR for scanned pages (Latin script model bundled)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 
 }
 

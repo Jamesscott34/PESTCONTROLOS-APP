@@ -3,30 +3,34 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
 
-    <!-- Search Bar -->
     <EditText
         android:id="@+id/searchBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Search..."
+        android:background="@drawable/surface_frame"
+        android:hint="@string/dialog_search_hint"
+        android:imeOptions="actionSearch"
+        android:inputType="text"
+        android:maxLines="1"
         android:padding="12dp"
-        android:textSize="16sp"
-        android:background="?attr/colorSurface"
         android:textColor="?android:attr/textColorPrimary"
         android:textColorHint="?android:attr/textColorSecondary"
-        android:layout_marginBottom="8dp"
-        android:inputType="text"
-        android:imeOptions="actionSearch"
-        android:maxLines="1" />
+        android:textSize="16sp" />
 
-    <!-- Results RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/resultsRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:scrollbars="vertical"
-        android:background="?attr/colorSurface" />
+        android:layout_height="320dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/surface_frame"
+        android:clipToPadding="false"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:scrollbars="vertical" />
 
-</LinearLayout> 
+</LinearLayout>

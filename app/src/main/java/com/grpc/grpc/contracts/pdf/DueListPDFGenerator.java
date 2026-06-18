@@ -3,6 +3,7 @@ package com.grpc.grpc.contracts.pdf;
 import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.reports.pdf.PDFReportGenerator;
+import com.grpc.grpc.reports.pdf.PdfFooterPageNumberStamper;
 
 import android.content.Context;
 import android.os.Build;
@@ -89,6 +90,7 @@ public class DueListPDFGenerator {
             addPdfContent(document, technician, dueContracts, context);
 
             document.close();
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context), null);
             return pdfFile;
 
         } catch (IOException e) {

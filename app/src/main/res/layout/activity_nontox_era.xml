@@ -74,9 +74,18 @@
         android:textColor="?android:attr/textColorPrimary"
         android:textColorHint="?android:attr/textColorSecondary" />
 
-
-
-
+    <include
+        android:id="@+id/reportSignatureButtonsInclude"
+        layout="@layout/include_report_signature_buttons"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="32dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editEmail" />
 
     <!-- Generate PDF Button -->
     <Button
@@ -84,10 +93,20 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Generate PDF"
-        app:layout_constraintTop_toBottomOf="@id/editEmail"
+        app:layout_constraintTop_toBottomOf="@id/reportSignatureButtonsInclude"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp"/>
+
+    <Button
+        android:id="@+id/btnPreviewPDF"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Preview PDF"
+        app:layout_constraintTop_toBottomOf="@id/btnGeneratePDF"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

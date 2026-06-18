@@ -61,7 +61,7 @@ public final class OfflineTrialHelper {
         if (toastMessage != null && !toastMessage.isEmpty()) {
             Toast.makeText(activity, toastMessage, Toast.LENGTH_LONG).show();
         }
-        String url = (websiteUrl != null && !websiteUrl.trim().isEmpty()) ? websiteUrl.trim() : "https://www.pestcontrolos.ie";
+        String url = (websiteUrl != null && !websiteUrl.trim().isEmpty()) ? websiteUrl.trim() : "https://www.yourcompany.example";
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "https://" + url;
         }
@@ -80,7 +80,7 @@ public final class OfflineTrialHelper {
         if (toastMessage != null && !toastMessage.isEmpty()) {
             Toast.makeText(activity, toastMessage, Toast.LENGTH_LONG).show();
         }
-        String url = (websiteUrl != null && !websiteUrl.trim().isEmpty()) ? websiteUrl.trim() : "https://www.pestcontrolos.ie";
+        String url = (websiteUrl != null && !websiteUrl.trim().isEmpty()) ? websiteUrl.trim() : "https://www.yourcompany.example";
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "https://" + url;
         }

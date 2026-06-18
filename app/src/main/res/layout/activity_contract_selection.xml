@@ -38,6 +38,16 @@
             android:layout_marginBottom="16dp"
             android:textColor="?android:attr/textColorPrimary" />
 
+        <TextView
+            android:id="@+id/contractsInstructionText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="When selecting a contract, create the report and save. Contract reports now route automatically, so manual Upload to Firebase is no longer needed."
+            android:textSize="13sp"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"
+            android:textColor="?android:attr/textColorSecondary" />
+
         <!-- Add Contract Button -->
         <Button
             android:id="@+id/AddContractButton"
@@ -72,6 +82,15 @@
             android:layout_height="58dp"
             android:text="Due List"
             android:textSize="18sp"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/ExportContractsExcelButton"
+            android:layout_width="wrap_content"
+            android:layout_height="58dp"
+            android:text="Export Contracts Excel"
+            android:textSize="18sp"
+            android:visibility="gone"
             android:layout_marginBottom="16dp" />
 
         <!-- View Behinds Button -->

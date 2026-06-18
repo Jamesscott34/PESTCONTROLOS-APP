@@ -122,20 +122,19 @@ public class ViewManagmentJobActivity extends AppCompatActivity {
             allJobs.clear();
             total = completed = pending = 0;
 
-            for (DocumentChange dc : snapshots.getDocumentChanges()) {
-                QueryDocumentSnapshot document = dc.getDocument();
+            for (DocumentSnapshot document : snapshots.getDocuments()) {
+                if (!(document instanceof QueryDocumentSnapshot)) continue;
                 Map<String, Object> job = document.getData();
+                if (job == null) continue;
                 job.put("documentId", document.getId());
                 allJobs.add(job);
 
-                // Update counters
                 String status = (String) job.get("Status");
                 if ("Completed".equalsIgnoreCase(status)) {
                     completed++;
                 } else {
                     pending++;
                 }
-
             }
 
             displayJobs(allJobs);

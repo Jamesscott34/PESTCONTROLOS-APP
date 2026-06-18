@@ -37,8 +37,7 @@
     "Difenacoum Wax Blocks",
     "Brodifacoum Wax Blocks",
     "Non-Toxic Monitoring Blocks",
-    "Non-Toxic Monitoring Paste",
-    "Other / Custom"
+    "Non-Toxic Monitoring Paste"
   ],
   "insecticides": [
     "Cimetrol Super EW",
@@ -80,7 +79,27 @@
     "Pelsis Smoke Generator",
     "Fortefog Fumers",
     "Mini Smoke Generator",
-    "Large Smoke Generator",
-    "Other / Custom"
+    "Large Smoke Generator"
+  ],
+  "materials": [
+    "Externals",
+    "Internals",
+    "Fly units",
+    "Sticky boards",
+    "Bulbs",
+    "Bait boxes",
+    "Mouse boxes",
+    "Rat boxes",
+    "Snap traps",
+    "Monitoring blocks",
+    "Insect monitors",
+    "Glue boards",
+    "Drain covers",
+    "Proofing mesh",
+    "Sealant",
+    "Wire wool",
+    "Copper mesh",
+    "Door brushes",
+    "Bristle strips"
   ]
 }

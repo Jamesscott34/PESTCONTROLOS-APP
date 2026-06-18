@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_select_all"
+        android:title="Select all"
+        android:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_share"
+        android:title="@string/cloud_storage_action_share"
+        android:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_download"
+        android:title="@string/cloud_storage_action_download"
+        android:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_move"
+        android:title="@string/cloud_storage_move_files"
+        android:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_delete"
+        android:title="@string/cloud_storage_action_delete"
+        android:showAsAction="ifRoom" />
+
+</menu>

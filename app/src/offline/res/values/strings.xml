@@ -41,4 +41,7 @@
     <!-- Offline: custom template blocked; sign up or download latest app -->
     <string name="offline_custom_template_blocked">To use custom templates, sign up for demo or download the latest offline app from our website.</string>
     <string name="get_update_button">Get update</string>
+
+    <string name="tenant_public_name">pcos offline</string>
+    <string name="tenant_public_website_url">https://www.pestcontrolos.ie</string>
 </resources>

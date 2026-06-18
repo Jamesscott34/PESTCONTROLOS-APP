@@ -6,7 +6,6 @@ import com.grpc.grpc.messaging.NotificationUtils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -24,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -38,7 +38,7 @@ public final class DailyContractPdfHelper {
 
     private static final String PREFS_NAME = "GRPC";
     private static final String PREFIX_LAST_RUN = "DAILY_PDF_LAST_";
-    private static final long INTERVAL_MS = 24 * 60 * 60 * 1000L;
+    private static final int DAILY_RUN_HOUR = 8;
 
     /**
      * Call from MainActivity after user is set. Schedules a check: if last run was more than 24h ago
@@ -52,7 +52,7 @@ public final class DailyContractPdfHelper {
             String key = PREFIX_LAST_RUN + userName.trim().toLowerCase(Locale.getDefault());
             long lastRun = prefs.getLong(key, 0L);
             long now = System.currentTimeMillis();
-            if (lastRun > 0 && (now - lastRun) < INTERVAL_MS) {
+            if (!shouldRunDailyCheck(lastRun, now)) {
                 return; // Already ran in last 24h
             }
             Executors.newSingleThreadExecutor().execute(() -> runDailyPdfAndNotify(context, userName, prefs, key, now));
@@ -72,29 +72,34 @@ public final class DailyContractPdfHelper {
                 for (StaffDirectory.StaffProfile p : StaffDirectory.getCachedStaffProfiles()) {
                     if (p == null) continue;
                     String ck = p.contractKey != null ? p.contractKey.trim() : "";
-                    if (!ck.isEmpty()) techniciansToRun.add(ck);
+                    if (!ck.isEmpty()) techniciansToRun.add(ck.toLowerCase(Locale.getDefault()));
                 }
             } catch (Exception ignored) {}
             if (techniciansToRun.isEmpty()) {
                 // Fallback: don't guess other technicians; run only for the current user.
-                techniciansToRun.add(userName);
+                techniciansToRun.add(userName.trim().toLowerCase(Locale.getDefault()));
             }
         } else {
-            // Use current user's StaffID -> ContractKey when possible.
-            String staffId = SessionManager.getStaffId(context);
-            if (staffId != null && !staffId.trim().isEmpty()) {
-                techniciansToRun.add(StaffDirectory.getContractsCollectionName(staffId).replace(" Contracts", ""));
+            // Use the authenticated user's ContractKey as the source of truth.
+            String contractKey = SessionManager.getContractKey(context);
+            if (contractKey != null && !contractKey.trim().isEmpty()) {
+                techniciansToRun.add(contractKey.trim().toLowerCase(Locale.getDefault()));
             } else {
-                techniciansToRun.add(userName);
+                techniciansToRun.add(userName.trim().toLowerCase(Locale.getDefault()));
             }
         }
 
-        List<String> generatedFor = new ArrayList<>();
+        Map<String, List<String>> generatedByTech = new LinkedHashMap<>();
         for (String technician : techniciansToRun) {
-            String collectionName = technician + " Contracts";
             try {
                 List<Map<String, Object>> contracts = new ArrayList<>();
-                QuerySnapshot result = Tasks.await(db.collection(collectionName).get(), 30, TimeUnit.SECONDS);
+                QuerySnapshot result = Tasks.await(
+                        db.collection(FirestorePaths.CONTRACTS)
+                                .whereEqualTo("assignedTech", technician)
+                                .get(),
+                        30,
+                        TimeUnit.SECONDS
+                );
                 if (result != null) {
                     for (QueryDocumentSnapshot doc : result) {
                         Map<String, Object> contract = doc.getData();
@@ -114,15 +119,13 @@ public final class DailyContractPdfHelper {
                     else if (isDueSoon(nextVisit)) due.add(c);
                 }
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    if (!behinds.isEmpty()) {
-                        File f = BehindsListPDFGenerator.generateBehindsListPDF(technician, behinds, context);
-                        if (f != null) generatedFor.add(technician + " (behinds)");
-                    }
-                    if (!due.isEmpty()) {
-                        File f = DueListPDFGenerator.generateDueListPDF(technician, due, context);
-                        if (f != null) generatedFor.add(technician + " (due)");
-                    }
+                if (!behinds.isEmpty()) {
+                    File f = BehindsListPDFGenerator.generateBehindsListPDF(technician, behinds, context);
+                    if (f != null) addGeneratedType(generatedByTech, technician, "behinds");
+                }
+                if (!due.isEmpty()) {
+                    File f = DueListPDFGenerator.generateDueListPDF(technician, due, context);
+                    if (f != null) addGeneratedType(generatedByTech, technician, "due");
                 }
             } catch (Exception e) {
                 Log.e("DailyContractPdfHelper", "Error generating PDFs for " + technician, e);
@@ -159,36 +162,19 @@ public final class DailyContractPdfHelper {
 
         // Notify technicians whose PDFs were generated and provide an oversight summary.
         String title = "Daily reports generated";
-        String techniciansSummary = generatedFor.isEmpty() ? "" : String.join(", ", generatedFor);
-
-        // 1) Per-technician notifications for behinds/due list PDFs.
-        if (!generatedFor.isEmpty()) {
-            for (String techKey : generatedFor) {
-                if (techKey == null || techKey.trim().isEmpty()) continue;
-
-                Map<String, Object> perTechData = new HashMap<>();
-                perTechData.put("source", "daily_pdf");
-                perTechData.put("technicians", techKey);
-
-                String bodyForTech = "Behinds list and/or due list PDFs have been created for you. "
-                        + "Open Contracts → Behinds List to view or share.";
-
-                String docId = "daily_pdf_" + techKey + "_" + runTime;
-                NotificationUtils.writeInAppNotification(
-                        techKey,
-                        docId,
-                        title,
-                        bodyForTech,
-                        "daily_pdf",
-                        perTechData
-                );
-            }
-        }
+        String techniciansSummary = buildTechniciansSummary(generatedByTech);
 
         // 2) Oversight summary notification for the user that triggered the check.
         String body;
-        if (!generatedFor.isEmpty()) {
-            body = "Behinds list and due list PDFs have been created for: " + techniciansSummary + ". Open Contracts to view or share.";
+        if (!generatedByTech.isEmpty()) {
+            if (SessionManager.seesAllJobs(context)) {
+                body = "Behinds list and due list PDFs have been created for: " + techniciansSummary + ". Open Contracts to view or share.";
+            } else {
+                String ownKey = SessionManager.getContractKey(context);
+                if (ownKey == null || ownKey.trim().isEmpty()) ownKey = userName;
+                List<String> ownTypes = generatedByTech.get(ownKey.trim().toLowerCase(Locale.getDefault()));
+                body = buildDailyBodyForTypes(ownTypes);
+            }
         } else {
             body = "Daily report check complete. No behinds or due contracts; no new PDFs were generated. Open Contracts to view existing lists.";
         }
@@ -196,10 +182,11 @@ public final class DailyContractPdfHelper {
         Map<String, Object> data = new HashMap<>();
         data.put("source", "daily_pdf");
         data.put("technicians", techniciansSummary);
+        data.put("scheduleHour", DAILY_RUN_HOUR);
 
         String userKey = NotificationUtils.resolveNotificationRecipientKey(userName);
         if (!userKey.isEmpty()) {
-            String docId = "daily_pdf_" + runTime;
+            String docId = "daily_pdf_" + buildRunBucket(runTime) + "_" + userKey;
             Map<String, Object> notif = new HashMap<>();
             notif.put("title", title);
             notif.put("body", body);
@@ -217,6 +204,69 @@ public final class DailyContractPdfHelper {
                 NotificationUtils.writeInAppNotification(userName, docId, title, body, "daily_pdf", data);
             }
         }
+    }
+
+    private static boolean shouldRunDailyCheck(long lastRun, long now) {
+        Calendar current = Calendar.getInstance();
+        current.setTimeInMillis(now);
+        Calendar todayRunTime = (Calendar) current.clone();
+        todayRunTime.set(Calendar.HOUR_OF_DAY, DAILY_RUN_HOUR);
+        todayRunTime.set(Calendar.MINUTE, 0);
+        todayRunTime.set(Calendar.SECOND, 0);
+        todayRunTime.set(Calendar.MILLISECOND, 0);
+
+        if (now < todayRunTime.getTimeInMillis()) {
+            return false;
+        }
+        return lastRun < todayRunTime.getTimeInMillis();
+    }
+
+    private static void addGeneratedType(Map<String, List<String>> generatedByTech, String technician, String type) {
+        if (technician == null || technician.trim().isEmpty() || type == null || type.trim().isEmpty()) return;
+        String key = technician.trim().toLowerCase(Locale.getDefault());
+        List<String> types = generatedByTech.get(key);
+        if (types == null) {
+            types = new ArrayList<>();
+            generatedByTech.put(key, types);
+        }
+        if (!types.contains(type)) {
+            types.add(type);
+        }
+    }
+
+    private static String buildTechniciansSummary(Map<String, List<String>> generatedByTech) {
+        if (generatedByTech == null || generatedByTech.isEmpty()) return "";
+        List<String> parts = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : generatedByTech.entrySet()) {
+            String tech = entry.getKey();
+            List<String> types = entry.getValue();
+            if (types == null || types.isEmpty()) {
+                parts.add(tech);
+            } else {
+                parts.add(tech + " (" + String.join(", ", types) + ")");
+            }
+        }
+        return String.join(", ", parts);
+    }
+
+    private static String buildDailyBodyForTypes(List<String> types) {
+        boolean hasBehinds = types != null && types.contains("behinds");
+        boolean hasDue = types != null && types.contains("due");
+        if (hasBehinds && hasDue) {
+            return "Behinds list and due list PDFs have been created for you. Open Contracts -> Behinds List to view or share.";
+        }
+        if (hasBehinds) {
+            return "Behinds list PDF has been created for you. Open Contracts -> Behinds List to view or share.";
+        }
+        if (hasDue) {
+            return "Due list PDF has been created for you. Open Contracts -> Behinds List to view or share.";
+        }
+        return "Daily report check complete. Open Contracts -> Behinds List to view or share.";
+    }
+
+    private static String buildRunBucket(long timeMs) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+        return sdf.format(new Date(timeMs));
     }
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());

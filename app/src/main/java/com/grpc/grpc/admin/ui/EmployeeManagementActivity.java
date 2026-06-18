@@ -2,6 +2,8 @@ package com.grpc.grpc.admin.ui;
 
 import com.grpc.grpc.BuildConfig;
 import com.grpc.grpc.R;
+import com.grpc.grpc.bugreport.ui.BugReportFeatureRequestSubmitActivity;
+import com.grpc.grpc.bugreport.ui.BugReportFeatureRequestViewActivity;
 import com.grpc.grpc.core.DemoFirebaseExpiryHelper;
 import com.grpc.grpc.core.FirebaseHelper;
 import com.grpc.grpc.core.FirestorePaths;
@@ -35,18 +37,25 @@ import java.util.Map;
 
 public class EmployeeManagementActivity extends AppCompatActivity {
 
+    private EditText editUid;
     private EditText editName;
     private EditText editNumber;
-    private EditText editEmail;
-    private EditText editPassword;
     private Spinner spinnerRole;
     private EditText editStaffId;
     private EditText editContractKey;
     private EditText editTitle;
     private Button buttonCreateEmployee;
+    private Button buttonToggleCreateEmployee;
+    private View createEmployeeFormContainer;
 
-    private EditText editExistingUidOrEmail;
+    private EditText editInitializeEmail;
+    private EditText editInitializePassword;
+    private EditText editInitializedUid;
     private Button buttonInitializeProfile;
+    private Button buttonToggleInitializeProfile;
+    private View initializeProfileFormContainer;
+    private Button buttonManageBugReports;
+    private Button buttonCreateFeature;
 
     private ListView employeeListView;
     private ArrayAdapter<String> employeeAdapter;
@@ -60,18 +69,25 @@ public class EmployeeManagementActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_employee_management);
 
+        editUid = findViewById(R.id.editEmployeeUid);
         editName = findViewById(R.id.editEmployeeName);
         editNumber = findViewById(R.id.editEmployeeNumber);
-        editEmail = findViewById(R.id.editEmployeeEmail);
-        editPassword = findViewById(R.id.editEmployeePassword);
         spinnerRole = findViewById(R.id.spinnerEmployeeRole);
         editStaffId = findViewById(R.id.editEmployeeStaffId);
         editContractKey = findViewById(R.id.editEmployeeContractKey);
         editTitle = findViewById(R.id.editEmployeeTitle);
         buttonCreateEmployee = findViewById(R.id.buttonCreateEmployee);
+        buttonToggleCreateEmployee = findViewById(R.id.buttonToggleCreateEmployee);
+        createEmployeeFormContainer = findViewById(R.id.createEmployeeFormContainer);
 
-        editExistingUidOrEmail = findViewById(R.id.editExistingUidOrEmail);
+        editInitializeEmail = findViewById(R.id.editInitializeEmail);
+        editInitializePassword = findViewById(R.id.editInitializePassword);
+        editInitializedUid = findViewById(R.id.editInitializedUid);
         buttonInitializeProfile = findViewById(R.id.buttonInitializeProfile);
+        buttonToggleInitializeProfile = findViewById(R.id.buttonToggleInitializeProfile);
+        initializeProfileFormContainer = findViewById(R.id.initializeProfileFormContainer);
+        buttonManageBugReports = findViewById(R.id.buttonManageBugReports);
+        buttonCreateFeature = findViewById(R.id.buttonCreateFeature);
 
         employeeListView = findViewById(R.id.employeeListView);
 
@@ -114,23 +130,57 @@ public class EmployeeManagementActivity extends AppCompatActivity {
     }
 
     private void setupButtonHandlers() {
+        if (buttonToggleInitializeProfile != null) {
+            buttonToggleInitializeProfile.setOnClickListener(v -> toggleInitializeProfileForm());
+        }
+        if (buttonToggleCreateEmployee != null) {
+            buttonToggleCreateEmployee.setOnClickListener(v -> toggleCreateEmployeeForm());
+        }
         buttonCreateEmployee.setOnClickListener(v -> createEmployee());
         buttonInitializeProfile.setOnClickListener(v -> initializeProfile());
+        if (buttonManageBugReports != null) {
+            buttonManageBugReports.setOnClickListener(v -> {
+                Intent intent = new Intent(EmployeeManagementActivity.this, BugReportFeatureRequestViewActivity.class);
+                intent.putExtra(BugReportFeatureRequestViewActivity.EXTRA_USER_NAME, SessionManager.getName(this));
+                startActivity(intent);
+            });
+        }
+        if (buttonCreateFeature != null) {
+            buttonCreateFeature.setOnClickListener(v -> {
+                Intent intent = new Intent(EmployeeManagementActivity.this, BugReportFeatureRequestSubmitActivity.class);
+                intent.putExtra(BugReportFeatureRequestSubmitActivity.EXTRA_USER_NAME, SessionManager.getName(this));
+                intent.putExtra(BugReportFeatureRequestSubmitActivity.EXTRA_DEFAULT_TYPE, "feature");
+                startActivity(intent);
+            });
+        }
+    }
+
+    private void toggleInitializeProfileForm() {
+        if (initializeProfileFormContainer == null || buttonToggleInitializeProfile == null) return;
+        boolean expanded = initializeProfileFormContainer.getVisibility() == View.VISIBLE;
+        initializeProfileFormContainer.setVisibility(expanded ? View.GONE : View.VISIBLE);
+        buttonToggleInitializeProfile.setText(expanded ? "Initialize Profile ▼" : "Initialize Profile ▲");
+    }
+
+    private void toggleCreateEmployeeForm() {
+        if (createEmployeeFormContainer == null || buttonToggleCreateEmployee == null) return;
+        boolean expanded = createEmployeeFormContainer.getVisibility() == View.VISIBLE;
+        createEmployeeFormContainer.setVisibility(expanded ? View.GONE : View.VISIBLE);
+        buttonToggleCreateEmployee.setText(expanded ? "Create Employee ▼" : "Create Employee ▲");
     }
 
     private void createEmployee() {
+        String uid = textOf(editUid);
         String name = textOf(editName);
         String number = textOf(editNumber);
-        String email = textOf(editEmail);
-        String password = textOf(editPassword);
         String staffId = textOf(editStaffId);
         String contractKey = textOf(editContractKey);
         String title = textOf(editTitle);
 
-        if (TextUtils.isEmpty(name) || TextUtils.isEmpty(email) || TextUtils.isEmpty(password)
+        if (TextUtils.isEmpty(uid) || TextUtils.isEmpty(name)
                 || TextUtils.isEmpty(staffId) || TextUtils.isEmpty(contractKey)) {
             Toast.makeText(this,
-                    "Name, email, password, staff ID and contract key are required.",
+                    "UID, name, staff ID and contract key are required.",
                     Toast.LENGTH_SHORT).show();
             return;
         }
@@ -146,10 +196,9 @@ public class EmployeeManagementActivity extends AppCompatActivity {
         }
 
         Map<String, Object> data = new HashMap<>();
+        data.put("uid", uid);
         data.put("name", name);
         data.put("number", number);
-        data.put("email", email);
-        data.put("password", password);
         data.put("role", role);
         data.put("staffId", staffId);
         data.put("contractKey", contractKey);
@@ -179,20 +228,18 @@ public class EmployeeManagementActivity extends AppCompatActivity {
     }
 
     private void initializeProfile() {
-        String value = textOf(editExistingUidOrEmail);
-        if (TextUtils.isEmpty(value)) {
+        String email = textOf(editInitializeEmail).toLowerCase();
+        String password = textOf(editInitializePassword);
+        if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
             Toast.makeText(this,
-                    "Enter an existing UID or email.",
+                    "Enter email and password.",
                     Toast.LENGTH_SHORT).show();
             return;
         }
 
         Map<String, Object> data = new HashMap<>();
-        if (value.contains("@")) {
-            data.put("email", value);
-        } else {
-            data.put("uid", value);
-        }
+        data.put("email", email);
+        data.put("password", password);
 
         buttonInitializeProfile.setEnabled(false);
         functions
@@ -208,8 +255,19 @@ public class EmployeeManagementActivity extends AppCompatActivity {
                                 Toast.LENGTH_LONG).show();
                         return;
                     }
+                    HttpsCallableResult result = task.getResult();
+                    Object payload = result != null ? result.getData() : null;
+                    String uid = "";
+                    if (payload instanceof Map) {
+                        Object rawUid = ((Map<?, ?>) payload).get("uid");
+                        if (rawUid != null) uid = String.valueOf(rawUid).trim();
+                    }
+                    if (editInitializedUid != null) editInitializedUid.setText(uid);
+                    if (editUid != null) editUid.setText(uid);
+                    if (createEmployeeFormContainer != null) createEmployeeFormContainer.setVisibility(View.VISIBLE);
+                    if (buttonToggleCreateEmployee != null) buttonToggleCreateEmployee.setText("Create Employee ▲");
                     Toast.makeText(EmployeeManagementActivity.this,
-                            "Profile initialized.",
+                            uid.isEmpty() ? "Profile initialized." : "Profile initialized. UID loaded.",
                             Toast.LENGTH_SHORT).show();
                     loadEmployees();
                 });
@@ -279,14 +337,15 @@ public class EmployeeManagementActivity extends AppCompatActivity {
     }
 
     private void clearCreateForm() {
+        editUid.setText("");
         editName.setText("");
         editNumber.setText("");
-        editEmail.setText("");
-        editPassword.setText("");
         editStaffId.setText("");
         editContractKey.setText("");
         editTitle.setText("");
         spinnerRole.setSelection(0);
+        if (createEmployeeFormContainer != null) createEmployeeFormContainer.setVisibility(View.GONE);
+        if (buttonToggleCreateEmployee != null) buttonToggleCreateEmployee.setText("Create Employee ▼");
     }
 
     private static String textOf(EditText e) {

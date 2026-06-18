@@ -63,7 +63,7 @@ public class ServiceAgreementViewActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_service_agreements_view);
+        setContentView(R.layout.activity_era_viewer);
 
         // Retrieve the username from the intent
         userName = getIntent().getStringExtra("USER_NAME");
@@ -73,9 +73,12 @@ public class ServiceAgreementViewActivity extends AppCompatActivity {
             return;
         }
 
-        recyclerView = findViewById(R.id.service_agreement_recycler_view);
+        recyclerView = findViewById(R.id.report_recycler_view);
         searchBar = findViewById(R.id.search_bar);
-        returnButton = findViewById(R.id.buttonReturn);
+        returnButton = findViewById(R.id.buttonreturn);
+        if (searchBar != null) {
+            searchBar.setHint("Search Service Agreements...");
+        }
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 

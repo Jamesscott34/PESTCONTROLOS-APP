@@ -34,8 +34,10 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Displays in-app notification history so users can see what notifications they received
@@ -178,6 +180,7 @@ public class NotificationsActivity extends AppCompatActivity {
                         // Mark all unread items as read (so home screen badge clears after viewing)
                         WriteBatch batch = db.batch();
                         boolean hasUnreadToUpdate = false;
+                        Set<String> seenSignatures = new HashSet<>();
 
                         for (QueryDocumentSnapshot doc : snapshot) {
                             String title = doc.getString("title");
@@ -198,6 +201,10 @@ public class NotificationsActivity extends AppCompatActivity {
                             String timeStr = ts instanceof com.google.firebase.Timestamp
                                     ? sdf.format(((com.google.firebase.Timestamp) ts).toDate())
                                     : "Recently";
+                            String signature = buildNotificationSignature(type, title, body, data, ts);
+                            if (!signature.isEmpty() && !seenSignatures.add(signature)) {
+                                continue;
+                            }
 
                             Boolean read = doc.getBoolean("read");
                             if (read == null || !read) {
@@ -271,6 +278,32 @@ public class NotificationsActivity extends AppCompatActivity {
                         .addOnFailureListener(e -> Toast.makeText(this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()))
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private String buildNotificationSignature(String type, String title, String body, Map<String, Object> data, Object ts) {
+        String safeType = type != null ? type.trim().toLowerCase(Locale.getDefault()) : "";
+        if (!"contract_update".equals(safeType) && !"daily_pdf".equals(safeType)) {
+            return "";
+        }
+
+        String key = "";
+        if (data != null) {
+            Object contractId = data.get("contractId");
+            if (contractId != null) key = String.valueOf(contractId).trim();
+        }
+        if (key.isEmpty()) {
+            key = (title != null ? title.trim() : "") + "|" + (body != null ? body.trim() : "");
+        }
+
+        String minuteBucket = "recent";
+        if (ts instanceof com.google.firebase.Timestamp) {
+            try {
+                minuteBucket = new SimpleDateFormat("yyyyMMddHHmm", Locale.getDefault())
+                        .format(((com.google.firebase.Timestamp) ts).toDate());
+            } catch (Exception ignored) {
+            }
+        }
+        return safeType + "|" + key + "|" + minuteBucket;
     }
 
     private void showNotificationActions(QueryDocumentSnapshot doc, String type, Map<String, Object> data) {
@@ -432,11 +465,8 @@ public class NotificationsActivity extends AppCompatActivity {
 
         if ("contract_update".equals(type) && data != null) {
             String contractId = asString(data.get("contractId"));
-            String contractUser = asString(data.get("userName"));
-            if (TextUtils.isEmpty(contractUser)) contractUser = userName;
-            if (!TextUtils.isEmpty(contractId) && !TextUtils.isEmpty(contractUser)) {
-                String collectionName = StaffDirectory.getContractsCollectionNameFromAnyKey(contractUser);
-                db.collection(collectionName).document(contractId).get()
+            if (!TextUtils.isEmpty(contractId)) {
+                db.collection(FirestorePaths.CONTRACTS).document(contractId).get()
                         .addOnSuccessListener(ds -> {
                             String addr = ds.getString("address");
                             if (!TextUtils.isEmpty(addr)) openMaps(addr);

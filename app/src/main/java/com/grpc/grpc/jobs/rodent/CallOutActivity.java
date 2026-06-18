@@ -3,6 +3,7 @@ package com.grpc.grpc.jobs.rodent;
 import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.reports.pdf.PDFReportGenerator;
+import com.grpc.grpc.reports.pdf.PdfFooterPageNumberStamper;
 
 import android.content.Context;
 import android.content.Intent;
@@ -246,7 +247,7 @@ public class CallOutActivity extends AppCompatActivity {
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(20)
                     .setBold()
-                    .setFontColor(ColorConstants.BLUE);
+                    .setFontColor(ColorConstants.BLACK);
             document.add(title);
             document.add(new Paragraph("\n"));  // Spacing after title
 
@@ -262,7 +263,7 @@ public class CallOutActivity extends AppCompatActivity {
             addReportSection(document, "Technician", techName + " - " + techContact);
 
             document.close();
-
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context), null);
 
         } catch (IOException e) {
             e.printStackTrace();

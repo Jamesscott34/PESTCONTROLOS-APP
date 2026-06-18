@@ -2,6 +2,7 @@ package com.grpc.grpc.contracts.pdf;
 
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.reports.pdf.PDFReportGenerator;
+import com.grpc.grpc.reports.pdf.PdfFooterPageNumberStamper;
 
 import android.content.Context;
 import android.os.Build;
@@ -29,6 +30,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * ContractListPDFGenerator
@@ -41,8 +43,8 @@ public class ContractListPDFGenerator {
 
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     public static File generateContractsListPDF(String title, List<Map<String, Object>> contracts, Context context) {
-        // Store alongside existing behinds/due PDF reports
-        File pdfFolder = new File(context.getExternalFilesDir(null), "BEHINDS LIST");
+        // Store in the same local reports folder used by generated reports.
+        File pdfFolder = new File(context.getExternalFilesDir(null), TenantBranding.reportsFolderName(context));
         if (!pdfFolder.exists()) {
             pdfFolder.mkdirs();
         }
@@ -63,6 +65,7 @@ public class ContractListPDFGenerator {
             addPdfContent(document, title, contracts, context);
 
             document.close();
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context), null);
             return pdfFile;
 
         } catch (IOException e) {
@@ -105,8 +108,15 @@ public class ContractListPDFGenerator {
             Paragraph subtitle = new Paragraph("View: " + title)
                     .setFontSize(16)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginBottom(20);
+                    .setMarginBottom(8);
             document.add(subtitle);
+
+            Paragraph countTop = new Paragraph("Number of Contracts: " + contracts.size())
+                    .setFontSize(14)
+                    .setBold()
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMarginBottom(20);
+            document.add(countTop);
 
             // Date
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
@@ -131,13 +141,23 @@ public class ContractListPDFGenerator {
             // Each contract
             int index = 1;
             for (Map<String, Object> contract : contracts) {
-                String owner = contract.get("owner") != null ? contract.get("owner").toString() : "N/A";
-                String name = contract.get("name") != null ? contract.get("name").toString() : "N/A";
-                String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
-                String contact = contract.get("contact") != null ? contract.get("contact").toString() : "N/A";
-                String email = contract.get("email") != null ? contract.get("email").toString() : "N/A";
-                String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
-                String nextVisit = contract.get("nextVisit") != null ? contract.get("nextVisit").toString() : "N/A";
+                String owner = firstNonBlank(contract, "owner", "assignedTech", "assignedTechName");
+                if (owner.isEmpty()) owner = "N/A";
+                String contractKey = firstNonBlank(contract, "contractKey", "assignedTech", "owner");
+                if (contractKey.isEmpty()) contractKey = "N/A";
+                String name = resolveContractDisplayName(contract);
+                String address = firstNonBlank(contract, "address", "Address", "customerAddress", "CustomerAddress");
+                if (address.isEmpty()) address = "N/A";
+                String contact = firstNonBlank(contract, "contact", "Contact", "phone", "Phone", "customerPhone", "CustomerPhone");
+                if (contact.isEmpty()) contact = "N/A";
+                String email = firstNonBlank(contract, "email", "Email", "customerEmail", "CustomerEmail");
+                if (email.isEmpty()) email = "N/A";
+                String lastVisit = firstNonBlank(contract, "lastVisit", "LastVisit");
+                if (lastVisit.isEmpty()) lastVisit = "N/A";
+                String nextVisit = firstNonBlank(contract, "nextVisit", "NextVisit");
+                if (nextVisit.isEmpty()) nextVisit = "N/A";
+                String routineCounters = buildCounterDisplayLines(contract, "Routines", "Routine");
+                String callOutCounters = buildCounterDisplayLines(contract, "Callout", "Callout");
 
                 Paragraph header = new Paragraph(index + ". " + name + " (" + owner + ")")
                         .setFontSize(16)
@@ -146,11 +166,18 @@ public class ContractListPDFGenerator {
                         .setMarginBottom(5);
                 document.add(header);
 
+                document.add(new Paragraph("ContractKey: " + contractKey).setFontSize(12).setMarginBottom(3));
                 document.add(new Paragraph("📍 Address: " + address).setFontSize(12).setMarginBottom(3));
                 document.add(new Paragraph("📞 Contact: " + contact).setFontSize(12).setMarginBottom(3));
                 document.add(new Paragraph("📧 Email: " + email).setFontSize(12).setMarginBottom(3));
                 document.add(new Paragraph("📅 Last Visit: " + lastVisit).setFontSize(12).setMarginBottom(3));
                 document.add(new Paragraph("⏰ Next Visit: " + nextVisit).setFontSize(12).setMarginBottom(10));
+                document.add(new Paragraph("Routine Visits: " + (routineCounters.isEmpty() ? "None recorded" : routineCounters))
+                        .setFontSize(12)
+                        .setMarginBottom(3));
+                document.add(new Paragraph("Call Outs: " + (callOutCounters.isEmpty() ? "None recorded" : callOutCounters))
+                        .setFontSize(12)
+                        .setMarginBottom(10));
 
                 if (index < contracts.size()) {
                     LineSeparator contractSeparator = new LineSeparator(new SolidLine(0.5f));
@@ -171,5 +198,79 @@ public class ContractListPDFGenerator {
         } catch (Exception e) {
             Toast.makeText(context, "Error adding content to contracts PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private static String resolveContractDisplayName(Map<String, Object> contract) {
+        String value = firstNonBlank(contract,
+                "name",
+                "Name",
+                "companyName",
+                "Company",
+                "CustomerName",
+                "customerName",
+                "contractName",
+                "ContractName",
+                "contractKey",
+                "address");
+        return value.isEmpty() ? "Unknown Contract" : value;
+    }
+
+    private static String firstNonBlank(Map<String, Object> contract, String... keys) {
+        if (contract == null || keys == null) return "";
+        for (String key : keys) {
+            Object value = contract.get(key);
+            if (value == null) continue;
+            String text = value.toString().trim();
+            if (!text.isEmpty() && !"N/A".equalsIgnoreCase(text)) {
+                return text;
+            }
+        }
+        return "";
+    }
+
+    private static String buildCounterDisplayLines(Map<String, Object> contract, String storagePrefix, String displayPrefix) {
+        if (contract == null || contract.isEmpty()) return "";
+
+        TreeMap<Integer, String> newestFirst = new TreeMap<>((a, b) -> Integer.compare(b, a));
+        for (Map.Entry<String, Object> entry : contract.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || !key.startsWith(storagePrefix)) continue;
+            String suffix = key.substring(storagePrefix.length());
+            if (!suffix.matches("\\d{2}")) continue;
+
+            int count = readCounterNumberFromEntry(entry.getValue());
+            if (count <= 0) continue;
+
+            int year = 2000 + Integer.parseInt(suffix);
+            newestFirst.put(year, displayPrefix + suffix + " - " + count);
+        }
+
+        StringBuilder out = new StringBuilder();
+        for (String line : newestFirst.values()) {
+            if (out.length() > 0) out.append("; ");
+            out.append(line);
+        }
+        return out.toString();
+    }
+
+    private static int readCounterNumberFromEntry(Object entryValue) {
+        if (entryValue instanceof Map) {
+            Object number = ((Map<?, ?>) entryValue).get("number");
+            return readCounterNumber(number);
+        }
+        return readCounterNumber(entryValue);
+    }
+
+    private static int readCounterNumber(Object raw) {
+        if (raw instanceof Number) {
+            return ((Number) raw).intValue();
+        }
+        if (raw != null) {
+            try {
+                return Integer.parseInt(raw.toString().trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0;
     }
 }

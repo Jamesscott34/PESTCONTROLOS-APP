@@ -15,168 +15,232 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Top Spacer to avoid notch -->
         <View
             android:id="@+id/statusSpacer"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent" />
 
-        <!-- Welcome Message -->
+        <!-- Header: Welcome back, {user} -->
         <TextView
             android:id="@+id/welcomeTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Create Report"
             android:textSize="24sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="8dp"
             android:textColor="?android:attr/textColorPrimary" />
 
-        <!-- Reports -->
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/createReportSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/create_report_subtitle"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginBottom="24dp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <TextView
+            android:id="@+id/createReportInstructionText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="When filling out reports, select the correct checkbox (Job, Management, or Contract) before saving so your report is routed to the correct folder and flow."
+            android:textSize="13sp"
+            android:layout_marginBottom="16dp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <!-- REPORTS: 2 per row -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Reports"
+            android:text="@string/create_report_section_reports"
             android:textStyle="bold"
-            android:textSize="14sp"
+            android:textSize="12sp"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="6dp"
-            android:textColor="?android:attr/textColorPrimary" />
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorSecondary" />
 
-        <Button
-            android:id="@+id/buttonCreateReport"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="Service Report"
-            android:textSize="16sp"
-            android:layout_marginBottom="10dp" />
-
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginBottom="16dp">
+            <Button
+                android:id="@+id/buttonCreateReport"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="@string/create_report_service_report"
+                android:textSize="14sp"
+                android:layout_marginEnd="6dp" />
+            <Button
+                android:id="@+id/buttonActionForm"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="@string/create_report_action_form"
+                android:textSize="14sp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
         <Button
             android:id="@+id/buttonGenericReport"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="General Report"
-            android:textSize="16sp"
-            android:layout_marginBottom="10dp" />
+            android:visibility="gone"
+            android:importantForAccessibility="no" />
 
-        <Button
-            android:id="@+id/buttonActionForm"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="Action Form"
-            android:textSize="16sp"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Quotations -->
+        <!-- QUOTATIONS: 2 per row -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Quotations"
+            android:text="@string/create_report_section_quotations"
             android:textStyle="bold"
-            android:textSize="14sp"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="6dp"
-            android:textColor="?android:attr/textColorPrimary" />
+            android:textSize="12sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorSecondary" />
 
-        <!-- Renamed: General Quotes -> Contract Quotations (contains 4/6/8/12 + Custom Quote inside) -->
-        <Button
-            android:id="@+id/buttonCreateQuotation"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="Contract Quotations"
-            android:textSize="16sp"
-            android:layout_marginBottom="10dp" />
-
-        <Button
-            android:id="@+id/buttonCreateBirdQuotation"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+            <Button
+                android:id="@+id/buttonCreateQuotation"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="@string/create_report_contract_quotation"
+                android:textSize="14sp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="10dp" />
+            <Button
+                android:id="@+id/buttonCreateBirdQuotation"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="@string/create_report_bird_quote"
+                android:textSize="14sp"
+                android:layout_marginStart="6dp"
+                android:layout_marginBottom="10dp" />
+        </LinearLayout>
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="Bird Quote"
-            android:textSize="16sp"
-            android:layout_marginBottom="10dp" />
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginBottom="10dp">
+            <Button
+                android:id="@+id/buttonGenericQuotationFromCatalog"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="@string/general_quotation_button"
+                android:textSize="14sp"
+                android:layout_marginEnd="6dp" />
+            <Button
+                android:id="@+id/buttonCreateGeneralQuotation"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="@string/custom_quote_button"
+                android:textSize="14sp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
 
-        <Button
-            android:id="@+id/buttonCreateGeneralQuotation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="@string/custom_quote_button"
-            android:textSize="16sp"
-            android:layout_marginBottom="10dp" />
-
-        <Button
-            android:id="@+id/buttonGeneralQuotationCatalog"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="@string/general_quotation_button"
-            android:textSize="16sp"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Agreements & Compliance -->
+        <!-- AGREEMENTS & COMPLIANCE: 2 per row -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Agreements &amp; Compliance"
+            android:text="@string/create_report_section_agreements"
             android:textStyle="bold"
-            android:textSize="14sp"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="6dp"
-            android:textColor="?android:attr/textColorPrimary" />
+            android:textSize="12sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorSecondary" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+            <Button
+                android:id="@+id/buttonServiceAgreements"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="@string/create_report_service_agreements"
+                android:textSize="14sp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="10dp" />
+            <Button
+                android:id="@+id/buttonEra"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="@string/create_report_era"
+                android:textSize="14sp"
+                android:layout_marginStart="6dp"
+                android:layout_marginBottom="10dp" />
+        </LinearLayout>
         <Button
-            android:id="@+id/buttonServiceAgreements"
+            android:id="@+id/buttonSafetyStatement"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="56dp"
-            android:text="Service Agreements"
+            android:text="Safety Statement"
             android:textSize="16sp"
-            android:layout_marginBottom="10dp" />
+            android:layout_marginBottom="16dp" />
 
-        <Button
-            android:id="@+id/buttonEra"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="ERA"
-            android:textSize="16sp"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Templates -->
+        <!-- TEMPLATES: 2 per row -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Templates"
+            android:text="@string/create_report_section_templates"
             android:textStyle="bold"
-            android:textSize="14sp"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="6dp"
-            android:textColor="?android:attr/textColorPrimary" />
+            android:textSize="12sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:textColor="?android:attr/textColorSecondary" />
 
-        <Button
-            android:id="@+id/buttonCustomReport"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="Custom Template"
-            android:textSize="16sp"
-            android:layout_marginBottom="10dp" />
-
-        <Button
-            android:id="@+id/buttonCreateCustomReport"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:text="Create Custom Report"
-            android:textSize="16sp"
-            android:layout_marginBottom="24dp" />
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+            <Button
+                android:id="@+id/buttonCustomReport"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="@string/create_report_custom_template"
+                android:textSize="14sp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="10dp" />
+            <Button
+                android:id="@+id/buttonCreateCustomReport"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="56dp"
+                android:text="@string/create_report_create_custom_report"
+                android:textSize="14sp"
+                android:layout_marginStart="6dp"
+                android:layout_marginBottom="24dp" />
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>

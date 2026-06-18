@@ -55,7 +55,7 @@
  * - All users: Contract viewing and basic management capabilities
  * 
  * Author: GRPC
- * Company: Good Riddance Pest Control
+ * Company: [Company 1]
  * Version: 1.0
  * Last Updated: 2024
  * ============================================================================
@@ -90,6 +90,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -98,7 +101,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class ContractsActivity extends AppCompatActivity {
     
@@ -106,7 +113,7 @@ public class ContractsActivity extends AppCompatActivity {
     // UI COMPONENTS - Navigation and action buttons
     // ============================================================================
     
-    private Button addContractButton, viewContractButton, behindsListButton, dueListButton, viewBehindsButton;
+    private Button addContractButton, viewContractButton, behindsListButton, dueListButton, exportContractsExcelButton, viewBehindsButton;
     
     // ============================================================================
     // DATA MANAGEMENT - User context and database operations
@@ -116,6 +123,14 @@ public class ContractsActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
     private GestureDetectorCompat gestureDetector;
+    private static final String[] CONTRACT_EXCEL_FIXED_HEADERS = {
+            "Name", "Address", "Email", "Contact", "Visits", "Last Visit", "Next Visit",
+            "Assigned Tech", "Status"
+    };
+    private static final String[] CONTRACT_EXCEL_FIXED_KEYS = {
+            "name", "address", "email", "contact", "visits", "lastVisit", "nextVisit",
+            "assignedTech", "status"
+    };
 
     /** Debounce flag to avoid double-opening ViewContractActivity on fast taps. */
     private boolean viewContractClickInProgress = false;
@@ -220,7 +235,15 @@ public class ContractsActivity extends AppCompatActivity {
         viewContractButton = findViewById(R.id.ViewContractButton);
         behindsListButton = findViewById(R.id.BehindsListButton);
         dueListButton = findViewById(R.id.DueListButton);
+        exportContractsExcelButton = findViewById(R.id.ExportContractsExcelButton);
         viewBehindsButton = findViewById(R.id.ViewBehindsButton);
+        if (exportContractsExcelButton != null) {
+            exportContractsExcelButton.setVisibility(View.GONE);
+        }
+        if (viewBehindsButton != null) {
+            // "View Behinds" has been moved to View Reports hub for a single, cleaner document-management entry point.
+            viewBehindsButton.setVisibility(View.GONE);
+        }
     }
 
     /**
@@ -275,12 +298,271 @@ public class ContractsActivity extends AppCompatActivity {
             generateDueListPDF();
         });
 
-        // View Behinds Button - Navigate to behinds list management
-        viewBehindsButton.setOnClickListener(v -> {
-            Intent intent = new Intent(ContractsActivity.this, BehindsListViewActivity.class);
-            intent.putExtra("USER_NAME", userName);
-            startActivity(intent);
+        exportContractsExcelButton.setOnClickListener(v -> {
+            exportContractsToExcel();
         });
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            if (exportContractsExcelButton != null) {
+                exportContractsExcelButton.setVisibility(SessionManager.isAdmin(this) ? View.VISIBLE : View.GONE);
+            }
+        }));
+
+        // View-behinds management moved to View Reports hub.
+    }
+
+    private void exportContractsToExcel() {
+        db.collection(FirestorePaths.CONTRACTS).get().addOnCompleteListener(task -> {
+            if (!task.isSuccessful() || task.getResult() == null) {
+                String msg = task.getException() != null ? task.getException().getMessage() : "unknown error";
+                Toast.makeText(this, "Failed to load contracts: " + msg, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            List<Map<String, Object>> contracts = new ArrayList<>();
+            Set<String> years = new TreeSet<>();
+            for (QueryDocumentSnapshot document : task.getResult()) {
+                Map<String, Object> contract = document.getData();
+                if (contract == null) {
+                    continue;
+                }
+                Object assignedTechValue = contract.get("assignedTech");
+                String assignedTech = assignedTechValue != null ? assignedTechValue.toString().trim() : "";
+                if (assignedTech.isEmpty()) {
+                    continue;
+                }
+
+                contracts.add(contract);
+                for (String key : contract.keySet()) {
+                    String suffix = getCounterYearSuffix(key);
+                    if (suffix != null) {
+                        years.add(suffix);
+                    }
+                }
+            }
+
+            if (contracts.isEmpty()) {
+                Toast.makeText(this, "No contracts found in shared collection.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            File externalFilesDir = getExternalFilesDir(null);
+            if (externalFilesDir == null) {
+                Toast.makeText(this, "Unable to access export folder", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            File exportDir = new File(externalFilesDir, "BEHINDS LIST");
+            if (!exportDir.exists() && !exportDir.mkdirs()) {
+                Toast.makeText(this, "Unable to create export folder", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String dateStamp = new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(new Date());
+            File file = new File(exportDir, "Contract_list_" + dateStamp + ".xlsx");
+
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(file))) {
+                List<String> headers = new ArrayList<>();
+                for (String header : CONTRACT_EXCEL_FIXED_HEADERS) {
+                    headers.add(header);
+                }
+                for (String year : years) {
+                    headers.add("Routines 20" + year);
+                    headers.add("Callouts 20" + year);
+                }
+
+                List<List<String>> rows = new ArrayList<>();
+                for (Map<String, Object> contract : contracts) {
+                    List<String> row = new ArrayList<>();
+                    for (String key : CONTRACT_EXCEL_FIXED_KEYS) {
+                        Object value = contract.get(key);
+                        row.add(value != null ? String.valueOf(value) : "");
+                    }
+                    for (String year : years) {
+                        row.add(String.valueOf(readCounterNumber(contract.get("Routines" + year))));
+                        row.add(String.valueOf(readCounterNumber(contract.get("Callout" + year))));
+                    }
+                    rows.add(row);
+                }
+                writeXlsxWorkbook(zip, headers, rows);
+            } catch (IOException e) {
+                Toast.makeText(this, "Failed to export contracts: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Uri fileUri = FileProvider.getUriForFile(
+                    this,
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
+                    file
+            );
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            intent.putExtra(Intent.EXTRA_STREAM, fileUri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(intent, "Export Contracts Excel"));
+        });
+    }
+
+    private String getCounterYearSuffix(String key) {
+        if (key == null) {
+            return null;
+        }
+        String suffix = null;
+        if (key.startsWith("Routines") && key.length() == "Routines".length() + 2) {
+            suffix = key.substring("Routines".length());
+        } else if (key.startsWith("Callout") && key.length() == "Callout".length() + 2) {
+            suffix = key.substring("Callout".length());
+        }
+        if (suffix != null && Character.isDigit(suffix.charAt(0)) && Character.isDigit(suffix.charAt(1))) {
+            return suffix;
+        }
+        return null;
+    }
+
+    private int readCounterNumber(Object counterValue) {
+        if (!(counterValue instanceof Map)) {
+            return 0;
+        }
+        Object number = ((Map<?, ?>) counterValue).get("number");
+        if (number instanceof Number) {
+            return ((Number) number).intValue();
+        }
+        if (number instanceof String) {
+            try {
+                return Integer.parseInt(((String) number).trim());
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    private void writeXlsxWorkbook(ZipOutputStream zip, List<String> headers, List<List<String>> rows) throws IOException {
+        writeZipEntry(zip, "[Content_Types].xml",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                        + "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">"
+                        + "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>"
+                        + "<Default Extension=\"xml\" ContentType=\"application/xml\"/>"
+                        + "<Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>"
+                        + "<Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>"
+                        + "<Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>"
+                        + "</Types>");
+        writeZipEntry(zip, "_rels/.rels",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                        + "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
+                        + "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/>"
+                        + "</Relationships>");
+        writeZipEntry(zip, "xl/workbook.xml",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                        + "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" "
+                        + "xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">"
+                        + "<sheets><sheet name=\"Contracts\" sheetId=\"1\" r:id=\"rId1\"/></sheets>"
+                        + "</workbook>");
+        writeZipEntry(zip, "xl/_rels/workbook.xml.rels",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                        + "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
+                        + "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/>"
+                        + "<Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>"
+                        + "</Relationships>");
+        writeZipEntry(zip, "xl/styles.xml",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                        + "<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">"
+                        + "<fonts count=\"1\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font></fonts>"
+                        + "<fills count=\"1\"><fill><patternFill patternType=\"none\"/></fill></fills>"
+                        + "<borders count=\"1\"><border/></borders>"
+                        + "<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs>"
+                        + "<cellXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/></cellXfs>"
+                        + "</styleSheet>");
+        writeZipEntry(zip, "xl/worksheets/sheet1.xml", buildSheetXml(headers, rows));
+    }
+
+    private void writeZipEntry(ZipOutputStream zip, String name, String content) throws IOException {
+        zip.putNextEntry(new ZipEntry(name));
+        zip.write(content.getBytes(StandardCharsets.UTF_8));
+        zip.closeEntry();
+    }
+
+    private String buildSheetXml(List<String> headers, List<List<String>> rows) {
+        StringBuilder sheet = new StringBuilder();
+        sheet.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        sheet.append("<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">");
+        sheet.append(buildColumnWidths(headers, rows));
+        sheet.append("<sheetData>");
+        appendXlsxRow(sheet, 1, headers);
+        for (int i = 0; i < rows.size(); i++) {
+            appendXlsxRow(sheet, i + 2, rows.get(i));
+        }
+        sheet.append("</sheetData></worksheet>");
+        return sheet.toString();
+    }
+
+    private String buildColumnWidths(List<String> headers, List<List<String>> rows) {
+        int columnCount = headers != null ? headers.size() : 0;
+        int[] maxLengths = new int[columnCount];
+        for (int i = 0; i < columnCount; i++) {
+            maxLengths[i] = getCellDisplayLength(headers.get(i));
+        }
+        for (List<String> row : rows) {
+            if (row == null) {
+                continue;
+            }
+            for (int i = 0; i < columnCount && i < row.size(); i++) {
+                maxLengths[i] = Math.max(maxLengths[i], getCellDisplayLength(row.get(i)));
+            }
+        }
+
+        StringBuilder cols = new StringBuilder("<cols>");
+        for (int i = 0; i < columnCount; i++) {
+            double width = Math.min(Math.max(maxLengths[i] + 2, 10), 45);
+            cols.append("<col min=\"").append(i + 1)
+                    .append("\" max=\"").append(i + 1)
+                    .append("\" width=\"").append(String.format(Locale.US, "%.1f", width))
+                    .append("\" customWidth=\"1\"/>");
+        }
+        cols.append("</cols>");
+        return cols.toString();
+    }
+
+    private int getCellDisplayLength(String value) {
+        if (value == null || value.isEmpty()) {
+            return 0;
+        }
+        String[] lines = value.split("\\r?\\n", -1);
+        int max = 0;
+        for (String line : lines) {
+            max = Math.max(max, line.length());
+        }
+        return max;
+    }
+
+    private void appendXlsxRow(StringBuilder sheet, int rowIndex, List<String> values) {
+        sheet.append("<row r=\"").append(rowIndex).append("\">");
+        for (int i = 0; i < values.size(); i++) {
+            String cellRef = getExcelColumnName(i + 1) + rowIndex;
+            sheet.append("<c r=\"").append(cellRef).append("\" t=\"inlineStr\"><is><t>")
+                    .append(escapeExcelValue(values.get(i)))
+                    .append("</t></is></c>");
+        }
+        sheet.append("</row>");
+    }
+
+    private String getExcelColumnName(int columnNumber) {
+        StringBuilder name = new StringBuilder();
+        int column = columnNumber;
+        while (column > 0) {
+            column--;
+            name.insert(0, (char) ('A' + (column % 26)));
+            column /= 26;
+        }
+        return name.toString();
+    }
+
+    private String escapeExcelValue(String value) {
+        String excelValue = value != null ? value : "";
+        return excelValue
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
     }
 
     /**

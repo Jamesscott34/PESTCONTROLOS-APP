@@ -123,6 +123,9 @@ public class ERAViewActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.report_recycler_view);
         searchBar = findViewById(R.id.search_bar);
         returnButton = findViewById(R.id.buttonreturn);
+        if (searchBar != null) {
+            searchBar.setHint("Search ERA...");
+        }
 
         // Set up RecyclerView with a LinearLayoutManager
         recyclerView.setLayoutManager(new LinearLayoutManager(this));

@@ -14,7 +14,10 @@ import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.grpc.grpc.reports.ui.ReportPreviewActivity;
 import androidx.appcompat.app.AppCompatActivity;
+
+import java.io.File;
 
 
 /**
@@ -37,11 +40,13 @@ import androidx.appcompat.app.AppCompatActivity;
 
 
 public class ServiceAgreementActivity extends AppCompatActivity {
+    private static final int REQUEST_PREVIEW_SERVICE_AGREEMENT = 936;
 
     private EditText etCustomerName, etCustomerAddress, etCustomerEmail, etCustomerPhone, etVatNumber, etGrpcOffice;
     private TextView welcomeTextView;
     private int selectedVisitsPerYear = 8; // Default visits
     private CheckBox passwordProtectCheckbox;
+    private Button btnPreviewPdf;
 
     private String userName;
 
@@ -69,7 +74,8 @@ public class ServiceAgreementActivity extends AppCompatActivity {
                 if (welcomeTextView == null) return;
                 String name = SessionManager.getName(this);
                 if (name != null && !name.trim().isEmpty()) {
-                    welcomeTextView.setText("Welcome, " + name.trim() + "!");
+                    userName = name.trim();
+                    welcomeTextView.setText("Welcome, " + userName + "!");
                 }
             }));
         } else {
@@ -88,6 +94,7 @@ public class ServiceAgreementActivity extends AppCompatActivity {
         Button btnAgreement8 = findViewById(R.id.btnAgreement8);
         Button btnAgreement12 = findViewById(R.id.btnAgreement12);
         Button btnGeneratePdf = findViewById(R.id.btnGeneratePdf);
+        btnPreviewPdf = findViewById(R.id.btnPreviewPdf);
         passwordProtectCheckbox = findViewById(R.id.passwordProtectCheckbox);
 
         btnAgreement4.setOnClickListener(v -> selectVisitsPerYear(4));
@@ -102,6 +109,10 @@ public class ServiceAgreementActivity extends AppCompatActivity {
                 generatePdf(null);
             }
         });
+
+        if (btnPreviewPdf != null) {
+            btnPreviewPdf.setOnClickListener(v -> previewAgreement());
+        }
     }
 
     private void selectVisitsPerYear(int visits) {
@@ -155,7 +166,7 @@ public class ServiceAgreementActivity extends AppCompatActivity {
                 email,
                 phone,
                 vat,
-                userName, // Technician name
+                getTechnicianNameForPdf(),
                 grpcOffice,
                 totalPriceWithVat, // Now includes VAT
                 selectedVisitsPerYear,
@@ -170,6 +181,98 @@ public class ServiceAgreementActivity extends AppCompatActivity {
 
             // Navigate back to previous activity
             goBackToPreviousActivity();
+        }
+    }
+
+    private String getTechnicianNameForPdf() {
+        String sessionName = SessionManager.getName(this);
+        if (sessionName != null && !sessionName.trim().isEmpty()) {
+            return sessionName.trim();
+        }
+        if (userName != null && !userName.trim().isEmpty()) {
+            return userName.trim();
+        }
+        return "User";
+    }
+
+    private void previewAgreement() {
+        String name = etCustomerName != null ? etCustomerName.getText().toString().trim() : "";
+        String address = etCustomerAddress != null ? etCustomerAddress.getText().toString().trim() : "";
+        String email = etCustomerEmail != null ? etCustomerEmail.getText().toString().trim() : "";
+        String phone = etCustomerPhone != null ? etCustomerPhone.getText().toString().trim() : "";
+        String vat = etVatNumber != null ? etVatNumber.getText().toString().trim() : "";
+        String grpcOffice = etGrpcOffice != null ? etGrpcOffice.getText().toString().trim() : "";
+
+        if (name.isEmpty() || address.isEmpty() || email.isEmpty() || phone.isEmpty() || vat.isEmpty() || grpcOffice.isEmpty()) {
+            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        double vatValue;
+        try {
+            vatValue = Double.parseDouble(vat);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Invalid VAT format!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        double totalCost;
+        try {
+            totalCost = Double.parseDouble(grpcOffice);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Invalid price format!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        double totalPriceWithVat = totalCost + (totalCost * vatValue / 100);
+
+        File previewDir = new File(getCacheDir(), "report_previews/service_agreements");
+        if (!previewDir.exists()) previewDir.mkdirs();
+
+        String pdfPath = ServiceAgreementGenerator.generateServiceAgreement(
+                this,
+                name,
+                address,
+                email,
+                phone,
+                vat,
+                getTechnicianNameForPdf(),
+                grpcOffice,
+                totalPriceWithVat,
+                selectedVisitsPerYear,
+                null, // Preview: do not encrypt so it can render
+                previewDir
+        );
+
+        if (pdfPath == null) {
+            Toast.makeText(this, "Unable to generate preview.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        File previewPdf = new File(pdfPath);
+        if (!previewPdf.exists()) {
+            Toast.makeText(this, "Unable to generate preview.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent previewIntent = new Intent(this, ReportPreviewActivity.class);
+        previewIntent.putExtra(ReportPreviewActivity.EXTRA_PREVIEW_PDF_PATH, previewPdf.getAbsolutePath());
+        startActivityForResult(previewIntent, REQUEST_PREVIEW_SERVICE_AGREEMENT);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_PREVIEW_SERVICE_AGREEMENT) return;
+
+        if (resultCode == RESULT_OK
+                && data != null
+                && data.getBooleanExtra(ReportPreviewActivity.EXTRA_CONFIRM_SAVE, false)) {
+            if (passwordProtectCheckbox != null && passwordProtectCheckbox.isChecked()) {
+                PdfPasswordPrompt.prompt(this, pw -> generatePdf(pw));
+            } else {
+                generatePdf(null);
+            }
         }
     }
 

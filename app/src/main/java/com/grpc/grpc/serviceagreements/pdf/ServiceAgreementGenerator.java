@@ -3,6 +3,7 @@ package com.grpc.grpc.serviceagreements.pdf;
 import com.grpc.grpc.R;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.reports.pdf.PDFReportGenerator;
+import com.grpc.grpc.reports.pdf.PdfFooterPageNumberStamper;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -62,7 +63,7 @@ public class ServiceAgreementGenerator {
                                                   String name, String address, String email, String phone, String vat,
                                                   String technicianName, String grpcOffice, double price,
                                                   int visits) {
-        return generateServiceAgreement(context, name, address, email, phone, vat, technicianName, grpcOffice, price, visits, null);
+        return generateServiceAgreement(context, name, address, email, phone, vat, technicianName, grpcOffice, price, visits, null, null);
     }
 
     @SuppressLint("DefaultLocale")
@@ -71,8 +72,19 @@ public class ServiceAgreementGenerator {
                                                   String technicianName, String grpcOffice, double price,
                                                   int visits,
                                                   String ownerPassword) {
+        return generateServiceAgreement(context, name, address, email, phone, vat, technicianName, grpcOffice, price, visits, ownerPassword, null);
+    }
 
-        File serviceAgreementsFolder = new File(context.getExternalFilesDir(null), "ServiceAgreements");
+    public static String generateServiceAgreement(Context context,
+                                                  String name, String address, String email, String phone, String vat,
+                                                  String technicianName, String grpcOffice, double price,
+                                                  int visits,
+                                                  String ownerPassword,
+                                                  File outputDirectory) {
+
+        File serviceAgreementsFolder = outputDirectory != null
+                ? outputDirectory
+                : new File(context.getExternalFilesDir(null), "ServiceAgreements");
         if (!serviceAgreementsFolder.exists() && !serviceAgreementsFolder.mkdirs()) {
             Toast.makeText(context, "Error creating Service Agreements folder", Toast.LENGTH_SHORT).show();
             return null;
@@ -116,11 +128,14 @@ public class ServiceAgreementGenerator {
                         .setBorder(Border.NO_BORDER)
                         .setTextAlignment(TextAlignment.LEFT); // Ensure logo is left-aligned
 
-// Right Cell: Company Name & Address
+// Right Cell: Company and signed-in user details
+                String technicianTitle = SessionManager.getTitle(context);
+                String technicianEmail = SessionManager.getEmail(context);
                 Cell textCell = new Cell()
-                        .add(new Paragraph("GRPC").setBold().setFontSize(14).setTextAlignment(TextAlignment.RIGHT))
-                        .add(new Paragraph("35 Limekiln Green").setFontSize(12).setTextAlignment(TextAlignment.RIGHT))
-                        .add(new Paragraph("Walkinstown").setFontSize(12).setTextAlignment(TextAlignment.RIGHT))
+                        .add(new Paragraph(TenantBranding.companyName(context)).setBold().setFontSize(14).setTextAlignment(TextAlignment.RIGHT))
+                        .add(new Paragraph("Name: " + technicianName).setFontSize(12).setTextAlignment(TextAlignment.RIGHT))
+                        .add(new Paragraph("Title: " + (technicianTitle != null ? technicianTitle : "")).setFontSize(12).setTextAlignment(TextAlignment.RIGHT))
+                        .add(new Paragraph("Email: " + (technicianEmail != null ? technicianEmail : "")).setFontSize(12).setTextAlignment(TextAlignment.RIGHT))
                         .setBorder(Border.NO_BORDER);
 
 // Add cells to table
@@ -135,7 +150,7 @@ public class ServiceAgreementGenerator {
             }
 
 
-            document.add(new Paragraph("GRPC SERVICE AGREEMENT").setBold().setFontSize(18).setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph(TenantBranding.companyName(context) + " Service Agreement").setBold().setFontSize(18).setTextAlignment(TextAlignment.CENTER));
 
 
         Table mainTable = new Table(2);
@@ -248,7 +263,7 @@ public class ServiceAgreementGenerator {
             // Spacer before Technician Signature
             document.add(new Paragraph("\n"));
 
-            document.add(new Paragraph("\n Section D:GRPC Service Commitment – " + visits + " Scheduled Inspections Per Year").setBackgroundColor(ColorConstants.LIGHT_GRAY)
+            document.add(new Paragraph("\n Section D: " + TenantBranding.companyName(context) + " Service Commitment – " + visits + " Scheduled Inspections Per Year").setBackgroundColor(ColorConstants.LIGHT_GRAY)
                     .setBold().setFontSize(14));
 
             Table visitTable = new Table(2);
@@ -256,13 +271,13 @@ public class ServiceAgreementGenerator {
             visitTable.addCell(new Cell().add(new Paragraph("Scope of Services").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
 
             visitTable.addCell("External Pest Prevention & Control:");
-            visitTable.addCell("GRPC will conduct proactive and routine inspections of the designated external areas to prevent pest activity. "
+            visitTable.addCell(TenantBranding.companyName(context) + " will conduct proactive and routine inspections of the designated external areas to prevent pest activity. "
                     + "This includes treatment and monitoring in accordance with industry best practices. "
                     + "The contract covers the maintenance of ___ external units on site, ensuring compliance with health and safety regulations."
                     +"Additional Externals can be Acquired at a cost and can be maintained are charged an additional €30 + VAT@23% per quarter per unit. ");
 
             visitTable.addCell("Internal Rodent & Pest Monitoring:");
-            visitTable.addCell("GRPC will implement and maintain a comprehensive rodent monitoring system within the premises. "
+            visitTable.addCell(TenantBranding.companyName(context) + " will implement and maintain a comprehensive rodent monitoring system within the premises. "
                     + "This includes strategic placement of rodent monitoring stations and adjustment of control measures based on findings during each visit. "
                     + "Our approach follows a risk-based assessment methodology to minimize infestation risks effectively.");
 
@@ -272,17 +287,17 @@ public class ServiceAgreementGenerator {
                     + "Additional fly units can be provided at a cost and serviced at a rate of €40 + VAT@23% per quarter per unit.");
 
             visitTable.addCell("Insect Activity Surveillance & Treatment:");
-            visitTable.addCell("GRPC will conduct **detailed insect activity assessments** during each scheduled visit, identifying potential breeding grounds. "
+            visitTable.addCell(TenantBranding.companyName(context) + " will conduct detailed insect activity assessments during each scheduled visit, identifying potential breeding grounds. "
                     + "Preventive treatments and corrective actions will be implemented as necessary. "
                     + "Our technicians will provide site-specific recommendations to mitigate risk and ensure long-term insect control.");
 
             visitTable.addCell("Sanitation & Structural Recommendations:");
-            visitTable.addCell("As part of our commitment to integrated pest management (IPM), GRPC will provide tailored recommendations on sanitation and structural improvements. "
+            visitTable.addCell("As part of our commitment to integrated pest management (IPM), " + TenantBranding.companyName(context) + " will provide tailored recommendations on sanitation and structural improvements. "
                     + "These recommendations aim to reduce conditions conducive to pest infestations and enhance overall pest prevention measures.");
 
             visitTable.addCell("Regulatory Compliance & Documentation:");
             visitTable.addCell("All inspections, treatments, and preventive actions will be documented in accordance with HACCP, BRC, and relevant food safety regulations. "
-                    + "GRPC will provide detailed service reports and compliance documentation to support regulatory requirements and audits.");
+                    + TenantBranding.companyName(context) + " will provide detailed service reports and compliance documentation to support regulatory requirements and audits.");
 
             document.add(visitTable);
 
@@ -322,7 +337,7 @@ public class ServiceAgreementGenerator {
 
                             "Each quarter, an email notification will be sent regarding the payment, and the invoice must be paid within 24 hours of receipt,Or a Card Payment can be taken on the day Via Technician or over the Phone. \n\n" +
 
-                            "Please print a copy of this Service Agreement, sign it, and return it to GRPC via Email/Post. Alternatively, you may use DocuSign to digitally sign the agreement " +
+                            "Please print a copy of this Service Agreement, sign it, and return it to " + TenantBranding.companyName(context) + " via Email/Post. Alternatively, you may use DocuSign to digitally sign the agreement " +
                             "and send it back electronically.")) // Professional language with formatting
                     .setTextAlignment(TextAlignment.LEFT) // Align text to left for better readability
                     .setPadding(10) // Add padding for readability
@@ -384,6 +399,9 @@ public class ServiceAgreementGenerator {
             document.add(signatureTable);
 
             document.close();
+            byte[] stampPw = (ownerPassword != null && !ownerPassword.trim().isEmpty())
+                    ? ownerPassword.trim().getBytes() : null;
+            PdfFooterPageNumberStamper.stamp(context, pdfFile, TenantBranding.footerCompanyWebsiteLine(context), stampPw);
             return pdfPath;
 
 

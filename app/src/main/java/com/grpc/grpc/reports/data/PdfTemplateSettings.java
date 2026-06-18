@@ -43,7 +43,7 @@ public class PdfTemplateSettings {
 
     /** GRPC or MY_TEMPLATE */
     private String templateSelection = GRPC;
-    /** Main header text at top of PDF (e.g. "Good Riddance Pest Control"). User can set whatever they want. */
+    /** Main header text at top of PDF (e.g. "[Company 1]"). User can set whatever they want. */
     private String mainHeaderText = "";
     /** Main header colour as hex (e.g. "#0000FF" for blue). Default blue. */
     private String mainHeaderColorHex = "#0000FF";

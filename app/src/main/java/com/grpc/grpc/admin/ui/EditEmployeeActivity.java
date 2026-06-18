@@ -51,6 +51,10 @@ public class EditEmployeeActivity extends AppCompatActivity {
     private CheckBox checkCanViewAllContracts;
     private CheckBox checkCanMessage;
     private CheckBox checkCanMap;
+    private CheckBox checkCanRoute;
+    private CheckBox checkCanConvert;
+    private CheckBox checkCanMove;
+    private CheckBox checkCanRemember;
     private Button buttonSave;
     private FirebaseFirestore db;
 
@@ -106,6 +110,10 @@ public class EditEmployeeActivity extends AppCompatActivity {
         checkCanViewAllContracts = findViewById(R.id.checkCanViewAllContracts);
         checkCanMessage = findViewById(R.id.checkCanMessage);
         checkCanMap = findViewById(R.id.checkCanMap);
+        checkCanRoute = findViewById(R.id.checkCanRoute);
+        checkCanConvert = findViewById(R.id.checkCanConvert);
+        checkCanMove = findViewById(R.id.checkCanMove);
+        checkCanRemember = findViewById(R.id.checkCanRemember);
         buttonSave = findViewById(R.id.buttonSaveEmployee);
     }
 
@@ -154,6 +162,10 @@ public class EditEmployeeActivity extends AppCompatActivity {
         setCheck(checkCanViewAllContracts, ds, "canViewAllContracts");
         setCheck(checkCanMessage, ds, "canMessage");
         setCheck(checkCanMap, ds, "canMap");
+        setCheck(checkCanRoute, ds, "canRoute");
+        setCheck(checkCanConvert, ds, "canConvert");
+        setCheck(checkCanMove, ds, "canMove");
+        setCheck(checkCanRemember, ds, "canRemember");
     }
 
     private static void setText(EditText v, String s) {
@@ -200,6 +212,10 @@ public class EditEmployeeActivity extends AppCompatActivity {
         updates.put("canViewAllContracts", checkCanViewAllContracts != null && checkCanViewAllContracts.isChecked());
         updates.put("canMessage", checkCanMessage != null && checkCanMessage.isChecked());
         updates.put("canMap", checkCanMap != null && checkCanMap.isChecked());
+        updates.put("canRoute", checkCanRoute != null && checkCanRoute.isChecked());
+        updates.put("canConvert", checkCanConvert != null && checkCanConvert.isChecked());
+        updates.put("canMove", checkCanMove != null && checkCanMove.isChecked());
+        updates.put("canRemember", checkCanRemember != null && checkCanRemember.isChecked());
 
         buttonSave.setEnabled(false);
         db.collection(FirestorePaths.USERS).document(employeeUid).set(updates, SetOptions.merge())
