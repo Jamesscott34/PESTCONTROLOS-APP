@@ -259,6 +259,7 @@ public class MainActivity extends AppCompatActivity {
             WorkViewPopupReminderScheduler.scheduleUpcomingForUser(MainActivity.this, userName);
             DailyContractPdfHelper.scheduleDailyPdfIfNeeded(MainActivity.this, userName);
             applyInvoicesButtonVisibility(loadedSession);
+            runOnUiThread(this::checkAndShowDailySummaryCard);
         }));
         }
 
@@ -962,5 +963,138 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_LOCATION_PERMISSION) {
             // No-op: location sharing is best-effort; workers will check permission.
         }
+    }
+
+    private void checkAndShowDailySummaryCard() {
+        if (BuildConfig.IS_OFFLINE) return;
+
+        String uid = SessionManager.getStaffId(this);
+        if (uid == null || uid.isEmpty()) return;
+
+        String todayKey = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                .format(new java.util.Date());
+        String prefKey = "DAILY_SUMMARY_SHOWN_DATE_" + uid;
+        android.content.SharedPreferences prefs = getSharedPreferences("GRPC", MODE_PRIVATE);
+
+        if (todayKey.equals(prefs.getString(prefKey, ""))) return;
+
+        prefs.edit().putString(prefKey, todayKey).apply();
+
+        String contractKey = SessionManager.getContractKey(this);
+        if (contractKey == null || contractKey.trim().isEmpty()) return;
+
+        String collectionName = StaffDirectory.capitalizeContractKey(contractKey.trim()) + " Contracts";
+        String contractKeyLower = contractKey.trim().toLowerCase(java.util.Locale.getDefault());
+
+        com.google.firebase.firestore.FirebaseFirestore db =
+                com.google.firebase.firestore.FirebaseFirestore.getInstance();
+
+        final int[] counts = {0, 0, 0};
+        final int[] pending = {2};
+
+        db.collection(collectionName).get()
+                .addOnSuccessListener(snap -> {
+                    java.text.SimpleDateFormat fmt =
+                            new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
+                    java.util.Date today = new java.util.Date();
+                    java.util.Calendar in7 = java.util.Calendar.getInstance();
+                    in7.add(java.util.Calendar.DAY_OF_YEAR, 7);
+
+                    for (com.google.firebase.firestore.QueryDocumentSnapshot doc : snap) {
+                        String nextVisit = doc.getString("nextVisit");
+                        if (nextVisit == null || nextVisit.isEmpty() || "N/A".equals(nextVisit)) continue;
+                        try {
+                            java.util.Date d = fmt.parse(nextVisit);
+                            if (d == null) continue;
+                            if (d.before(today)) counts[0]++;
+                            else if (!d.after(in7.getTime())) counts[1]++;
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    pending[0]--;
+                    if (pending[0] <= 0) runOnUiThread(() -> showDailySummaryCard(counts));
+                })
+                .addOnFailureListener(e -> {
+                    pending[0]--;
+                    if (pending[0] <= 0) runOnUiThread(() -> showDailySummaryCard(counts));
+                });
+
+        db.collection("JobWork")
+                .whereEqualTo("assignedTech", contractKeyLower)
+                .whereEqualTo("completed", false)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    counts[2] = snap.size();
+                    pending[0]--;
+                    if (pending[0] <= 0) runOnUiThread(() -> showDailySummaryCard(counts));
+                })
+                .addOnFailureListener(e -> {
+                    pending[0]--;
+                    if (pending[0] <= 0) runOnUiThread(() -> showDailySummaryCard(counts));
+                });
+    }
+
+    private android.widget.LinearLayout findMainDashboardLayout() {
+        android.view.ViewGroup content = findViewById(android.R.id.content);
+        if (content == null || content.getChildCount() == 0) return null;
+        android.view.View root = content.getChildAt(0);
+        if (!(root instanceof android.widget.ScrollView)) return null;
+        android.widget.ScrollView scrollView = (android.widget.ScrollView) root;
+        if (scrollView.getChildCount() == 0) return null;
+        android.view.View child = scrollView.getChildAt(0);
+        return child instanceof android.widget.LinearLayout
+                ? (android.widget.LinearLayout) child
+                : null;
+    }
+
+    private void showDailySummaryCard(int[] counts) {
+        if (counts[0] == 0 && counts[1] == 0 && counts[2] == 0) return;
+
+        android.widget.LinearLayout root = findMainDashboardLayout();
+        if (root == null) return;
+
+        android.widget.LinearLayout card = new android.widget.LinearLayout(this);
+        card.setOrientation(android.widget.LinearLayout.VERTICAL);
+        card.setPadding(32, 24, 32, 24);
+        card.setBackgroundResource(R.drawable.surface_frame);
+        android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(16, 16, 16, 8);
+        card.setLayoutParams(lp);
+
+        android.widget.TextView title = new android.widget.TextView(this);
+        title.setText("☀ Good morning — here's your day");
+        title.setTextSize(16f);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        card.addView(title);
+
+        if (counts[0] > 0) {
+            addSummaryLine(card,
+                    "⚠ " + counts[0] + " overdue contract" + (counts[0] == 1 ? "" : "s"));
+        }
+        if (counts[1] > 0) {
+            addSummaryLine(card,
+                    "📅 " + counts[1] + " contract" + (counts[1] == 1 ? "" : "s") + " due within 7 days");
+        }
+        if (counts[2] > 0) {
+            addSummaryLine(card,
+                    "🔧 " + counts[2] + " open job" + (counts[2] == 1 ? "" : "s") + " assigned to you");
+        }
+
+        android.widget.Button dismiss = new android.widget.Button(this);
+        dismiss.setText("Dismiss");
+        dismiss.setOnClickListener(v -> root.removeView(card));
+        card.addView(dismiss);
+
+        root.addView(card, 0);
+    }
+
+    private void addSummaryLine(android.widget.LinearLayout parent, String text) {
+        android.widget.TextView tv = new android.widget.TextView(this);
+        tv.setText(text);
+        tv.setTextSize(14f);
+        tv.setPadding(0, 8, 0, 0);
+        parent.addView(tv);
     }
 }

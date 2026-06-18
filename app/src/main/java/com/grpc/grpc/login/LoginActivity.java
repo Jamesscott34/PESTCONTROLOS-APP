@@ -3,6 +3,7 @@ package com.grpc.grpc.login;
 import com.grpc.grpc.BuildConfig;
 import com.grpc.grpc.location.LocationSharing;
 import com.grpc.grpc.main.MainActivity;
+import com.grpc.grpc.onboarding.OnboardingActivity;
 import com.grpc.grpc.R;
 import com.grpc.grpc.workview.data.WorkViewLocalEventStore;
 import com.grpc.grpc.workview.data.WorkViewWidgetHelper;
@@ -269,6 +270,27 @@ public class LoginActivity extends AppCompatActivity {
         } else if (staffId != null && !staffId.trim().isEmpty()) {
             intent.putExtra("USER_NAME", staffId.trim());
         }
+
+        String uid = "";
+        try {
+            com.google.firebase.auth.FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
+            if (u != null) uid = u.getUid();
+        } catch (Exception ignored) {}
+
+        boolean seenOnboarding = !uid.isEmpty() && getSharedPreferences("GRPC", MODE_PRIVATE)
+                .getBoolean("ONBOARDING_SHOWN_" + uid, false);
+
+        if (!seenOnboarding && !uid.isEmpty()) {
+            Intent onboarding = new Intent(LoginActivity.this, OnboardingActivity.class);
+            onboarding.putExtra("USER_EMAIL", intent.getStringExtra("USER_EMAIL"));
+            if (intent.hasExtra("USER_NAME")) {
+                onboarding.putExtra("USER_NAME", intent.getStringExtra("USER_NAME"));
+            }
+            startActivity(onboarding);
+            finish();
+            return;
+        }
+
         startActivity(intent);
         finish();
     }

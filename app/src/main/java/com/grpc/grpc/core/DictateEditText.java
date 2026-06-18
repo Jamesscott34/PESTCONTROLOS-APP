@@ -9,9 +9,9 @@ import android.speech.SpeechRecognizer;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -22,7 +22,7 @@ import java.util.Locale;
 
 public class DictateEditText extends FrameLayout {
     private EditText editText;
-    private ImageButton dictateButton;
+    private Button dictateButton;
     private SpeechRecognizer speechRecognizer;
     private boolean isListening = false;
     private boolean isDictating = false;
@@ -46,29 +46,26 @@ public class DictateEditText extends FrameLayout {
         LayoutInflater.from(context).inflate(R.layout.edittext_with_dictate, this, true);
         
         editText = findViewById(R.id.editText);
-        dictateButton = null;
-        
-        if (dictateButton != null) {
-            dictateButton.setVisibility(VISIBLE);
-            dictateButton.setAlpha(0.7f);
-            dictateButton.setOnClickListener(v -> {
-                if (!isDictating) startDictation();
-                else stopDictation();
-            });
-        }
-        
+        dictateButton = findViewById(R.id.dictateButton);
+
+        dictateButton.setAlpha(0.7f);
+        dictateButton.setOnClickListener(v -> {
+            if (!isDictating) startDictation();
+            else stopDictation();
+        });
+
         editText.setOnFocusChangeListener((v, hasFocus) -> {
-            if (dictateButton != null) {
-                if (hasFocus) dictateButton.setAlpha(1.0f);
-                else dictateButton.setAlpha(0.7f);
+            if (hasFocus) {
+                dictateButton.setVisibility(VISIBLE);
+                dictateButton.setAlpha(1.0f);
+            } else {
+                if (!isDictating) dictateButton.setVisibility(android.view.View.GONE);
+                dictateButton.setAlpha(0.7f);
             }
             if (!hasFocus && isDictating) stopDictation();
         });
-        editText.setOnClickListener(v -> {
-            if (dictateButton != null) dictateButton.setAlpha(1.0f);
-        });
-        
-        if (dictateButton != null) setupSpeechRecognizer();
+
+        setupSpeechRecognizer();
     }
 
     private void setupSpeechRecognizer() {
@@ -170,10 +167,10 @@ public class DictateEditText extends FrameLayout {
     private void updateDictateButton() {
         if (dictateButton == null) return;
         if (isDictating) {
-            dictateButton.setBackgroundResource(android.R.drawable.ic_media_pause);
+            dictateButton.setText("⏹ Stop");
             dictateButton.setAlpha(1.0f);
         } else {
-            dictateButton.setBackgroundResource(android.R.drawable.ic_btn_speak_now);
+            dictateButton.setText("🎤 Dictate");
             dictateButton.setAlpha(0.8f);
         }
     }

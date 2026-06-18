@@ -89,7 +89,26 @@ public class NotificationsActivity extends AppCompatActivity {
             finish();
         });
 
-        loadNotifications();
+        Button preferencesButton = new Button(this);
+        preferencesButton.setText("Preferences");
+        LinearLayout.LayoutParams prefLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        prefLp.topMargin = (int) (16 * getResources().getDisplayMetrics().density);
+        preferencesButton.setLayoutParams(prefLp);
+        preferencesButton.setOnClickListener(v ->
+                startActivity(new Intent(this, NotificationPreferencesActivity.class)));
+        ViewGroup parent = (ViewGroup) backButton.getParent();
+        if (parent != null) {
+            parent.addView(preferencesButton, parent.indexOfChild(backButton));
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (notificationsContainer != null) {
+            loadNotifications();
+        }
     }
 
     private void openNotificationSettings() {
@@ -177,15 +196,19 @@ public class NotificationsActivity extends AppCompatActivity {
                         if (deleteAllButton != null) deleteAllButton.setEnabled(true);
                         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
 
-                        // Mark all unread items as read (so home screen badge clears after viewing)
+                        // Mark unread items as read for displayed notifications only
                         WriteBatch batch = db.batch();
                         boolean hasUnreadToUpdate = false;
                         Set<String> seenSignatures = new HashSet<>();
+                        int displayedCount = 0;
 
                         for (QueryDocumentSnapshot doc : snapshot) {
                             String title = doc.getString("title");
                             String body = doc.getString("body");
                             String type = doc.getString("type");
+                            if (!NotificationPreferencesActivity.isTypeEnabled(this, type)) {
+                                continue;
+                            }
                             Object dataObj = doc.get("data");
                             @SuppressWarnings("unchecked")
                             Map<String, Object> data = dataObj instanceof Map ? (Map<String, Object>) dataObj : null;
@@ -253,6 +276,13 @@ public class NotificationsActivity extends AppCompatActivity {
                             });
 
                             notificationsContainer.addView(card);
+                            displayedCount++;
+                        }
+
+                        if (displayedCount == 0) {
+                            emptyText.setText("No notifications to show.");
+                            emptyText.setVisibility(android.view.View.VISIBLE);
+                            if (deleteAllButton != null) deleteAllButton.setEnabled(false);
                         }
 
                         if (hasUnreadToUpdate) {

@@ -21,9 +21,10 @@ The platform supports multiple independent tenants through Android product flavo
 9. [Technology stack](#technology-stack)
 10. [Project structure](#project-structure)
 11. [Setup](#setup)
-12. [Security](#security)
-13. [Background workers](#background-workers)
-14. [Offline mode](#offline-mode)
+12. [CI/CD](#cicd-github-actions)
+13. [Security](#security)
+14. [Background workers](#background-workers)
+15. [Offline mode](#offline-mode)
 16. [Multi-tenant deployment](#multi-tenant-deployment)
 17. [Troubleshooting](#troubleshooting)
 18. [Backlog](#backlog)
@@ -87,13 +88,16 @@ See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full component diagram and Fire
 | **Environmental Risk Assessment (ERA)** | Toxic, Non-Toxic, and Bird-Proofing ERA workflows with full PDF output for regulatory compliance. |
 | **Invoicing** | Create invoices linked to contracts. Templates for initial setup, monthly maintenance, feature update, and custom. VAT/totals preview. Uploaded to Storage and written to Firestore ledger. |
 | **Leads / Commission** | Technicians log leads with commission values. Admins mark invoices paid and update materials costs. In-app notifications on updates. |
-| **Site Maps** | Draw and annotate site floor plans on a custom canvas (`SiteMapCanvasView`). Import a photo or floor plan image as the canvas background. Add pest control markers (internal, external, fly units, insect), lines, shapes, and text labels. Saved as a full-page landscape PDF. Maps are stored and listed per contract. |
+| **Site Maps** | Draw and annotate site floor plans on a custom canvas (`SiteMapCanvasView`). Import a photo or floor plan image as the canvas background via **Set Background**. Add pest control markers (internal, external, fly units, insect), lines, shapes, and text labels. Saved as a full-page landscape PDF. Maps are stored and listed per contract. |
 | **PDF Editor** | Annotate existing PDFs with freehand ink and text overlays. Multi-page viewer with per-page annotation layer. Export a flattened PDF. |
 | **PDF Converter** | Convert any PDF to a Word (.docx) document or extract plain text. Uses ML Kit OCR for scanned pages. Gated by `canConvert` permission. |
-| **Cloud File Browser** | Firebase Storage drill-down browser for reports, contracts, management jobs, and general folders. Multi-select with action bar. Long-press selects all visible files. Move selected files to any folder with a live "X files remaining" counter. Delete selected files. Upload new files. |
-| **Messaging** | Firestore-based 1:1 and group chat. Urgent flag preserves messages from Cloud Function cleanup. Voice dictation via `DictateEditText`. |
-| **Notifications** | In-app notification inbox per user with deep links into Jobs, Contracts, Work View, Messaging, and Leads. |
-| **Location Finder** | Admin-only view of all staff last known GPS positions. Updated every 10–15 minutes by `LastLocationUpdateWorker`. Stale records cleaned periodically. Falls back to local cache when offline so the last known position is always visible. |
+| **Cloud File Browser** | Firebase Storage drill-down browser for reports, contracts, management jobs, and general folders. Multi-select with action bar. Long-press selects all visible files. Move selected files to any folder with a live "X files remaining" counter in the action bar. Delete selected files. Upload new files. |
+| **Messaging** | Firestore-based 1:1 and group chat. Urgent flag preserves messages from Cloud Function cleanup. |
+| **Speech Dictation** | `DictateEditText` widget adds a **🎤 Dictate** button below each text field (shown on focus only). Speech is handled inside the widget — the mic never overlaps the input. Used in service reports and action forms. |
+| **Notifications** | In-app notification inbox per user with deep links into Jobs, Contracts, Work View, Messaging, and Leads. **Preferences** screen lets each user filter by notification type (contract reminders, job updates, daily PDFs, etc.). Disabled types are hidden from the inbox but remain in Firestore. |
+| **First-Login Onboarding** | Four-slide walkthrough (`OnboardingActivity`) shown once per Firebase auth UID on first login. Covers Work View, reports/maps, and notifications. Skippable; not shown for offline users. |
+| **Daily Summary Card** | `MainActivity` shows a once-per-day card (keyed by auth UID) with overdue contracts, contracts due within 7 days, and open assigned jobs. Dismissible; not shown for offline users or when all counts are zero. |
+| **Location Finder** | Admin-only view of all staff last known GPS positions. Updated every ~10–15 minutes by `LastLocationUpdateWorker` (requests a fresh GPS fix when last-known location is stale). `LastLocationCleanupWorker` marks records as `stale` after 30 minutes but never deletes them — the last position always remains visible. Stale locations show a warning with age in minutes. Falls back to local cache when offline. |
 | **Global Search** | Admin search across jobs, contracts, leads, and reports in Firestore. Gated by `canSearch` permission flag. |
 | **Route Planner** | Multi-stop route optimisation via `RouterActivity` and `GoogleDirectionsClient`. PDF export of the best route via `BestRoutePdfGenerator`. |
 | **Bug / Feature Requests** | Staff submit bugs or feature requests. Super_admin sets cost, days, and status. Clients agree or disagree on feature quotes. Full lifecycle management with long-press edit. |
@@ -158,7 +162,7 @@ Optional `Can*` flags on the user document override role defaults: `canSearch`, 
 
 | Button | Destination | Visibility |
 |--------|-------------|------------|
-| Notifications | `NotificationsActivity` | All authenticated users |
+| Notifications | `NotificationsActivity` (+ **Preferences** for type filters) | All authenticated users |
 | Search | `SearchActivity` | `canSearch` |
 | Dashboard | `AdminDashboardActivity` | admin, super_admin |
 | Employee | `EmployeeManagementActivity` | super_admin |
@@ -224,7 +228,7 @@ Optional `Can*` flags on the user document override role defaults: `canSearch`, 
 | `Leads/{leadId}` | Leads with commission values, payment status, invoice number, materials cost. |
 | `notifications/{StaffID}/items/{itemId}` | In-app notification records with type, deep-link payload, and timestamp. |
 | `messages/{conversationId}/{messageId}` | Chat messages: sender, content, timestamp, urgent flag. |
-| `last_locations/{userKey}` | Last GPS position per technician: lat, lng, accuracy, timestamps. |
+| `last_locations/{userKey}` | Last GPS position per technician: lat, lng, accuracy, timestamps, `stale` flag (set after 30 min without update; document is never deleted). |
 
 ### Identity Resolution
 
@@ -242,6 +246,7 @@ On login: `UID → StaffID` → load `users/{StaffID}` → populate `SessionMana
 | Database | Firestore with `PersistentCacheSettings` disk cache for offline support |
 | Storage | Firebase Storage (PDFs, images, maps) |
 | Background | WorkManager (reminders, location, widget sync) |
+| Release builds | R8 code shrinking + resource shrinking (`isMinifyEnabled = true`) with ProGuard rules for Firebase, iText7, POI, ML Kit, OkHttp, and Firestore model classes |
 | PDF generation | iText7 7.1.15 (kernel, layout, io) |
 | PDF to Word | Apache POI OOXML |
 | PDF OCR | Google ML Kit Text Recognition |
@@ -267,7 +272,7 @@ grpc/
 │       │   │   ├── contracts/      # ContractsActivity, ViewContract, AddContract,
 │       │   │   │                   #   BehindsListView, PDF generators
 │       │   │   ├── converter/      # PDF → Word and PDF → text
-│       │   │   ├── core/           # SessionManager, StaffDirectory, FirebaseHelper,
+│       │   │   ├── core/           # SessionManager, StaffDirectory, DictateEditText,
 │       │   │   │                   #   TenantBranding, RememberMeManager, helpers
 │       │   │   ├── email/          # EmailComposeActivity, EmailTemplateService
 │       │   │   ├── era/            # Toxic / NonTox / BirdProofing ERA + PDF generators
@@ -278,10 +283,12 @@ grpc/
 │       │   │   ├── leads/          # LeadsSelectionActivity, ViewLeads, GenerateLeads
 │       │   │   ├── location/       # LocationFinderActivity, LocationSharing, workers
 │       │   │   ├── login/          # LoginActivity (auto Remember Me)
-│       │   │   ├── main/           # MainActivity
+│       │   │   ├── main/           # MainActivity (daily summary card)
 │       │   │   ├── maps/           # SiteMapEditorActivity, SiteMapCanvasView,
 │       │   │   │                   #   MapsListActivity, MapsUtil (full-page PDF)
-│       │   │   ├── messaging/      # MessagingActivity, Conversations, Notifications
+│       │   │   ├── messaging/      # MessagingActivity, Conversations, Notifications,
+│       │   │   │                   #   NotificationPreferencesActivity
+│       │   │   ├── onboarding/     # OnboardingActivity (first-login walkthrough)
 │       │   │   ├── pdfeditor/      # PdfEditorActivity, overlay, page adapter
 │       │   │   ├── quotations/     # BirdQuotation, GeneralQuotation, catalog
 │       │   │   ├── reports/        # ReportActivity, PDFReportGenerator, ActionForm,
@@ -312,6 +319,7 @@ grpc/
 ├── storage.rules           # Firebase Storage security rules
 ├── ARCHITECTURE.md         # Full technical architecture and data-flow docs
 ├── gradle.properties.template  # Copy to gradle.properties and fill in keys
+├── .github/workflows/android.yml  # CI: lint, unit tests, debug APK on push/PR to main
 └── build-with-env.sh / .bat    # Helper scripts for CI key injection
 ```
 
@@ -386,6 +394,30 @@ cd functions && npm install && firebase deploy --only functions
 
 Available variants: `Company1`, `Company2`, `Company3`, `Company4`, `Company5`, `Demo`, `Offline`.
 
+### CI/CD (GitHub Actions)
+
+The workflow at `.github/workflows/android.yml` runs on every push and pull request to `main`:
+
+1. Lint (`lintCompany1Debug`)
+2. Unit tests (`testCompany1DebugUnitTest`)
+3. Assemble debug APK (`assembleCompany1Debug`)
+4. Upload APK artifact (7-day retention)
+
+**Required repository secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Purpose |
+|--------|---------|
+| `GOOGLE_SERVICES_JSON` | Base64-encoded `app/src/company1/google-services.json` |
+| `MAPS_API_KEY` | Google Maps API key |
+| `FIREBASE_PROJECT_ID` | Firebase project ID |
+
+Encode the JSON file:
+```bash
+base64 -i app/src/company1/google-services.json | tr -d '\n'
+```
+
+At build time the workflow injects `google-services.json` and appends keys to `gradle.properties` from `gradle.properties.template`.
+
 ---
 
 ## Security
@@ -393,7 +425,7 @@ Available variants: `Company1`, `Company2`, `Company3`, `Company4`, `Company5`, 
 - **Never commit** `google-services.json`, `gradle.properties`, API keys, keystores, or service account files. All are covered in `.gitignore`.
 - **Firestore rules** must restrict reads/writes by `request.auth.uid` and role. The `firestore.rules` file is the reference. Never deploy `allow read, write: if true` to production.
 - **App Check** is wired up — enforce it in Firebase Console for Firestore and Storage to block unauthorised clients.
-- **ProGuard/R8 is currently disabled** (`isMinifyEnabled = false`). Enable it for production release builds. Add keep rules for iText7, Firebase, and ML Kit. This prevents bytecode reverse engineering and significantly reduces APK size.
+- **ProGuard/R8 is enabled for release builds** (`isMinifyEnabled = true`, `shrinkResources = true`). Keep rules in `app/proguard-rules.pro` cover Firebase, iText7, Apache POI, ML Kit, OkHttp, WorkManager, and Firestore model classes. Mapping files are written to `app/build/outputs/mapping/` after each release build.
 - **Local data** (offline reports, SQLite, SharedPreferences) is not encrypted at rest. For regulated deployments use `EncryptedSharedPreferences` and SQLCipher.
 - **MFA** is strongly recommended for admin and super_admin accounts. Firebase Authentication supports TOTP MFA.
 - **Rotate** all API keys (LLM, Maps, Firebase service accounts) on a regular schedule.
@@ -408,8 +440,8 @@ Available variants: `Company1`, `Company2`, `Company3`, `Company4`, `Company5`, 
 | `InAppReminderWorker` | Scheduled per event | Shows in-app reminder ~30 min before a Work View event. |
 | `WorkViewPopupReminderWorker` | Scheduled per event | Shows immediate popup when an event is due. |
 | `WorkViewWidgetHelper` | On every Work View change | Updates the home screen widget with the next 3 events. |
-| `LastLocationUpdateWorker` | Periodic (~10–15 min) | Writes device GPS to `last_locations/{userKey}` in Firestore. Caches locally for offline display. |
-| `LastLocationCleanupWorker` | Periodic | Deletes stale location documents. Last known location is always cached locally until a fresh update arrives. |
+| `LastLocationUpdateWorker` | Periodic (~10–15 min) | Writes device GPS to `last_locations/{userKey}` in Firestore. Requests a fresh `getCurrentLocation` fix when `getLastLocation()` returns null. Caches locally for offline display. |
+| `LastLocationCleanupWorker` | Periodic (~30 min) | Sets `stale: true` on location documents older than 30 minutes. Documents are never deleted — admins always see the last known position. |
 | `ContractReminderWorker` | Scheduled | Sends in-app reminders for contracts approaching their due date. |
 
 All workers use Android WorkManager. Disable any by removing the scheduling call in `LocationSharing` or `WorkViewPopupReminderScheduler`.
@@ -452,6 +484,11 @@ Add a `companyId` field to every Firestore document and enforce tenant isolation
 | Wrong names in spinners | `users` documents have correct `ContractKey` and `Name`; clear app data or re-login to flush `StaffDirectory` cache. |
 | Work View widget not updating | `WorkViewWidgetHelper.updateWidget()` is called after every save; check WorkManager logs. |
 | Location not updating | GPS permission granted; `LastLocationUpdateWorker` is scheduled; Firestore rules allow write to `last_locations/{userKey}`. |
+| Location shows as outdated | Expected after 30 min without a device update — `stale` flag is set but coordinates remain. Check the technician device has location permission and is online. |
+| Dictate button not visible | Tap the text field first — the **🎤 Dictate** button appears below the field on focus only. |
+| Onboarding shows every login | Check `ONBOARDING_SHOWN_{uid}` in SharedPreferences `GRPC`; onboarding is written on first display of `OnboardingActivity`. |
+| Daily summary card missing | Card shows once per day per UID; hidden when all counts are zero or user is offline. Requires a valid `ContractKey` in session. |
+| Notification type still visible after disabling | Return to `NotificationsActivity` — list reloads on resume. Firestore data is unchanged; only display is filtered. |
 | Build fails — `MAPS_API_KEY` missing | Copy `gradle.properties.template` to `gradle.properties` and fill in the key. |
 | Remember Me not persisting | `canRemember: true` is written to `users/{uid}` on login; check Firestore rules allow that write. |
 | Move files fails silently | Check `finishMoveBatch` is defined in `CloudStorageBrowserActivity`; verify Storage rules allow write to destination folder. |
@@ -462,7 +499,6 @@ Add a `companyId` field to every Firestore document and enforce tenant isolation
 
 ### Quick Wins
 
-- **Enable ProGuard/R8 for release builds.** Set `isMinifyEnabled = true` in the release build type and add keep rules for iText7, Firebase, and ML Kit. Reduces APK size and prevents bytecode reverse engineering.
 - **FCM push notifications.** `FirebaseMessagingServiceGRPC` is wired up but push is not sent. Add a Cloud Function that sends FCM when jobs are assigned, messages arrive, or contracts fall overdue.
 - **Swipe-to-refresh on lists.** Wrap `ContractsActivity`, `JobsActivity`, and `StoredReportsActivity` in `SwipeRefreshLayout`.
 - **Export leads to CSV.** A single "Export CSV" button in `ViewLeadsActivity` with `FileProvider` share. No backend changes needed.
