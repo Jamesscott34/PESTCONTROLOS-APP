@@ -43,6 +43,32 @@ public final class ContractStorageDisplayHelper {
     }
 
     /**
+     * Loads display labels for every contract document (single collection read).
+     */
+    public static void loadAllContractFolderLabels(
+            FirebaseFirestore db,
+            NamesCallback cb
+    ) {
+        if (db == null) {
+            cb.onResult(Collections.emptyMap());
+            return;
+        }
+        db.collection(FirestorePaths.CONTRACTS)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    Map<String, String> out = new HashMap<>();
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        String label = companyNameFromSnapshot(doc);
+                        if (label != null) {
+                            out.put(doc.getId(), label);
+                        }
+                    }
+                    cb.onResult(out);
+                })
+                .addOnFailureListener(e -> cb.onResult(Collections.emptyMap()));
+    }
+
+    /**
      * Loads display labels for contract document ids (parallel reads).
      */
     public static void loadContractFolderLabels(

@@ -100,6 +100,18 @@
     "categoryName": "Insects",
     "items": [
       {
+        "key": "insect_fly_unit_required",
+        "displayName": "Fly Unit Required",
+        "quoteBreakdown": "Supply and installation of a suitable professional fly control unit at the recommended location. The unit will be positioned to provide effective coverage while taking account of access, hygiene requirements, electrical supply and areas of known fly activity.\n\nInstallation will include fitting and securing the unit where required, checking correct operation and advising on suitable ongoing servicing and maintenance. The final position will be selected to maximise effectiveness while avoiding unsuitable placement directly over food preparation or sensitive areas.",
+        "description": "Supply and installation of a professional fly control unit in a suitable location, including setup, operational checks and positioning advice."
+      },
+      {
+        "key": "insect_fly_unit_replacement",
+        "displayName": "Fly Unit Replacement",
+        "quoteBreakdown": "Removal and replacement of the existing fly control unit with a suitable professional replacement unit. The existing installation and location will be assessed before replacement to ensure the new unit is positioned correctly and provides appropriate coverage for the area.\n\nWorks include removal of the existing unit where required, installation and securing of the replacement unit, connection using the existing suitable electrical supply, operational checks and confirmation that the unit is functioning correctly. Any significant issues with the existing electrical supply or mounting location identified during installation will be reported separately.",
+        "description": "Removal of an existing fly control unit and installation of a suitable professional replacement, including fitting, operational checks and positioning assessment."
+      },
+      {
         "key": "insect_silverfish_single",
         "displayName": "Silverfish – Single Visit",
         "quoteBreakdown": "Professional silverfish treatment suitable for light to moderate activity.\n\nIncludes a detailed inspection focusing on damp and humid environments such as bathrooms, kitchens, utility rooms, skirting boards and void spaces. Targeted application of professional-grade insecticidal products is completed at harbourage points and movement routes.\n\nPractical advice is provided on moisture reduction, ventilation improvements and hygiene actions to reduce conditions that support silverfish activity.",

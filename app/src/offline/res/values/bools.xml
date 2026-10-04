@@ -1,4 +1,4 @@
 <resources>
-    <!-- Offline: show Visit website button (opens pestcontrolos.ie). -->
+    <!-- Offline: show Visit website button (opens yourcompany.example). -->
     <bool name="show_grpcstaff_portal">false</bool>
 </resources>

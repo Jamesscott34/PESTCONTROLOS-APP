@@ -83,6 +83,17 @@
             android:textColorHint="?android:attr/textColorSecondary" />
 
         <EditText
+            android:id="@+id/customerAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Address"
+            android:inputType="textPostalAddress"
+            android:padding="10dp"
+            android:background="@drawable/edit_text_border"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorSecondary" />
+
+        <EditText
             android:id="@+id/issueDetails"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

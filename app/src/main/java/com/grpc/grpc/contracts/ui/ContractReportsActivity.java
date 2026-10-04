@@ -60,6 +60,8 @@ public class ContractReportsActivity extends AppCompatActivity {
     private int reportYear; // e.g. 2026
     private boolean openContractFolderOnly;
     private boolean browseContractByYearFolders;
+    private boolean closeWhenFolderCloses;
+    private String openFolderName;
     private final List<String> foundReports = new ArrayList<>();
     private final Map<String, String> reportDisplayNames = new LinkedHashMap<>();
 
@@ -75,6 +77,10 @@ public class ContractReportsActivity extends AppCompatActivity {
         reportsFolder = getIntent().getStringExtra(EXTRA_REPORTS_FOLDER);
         reportYear = getIntent().getIntExtra("REPORT_YEAR", 0);
         openContractFolderOnly = getIntent().getBooleanExtra(EXTRA_OPEN_CONTRACT_FOLDER_ONLY, false);
+        openFolderName = getIntent().hasExtra("OPEN_FOLDER_NAME")
+                ? getIntent().getStringExtra("OPEN_FOLDER_NAME")
+                : null;
+        closeWhenFolderCloses = openFolderName != null;
         browseContractByYearFolders = openContractFolderOnly
                 || (ContractReportSync.useContractReportsOnly()
                 && ContractReportSync.hasContractId(contractId)
@@ -93,7 +99,13 @@ public class ContractReportsActivity extends AppCompatActivity {
             return;
         }
 
-        if (browseContractByYearFolders) {
+        if (closeWhenFolderCloses) {
+            String contractFolder = ContractReportSync.buildContractStorageFolder(contractId);
+            String folderName = openFolderName == null ? "" : openFolderName.trim();
+            String path = folderName.isEmpty() ? contractFolder : contractFolder + "/" + folderName;
+            String label = folderName.isEmpty() ? "Reports" : folderName;
+            openContractFolderFiles(path, label);
+        } else if (browseContractByYearFolders) {
             showContractYearFolders();
         } else {
             searchContractReports();
@@ -186,6 +198,7 @@ public class ContractReportsActivity extends AppCompatActivity {
             loadingDialog.dismiss();
             if (reports.isEmpty()) {
                 Toast.makeText(this, "No reports found in " + folderLabel, Toast.LENGTH_SHORT).show();
+                if (closeWhenFolderCloses) finish();
                 return;
             }
             showFileListDialog(reports, folderLabel);
@@ -201,7 +214,6 @@ public class ContractReportsActivity extends AppCompatActivity {
             finish.run();
         }));
 
-        String folderPrefix = folderPath.endsWith("/") ? folderPath : folderPath + "/";
         FirebaseFirestore.getInstance()
                 .collection(FirestorePaths.CONTRACT_REPORTS)
                 .document(contractId)
@@ -213,8 +225,10 @@ public class ContractReportsActivity extends AppCompatActivity {
                         if (storagePath == null || storagePath.trim().isEmpty()) {
                             continue;
                         }
-                        String trimmedPath = storagePath.trim();
-                        if (!trimmedPath.equals(folderPath) && !trimmedPath.startsWith(folderPrefix)) {
+                        String trimmedPath = ContractStoragePathHelper.normalizeStoragePath(storagePath);
+                        String normalizedFolder = ContractStoragePathHelper.normalizeStoragePath(folderPath);
+                        String normalizedPrefix = normalizedFolder.endsWith("/") ? normalizedFolder : normalizedFolder + "/";
+                        if (!trimmedPath.equals(normalizedFolder) && !trimmedPath.startsWith(normalizedPrefix)) {
                             continue;
                         }
                         String fileName = doc.getString("fileName");
@@ -267,11 +281,17 @@ public class ContractReportsActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) {}
         });
 
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(folderLabel + " — " + contractName)
                 .setView(dialogView)
-                .setNegativeButton("Back", null)
-                .show();
+                .setNegativeButton("Back", (d, w) -> {
+                    if (closeWhenFolderCloses) finish();
+                })
+                .create();
+        if (closeWhenFolderCloses) {
+            dialog.setOnCancelListener(d -> finish());
+        }
+        dialog.show();
     }
 
     private static String fileNameFromStoragePath(String storagePath) {
@@ -427,7 +447,7 @@ public class ContractReportsActivity extends AppCompatActivity {
                     for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
                         String storagePath = doc.getString("storagePath");
                         if (storagePath != null && !storagePath.trim().isEmpty()) {
-                            String trimmedPath = storagePath.trim();
+                            String trimmedPath = ContractStoragePathHelper.normalizeStoragePath(storagePath);
                             uniqueReports.add(trimmedPath);
                             String fileName = doc.getString("fileName");
                             if (fileName != null && !fileName.trim().isEmpty()) {

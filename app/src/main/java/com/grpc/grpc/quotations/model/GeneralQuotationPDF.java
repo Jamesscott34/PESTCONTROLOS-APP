@@ -210,8 +210,10 @@ public class GeneralQuotationPDF {
             Cell rightCell = new Cell().setBorder(Border.NO_BORDER);
             rightCell.add(new Paragraph("Date: " + currentDate).setFontSize(14).setBold());
             rightCell.add(new Paragraph("Quote Number: " + quoteNumber).setFontSize(14).setBold());
-            rightCell.add(new Paragraph("\nCustomer Address:").setBold());
-            rightCell.add(new Paragraph(address).setFontSize(14));
+            String quotedCompany = customerName != null ? customerName.trim() : "";
+            String quotedAddress = address != null ? address.trim() : "";
+            rightCell.add(new Paragraph("\nCompany name: " + quotedCompany).setFontSize(14).setBold());
+            rightCell.add(new Paragraph("Company address: " + quotedAddress).setFontSize(14));
             headerTable.addCell(rightCell);
 
             document.add(headerTable);

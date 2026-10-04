@@ -50,6 +50,8 @@ public final class ContractStorageUploader {
         UploadTask uploadTask = fileRef.putFile(Uri.fromFile(pdfFile));
         uploadTask.addOnSuccessListener(taskSnapshot -> {
             StorageMetricsHelper.recordUpload();
+            com.grpc.grpc.audit.data.AuditLogRepository.reportUploaded(
+                    pdfFile.getName(), companyName, storagePath, contractId, null, null, null);
             ContractReportSync.syncMetadata(
                     contractId,
                     storagePath,

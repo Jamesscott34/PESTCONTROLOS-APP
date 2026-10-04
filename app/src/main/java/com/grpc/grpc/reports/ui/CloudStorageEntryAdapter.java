@@ -194,13 +194,14 @@ public final class CloudStorageEntryAdapter extends RecyclerView.Adapter<CloudSt
         Entry e = items.get(position);
         android.content.Context ctx = holder.itemView.getContext();
         holder.icon.setImageResource(e.folder ? R.drawable.ic_list_folder : R.drawable.ic_list_file);
-        String primary = (!e.displayTitle.isEmpty()) ? e.displayTitle : e.name;
-        holder.title.setText(primary);
-        if (e.folder && !e.displayTitle.isEmpty() && !e.displayTitle.equals(e.name)) {
-            holder.subtitle.setText(ctx.getString(R.string.cloud_storage_contract_folder_subtitle, e.name));
+        if (e.folder) {
+            String primary = (!e.displayTitle.isEmpty()) ? e.displayTitle : e.name;
+            holder.title.setText(primary);
+            holder.subtitle.setText(ctx.getString(R.string.cloud_storage_row_type_folder));
         } else {
-            holder.subtitle.setText(e.folder
-                    ? ctx.getString(R.string.cloud_storage_row_type_folder)
+            holder.title.setText(e.name);
+            holder.subtitle.setText(!e.displayTitle.isEmpty()
+                    ? e.displayTitle
                     : ctx.getString(R.string.cloud_storage_row_type_file));
         }
 
@@ -239,4 +240,17 @@ public final class CloudStorageEntryAdapter extends RecyclerView.Adapter<CloudSt
     static final class Holder extends RecyclerView.ViewHolder {
         final ImageView icon;
         final TextView title;
+        final TextView subtitle;
+        final android.widget.CheckBox checkBox;
+
+        Holder(View v) {
+            super(v);
+            icon = v.findViewById(R.id.cloudEntryIcon);
+            title = v.findViewById(R.id.cloudEntryTitle);
+            subtitle = v.findViewById(R.id.cloudEntrySubtitle);
+            checkBox = v.findViewById(R.id.cloudEntryCheckBox);
+        }
+    }
+}
+
       

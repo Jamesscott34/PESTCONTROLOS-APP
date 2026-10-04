@@ -23,6 +23,7 @@ public class ReportPreviewActivity extends AppCompatActivity {
 
     public static final String EXTRA_PREVIEW_PDF_PATH = "preview_pdf_path";
     public static final String EXTRA_CONFIRM_SAVE = "confirm_save";
+    public static final String EXTRA_VIEW_ONLY = "view_only";
 
     private LinearLayout previewPagesContainer;
 
@@ -51,6 +52,13 @@ public class ReportPreviewActivity extends AppCompatActivity {
 
         renderPdfPages(file);
 
+        boolean viewOnly = getIntent().getBooleanExtra(EXTRA_VIEW_ONLY, false);
+        if (viewOnly && confirmButton != null) {
+            confirmButton.setVisibility(android.view.View.GONE);
+        }
+        if (viewOnly && backButton != null) {
+            backButton.setText("Close");
+        }
         backButton.setOnClickListener(v -> {
             setResult(RESULT_CANCELED, getIntent());
             finish();

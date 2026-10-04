@@ -3,7 +3,7 @@
  * GRPest Control Application - Job Management & Assignment System
  * ============================================================================
  * 
- * BUSINESS OVERVIEW:
+ * BUSINEC5 OVERVIEW:
  * This activity serves as the comprehensive job management system for GRPest Control,
  * allowing technicians and administrators to view, assign, track, and manage all
  * pest control jobs. It provides real-time job status tracking, technician assignment,
@@ -649,102 +649,8 @@ public class ViewJobActivity extends AppCompatActivity {
         });
     }
     private void showFollowUpDialog(String documentId) {
-        EditText input = new EditText(this);
-        input.setHint("dd/MM/yyyy or dd/MM/yy [HH:mm or 930] or N/A");
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Add Follow-Up Date & Time")
-                .setView(input)
-                .setPositiveButton("Save", (dialog, which) -> {
-                    String rawInput = input.getText().toString().trim();
-
-                    if (rawInput.equalsIgnoreCase("N/A")) {
-                        saveFollowUpDate(documentId, "N/A");
-                        return;
-                    }
-
-                    String normalized = normalizeDateTimeInput(rawInput);
-                    if (normalized == null) {
-                        Toast.makeText(this, "Invalid format. Use dd/MM/yyyy or 09/02/26 or dd/MM/yy HH:mm", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    saveFollowUpDate(documentId, normalized);
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+        JobWorkFollowUpDates.show(this, null, normalized -> saveFollowUpDate(documentId, normalized));
     }
-
-    /** Normalizes date/time input. Accepts dd/MM/yyyy, dd/MM/yy (e.g. 09/02/26), and optional time. Returns dd/MM/yyyy [HH:mm] or null. */
-    private String normalizeDateTimeInput(String input) {
-        input = input.trim();
-
-        // Date only: dd/MM/yyyy
-        if (input.matches("^\\d{2}/\\d{2}/\\d{4}$")) {
-            return input;
-        }
-
-        // Date only: dd/MM/yy (e.g. 09/02/26) -> convert to dd/MM/yyyy
-        if (input.matches("^\\d{2}/\\d{2}/\\d{2}$")) {
-            String expanded = expandTwoDigitYear(input);
-            if (expanded != null) return expanded;
-        }
-
-        // Date + standard time: dd/MM/yyyy HH:mm or dd/MM/yy HH:mm
-        if (input.matches("^\\d{2}/\\d{2}/\\d{4}\\s\\d{1,2}:\\d{2}$")) {
-            return input;
-        }
-        if (input.matches("^\\d{2}/\\d{2}/\\d{2}\\s\\d{1,2}:\\d{2}$")) {
-            String[] parts = input.split("\\s");
-            String dateExpanded = expandTwoDigitYear(parts[0]);
-            if (dateExpanded != null) return dateExpanded + " " + parts[1];
-        }
-
-        // Date + time as 930 or 0930: dd/MM/yyyy 930 or dd/MM/yy 930
-        if (input.matches("^\\d{2}/\\d{2}/\\d{4}\\s\\d{3,4}$")) {
-            try {
-                String[] parts = input.split("\\s");
-                String datePart = parts[0];
-                String timeRaw = parts[1];
-                if (timeRaw.length() == 3) timeRaw = "0" + timeRaw;
-                String hour = timeRaw.substring(0, 2);
-                String min = timeRaw.substring(2, 4);
-                return datePart + " " + hour + ":" + min;
-            } catch (Exception e) {
-                return null;
-            }
-        }
-        if (input.matches("^\\d{2}/\\d{2}/\\d{2}\\s\\d{3,4}$")) {
-            try {
-                String[] parts = input.split("\\s");
-                String dateExpanded = expandTwoDigitYear(parts[0]);
-                if (dateExpanded == null) return null;
-                String timeRaw = parts[1];
-                if (timeRaw.length() == 3) timeRaw = "0" + timeRaw;
-                String hour = timeRaw.substring(0, 2);
-                String min = timeRaw.substring(2, 4);
-                return dateExpanded + " " + hour + ":" + min;
-            } catch (Exception e) {
-                return null;
-            }
-        }
-
-        return null;
-    }
-
-    /** Converts dd/MM/yy to dd/MM/yyyy (yy 00-99 -> 2000-2099). */
-    private String expandTwoDigitYear(String ddMMyy) {
-        if (ddMMyy == null || !ddMMyy.matches("^\\d{2}/\\d{2}/\\d{2}$")) return null;
-        try {
-            String[] parts = ddMMyy.split("/");
-            int yy = Integer.parseInt(parts[2]);
-            int fullYear = yy >= 0 && yy <= 99 ? (2000 + yy) : yy;
-            return parts[0] + "/" + parts[1] + "/" + fullYear;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
 
     private void saveFollowUpDate(String documentId, String dateTime) {
         db.collection(FirestorePaths.JOBWORK).document(documentId)

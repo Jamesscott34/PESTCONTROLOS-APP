@@ -100,11 +100,44 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:baselineAligned="false">
-                <Button android:id="@+id/WorkViewButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_work_view" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/WorkViewButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_work_view" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
                 <Button android:id="@+id/JobsButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_job_work" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
             </LinearLayout>
+            <Button
+                android:id="@+id/ManagementButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/main_button_management"
+                android:textSize="14sp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary"
+                android:visibility="gone" />
+            <Button
+                android:id="@+id/StockButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/main_button_stock"
+                android:textSize="14sp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary"
+                android:visibility="gone" />
+            <Button
+                android:id="@+id/FeaturesButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/main_button_features"
+                android:textSize="14sp"
+                android:layout_marginBottom="10dp"
+                android:visibility="gone"
+                android:background="@drawable/button_background"
+                android:textColor="?attr/colorOnPrimary" />
 
-            <!-- BUSINESS -->
+            <!-- BUSINEC5 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -120,8 +153,9 @@
                 android:orientation="horizontal"
                 android:baselineAligned="false">
                 <Button android:id="@+id/ContractsButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_contracts" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
-                <Button android:id="@+id/CommisionButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_commission" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/EmailButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="Email" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
             </LinearLayout>
+            <Button android:id="@+id/CommisionButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:text="@string/main_button_commission" android:textSize="14sp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -155,7 +189,7 @@
                 android:orientation="horizontal"
                 android:baselineAligned="false">
                 <Button android:id="@+id/NotificationsButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_notifications" android:textSize="14sp" android:layout_marginEnd="6dp" android:layout_marginBottom="10dp" android:backgroundTint="?attr/colorSecondary" android:textColor="?attr/colorOnSecondary" />
-                <Button android:id="@+id/InstantMessage" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_messaging" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
+                <Button android:id="@+id/InstantMessage" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="56dp" android:text="@string/main_button_messaging" android:textSize="14sp" android:layout_marginStart="6dp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
             </LinearLayout>
             <LinearLayout
                 android:layout_width="match_parent"
@@ -193,6 +227,7 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
                 android:textColor="?android:attr/textColorSecondary" />
+            <Button android:id="@+id/AuditLogsButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:text="@string/main_button_audit_logs" android:textSize="14sp" android:layout_marginBottom="10dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
             <Button android:id="@+id/EmployeeButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:text="@string/main_button_employee" android:textSize="14sp" android:layout_marginBottom="16dp" android:visibility="gone" android:background="@drawable/button_background" android:textColor="?attr/colorOnPrimary" />
 
             <!-- Logout -->

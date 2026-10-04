@@ -108,3 +108,7 @@
 -dontwarn org.xml.sax.**
 -dontwarn java.awt.**
 -dontwarn sun.misc.**
+
+# SLF4J — referenced transitively by Apache POI; no JVM StaticLoggerBinder on Android
+-dontwarn org.slf4j.**
+-dontwarn org.slf4j.impl.**

@@ -32,22 +32,45 @@
       }
     ]
   },
+
   {
     "categoryKey": "initial",
     "categoryName": "Initial & Setup",
     "templates": [
       {
-        "key": "initial_setup",
-        "displayName": "Initial Setup",
-        "text": "An initial setup was carried out on the above site. New monitors and labels were installed as required. The site plan / checklist was updated during this visit."
+        "key": "initial_setup_contract",
+        "displayName": "Initial Setup Contract",
+        "text": "An initial contract setup was carried out on the above site. Monitoring points, bait stations, insect monitors and labels were installed as required in accordance with the agreed pest control programme. The site was inspected to identify relevant pest risks, harbourage areas and potential entry points. Monitoring locations were established and the site plan / pest control checklist was updated to reflect the equipment and monitoring points installed during this visit."
       },
       {
-        "key": "initial_survey",
-        "displayName": "Initial Survey / Assessment",
-        "text": "An initial survey and assessment of the site was completed today. Harbourage, entry points, monitoring locations and environmental factors were reviewed. A control plan and monitoring layout were discussed / implemented as appropriate."
+        "key": "initial_setup_rodent_riddance",
+        "displayName": "Initial Setup Rodent Riddance",
+        "text": "An initial rodent riddance setup was carried out on the above site following an assessment of the reported rodent activity. Suitable monitoring and control points were established in relevant areas and rodent control equipment was installed as required. Potential entry points, harbourage areas, food sources and environmental conditions that may contribute to rodent activity were inspected. Recommendations were provided where appropriate and all installed monitoring and control points will be checked during the scheduled follow-up visits as part of the rodent riddance programme."
+      },
+      {
+        "key": "initial_ant_treatment",
+        "displayName": "Initial Ant Treatment",
+        "text": "An initial ant treatment was carried out on the above site following inspection of the reported activity. Active ant trails, potential nesting areas, harbourage points and entry routes were identified where possible. Appropriate professional insecticidal products and/or baiting methods were applied to relevant areas. Environmental conditions including food sources, moisture and access points were also reviewed. Further monitoring and follow-up treatment may be required depending on activity levels."
+      },
+      {
+        "key": "initial_silverfish_treatment",
+        "displayName": "Initial Silverfish Treatment",
+        "text": "An initial silverfish treatment was carried out on the above site following inspection of the affected and high-risk areas. Potential harbourage points, moisture sources and access routes were identified and appropriate professional insecticidal treatment was applied where required. Particular attention was given to cracks, crevices, skirting areas and other suitable harbourage locations. Further monitoring and follow-up treatment may be required depending on activity levels and environmental conditions."
+      },
+      {
+        "key": "initial_flea_treatment",
+        "displayName": "Initial Flea Treatment",
+        "text": "An initial flea treatment was carried out on the above site following inspection of the affected areas. Floors, carpets, soft furnishings, skirting areas and other potential flea harbourage locations were inspected and treated using appropriate professional insecticidal products. Particular attention was given to areas associated with reported flea activity or animal activity. The client was advised regarding preparation, cleaning and post-treatment requirements. Follow-up treatment may be required due to the flea lifecycle and the possible emergence of developing stages after the initial treatment."
+      },
+      {
+        "key": "initial_bedbug_treatment",
+        "displayName": "Initial Bedbug Treatment",
+        "text": "An initial bedbug treatment was carried out on the above site following a detailed inspection of the affected room or area. Beds, mattresses, bed frames, furniture, skirting areas, cracks, crevices and other potential harbourage points were inspected and treated where appropriate using professional bedbug control methods and approved insecticidal products. The client was advised regarding preparation, access restrictions and post-treatment requirements. Due to the lifecycle and behaviour of bedbugs, scheduled follow-up inspections and additional treatments may be required to achieve full control."
       }
     ]
   },
+
+
   {
     "categoryKey": "callout",
     "categoryName": "Call Out / Emergency",
@@ -73,7 +96,6 @@
     "categoryKey": "general",
     "categoryName": "General Service Reports",
     "templates": [
-    
       {
         "key": "follow_up_inspection",
         "displayName": "Follow-Up Inspection",
@@ -88,6 +110,36 @@
         "key": "follow_up_activity",
         "displayName": "Follow-Up – Activity",
         "text": "A follow-up visit was completed today to assess the previous visit / treatment. Pest activity was noted during inspection. Monitoring and control points were serviced as required and further recommendations are detailed below where applicable."
+      },
+      {
+        "key": "rodent_follow_up",
+        "displayName": "Rodent Follow-Up",
+        "text": "A rodent follow-up visit was carried out on the above site today. All accessible rodent monitoring and control points were inspected and serviced as required. Evidence of rodent activity, including bait take, droppings, gnawing, tracks and possible harbourage or entry points, was reviewed during the inspection. Control measures were replenished, adjusted or replaced where necessary. Further monitoring and follow-up treatment will continue as required until satisfactory control has been achieved."
+      },
+      {
+        "key": "contract_follow_up",
+        "displayName": "Contract Follow-Up",
+        "text": "A scheduled contract follow-up visit was completed on the above site today. All accessible pest monitoring and control points included within the service agreement were inspected and serviced as required. Pest activity, hygiene conditions, potential harbourage and possible entry points were reviewed during the visit. Any findings or recommendations requiring attention are detailed within this service report. Monitoring and routine servicing will continue in accordance with the agreed pest control contract."
+      },
+      {
+        "key": "silverfish_follow_up",
+        "displayName": "Silverfish Follow-Up",
+        "text": "A silverfish follow-up treatment and inspection was carried out on the above site today. Previously affected and high-risk areas were inspected for continuing silverfish activity. Treated areas, harbourage points, moisture sources and possible access routes were reviewed. Additional professional insecticidal treatment was applied where required. Continued monitoring and further treatment may be necessary depending on activity levels and environmental conditions."
+      },
+      {
+        "key": "bedbug_follow_up",
+        "displayName": "Bedbug Follow-Up",
+        "text": "A bedbug follow-up inspection and treatment was carried out on the above site today. Previously affected rooms and harbourage areas were inspected for evidence of continuing bedbug activity. Beds, mattresses, bed frames, furniture, skirting areas, cracks and crevices were checked as appropriate. Additional treatment was applied to relevant areas where required. Due to the lifecycle and behaviour of bedbugs, further inspections or treatments may be required until no further activity is identified."
+      },
+      {
+        "key": "ant_follow_up",
+        "displayName": "Ant Follow-Up",
+        "text": "An ant follow-up inspection and treatment was carried out on the above site today. Previously identified ant trails, nesting areas, entry points and harbourage locations were inspected for continuing activity. Existing bait or insecticidal treatments were checked and additional treatment was applied where required. Environmental conditions that may contribute to ant activity, including food sources, moisture and access points, were also reviewed. Further monitoring may be required until activity has ceased."
+      },
+      {
+        "key": "wasp_follow_up",
+        "displayName": "Wasp Follow-Up",
+        "text": "A wasp follow-up inspection was carried out on the above site today following the previous treatment. The previously identified nest or activity point was inspected for continuing wasp activity. Treatment effectiveness was assessed and additional treatment was applied where required. Safety precautions and access restrictions were observed throughout the visit. Further monitoring or treatment may be required if activity continues."
       },
       {
         "key": "proofing_works",
@@ -118,6 +170,32 @@
     ]
   },
   {
+    "categoryKey": "installations",
+    "categoryName": "Installations & Removals",
+    "templates": [
+      {
+        "key": "installation_external_fly_unit",
+        "displayName": "Installation – External Fly Unit",
+        "text": "An external fly control unit was installed on the above site today in the agreed location. The unit was securely fitted and positioned to provide appropriate coverage while taking account of site access, environmental conditions and surrounding activity. The installation was checked on completion and the unit was left operational and ready for ongoing servicing and maintenance."
+      },
+      {
+        "key": "installation_internal_fly_unit",
+        "displayName": "Installation – Internal Fly Unit",
+        "text": "An internal fly control unit was installed on the above site today in the agreed location. The unit was securely fitted and positioned to provide suitable coverage while considering access, hygiene requirements, food preparation areas and potential fly activity. The installation was checked on completion and the unit was left operational and ready for ongoing servicing and maintenance."
+      },
+      {
+        "key": "installation_insect_monitors",
+        "displayName": "Installation – Insect Monitors",
+        "text": "Insect monitoring units were installed on the above site today in agreed high-risk and monitoring locations. The monitors were positioned to assist with the early detection and ongoing monitoring of crawling insect activity. All installed monitoring points were checked, recorded and left in position for inspection during future routine service visits."
+      },
+      {
+        "key": "removal_old_fly_unit",
+        "displayName": "Removal – Old Fly Unit",
+        "text": "An existing fly control unit was removed from the above site today as agreed. The unit was safely disconnected and removed from its previous location. The surrounding area was checked following removal and left in a safe and satisfactory condition. Any replacement unit or additional installation requirements will be recorded separately where applicable."
+      }
+    ]
+  },
+  {
     "categoryKey": "insects",
     "categoryName": "Insects & Specialist",
     "templates": [
@@ -130,6 +208,21 @@
         "key": "silverfish_treatment",
         "displayName": "Silverfish Treatment",
         "text": "A silverfish treatment was carried out today. Affected and high-risk areas were inspected and treated using appropriate professional insecticidal products. Harbourage, moisture sources and access routes were reviewed during this visit."
+      },
+      {
+        "key": "ant_treatment",
+        "displayName": "Ant Treatment",
+        "text": "An ant treatment was carried out on the above site following inspection of the affected areas. Active ant trails, harbourage points, entry routes and likely nesting areas were identified where possible. Appropriate professional insecticidal products and/or baiting methods were applied to relevant locations. The site was also reviewed for conditions that may encourage continued ant activity, including food sources, moisture and access points. Further monitoring and follow-up treatment may be required depending on the level of activity."
+      },
+      {
+        "key": "bedbug_treatment",
+        "displayName": "Bedbug Treatment",
+        "text": "A bedbug treatment was carried out on the above site following inspection of the affected room or area. Beds, mattresses, bed frames, furniture, skirting areas, cracks, crevices and other potential harbourage points were inspected and treated where appropriate using professional bedbug control methods and approved insecticidal products. The client was advised regarding preparation, access restrictions and post-treatment requirements. Due to the nature of bedbug infestations, follow-up inspection and additional treatment may be required to achieve full control."
+      },
+      {
+        "key": "flea_treatment",
+        "displayName": "Flea Treatment",
+        "text": "A flea treatment was carried out on the above site following inspection of the affected areas. Floors, carpets, soft furnishings, skirting areas and other suitable flea harbourage locations were treated using appropriate professional insecticidal products. Particular attention was given to areas associated with animal activity or reported flea activity. The client was advised regarding preparation, cleaning and post-treatment requirements. Further treatment may be required depending on the severity of the infestation and the presence of developing flea stages."
       }
     ]
   }

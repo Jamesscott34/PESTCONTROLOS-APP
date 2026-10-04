@@ -30,6 +30,7 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.grpc.grpc.BuildConfig;
 import com.grpc.grpc.R;
 import com.grpc.grpc.core.DemoFirebaseExpiryHelper;
@@ -192,7 +193,8 @@ public class RouterActivity extends AppCompatActivity {
     }
 
     private void configureOwnerPicker(SessionManager.Session loadedSession) {
-        if (loadedSession.isAdmin) {
+        // Technicians with canRoute stay on their own contracts. Admins can choose any user.
+        if (loadedSession.isAdmin && !loadedSession.isTech) {
             setStatus("Loading available users...");
             StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
                 ownerOptions.clear();
@@ -390,7 +392,20 @@ public class RouterActivity extends AppCompatActivity {
     private void fetchContractsAndBuildRoute(StaffDirectory.OwnerOption owner, RouteOptions options, @Nullable RouteAnchor initialAnchor) {
         setBusy(true);
         setStatus("Loading contracts for " + owner.display + "...");
-        db.collection(FirestorePaths.CONTRACTS)
+        Query contractQuery = db.collection(FirestorePaths.CONTRACTS);
+        boolean ownContractsOnly = session == null || session.isTech || !session.isAdmin;
+        if (ownContractsOnly) {
+            String ownKey = session != null && session.contractKey != null
+                    ? session.contractKey.trim().toLowerCase(Locale.ROOT) : "";
+            if (ownKey.isEmpty()) {
+                setBusy(false);
+                setStatus("Your profile is missing a contract key.");
+                Toast.makeText(this, "Your profile is missing a contract key.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            contractQuery = contractQuery.whereEqualTo("assignedTech", ownKey);
+        }
+        contractQuery
                 .get()
                 .addOnSuccessListener(snapshot -> worker.execute(() -> {
                     RouteAnchor anchor = initialAnchor;
@@ -984,7 +999,9 @@ public class RouterActivity extends AppCompatActivity {
     private void setBusy(boolean busy) {
         if (createButton != null) createButton.setEnabled(!busy);
         if (viewRoutesButton != null) viewRoutesButton.setEnabled(!busy);
-        if (ownerSpinner != null) ownerSpinner.setEnabled(!busy && session != null && session.isAdmin);
+        if (ownerSpinner != null) {
+            ownerSpinner.setEnabled(!busy && session != null && session.isAdmin && !session.isTech);
+        }
     }
 
     private void setStatus(String message) {

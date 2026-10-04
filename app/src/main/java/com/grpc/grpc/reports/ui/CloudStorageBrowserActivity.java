@@ -244,7 +244,7 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
             setTitle(R.string.cloud_storage_title_contracts);
             currentPath = "contracts";
             updateContractSearchVisibility();
-            loadStoragePath(currentPath);
+            prefetchContractDisplayNames(() -> loadStoragePath(currentPath));
         } else if (entryMode == MODE_FIXED_ROOT) {
             if (fixedRootPath == null || fixedRootPath.trim().isEmpty()) {
                 Toast.makeText(this, R.string.cloud_storage_empty_folder, Toast.LENGTH_SHORT).show();
@@ -615,6 +615,63 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
         applyStorageSearchFilter();
     }
 
+    private static boolean isContractsRootPath(@Nullable String path) {
+        return path != null && "contracts".equals(path.trim());
+    }
+
+    private void prefetchContractDisplayNames(Runnable onComplete) {
+        ContractStorageDisplayHelper.loadAllContractFolderLabels(
+                FirebaseFirestore.getInstance(),
+                map -> runOnUiThread(() -> {
+                    contractIdToDisplayName.putAll(map);
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
+                }));
+    }
+
+    private void bindContractFolderEntries(
+            String path,
+            List<CloudStorageEntryAdapter.Entry> folders,
+            List<CloudStorageEntryAdapter.Entry> files
+    ) {
+        List<String> missingIds = new ArrayList<>();
+        for (CloudStorageEntryAdapter.Entry folder : folders) {
+            if (folder.name != null
+                    && !folder.name.isEmpty()
+                    && !contractIdToDisplayName.containsKey(folder.name)) {
+                missingIds.add(folder.name);
+            }
+        }
+        Runnable publish = () -> {
+            List<CloudStorageEntryAdapter.Entry> resolved = new ArrayList<>();
+            for (CloudStorageEntryAdapter.Entry folder : folders) {
+                String label = contractIdToDisplayName.get(folder.name);
+                resolved.add(new CloudStorageEntryAdapter.Entry(
+                        folder.name,
+                        true,
+                        label != null ? label : ""));
+            }
+            Collections.sort(resolved, (a, b) -> a.sortKey().compareTo(b.sortKey()));
+            List<CloudStorageEntryAdapter.Entry> merged = new ArrayList<>(resolved);
+            merged.addAll(files);
+            bindEntryList(merged);
+            updatePathLabel(path);
+            updateNewFolderButtonVisibility();
+        };
+        if (missingIds.isEmpty()) {
+            publish.run();
+            return;
+        }
+        ContractStorageDisplayHelper.loadContractFolderLabels(
+                FirebaseFirestore.getInstance(),
+                missingIds,
+                map -> runOnUiThread(() -> {
+                    contractIdToDisplayName.putAll(map);
+                    publish.run();
+                }));
+    }
+
     private void updateStorageSearchVisibility() {
         if (contractSearchBar == null) {
             return;
@@ -687,10 +744,13 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
                     }
                     List<CloudStorageEntryAdapter.Entry> rows = new ArrayList<>();
                     for (ContractStoragePathHelper.FileSearchHit hit : hits) {
+                        String folderDisplay = hit.folderLabel != null
+                                ? hit.folderLabel.replace("/", " / ")
+                                : "";
                         rows.add(new CloudStorageEntryAdapter.Entry(
                                 hit.fileName,
                                 false,
-                                getString(R.string.cloud_storage_search_result_folder, hit.folderLabel),
+                                getString(R.string.cloud_storage_search_result_folder, folderDisplay),
                                 hit.storagePath
                         ));
                     }
@@ -922,30 +982,8 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
                         if (combined.isEmpty()) {
                             Toast.makeText(this, R.string.cloud_storage_empty_folder, Toast.LENGTH_SHORT).show();
                         }
-                        if (entryMode == MODE_CONTRACTS && "contracts".equals(path) && !folders.isEmpty()) {
-                            List<String> ids = new ArrayList<>();
-                            for (CloudStorageEntryAdapter.Entry e : folders) {
-                                ids.add(e.name);
-                            }
-                            bindEntryList(combined);
-                            ContractStorageDisplayHelper.loadContractFolderLabels(
-                                    FirebaseFirestore.getInstance(),
-                                    ids,
-                                    map -> runOnUiThread(() -> {
-                                        contractIdToDisplayName.putAll(map);
-                                        List<CloudStorageEntryAdapter.Entry> resolved = new ArrayList<>();
-                                        for (CloudStorageEntryAdapter.Entry e : folders) {
-                                            String d = map.get(e.name);
-                                            resolved.add(new CloudStorageEntryAdapter.Entry(
-                                                    e.name, true, d != null ? d : ""));
-                                        }
-                                        Collections.sort(resolved, (a, b) -> a.sortKey().compareTo(b.sortKey()));
-                                        List<CloudStorageEntryAdapter.Entry> merged = new ArrayList<>(resolved);
-                                        merged.addAll(files);
-                                        bindEntryList(merged);
-                                        updatePathLabel(path);
-                                        updateNewFolderButtonVisibility();
-                                    }));
+                        if (isContractsRootPath(path) && !folders.isEmpty()) {
+                            bindContractFolderEntries(path, folders, files);
                         } else {
                             bindEntryList(combined);
                             updateNewFolderButtonVisibility();
@@ -1026,9 +1064,14 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
      */
     private String formatContractsPathLabel(@Nullable String path) {
         if (path == null || path.isEmpty()) return "";
-        if (entryMode != MODE_CONTRACTS || !path.startsWith("contracts")) {
+        if (!path.startsWith("contracts")) {
             return path;
         }
+        return formatContractsPathLabelForDisplay(path);
+    }
+
+    /** Breadcrumb with {@code contracts/{id}} replaced by company name when known. */
+    private String formatContractsPathLabelForDisplay(String path) {
         String[] parts = path.split("/");
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < parts.length; i++) {
@@ -1045,9 +1088,21 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
         return sb.length() > 0 ? sb.toString() : path;
     }
 
-    /** Loads company name for the contract id in {@code contracts/{id}/…} so the path breadcrumb can show it. */
-    private void ensureContractDisplayNameForCurrentPath(String path) {
-        if (entryMode != MODE_CONTRACTS || path == null || !path.startsWith("contracts/")) {
+    @Nullable
+    private String formatMovePathLabel(@Nullable String path) {
+        if (path == null || path.trim().isEmpty()) {
+            return getString(R.string.stored_reports_path_bucket_root);
+        }
+        String trimmed = path.trim();
+        if (trimmed.startsWith("contracts")) {
+            return formatContractsPathLabelForDisplay(trimmed);
+        }
+        return trimmed.replace("/", " / ");
+    }
+
+    /** Loads company name for the contract id in {@code contracts/{id}/…} so labels can show it. */
+    private void ensureContractDisplayNameForPath(@Nullable String path) {
+        if (path == null || !path.startsWith("contracts/")) {
             return;
         }
         String rest = path.substring("contracts/".length());
@@ -1068,6 +1123,11 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
                         runOnUiThread(() -> updatePathLabel(currentPath));
                     }
                 });
+    }
+
+    /** Loads company name for the contract id in {@code contracts/{id}/…} so the path breadcrumb can show it. */
+    private void ensureContractDisplayNameForCurrentPath(String path) {
+        ensureContractDisplayNameForPath(path);
     }
 
     private void onEntryClick(CloudStorageEntryAdapter.Entry entry) {
@@ -1383,88 +1443,6 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
                 || entryMode == MODE_FIXED_ROOT;
     }
 
-    @Nullable
-    private String contractRootFromPath(@Nullable String path) {
-        if (path == null || !path.startsWith("contracts/")) {
-            return null;
-        }
-        String rest = path.substring("contracts/".length());
-        if (rest.isEmpty()) {
-            return null;
-        }
-        int slash = rest.indexOf('/');
-        String contractId = slash < 0 ? rest : rest.substring(0, slash);
-        if (contractId.isEmpty()) {
-            return null;
-        }
-        return "contracts/" + contractId;
-    }
-
-    @Nullable
-    private String reportsBrowseRootFromPath(@Nullable String path) {
-        if (path == null || path.trim().isEmpty()) {
-            return REPORTS_SEGMENT;
-        }
-        String normalized = path.trim();
-        if (normalized.startsWith(REPORTS_SEGMENT + "/")) {
-            return REPORTS_SEGMENT;
-        }
-        int slash = normalized.indexOf('/');
-        String first = slash < 0 ? normalized : normalized.substring(0, slash);
-        if (isReportsYearFolderName(first)) {
-            return first;
-        }
-        if (isReportsYearFolderName(normalized)) {
-            return normalized;
-        }
-        return REPORTS_SEGMENT;
-    }
-
-    private String resolveMoveBrowseRoot() {
-        if (entryMode == MODE_CONTRACTS) {
-            String root = contractRootFromPath(currentPath);
-            if (root == null) {
-                List<String> selected = adapter.getSelectedStoragePaths();
-                if (!selected.isEmpty()) {
-                    root = contractRootFromPath(selected.get(0));
-                }
-            }
-            return root != null ? root : "contracts";
-        }
-        if (entryMode == MODE_REPORTS) {
-            if (currentPath != null && !currentPath.trim().isEmpty()) {
-                return reportsBrowseRootFromPath(currentPath);
-            }
-            List<String> selected = adapter.getSelectedStoragePaths();
-            if (!selected.isEmpty()) {
-                return reportsBrowseRootFromPath(selected.get(0));
-            }
-            return REPORTS_SEGMENT;
-        }
-        if (entryMode == MODE_STORED_REPORTS) {
-            if (currentPath != null && !currentPath.trim().isEmpty()) {
-                return currentPath.trim();
-            }
-            List<String> selected = adapter.getSelectedStoragePaths();
-            if (!selected.isEmpty()) {
-                String path = selected.get(0);
-                int slash = path.lastIndexOf('/');
-                return slash > 0 ? path.substring(0, slash) : "";
-            }
-            return "";
-        }
-        if (entryMode == MODE_FIXED_ROOT) {
-            if (!resolvedFixedRootPath.isEmpty()) {
-                return resolvedFixedRootPath;
-            }
-            if (fixedRootPath != null && !fixedRootPath.trim().isEmpty()) {
-                return fixedRootPath.trim();
-            }
-            return currentPath != null ? currentPath.trim() : "";
-        }
-        return currentPath != null ? currentPath.trim() : "";
-    }
-
     private void startCloudSelectionActionMode() {
         if (cloudActionMode != null || !supportsCloudMultiSelect()) {
             return;
@@ -1662,47 +1640,134 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
     }
 
     private void showMoveDestinationPicker() {
-        String root = resolveMoveBrowseRoot();
-        if (root == null) {
-            Toast.makeText(this, R.string.cloud_storage_move_select_folder, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        browseMoveDestination(root, root);
+        browseMoveDestination("");
     }
 
-    private void browseMoveDestination(String rootPath, String currentFolderPath) {
-        FirebaseStorage.getInstance().getReference().child(currentFolderPath).listAll()
-                .addOnSuccessListener(listResult -> runOnUiThread(() -> {
-                    List<String> options = new ArrayList<>();
-                    List<String> optionPaths = new ArrayList<>();
-                    if (!currentFolderPath.equals(rootPath)) {
-                        options.add("..");
-                        int slash = currentFolderPath.lastIndexOf('/');
-                        optionPaths.add(slash > 0 ? currentFolderPath.substring(0, slash) : rootPath);
-                    }
-                    for (StorageReference prefix : listResult.getPrefixes()) {
-                        String name = prefix.getName();
-                        if (name != null && !name.isEmpty()) {
-                            options.add("[Folder] " + name);
-                            optionPaths.add(currentFolderPath + "/" + name);
+    private void browseMoveDestination(@Nullable String currentFolderPath) {
+        final String path = currentFolderPath != null ? currentFolderPath.trim() : "";
+        ensureContractDisplayNameForPath(path);
+
+        StorageReference ref = path.isEmpty()
+                ? FirebaseStorage.getInstance().getReference()
+                : FirebaseStorage.getInstance().getReference().child(path);
+
+        ref.listAll()
+                .addOnSuccessListener(listResult -> {
+                    List<StorageReference> prefixes = new ArrayList<>(listResult.getPrefixes());
+                    if ("contracts".equals(path) && !prefixes.isEmpty()) {
+                        List<String> ids = new ArrayList<>();
+                        for (StorageReference prefix : prefixes) {
+                            String name = prefix.getName();
+                            if (name != null && !name.isEmpty()) {
+                                ids.add(name);
+                            }
                         }
-                    }
-                    AlertDialog.Builder builder = new AlertDialog.Builder(this)
-                            .setTitle(getString(R.string.cloud_storage_move_select_folder) + "\n" + currentFolderPath)
-                            .setPositiveButton(R.string.cloud_storage_move_here, (d, w) ->
-                                    confirmMoveSelectedFilesTo(currentFolderPath))
-                            .setNegativeButton(android.R.string.cancel, null);
-                    if (options.isEmpty()) {
-                        builder.setMessage(getString(R.string.cloud_storage_move_here_hint));
+                        ContractStorageDisplayHelper.loadContractFolderLabels(
+                                FirebaseFirestore.getInstance(),
+                                ids,
+                                map -> runOnUiThread(() -> {
+                                    contractIdToDisplayName.putAll(map);
+                                    presentMoveDestinationDialog(path, prefixes);
+                                }));
                     } else {
-                        builder.setItems(options.toArray(new String[0]), (dialog, which) ->
-                                browseMoveDestination(rootPath, optionPaths.get(which)));
+                        runOnUiThread(() -> presentMoveDestinationDialog(path, prefixes));
                     }
-                    builder.show();
-                }))
-                .addOnFailureListener(e -> runOnUiThread(() ->
-                        Toast.makeText(this, getString(R.string.cloud_storage_list_failed) + e.getMessage(),
-                                Toast.LENGTH_LONG).show()));
+                })
+                .addOnFailureListener(e -> {
+                    if (path.isEmpty()) {
+                        StorageFolderHelper.discoverAllRootFolders(
+                                folders -> runOnUiThread(() ->
+                                        presentMoveDestinationDialogFromNames("", folders)),
+                                () -> runOnUiThread(() ->
+                                        Toast.makeText(this,
+                                                getString(R.string.cloud_storage_list_failed) + e.getMessage(),
+                                                Toast.LENGTH_LONG).show()));
+                    } else {
+                        runOnUiThread(() ->
+                                Toast.makeText(this,
+                                        getString(R.string.cloud_storage_list_failed) + e.getMessage(),
+                                        Toast.LENGTH_LONG).show());
+                    }
+                });
+    }
+
+    private void presentMoveDestinationDialogFromNames(String currentPath, @Nullable List<String> folderNames) {
+        List<String> options = new ArrayList<>();
+        List<String> optionPaths = new ArrayList<>();
+        if (!currentPath.isEmpty()) {
+            options.add("..");
+            int slash = currentPath.lastIndexOf('/');
+            optionPaths.add(slash > 0 ? currentPath.substring(0, slash) : "");
+        }
+        List<String> names = folderNames != null ? new ArrayList<>(folderNames) : Collections.emptyList();
+        Collections.sort(names, String.CASE_INSENSITIVE_ORDER);
+        for (String name : names) {
+            if (name == null || name.isEmpty()) continue;
+            options.add("[Folder] " + name);
+            optionPaths.add(currentPath.isEmpty() ? name : currentPath + "/" + name);
+        }
+        showMoveDestinationDialog(currentPath, options, optionPaths);
+    }
+
+    private void presentMoveDestinationDialog(String currentPath, List<StorageReference> prefixes) {
+        List<String> options = new ArrayList<>();
+        List<String> optionPaths = new ArrayList<>();
+        if (!currentPath.isEmpty()) {
+            options.add("..");
+            int slash = currentPath.lastIndexOf('/');
+            optionPaths.add(slash > 0 ? currentPath.substring(0, slash) : "");
+        }
+
+        List<StorageReference> sorted = new ArrayList<>(prefixes);
+        if ("contracts".equals(currentPath)) {
+            sorted.sort((a, b) -> {
+                String leftName = a.getName() != null ? a.getName() : "";
+                String rightName = b.getName() != null ? b.getName() : "";
+                String leftLabel = contractIdToDisplayName.getOrDefault(leftName, leftName);
+                String rightLabel = contractIdToDisplayName.getOrDefault(rightName, rightName);
+                return leftLabel.compareToIgnoreCase(rightLabel);
+            });
+        } else {
+            sorted.sort((a, b) -> {
+                String leftName = a.getName() != null ? a.getName() : "";
+                String rightName = b.getName() != null ? b.getName() : "";
+                return leftName.compareToIgnoreCase(rightName);
+            });
+        }
+
+        for (StorageReference prefix : sorted) {
+            String name = prefix.getName();
+            if (name == null || name.isEmpty()) continue;
+            String label = name;
+            if ("contracts".equals(currentPath)) {
+                String friendly = contractIdToDisplayName.get(name);
+                if (friendly != null && !friendly.isEmpty()) {
+                    label = friendly;
+                }
+            }
+            options.add("[Folder] " + label);
+            optionPaths.add(currentPath.isEmpty() ? name : currentPath + "/" + name);
+        }
+        showMoveDestinationDialog(currentPath, options, optionPaths);
+    }
+
+    private void showMoveDestinationDialog(
+            String currentPath,
+            List<String> options,
+            List<String> optionPaths
+    ) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.cloud_storage_move_select_folder) + "\n" + formatMovePathLabel(currentPath))
+                .setPositiveButton(R.string.cloud_storage_move_here, (d, w) ->
+                        confirmMoveSelectedFilesTo(currentPath))
+                .setNegativeButton(android.R.string.cancel, null);
+        if (options.isEmpty()) {
+            builder.setMessage(getString(R.string.cloud_storage_move_here_hint));
+        } else {
+            builder.setItems(options.toArray(new String[0]), (dialog, which) ->
+                    browseMoveDestination(optionPaths.get(which)));
+        }
+        builder.show();
     }
 
     private void confirmMoveSelectedFilesTo(String destinationFolder) {
@@ -1711,7 +1776,8 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
             return;
         }
         new AlertDialog.Builder(this)
-                .setMessage(getString(R.string.cloud_storage_move_confirm, paths.size(), destinationFolder))
+                .setMessage(getString(R.string.cloud_storage_move_confirm, paths.size(),
+                        formatMovePathLabel(destinationFolder)))
                 .setPositiveButton(R.string.cloud_storage_move_files, (d, w) -> moveSelectedFilesTo(destinationFolder, paths))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
@@ -1747,3 +1813,37 @@ public class CloudStorageBrowserActivity extends AppCompatActivity {
                                         runOnUiThread(() -> {
                                             if (cloudActionMode != null && remaining > 0) {
                                                 cloudActionMode.setTitle("Moving… " + remaining + " file" +
+                                                        (remaining == 1 ? "" : "s") + " left");
+                                            }
+                                        });
+                                        if (pending[0] <= 0) {
+                                            finishMoveBatch(moved[0]);
+                                        }
+                                    }))
+                            .addOnFailureListener(e -> {
+                                temp.delete();
+                                pending[0]--;
+                                if (pending[0] <= 0) {
+                                    finishMoveBatch(moved[0]);
+                                }
+                            }))
+                    .addOnFailureListener(e -> {
+                        temp.delete();
+                        pending[0]--;
+                        if (pending[0] <= 0) {
+                            finishMoveBatch(moved[0]);
+                        }
+                    });
+        }
+    }
+
+    private void finishMoveBatch(int movedCount) {
+        runOnUiThread(() -> {
+            Toast.makeText(this,
+                    movedCount + " file" + (movedCount == 1 ? "" : "s") + " moved.",
+                    Toast.LENGTH_SHORT).show();
+            if (cloudActionMode != null) cloudActionMode.finish();
+            if (currentPath != null) loadStoragePath(currentPath);
+        });
+    }
+}

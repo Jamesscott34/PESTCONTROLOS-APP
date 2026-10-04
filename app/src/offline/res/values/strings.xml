@@ -25,9 +25,9 @@
     <!-- Exit button (demo/offline: replaces Logout on home when applicable) -->
     <string name="exit_button_offline">Exit</string>
 
-    <!-- Visit website button (demo/offline opens pestcontrolos.ie) -->
+    <!-- Visit website button (demo/offline opens yourcompany.example) -->
     <string name="website_button_text">Visit website</string>
-    <string name="main_website_url">https://www.pestcontrolos.ie</string>
+    <string name="main_website_url">https://yourcompany.example</string>
 
     <!-- Trial redirect (demo/offline: after N days, Create Report / Custom template open website) -->
     <string name="offline_trial_redirect_message">Your free trial has ended. Visit our website to sign up or learn more.</string>
@@ -43,5 +43,5 @@
     <string name="get_update_button">Get update</string>
 
     <string name="tenant_public_name">pcos offline</string>
-    <string name="tenant_public_website_url">https://www.pestcontrolos.ie</string>
+    <string name="tenant_public_website_url">https://yourcompany.example</string>
 </resources>

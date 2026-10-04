@@ -281,12 +281,8 @@ public class LoginActivity extends AppCompatActivity {
                 .getBoolean("ONBOARDING_SHOWN_" + uid, false);
 
         if (!seenOnboarding && !uid.isEmpty()) {
-            Intent onboarding = new Intent(LoginActivity.this, OnboardingActivity.class);
-            onboarding.putExtra("USER_EMAIL", intent.getStringExtra("USER_EMAIL"));
-            if (intent.hasExtra("USER_NAME")) {
-                onboarding.putExtra("USER_NAME", intent.getStringExtra("USER_NAME"));
-            }
-            startActivity(onboarding);
+            // Onboarding not yet implemented — go straight to MainActivity
+            startActivity(intent);
             finish();
             return;
         }
@@ -295,11 +291,10 @@ public class LoginActivity extends AppCompatActivity {
         finish();
     }
 
-    // Helper to extract the name from the email
     private String extractNameFromEmail(String email) {
         if (email != null && email.contains("@")) {
             String namePart = email.split("@")[0];
-            return namePart.substring(0, 1).toUpperCase() + namePart.substring(1); // Capitalize first letter
+            return namePart.substring(0, 1).toUpperCase() + namePart.substring(1);
         }
         return "User";
     }

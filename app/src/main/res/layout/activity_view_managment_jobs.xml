@@ -1,86 +1,118 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
     android:background="?android:attr/colorBackground"
-    android:paddingTop="?attr/actionBarSize"
-    android:padding="16dp">
+    android:fillViewport="true"
+    android:padding="16dp"
+    android:paddingTop="?attr/actionBarSize">
 
-    <!-- ✅ Single container child inside ScrollView -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Top Spacer to avoid notch -->
         <View
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@android:color/transparent" />
+            android:layout_height="?attr/actionBarSize" />
 
-        <!-- Search Bar -->
+        <TextView
+            android:id="@+id/companyTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/jobCounts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="6dp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="8dp">
+
+            <Button
+                android:id="@+id/filterAll"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="All"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/filterActive"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="Active"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="4dp">
+
+            <Button
+                android:id="@+id/filterFollowUp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="Follow up"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/filterCompleted"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="Completed"
+                android:textSize="14sp" />
+        </LinearLayout>
+
         <EditText
             android:id="@+id/searchBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Search by Technician Name"
-            android:padding="12dp"
-            android:drawableLeft="@android:drawable/ic_menu_search"
+            android:layout_marginTop="8dp"
             android:background="@drawable/edit_text_border"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"/>
+            android:hint="Search reference, address, or technician"
+            android:padding="12dp" />
 
-        <!-- Job Statistics -->
-        <TextView
-            android:id="@+id/totalJobs"
-            android:layout_width="wrap_content"
+        <Button
+            android:id="@+id/addJobButton"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Total Jobs: 0"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:paddingTop="8dp"
-            android:textColor="?android:attr/textColorPrimary"/>
+            android:layout_marginTop="8dp"
+            android:background="@drawable/button_background"
+            android:text="Add management job"
+            android:textColor="?attr/colorOnPrimary" />
 
-        <TextView
-            android:id="@+id/completedJobs"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Completed: 0"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:paddingTop="4dp"
-            android:textColor="?android:attr/textColorPrimary"/>
-
-        <TextView
-            android:id="@+id/pendingJobs"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Pending: 0"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:paddingTop="4dp"
-            android:textColor="?android:attr/textColorPrimary"/>
-
-        <!-- Jobs Container (Dynamically Added Views) -->
         <LinearLayout
             android:id="@+id/jobsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="10dp"/>
+            android:paddingTop="10dp" />
 
-        <!-- Back Button -->
         <Button
             android:id="@+id/backButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Back"
-            android:backgroundTint="?attr/colorError"
-            android:textColor="?attr/colorOnError"
-            android:layout_marginTop="12dp"/>
-
+            android:layout_marginTop="12dp"
+            android:text="Back" />
     </LinearLayout>
 </ScrollView>

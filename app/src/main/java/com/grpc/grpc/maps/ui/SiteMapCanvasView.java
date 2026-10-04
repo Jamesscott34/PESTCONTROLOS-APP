@@ -541,4 +541,15 @@ public class SiteMapCanvasView extends View {
         float dy = y2 - y1;
         if (dx == 0 && dy == 0) {
             return (float) Math.hypot(px - x1, py - y1);
-  
+        }
+        float t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
+        t = Math.max(0, Math.min(1, t));
+        float nearestX = x1 + t * dx;
+        float nearestY = y1 + t * dy;
+        return (float) Math.hypot(px - nearestX, py - nearestY);
+    }
+
+    public interface OnShapeSizeChangedListener {
+        void onShapeSizeChanged(String label);
+    }
+}

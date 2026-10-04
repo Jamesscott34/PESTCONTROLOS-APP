@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 public final class ContractStoragePathHelper {
 
     private static final String TAG = "ContractStoragePathHelper";
-    private static final String MANAGEMENT_JOBS_PRIMARY = "management jobs";
+    private static final String MANAGEMENT_JOBS_C3MARY = "management jobs";
     private static final String MANAGEMENT_JOBS_TYPO = "managment jobs";
 
     private static final Pattern TRAILING_4_DIGIT_YEAR = Pattern.compile("(20\\d{2})\\s*$");
@@ -119,6 +119,75 @@ public final class ContractStoragePathHelper {
             return d4.group(1);
         }
         return new SimpleDateFormat("yyyy", Locale.getDefault()).format(new Date());
+    }
+
+    /** Storage list paths start with '/'; saved report paths do not. One form is used everywhere. */
+    public static String normalizeStoragePath(String path) {
+        if (path == null) return "";
+        String trimmed = path.trim().replace('\\', '/');
+        while (trimmed.startsWith("/")) trimmed = trimmed.substring(1);
+        return trimmed;
+    }
+
+    public static boolean isManagementJobsPath(String folderPath) {
+        if (folderPath == null) return false;
+        String lower = folderPath.trim().toLowerCase(Locale.ROOT);
+        return lower.startsWith(MANAGEMENT_JOBS_TYPO) || lower.startsWith(MANAGEMENT_JOBS_C3MARY);
+    }
+
+    public static boolean isJobWorkReportsPath(String folderPath) {
+        if (folderPath == null) return false;
+        String lower = folderPath.trim().toLowerCase(Locale.ROOT);
+        return lower.equals("jobworkreports") || lower.startsWith("jobworkreports/");
+    }
+
+    /**
+     * New service-job reports go to {@code JobWorkReports/{year}}.
+     * The year is the report date when it contains one, otherwise the current year.
+     * A path that already starts {@code JobWorkReports/{year}} is left as it is.
+     * Paths that are not Job Work reports are returned unchanged.
+     */
+    public static String resolveJobWorkYearFolderPath(String folderPath, String fallbackDateText) {
+        if (folderPath == null) return null;
+        String normalized = folderPath.trim().replaceAll("/+", "/");
+        while (normalized.startsWith("/")) normalized = normalized.substring(1);
+        while (normalized.endsWith("/") && normalized.length() > 1) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        if (!isJobWorkReportsPath(normalized)) return normalized;
+        String[] parts = normalized.split("/");
+        if (parts.length >= 2 && FOUR_DIGIT_YEAR_FOLDER.matcher(parts[1]).matches()) {
+            return "JobWorkReports/" + parts[1];
+        }
+        return "JobWorkReports/" + resolveReportYear(null, fallbackDateText);
+    }
+
+    /**
+     * Saves under {@code management jobs/{company}/{year}}.
+     * Uses the report date year when it contains one, otherwise the current year.
+     * An existing year folder is reused; a missing one is created on upload.
+     */
+    public static String resolveManagementYearFolderPath(String folderPath, String fallbackDateText) {
+        if (folderPath == null) return null;
+        String normalized = folderPath.trim().replaceAll("/+", "/");
+        while (normalized.startsWith("/")) normalized = normalized.substring(1);
+        while (normalized.endsWith("/") && normalized.length() > 1) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        if (!isManagementJobsPath(normalized)) return normalized;
+        String[] parts = normalized.split("/");
+        if (parts.length < 2 || parts[1].trim().isEmpty()) return normalized;
+        String year = resolveReportYear(null, fallbackDateText);
+        return parts[0] + "/" + parts[1] + "/" + year;
+    }
+
+    /** Parent of a {@code .../{year}} path, used to create that year folder when it is missing. */
+    @Nullable
+    public static String folderAboveYear(String folderPath) {
+        if (yearFromContractFolderPath(folderPath) == null || folderPath == null) return null;
+        int slash = folderPath.lastIndexOf('/');
+        if (slash <= 0) return null;
+        return folderPath.substring(0, slash);
     }
 
     /**
@@ -263,7 +332,7 @@ public final class ContractStoragePathHelper {
                             continue;
                         }
                         if (item.getName().toLowerCase(Locale.ROOT).endsWith(".pdf")) {
-                            out.put(item.getPath(), item.getName());
+                            out.put(normalizeStoragePath(item.getPath()), item.getName());
                         }
                     }
                     List<StorageReference> prefixes = listResult.getPrefixes();
@@ -308,7 +377,7 @@ public final class ContractStoragePathHelper {
                         if (item == null || item.getName() == null || ".keep".equalsIgnoreCase(item.getName())) {
                             continue;
                         }
-                        files.put(item.getPath(), item.getName());
+                        files.put(normalizeStoragePath(item.getPath()), item.getName());
                     }
                     Collections.sort(subfolders, String.CASE_INSENSITIVE_ORDER);
                     if (callback != null) {
@@ -358,7 +427,7 @@ public final class ContractStoragePathHelper {
                         }
                     }
                     for (String root : roots) {
-                        if (MANAGEMENT_JOBS_PRIMARY.equalsIgnoreCase(root)) {
+                        if (MANAGEMENT_JOBS_C3MARY.equalsIgnoreCase(root)) {
                             callback.accept(root);
                             return;
                         }
@@ -369,15 +438,15 @@ public final class ContractStoragePathHelper {
                             return;
                         }
                     }
-                    callback.accept(MANAGEMENT_JOBS_PRIMARY);
+                    callback.accept(MANAGEMENT_JOBS_C3MARY);
                 })
-                .addOnFailureListener(e -> callback.accept(MANAGEMENT_JOBS_PRIMARY));
+                .addOnFailureListener(e -> callback.accept(MANAGEMENT_JOBS_C3MARY));
     }
 
     public static String preferredManagementJobsRootName() {
         return "grpc".equalsIgnoreCase(BuildConfig.FLAVOR)
                 ? MANAGEMENT_JOBS_TYPO
-                : MANAGEMENT_JOBS_PRIMARY;
+                : MANAGEMENT_JOBS_C3MARY;
     }
 
     public static String yearFromContractFolderPath(String folderPath) {

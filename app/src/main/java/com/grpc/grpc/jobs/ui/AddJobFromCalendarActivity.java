@@ -16,6 +16,7 @@ package com.grpc.grpc.jobs.ui;
 import com.grpc.grpc.R;
 import com.grpc.grpc.messaging.NotificationUtils;
 import com.grpc.grpc.core.*;
+import com.grpc.grpc.jobs.data.JobWorkRepository;
 
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -113,29 +114,30 @@ public class AddJobFromCalendarActivity extends AppCompatActivity {
         final String emailToUse = customerEmail.isEmpty() ? "N/A" : customerEmail;
         final String addressToUse = address.isEmpty() ? "N/A" : address;
         final String assignedTechKey = assignedTech != null ? assignedTech.trim().toLowerCase(Locale.getDefault()) : "";
+        final String assignedTechDisplay = StaffDirectory.capitalizeContractKey(assignedTechKey);
 
-        Map<String, Object> job = new HashMap<>();
-        job.put("AssignedTech", assignedTech);
-        job.put("AssignedTechKey", assignedTechKey);
-        job.put("CustomerName", customerName);
-        job.put("CustomerEmail", emailToUse);
-        job.put("CustomerContact", customerContact);
-        job.put("IssueDetails", issueDetails);
-        job.put("Address", addressToUse);
-        job.put("CreatedBy", createdBy != null ? createdBy : assignedTech);
-        job.put("CreatedAt", new Date());
-        job.put("JobType", "Service");
+        JobWorkRepository.NewJob request = new JobWorkRepository.NewJob();
+        request.assignedTechKey = assignedTechKey;
+        request.assignedTech = assignedTechDisplay;
+        request.customerName = customerName;
+        request.customerEmail = emailToUse;
+        request.customerContact = customerContact;
+        request.issueDetails = issueDetails;
+        request.address = addressToUse;
+        request.createdBy = createdBy != null ? createdBy : assignedTech;
+        new JobWorkRepository().createJob(request, new JobWorkRepository.CreatedCallback() {
+            @Override
+            public void onSuccess(String jobId) {
+                writeInAppJobNotifications(jobId, customerName, assignedTechDisplay, assignedTechKey, createdBy);
+                createWorkEventForJob(jobId, customerName, addressToUse, issueDetails);
+            }
 
-        db.collection(FirestorePaths.JOBWORK)
-          .add(job)
-          .addOnSuccessListener(documentReference -> {
-              String jobId = documentReference.getId();
-              writeInAppJobNotifications(jobId, customerName, assignedTech, assignedTechKey, createdBy);
-              createWorkEventForJob(jobId, customerName, addressToUse, issueDetails);
-          })
-          .addOnFailureListener(e -> {
-              Toast.makeText(this, "Error saving job: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-          });
+            @Override
+            public void onError(Exception error) {
+                String message = error == null || error.getMessage() == null ? "Error saving job" : error.getMessage();
+                Toast.makeText(AddJobFromCalendarActivity.this, "Error saving job: " + message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     /**

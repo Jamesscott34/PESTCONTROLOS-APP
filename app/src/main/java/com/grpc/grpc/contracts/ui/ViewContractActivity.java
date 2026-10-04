@@ -83,7 +83,7 @@ import androidx.work.WorkManager;
  * GRPest Control Application - Contract Management Activity
  * ============================================================================
  * 
- * BUSINESS OVERVIEW:
+ * BUSINEC5 OVERVIEW:
  * This activity serves as the central hub for contract management in the
  * GRPest Control application. It provides comprehensive functionality for
  * viewing, managing, and tracking service contracts with customers.
@@ -189,6 +189,10 @@ public class ViewContractActivity extends AppCompatActivity {
 
     /** True after we have scrolled to the contract opened from search (avoid repeated scroll). */
     private boolean hasScrolledToOpenContract = false;
+    /** Skip the first resume. Later resumes refresh data without clearing search or filters. */
+    private boolean acceptResumeReload = false;
+    private boolean restoreScrollOnNextDisplay = false;
+    private int savedScrollY = 0;
 
     /** Contract document IDs for which the current user has "Remind me" enabled (12h notifications). */
     private Set<String> contractIdsWithReminder = new HashSet<>();
@@ -268,6 +272,21 @@ public class ViewContractActivity extends AppCompatActivity {
         
         // Initialize gesture detector for swipe navigation
         initializeGestureDetector();
+    }
+
+    @Override
+    protected void onPause() {
+        android.widget.ScrollView scroll = findViewById(R.id.scrollView);
+        if (scroll != null) savedScrollY = scroll.getScrollY();
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!acceptResumeReload) return;
+        restoreScrollOnNextDisplay = true;
+        loadContracts();
     }
 
     /**
@@ -733,13 +752,17 @@ public class ViewContractActivity extends AppCompatActivity {
         }
         applySortOrder(filtered);
         handleContractsData(filtered);
+        acceptResumeReload = true;
 
-        // If opened from search with a specific contract id, scroll to that contract (do not open dialog).
+        // Search can still land on one contract. Scroll the list, then open its detail screen.
         String openContractId = getIntent().getStringExtra(EXTRA_OPEN_CONTRACT_ID);
         if (openContractId != null && !openContractId.trim().isEmpty() && !hasScrolledToOpenContract) {
             hasScrolledToOpenContract = true;
             final String targetId = openContractId.trim();
-            contractsContainer.post(() -> scrollToContractWithId(targetId));
+            contractsContainer.post(() -> {
+                scrollToContractWithId(targetId);
+                openContractDetail(targetId);
+            });
         }
     }
 
@@ -944,9 +967,23 @@ public class ViewContractActivity extends AppCompatActivity {
             if (documentId.isEmpty()) continue;
             addContractToView(contract, documentId);
         }
+        if (contractsContainer.getChildCount() == 0) {
+            TextView empty = new TextView(this);
+            empty.setText("No contracts in this list.");
+            empty.setPadding(0, 24, 0, 0);
+            contractsContainer.addView(empty);
+        }
+        if (restoreScrollOnNextDisplay) {
+            restoreScrollOnNextDisplay = false;
+            android.widget.ScrollView scroll = findViewById(R.id.scrollView);
+            if (scroll != null) {
+                int y = savedScrollY;
+                scroll.post(() -> scroll.scrollTo(0, y));
+            }
+        }
     }
 
-    private boolean isDueSoon(String nextVisit) {
+    static boolean isDueSoon(String nextVisit) {
         if (nextVisit == null || nextVisit.trim().isEmpty() || "N/A".equalsIgnoreCase(nextVisit)) {
             return false; // Not due soon if missing
         }
@@ -966,7 +1003,7 @@ public class ViewContractActivity extends AppCompatActivity {
         }
     }
 
-    private boolean isPastDue(String nextVisit) {
+    static boolean isPastDue(String nextVisit) {
         if (nextVisit == null || nextVisit.trim().isEmpty() || "N/A".equalsIgnoreCase(nextVisit)) {
             return true; // Consider past due if missing
         }
@@ -1006,148 +1043,81 @@ public class ViewContractActivity extends AppCompatActivity {
 
 
 
+    private void openContractDetail(String documentId) {
+        Intent intent = new Intent(this, ContractDetailActivity.class);
+        intent.putExtra("USER_NAME", userName);
+        intent.putExtra(ContractDetailActivity.EXTRA_CONTRACT_ID, documentId);
+        startActivity(intent);
+    }
+
     private void addContractToView(Map<String, Object> contract, String documentId) {
-        LinearLayout contractBox = new LinearLayout(this);
-        contractBox.setOrientation(LinearLayout.VERTICAL);
-        contractBox.setPadding(16, 16, 16, 16);
-        contractBox.setBackgroundResource(R.drawable.surface_frame);
-        contractBox.setTag(documentId);
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setPadding(24, 24, 24, 24);
+        card.setBackgroundResource(R.drawable.surface_frame);
+        card.setTag(documentId);
+        card.setClickable(true);
+        card.setFocusable(true);
+        int minTap = (int) android.util.TypedValue.applyDimension(
+                android.util.TypedValue.COMPLEX_UNIT_DIP, 48, getResources().getDisplayMetrics());
+        card.setMinimumHeight(minTap);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.bottomMargin = 16;
+        card.setLayoutParams(params);
 
-        String owner = contract.get("owner") != null ? contract.get("owner").toString() : "Unknown";
-        String name = contract.get("name") != null ? contract.get("name").toString() : "N/A";
-        String address = contract.get("address") != null ? contract.get("address").toString() : "N/A";
-        String email = contract.get("email") != null ? contract.get("email").toString() : "N/A";
-        String contact = contract.get("contact") != null ? contract.get("contact").toString() : "N/A";
-        String visits = contract.get("visits") != null ? contract.get("visits").toString() : "0";
+        String name = contract.get("name") != null && !contract.get("name").toString().trim().isEmpty()
+                ? contract.get("name").toString() : "N/A";
+        String address = contract.get("address") != null && !contract.get("address").toString().trim().isEmpty()
+                ? contract.get("address").toString() : "N/A";
         String lastVisit = contract.get("lastVisit") != null ? contract.get("lastVisit").toString() : "N/A";
-        String notes = getOptionalContractNotes(contract);
         String nextVisit = calculateNextVisit(contract);
+        String status = contractStatusLabel(lastVisit, nextVisit);
 
-        // Determine background color based on nextVisit conditions
-        int bgColor = getBackgroundColor(lastVisit, nextVisit);
-        contractBox.setBackgroundColor(bgColor);
+        LinearLayout textCol = new LinearLayout(this);
+        textCol.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        textParams.setMarginEnd(dp(12));
+        textCol.setLayoutParams(textParams);
 
-        TextView contractDetails = new TextView(this);
-        contractDetails.setText(
-                "Owner: " + owner + "\n" +
-                        "Name: " + name + "\n" +
-                        "Address: " + address + "\n" +
-                        "Email: " + email + "\n" +
-                        "Contact: " + contact + "\n" +
-                        (notes.isEmpty() ? "" : "Notes: " + notes + "\n") +
-                        "Last Visit: " + lastVisit + "\n" +
-                        "Next Visit: " + nextVisit
-        );
-        // Improve readability on bright status highlights (yellow/red) by picking a high-contrast text color.
-        int preferred = resolveColorAttr(android.R.attr.textColorPrimary, contractDetails.getCurrentTextColor());
-        contractDetails.setTextColor(pickReadableTextColor(bgColor, preferred));
+        TextView nameView = new TextView(this);
+        nameView.setText(name);
+        nameView.setTextSize(16);
+        nameView.setTypeface(nameView.getTypeface(), android.graphics.Typeface.BOLD);
+        nameView.setTextColor(resolveColorAttr(android.R.attr.textColorPrimary, nameView.getCurrentTextColor()));
 
-        // ✅ Add the "Mark as Routine" Checkbox
-        CheckBox markDoneCheckBox = new CheckBox(this);
-        markDoneCheckBox.setText("Mark as Routine");
-        try {
-            markDoneCheckBox.setTextColor(pickReadableTextColor(bgColor,
-                    resolveColorAttr(android.R.attr.textColorPrimary, markDoneCheckBox.getCurrentTextColor())));
-        } catch (Exception ignored) {}
+        TextView addressView = new TextView(this);
+        addressView.setText(address);
+        addressView.setTextSize(14);
+        addressView.setPadding(0, dp(4), 0, 0);
+        addressView.setTextColor(resolveColorAttr(android.R.attr.textColorSecondary, addressView.getCurrentTextColor()));
 
-        // Handle checkbox click event
-        markDoneCheckBox.setOnClickListener(v -> {
-            if (markDoneCheckBox.isChecked()) {
-                // Ensure the correct technician's collection is updated
-                showRoutinePopup(name, documentId, owner, visits, markDoneCheckBox);
-            }
-        });
+        textCol.addView(nameView);
+        textCol.addView(addressView);
 
-        CheckBox markCallOutCheckBox = new CheckBox(this);
-        markCallOutCheckBox.setText("Mark as Call Out");
-        try {
-            markCallOutCheckBox.setTextColor(pickReadableTextColor(bgColor,
-                    resolveColorAttr(android.R.attr.textColorPrimary, markCallOutCheckBox.getCurrentTextColor())));
-        } catch (Exception ignored) {}
-        markCallOutCheckBox.setOnClickListener(v -> {
-            if (markCallOutCheckBox.isChecked()) {
-                showCallOutCounterPopup(name, documentId, markCallOutCheckBox);
-            }
-        });
+        TextView statusView = new TextView(this);
+        statusView.setText(status);
+        statusView.setTextSize(12);
+        statusView.setTypeface(statusView.getTypeface(), android.graphics.Typeface.BOLD);
+        statusView.setGravity(android.view.Gravity.END);
+        int statusColor = "Behind".equals(status)
+                ? resolveColorAttr(com.google.android.material.R.attr.colorError, Color.RED)
+                : "Due".equals(status)
+                ? resolveColorAttr(com.google.android.material.R.attr.colorSecondary, Color.DKGRAY)
+                : resolveColorAttr(android.R.attr.textColorSecondary, Color.DKGRAY);
+        statusView.setTextColor(statusColor);
 
-        // ✅ "Remind me" checkbox: 12h in-app notification until unchecked
-        CheckBox remindMeCheckBox = new CheckBox(this);
-        remindMeCheckBox.setText("Remind me");
-        try {
-            remindMeCheckBox.setTextColor(pickReadableTextColor(bgColor,
-                    resolveColorAttr(android.R.attr.textColorPrimary, remindMeCheckBox.getCurrentTextColor())));
-        } catch (Exception ignored) {}
-        remindMeCheckBox.setChecked(contractIdsWithReminder.contains(documentId));
-        remindMeCheckBox.setOnClickListener(v -> {
-            if (remindMeCheckBox.isChecked()) {
-                addContractReminder(documentId, name, address, remindMeCheckBox);
-            } else {
-                removeContractReminder(documentId, remindMeCheckBox);
-            }
-        });
+        card.addView(textCol);
+        card.addView(statusView);
+        card.setOnClickListener(v -> openContractDetail(documentId));
+        card.setContentDescription(name + ", " + address + ", " + status);
+        contractsContainer.addView(card);
+    }
 
-        // Click Listener for Showing Contract Options
-        contractBox.setOnClickListener(v -> {
-            // Show contract options dialog
-            showContractOptions(contract, lastVisit, documentId);
-        });
-
-        // Long Click Listener for Edit/Delete Dialog — RBAC (admin / permission flag)
-        contractBox.setOnLongClickListener(v -> {
-            SessionManager.ensureLoaded(this, null);
-            if (SessionManager.canHardPressContracts(this) || SessionManager.isAdmin(this)) {
-                showEditOrDeleteDialog(documentId, contract);
-            } else {
-                Toast.makeText(this, "You do not have permission to edit or delete this contract.", Toast.LENGTH_SHORT).show();
-            }
-            return true; // Indicate that the long press was handled
-        });
-
-        // Add "View Reports" button
-        Button viewReportsButton = new Button(this);
-        viewReportsButton.setText("View Reports");
-        viewReportsButton.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-        viewReportsButton.setOnClickListener(v -> {
-            showReportYearPickerAndOpen(name, documentId);
-        });
-
-        Button viewMapsButton = new Button(this);
-        viewMapsButton.setText("View Maps");
-        viewMapsButton.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-        viewMapsButton.setOnClickListener(v -> {
-            Intent mapsIntent = new Intent(ViewContractActivity.this, MapsPlaceholderActivity.class);
-            mapsIntent.putExtra("USER_NAME", userName);
-            mapsIntent.putExtra("CONTRACT_ID", documentId);
-            mapsIntent.putExtra("COMPANY_NAME", name);
-            mapsIntent.putExtra("ADDRESS", address);
-            startActivity(mapsIntent);
-        });
-
-        Button viewVisitsButton = new Button(this);
-        viewVisitsButton.setText("View Visits");
-        viewVisitsButton.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-        viewVisitsButton.setOnClickListener(v -> showVisitsDialog(contract, documentId));
-
-        // ✅ Add views to contract box
-        contractBox.addView(contractDetails);
-        contractBox.addView(markDoneCheckBox);
-        contractBox.addView(markCallOutCheckBox);
-        contractBox.addView(remindMeCheckBox);
-        contractBox.addView(viewReportsButton);
-        contractBox.addView(viewMapsButton);
-        contractBox.addView(viewVisitsButton);
-
-        // ✅ Add the contract box to the container
-        contractsContainer.addView(contractBox);
+    private int dp(int value) {
+        return (int) android.util.TypedValue.applyDimension(
+                android.util.TypedValue.COMPLEX_UNIT_DIP, value, getResources().getDisplayMetrics());
     }
 
     /**
@@ -1175,10 +1145,11 @@ public class ViewContractActivity extends AppCompatActivity {
             loading.dismiss();
 
             List<YearFolder> yearFolders = new ArrayList<>();
+            java.util.LinkedHashSet<Integer> seenYears = new java.util.LinkedHashSet<>();
             for (StorageReference prefix : result.getPrefixes()) {
                 String name = prefix.getName(); // e.g. Reports26
                 YearFolder yf = YearFolder.tryParse(name);
-                if (yf != null) yearFolders.add(yf);
+                if (yf != null && seenYears.add(yf.year)) yearFolders.add(yf);
             }
 
             final List<YearFolder> finalYearFolders;
@@ -1352,10 +1323,14 @@ public class ViewContractActivity extends AppCompatActivity {
     }
 
     private void incrementYearlyCounter(String documentId, String prefix, String label, Runnable onComplete) {
-        incrementYearlyCounter(documentId, prefix, label, null, onComplete);
+        incrementYearlyCounter(documentId, prefix, label, null, onComplete, null);
     }
 
     private void incrementYearlyCounter(String documentId, String prefix, String label, String visitDate, Runnable onComplete) {
+        incrementYearlyCounter(documentId, prefix, label, visitDate, onComplete, null);
+    }
+
+    private void incrementYearlyCounter(String documentId, String prefix, String label, String visitDate, Runnable onComplete, String auditContractName) {
         if (db == null || documentId == null || documentId.trim().isEmpty()) {
             if (onComplete != null) onComplete.run();
             return;
@@ -1373,6 +1348,9 @@ public class ViewContractActivity extends AppCompatActivity {
             transaction.update(ref, numberPath, current + 1);
             return current + 1;
         }).addOnSuccessListener(value -> {
+            if ("Callout".equals(prefix) && auditContractName != null) {
+                com.grpc.grpc.audit.data.AuditLogRepository.contractCallOut(documentId, auditContractName);
+            }
             Toast.makeText(this, label + " counter updated.", Toast.LENGTH_SHORT).show();
             if (onComplete != null) onComplete.run();
         }).addOnFailureListener(e -> {
@@ -1752,7 +1730,7 @@ public class ViewContractActivity extends AppCompatActivity {
             String currentDate = shortYearFormat.format(Calendar.getInstance().getTime());
 
             // Update Firestore with the new lastVisit and calculate nextVisit
-            updateVisitDates(owner, documentId, currentDate, visits, contractName != null ? contractName : "");
+            updateVisitDates(owner, documentId, currentDate, visits, contractName != null ? contractName : "", true);
             writeVisitHistoryEntry(documentId, "Routine", currentDate);
 
             // Reset checkbox to be clickable again
@@ -1775,10 +1753,10 @@ public class ViewContractActivity extends AppCompatActivity {
         dialog.setPositiveButton("Yes", (dialogInterface, which) -> {
             checkBox.setChecked(false);
             checkBox.setEnabled(false);
-            incrementYearlyCounter(documentId, "Callout", "Call out", () -> {
+            incrementYearlyCounter(documentId, "Callout", "Call out", null, () -> {
                 checkBox.setEnabled(true);
                 loadContracts();
-            });
+            }, contractName);
             String calloutDate = new SimpleDateFormat("dd/MM/yy", Locale.getDefault())
                     .format(Calendar.getInstance().getTime());
             writeVisitHistoryEntry(documentId, "Callout", calloutDate);
@@ -1846,7 +1824,14 @@ public class ViewContractActivity extends AppCompatActivity {
 
 
 
-    private String calculateNextVisit(Map<String, Object> contract) {
+    static String contractStatusLabel(String lastVisit, String nextVisit) {
+        if ("N/A".equals(lastVisit) || isPastDue(nextVisit)) return "Behind";
+        if (isDueSoon(nextVisit)) return "Due";
+        return "Up-to-date";
+    }
+
+    static String calculateNextVisit(Map<String, Object> contract) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
         // Use dd/MM/yy for two-digit years
         SimpleDateFormat shortYearFormat = new SimpleDateFormat("dd/MM/yy", Locale.getDefault());
 
@@ -2092,6 +2077,10 @@ public class ViewContractActivity extends AppCompatActivity {
     }
 
     private void updateVisitDates(String owner, String documentId, String lastVisit, String visits, String contractName) {
+        updateVisitDates(owner, documentId, lastVisit, visits, contractName, false);
+    }
+
+    private void updateVisitDates(String owner, String documentId, String lastVisit, String visits, String contractName, boolean auditRoutine) {
         String tableName = StaffDirectory.getContractsCollectionNameFromAnyKey(owner);
 
         Map<String, Object> updates = new HashMap<>();
@@ -2124,6 +2113,9 @@ public class ViewContractActivity extends AppCompatActivity {
         }
 
         db.collection(FirestorePaths.CONTRACTS).document(documentId).update(updates).addOnSuccessListener(aVoid -> {
+            if (auditRoutine) {
+                com.grpc.grpc.audit.data.AuditLogRepository.contractRoutine(documentId, contractName);
+            }
             Toast.makeText(this, "Visit updated successfully.", Toast.LENGTH_SHORT).show();
 
             // Notify owner + admins that a contract visit was updated (display: contract name only).

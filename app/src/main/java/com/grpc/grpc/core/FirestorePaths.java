@@ -19,6 +19,12 @@ public final class FirestorePaths {
     /** Contracts collection: contracts/{contractId}. */
     public static final String CONTRACTS = "contracts";
 
+    /** Asset quantities for one contract: contracts/{contractId}/assets/summary. */
+    public static final String CONTRACT_ASSETS = "assets";
+
+    /** Single summary document under {@link #CONTRACT_ASSETS}. */
+    public static final String CONTRACT_ASSETS_SUMMARY = "summary";
+
     /** Jobwork collection: jobwork/{jobId}. */
     public static final String JOBWORK = "jobwork";
 
@@ -51,5 +57,14 @@ public final class FirestorePaths {
 
     /** Per-tenant sequence for invoice numbers: invoice_counters/{companyId}. */
     public static final String INVOICE_COUNTERS = "invoice_counters";
+
+    /** Stock requests: stock_requests/{requestId}. Separate from the generic requests collection. */
+    public static final String STOCK_REQUESTS = "stock_requests";
+
+    /** Weekly stock responses: stock_weekly_checks/{uid}_{weekKey}. */
+    public static final String STOCK_WEEKLY_CHECKS = "stock_weekly_checks";
+
+    /** Completed work log: audit_logs/{auditId}. Names and filenames only; not a copy of the job or report. */
+    public static final String AUDIT_LOGS = "audit_logs";
 }
 

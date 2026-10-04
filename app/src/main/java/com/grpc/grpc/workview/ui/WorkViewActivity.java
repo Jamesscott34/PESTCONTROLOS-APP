@@ -3,7 +3,7 @@
  * GRPest Control Application - Work View & Calendar Activity
  * ============================================================================
  * 
- * BUSINESS OVERVIEW:
+ * BUSINEC5 OVERVIEW:
  * This activity provides a comprehensive work scheduling and calendar management
  * system for GRPest Control technicians. It allows users to view their work
  * schedule in daily or weekly formats, add new appointments, manage contracts
@@ -71,6 +71,7 @@ import com.grpc.grpc.contracts.ui.ContractSelectionAdapter;
 import com.grpc.grpc.contracts.ui.ViewContractActivity;
 import com.grpc.grpc.core.*;
 import com.grpc.grpc.main.MainActivity;
+import com.grpc.grpc.jobs.data.JobWorkRepository;
 import com.grpc.grpc.jobs.ui.AddJobFromCalendarActivity;
 import com.grpc.grpc.reports.ui.ReportActivity;
 import com.grpc.grpc.workview.model.WorkEvent;
@@ -150,6 +151,10 @@ public class WorkViewActivity extends AppCompatActivity {
     // Data
     private FirebaseFirestore db;
     private String userName;
+    private boolean finishingJob;
+    private String finishVisitId;
+    private String finishJobId;
+    private final JobWorkRepository jobWork = new JobWorkRepository();
     private Date selectedDate;
     private boolean isDailyView = true;
     private WorkEventAdapter eventsAdapter;
@@ -2089,36 +2094,77 @@ public class WorkViewActivity extends AppCompatActivity {
     }
 
     /**
-     * Finish a job - delete from JobWork and remove from calendar
+     * Finish a service job through the shared completion transaction, then remove the calendar event.
+     * The jobwork document, reports, and visits stay.
      */
     private void finishJob(WorkEvent event) {
         new AlertDialog.Builder(this)
             .setTitle("Finish Job")
-            .setMessage("Are you sure you want to finish this job? This will delete it from the database.")
-            .setPositiveButton("Yes", (dialog, which) -> {
-                cancelInAppReminder(event);
-                // Delete from jobwork collection (eventId is the jobwork document ID)
-                String userCollection = getCollectionForEvent(event);
-                db.collection(FirestorePaths.JOBWORK).document(event.getEventId())
-                  .delete()
-                  .addOnSuccessListener(aVoid -> {
-                      // Delete from work view collection
-                      db.collection(userCollection).document(event.getId())
-                        .delete()
-                        .addOnSuccessListener(aVoid2 -> {
-                            Toast.makeText(this, "Job finished and removed from View Jobs!", Toast.LENGTH_SHORT).show();
-                            loadEventsForDate(selectedDate);
-                        })
-                        .addOnFailureListener(e -> {
-                            Toast.makeText(this, "Error removing from calendar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        });
-                  })
-                  .addOnFailureListener(e -> {
-                      Toast.makeText(this, "Error finishing job: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                  });
-            })
+            .setMessage("Mark this service job complete? The job, its reports, and its visit history stay on record.")
+            .setPositiveButton("Yes", (dialog, which) -> completeServiceJobFromWorkView(event))
             .setNegativeButton("No", null)
             .show();
+    }
+
+    private void completeServiceJobFromWorkView(WorkEvent event) {
+        if (event == null || finishingJob) return;
+        String jobId = event.getEventId();
+        if (jobId == null || jobId.trim().isEmpty()) {
+            Toast.makeText(this, "This calendar event is not linked to a service job.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (finishVisitId == null || !jobId.equals(finishJobId)) {
+            finishJobId = jobId;
+            finishVisitId = jobWork.newVisitId();
+        }
+        finishingJob = true;
+        String actingName = SessionManager.getName(this);
+        if (actingName == null || actingName.trim().isEmpty()) actingName = userName;
+        String actingKey = SessionManager.getContractKey(this);
+        jobWork.complete(jobId, finishVisitId, "", actingName, actingKey, null, null, null,
+                new JobWorkRepository.DoneCallback() {
+                    @Override
+                    public void onSuccess() {
+                        runOnUiThread(() -> {
+                            finishVisitId = null;
+                            finishJobId = null;
+                            finishingJob = false;
+                            removeFinishedJobFromCalendar(event, "Job marked complete and removed from the calendar.");
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        runOnUiThread(() -> {
+                            finishingJob = false;
+                            if (JobWorkRepository.isAlreadyComplete(error)) {
+                                finishVisitId = null;
+                                finishJobId = null;
+                                removeFinishedJobFromCalendar(event, "Job is already complete. Removed from the calendar.");
+                                return;
+                            }
+                            String message = error == null || error.getMessage() == null
+                                    ? "Could not complete the job." : error.getMessage();
+                            Toast.makeText(WorkViewActivity.this, message, Toast.LENGTH_LONG).show();
+                        });
+                    }
+                });
+    }
+
+    private void removeFinishedJobFromCalendar(WorkEvent event, String successMessage) {
+        cancelInAppReminder(event);
+        String userCollection = getCollectionForEvent(event);
+        db.collection(userCollection).document(event.getId())
+                .delete()
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(this, successMessage, Toast.LENGTH_LONG).show();
+                    loadEventsForDate(selectedDate);
+                })
+                .addOnFailureListener(e -> {
+                    String message = e.getMessage() == null ? "" : e.getMessage();
+                    Toast.makeText(this, "Job was saved, but the calendar event could not be removed. " + message,
+                            Toast.LENGTH_LONG).show();
+                });
     }
 
     /**

@@ -1,4 +1,15 @@
 [
+
+  { "categoryKey": "general",
+    "categoryName": "General",
+    "templates": [
+      {
+        "key": "rec_no_recommendations",
+        "displayName": "No recommendations",
+        "text": "No specific recommendations were noted at the time of this visit."
+      }
+    ]
+  },
   {
     "categoryKey": "drainage",
     "categoryName": "Drainage",
@@ -75,6 +86,21 @@
         "text": "Minor proofing works are recommended to seal identified gaps, holes and potential rodent entry points noted during this visit."
       },
       {
+        "key": "rec_builder_proofing",
+        "displayName": "Builder required for proofing works",
+        "text": "A competent builder is recommended to carry out the identified proofing works where repairs are beyond minor pest-control proofing. This may include structural gaps, damaged walls, openings around services, defective building fabric or other areas requiring permanent building repairs to prevent pest ingress."
+      },
+      {
+        "key": "rec_builder_fox_proofing",
+        "displayName": "Builder required for fox proofing",
+        "text": "A competent builder is recommended to carry out fox-proofing works to the identified access areas. Openings, damaged fencing, gaps beneath structures or other potential access points should be permanently secured using suitable robust materials to prevent fox access."
+      },
+      {
+        "key": "rec_minor_proofing",
+        "displayName": "Minor proofing works",
+        "text": "Minor proofing works are recommended to seal identified gaps, holes and potential rodent entry points noted during this visit."
+      },
+      {
         "key": "rec_brush_strip",
         "displayName": "Brush strip / door brush",
         "text": "Installation of brush strip / door brush is recommended to reduce pest entry at the base of the door(s) noted."
@@ -115,11 +141,6 @@
     "categoryKey": "rodent",
     "categoryName": "Rodent Control",
     "templates": [
-      {
-        "key": "rec_no_recommendations",
-        "displayName": "No recommendations",
-        "text": "No specific recommendations were noted at the time of this visit."
-      },
       {
         "key": "rec_hygiene",
         "displayName": "Improve hygiene / housekeeping",

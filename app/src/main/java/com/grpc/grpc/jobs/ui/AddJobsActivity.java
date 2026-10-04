@@ -2,9 +2,9 @@ package com.grpc.grpc.jobs.ui;
 
 import com.grpc.grpc.R;
 import com.grpc.grpc.messaging.NotificationUtils;
-import com.grpc.grpc.core.FirestorePaths;
 import com.grpc.grpc.core.SessionManager;
 import com.grpc.grpc.core.StaffDirectory;
+import com.grpc.grpc.jobs.data.JobWorkRepository;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -38,7 +38,7 @@ import java.util.Map;
 public class AddJobsActivity extends AppCompatActivity {
     private Spinner techNameSpinner;
     private TextView assignedTechLabel;
-    private EditText customerName, customerEmail, customerContact, issueDetails;
+    private EditText customerName, customerEmail, customerContact, customerAddress, issueDetails;
     private Button submitButton;
     private FirebaseFirestore db;
     private String userName,  custName, custEmail, custContact, issueDetailsText; // Stores values for WhatsApp
@@ -68,6 +68,7 @@ public class AddJobsActivity extends AppCompatActivity {
         customerName = findViewById(R.id.customerName);
         customerEmail = findViewById(R.id.customerEmail);
         customerContact = findViewById(R.id.customerContact);
+        customerAddress = findViewById(R.id.customerAddress);
         issueDetails = findViewById(R.id.issueDetails);
         submitButton = findViewById(R.id.submitButton);
 
@@ -157,6 +158,7 @@ public class AddJobsActivity extends AppCompatActivity {
         custName = customerName.getText().toString().trim();
         custEmail = customerEmail.getText().toString().trim();
         custContact = formatIrishMobile(customerContact.getText().toString().trim());
+        String address = customerAddress == null ? "" : customerAddress.getText().toString().trim();
         issueDetailsText = issueDetails.getText().toString().trim();
 
         if (TextUtils.isEmpty(techKey) || TextUtils.isEmpty(custName) ||
@@ -171,7 +173,7 @@ public class AddJobsActivity extends AppCompatActivity {
             techDisplay = StaffDirectory.capitalizeContractKey(techKey);
         }
 
-        addJobToFirestore(techKey, techDisplay, custName, custEmail, custContact, issueDetailsText);
+        addJobToFirestore(techKey, techDisplay, custName, custEmail, custContact, address, issueDetailsText);
     }
 
     /**
@@ -185,26 +187,31 @@ public class AddJobsActivity extends AppCompatActivity {
      * @param issue       The issue description.
 
      */
-    private void addJobToFirestore(String techKey, String techDisplay, String custName, String custEmail, String custContact, String issue) {
-        Map<String, Object> job = new HashMap<>();
-        job.put("AssignedTech", techDisplay);
-        job.put("AssignedTechKey", techKey != null ? techKey.trim().toLowerCase() : "");
-        job.put("CustomerName", custName);
-        job.put("CustomerEmail", custEmail);
-        job.put("CustomerContact", custContact);
-        job.put("IssueDetails", issue);
-        job.put("CreatedBy", userName);
-        job.put("CreatedAt", new java.util.Date());
-        job.put("JobType", "Service");
+    private void addJobToFirestore(String techKey, String techDisplay, String custName, String custEmail,
+                                   String custContact, String address, String issue) {
+        JobWorkRepository.NewJob request = new JobWorkRepository.NewJob();
+        request.assignedTechKey = techKey;
+        request.assignedTech = techDisplay;
+        request.customerName = custName;
+        request.customerEmail = custEmail;
+        request.customerContact = custContact;
+        request.address = address;
+        request.issueDetails = issue;
+        request.createdBy = userName;
+        new JobWorkRepository().createJob(request, new JobWorkRepository.CreatedCallback() {
+            @Override
+            public void onSuccess(String jobId) {
+                writeInAppJobNotifications(jobId, custName, techDisplay, techKey, userName);
+                Toast.makeText(AddJobsActivity.this, "Job Added Successfully", Toast.LENGTH_SHORT).show();
+                clearInputFields();
+                returnToJobsActivity();
+            }
 
-        db.collection(FirestorePaths.JOBWORK).add(job)
-                .addOnSuccessListener(documentReference -> {
-                    writeInAppJobNotifications(documentReference.getId(), custName, techDisplay, techKey, userName);
-                    Toast.makeText(this, "Job Added Successfully", Toast.LENGTH_SHORT).show();
-                    clearInputFields();
-                    returnToJobsActivity(); // Return to jobs first, then open WhatsApp
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Failed to add job", Toast.LENGTH_SHORT).show());
+            @Override
+            public void onError(Exception error) {
+                Toast.makeText(AddJobsActivity.this, "Failed to add job", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     /**
@@ -265,6 +272,7 @@ public class AddJobsActivity extends AppCompatActivity {
         customerName.setText("");
         customerEmail.setText("");
         customerContact.setText("");
+        if (customerAddress != null) customerAddress.setText("");
         issueDetails.setText("");
     }
 }

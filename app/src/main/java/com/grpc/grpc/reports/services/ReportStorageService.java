@@ -56,6 +56,8 @@ public final class ReportStorageService {
         fileRef.putFile(Uri.fromFile(pdfFile))
                 .addOnSuccessListener(snapshot -> {
                     StorageMetricsHelper.recordUpload();
+                    com.grpc.grpc.audit.data.AuditLogRepository.reportUploaded(
+                            pdfFile.getName(), companyName, storagePath, null, null, null, null);
                     if (onSuccess != null) onSuccess.run();
                 })
                 .addOnFailureListener(e -> {

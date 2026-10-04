@@ -128,6 +128,7 @@
                 android:textSize="14sp"
                 android:layout_marginEnd="6dp"
                 android:layout_marginBottom="10dp"
+                android:visibility="gone"
                 android:background="@drawable/button_background"
                 android:textColor="?attr/colorOnPrimary" />
             <Button
@@ -143,8 +144,41 @@
                 android:background="@drawable/button_background"
                 android:textColor="?attr/colorOnPrimary" />
         </LinearLayout>
+        <Button
+            android:id="@+id/ManagementButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="@string/main_button_management"
+            android:textSize="14sp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary"
+            android:visibility="gone" />
+        <Button
+            android:id="@+id/StockButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="@string/main_button_stock"
+            android:textSize="14sp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary"
+            android:visibility="gone" />
+        <Button
+            android:id="@+id/FeaturesButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="@string/main_button_features"
+            android:textSize="14sp"
+            android:layout_marginBottom="10dp"
+            android:visibility="gone"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
-        <!-- BUSINESS: 2 per row -->
+        <!-- BUSINEC5: 2 per row -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -173,12 +207,12 @@
                 android:background="@drawable/button_background"
                 android:textColor="?attr/colorOnPrimary" />
             <Button
-                android:id="@+id/CommisionButton"
+                android:id="@+id/EmailButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:minHeight="56dp"
-                android:text="@string/main_button_commission"
+                android:text="Email"
                 android:textSize="14sp"
                 android:layout_marginStart="6dp"
                 android:layout_marginBottom="10dp"
@@ -186,13 +220,14 @@
                 android:textColor="?attr/colorOnPrimary" />
         </LinearLayout>
         <Button
-            android:id="@+id/EmailButton"
+            android:id="@+id/CommisionButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="56dp"
-            android:text="Email"
+            android:text="@string/main_button_commission"
             android:textSize="14sp"
             android:layout_marginBottom="10dp"
+            android:visibility="gone"
             android:background="@drawable/button_background"
             android:textColor="?attr/colorOnPrimary" />
         <LinearLayout
@@ -298,6 +333,7 @@
                 android:textSize="14sp"
                 android:layout_marginStart="6dp"
                 android:layout_marginBottom="10dp"
+                android:visibility="gone"
                 android:background="@drawable/button_background"
                 android:textColor="?attr/colorOnPrimary" />
         </LinearLayout>
@@ -419,6 +455,18 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
             android:textColor="?android:attr/textColorSecondary" />
+
+        <Button
+            android:id="@+id/AuditLogsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="@string/main_button_audit_logs"
+            android:textSize="14sp"
+            android:layout_marginBottom="10dp"
+            android:visibility="gone"
+            android:background="@drawable/button_background"
+            android:textColor="?attr/colorOnPrimary" />
 
         <Button
             android:id="@+id/EmployeeButton"

@@ -1,0 +1,5 @@
+{
+  "name": "stock-rules-test",
+  "private": true,
+  "description": "Emulator tests for Stock Firestore rules. Does not deploy rules."
+}

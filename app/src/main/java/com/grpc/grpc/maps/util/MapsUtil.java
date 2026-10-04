@@ -90,4 +90,17 @@ public final class MapsUtil {
                     .setFontSize(7)
                     .setFontColor(ColorConstants.BLACK)
                     .setBackgroundColor(new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255), 0.65f)
-       
+                    .setFixedPosition(6, 4, pageWidth - 12)
+                    .setMargin(0);
+            document.add(legendPara);
+
+            document.close();
+        }
+
+        return pdfFile;
+    }
+
+    private static String safeValue(String value) {
+        return value != null && !value.trim().isEmpty() ? value.trim() : "N/A";
+    }
+}

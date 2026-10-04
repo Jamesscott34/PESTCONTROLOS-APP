@@ -403,8 +403,16 @@ public class NotificationsActivity extends AppCompatActivity {
             return;
         }
 
-        // JobWork: open jobs screen for the assigned tech (or current user)
+        // Service job: open the job when the notification carries its id, otherwise the job list.
         if ("jobwork".equals(type) && data != null) {
+            String jobId = asString(data.get("jobId"));
+            if (!TextUtils.isEmpty(jobId)) {
+                Intent intent = new Intent(this, com.grpc.grpc.jobs.ui.JobWorkDetailActivity.class);
+                intent.putExtra("USER_NAME", currentUser);
+                intent.putExtra("JOB_ID", jobId);
+                startActivity(intent);
+                return;
+            }
             String assigned = asString(data.get("assignedTech"));
             if (TextUtils.isEmpty(assigned)) assigned = currentUser;
             Intent intent = new Intent(this, JobsActivity.class);
@@ -542,32 +550,15 @@ public class NotificationsActivity extends AppCompatActivity {
 
     private void openMaps(String address) {
         try {
-            // Record this as the user's last "map opened" location
-            try {
-                FirebaseFirestore.getInstance()
-                        .collection(LocationSharing.COLLECTION_LAST_LOCATIONS)
-                        .document(LocationSharing.userKey(userName))
-                        .set(new java.util.HashMap<String, Object>() {{
-                            put("userName", userName);
-                            put("lastMapQuery", address);
-                            put("lastMapClientTimestampMs", System.currentTimeMillis());
-                            put("lastMapAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
-                            put("source", "map_open");
-                        }}, com.google.firebase.firestore.SetOptions.merge());
-            } catch (Exception ignored) {}
-
-            Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(address));
-            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-            // Prefer Google Maps, but allow fallback
+            android.net.Uri uri = android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(address));
+            android.content.Intent mapIntent = new android.content.Intent(android.content.Intent.ACTION_VIEW, uri);
             mapIntent.setPackage("com.google.android.apps.maps");
-            startActivity(mapIntent);
-        } catch (Exception e) {
             try {
-                Uri uri = Uri.parse("geo:0,0?q=" + Uri.encode(address));
-                startActivity(new Intent(Intent.ACTION_VIEW, uri));
-            } catch (Exception ex) {
-                Toast.makeText(this, "Could not open maps.", Toast.LENGTH_SHORT).show();
+                startActivity(mapIntent);
+            } catch (Exception e) {
+                mapIntent.setPackage(null);
+                startActivity(mapIntent);
             }
-        }
+        } catch (Exception ignored) {}
     }
 }

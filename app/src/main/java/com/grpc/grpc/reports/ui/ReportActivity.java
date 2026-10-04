@@ -3,7 +3,7 @@
  * GRPest Control Application - Report Creation Activity
  * ============================================================================
  * 
- * BUSINESS OVERVIEW:
+ * BUSINEC5 OVERVIEW:
  * This activity serves as the primary interface for creating detailed pest control
  * reports. It allows technicians to document their site visits, inspections,
  * recommendations, and follow-up actions in a structured format that can be
@@ -72,6 +72,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -141,6 +142,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -173,6 +175,8 @@ public class ReportActivity extends AppCompatActivity {
     private Spinner routeSubFolderSpinner;
     private Spinner routeSubFolderSpinnerLevel3;
     private String managementRootStorageFolder = defaultManagementRootFolder();
+    /** Set only when a management job opens this screen. Empty for every other report. */
+    private String pinnedManagementStorageRoot = "";
     private boolean lastUploadSucceeded = false;
     private Spinner contractFilterSpinner;
     private Spinner contractSpinner;
@@ -316,6 +320,11 @@ public class ReportActivity extends AppCompatActivity {
         
         contractId = getIntent().getStringExtra("CONTRACT_ID");
         contractCompanyName = getIntent().getStringExtra("COMPANY_NAME");
+        String pinnedRoot = getIntent().getStringExtra("MANAGEMENT_STORAGE_ROOT");
+        if (pinnedRoot != null && !pinnedRoot.trim().isEmpty()) {
+            pinnedManagementStorageRoot = pinnedRoot.trim();
+            managementRootStorageFolder = pinnedManagementStorageRoot;
+        }
         String contractAddress = getIntent().getStringExtra("ADDRESS");
         String reportDate = getIntent().getStringExtra("REPORT_DATE"); // Get date from intent
 
@@ -421,9 +430,14 @@ public class ReportActivity extends AppCompatActivity {
      */
     private void performSaveReport() {
         lastUploadSucceeded = false;
-        ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        saveReport(db, null);
+        try {
+            ReportDatabaseHelper dbHelper = new ReportDatabaseHelper(this);
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            saveReport(db, null);
+        } catch (SQLiteException e) {
+            Log.e("ReportActivity", "Failed to open/create report database during save", e);
+            Toast.makeText(this, "Unable to save report: database error. Please try again.", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void showPasswordDialogAndSave(SQLiteDatabase db) {
@@ -1074,6 +1088,11 @@ public class ReportActivity extends AppCompatActivity {
 
     private void loadManagementFolderOptions() {
         if (managementFolderSpinner == null) return;
+        if (pinnedManagementStorageRoot != null && !pinnedManagementStorageRoot.isEmpty()) {
+            managementRootStorageFolder = pinnedManagementStorageRoot;
+            bindManagementFolders(pinnedManagementStorageRoot);
+            return;
+        }
         FirebaseStorage.getInstance().getReference().listAll().addOnSuccessListener(rootList -> {
             String preferredRoot = defaultManagementRootFolder();
             String fallbackRoot = alternateManagementRootFolder(preferredRoot);
@@ -1091,34 +1110,144 @@ public class ReportActivity extends AppCompatActivity {
             }
             final String rootNameFinal = managementRootName;
             managementRootStorageFolder = rootNameFinal;
-            FirebaseStorage.getInstance().getReference().child(rootNameFinal).listAll()
-                    .addOnSuccessListener(listResult -> runOnUiThread(() -> {
-                        List<String> folderNames = new ArrayList<>();
-                        for (StorageReference p : listResult.getPrefixes()) {
-                            if (p != null && p.getName() != null && !p.getName().trim().isEmpty()) {
-                                folderNames.add(p.getName().trim());
-                            }
-                        }
-                        if (folderNames.isEmpty()) folderNames.add(rootNameFinal);
-                        managementFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, folderNames));
-                        managementFolderSpinner.setVisibility(View.GONE);
-                        managementFolderSpinner.setEnabled(false);
-                    }))
-                    .addOnFailureListener(e -> runOnUiThread(() -> {
-                        List<String> fallback = new ArrayList<>();
-                        fallback.add(rootNameFinal);
-                        managementFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, fallback));
-                        managementFolderSpinner.setVisibility(View.GONE);
-                        managementFolderSpinner.setEnabled(false);
-                    }));
+            bindManagementFolders(rootNameFinal);
         }).addOnFailureListener(e -> {
-            managementRootStorageFolder = defaultManagementRootFolder();
-            List<String> fallback = new ArrayList<>();
-            fallback.add(managementRootStorageFolder);
-            managementFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, fallback));
-            managementFolderSpinner.setVisibility(View.GONE);
-            managementFolderSpinner.setEnabled(false);
+            if (pinnedManagementStorageRoot == null || pinnedManagementStorageRoot.isEmpty()) {
+                managementRootStorageFolder = defaultManagementRootFolder();
+            }
+            showManagementFolderNames(Collections.singletonList(managementRootStorageFolder));
         });
+    }
+
+    private void bindManagementFolders(String rootName) {
+        FirebaseStorage.getInstance().getReference().child(rootName).listAll()
+                .addOnSuccessListener(listResult -> runOnUiThread(() -> {
+                    List<String> folderNames = new ArrayList<>();
+                    for (StorageReference p : listResult.getPrefixes()) {
+                        if (p != null && p.getName() != null && !p.getName().trim().isEmpty()) {
+                            folderNames.add(p.getName().trim());
+                        }
+                    }
+                    if (folderNames.isEmpty()) folderNames.add(rootName);
+                    showManagementFolderNames(folderNames);
+                }))
+                .addOnFailureListener(e -> runOnUiThread(() -> {
+                    List<String> fallback = new ArrayList<>();
+                    fallback.add(rootName);
+                    showManagementFolderNames(fallback);
+                }));
+    }
+
+    private void showManagementFolderNames(List<String> folderNames) {
+        if (managementFolderSpinner == null) return;
+        List<String> names = new ArrayList<>(folderNames);
+        String requested = getIntent().getStringExtra("ROUTE_FOLDER");
+        if (requested != null && !requested.trim().isEmpty()) {
+            boolean found = false;
+            for (String name : names) {
+                if (requested.equals(name)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) names.add(0, requested.trim());
+        }
+        managementFolderSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, names));
+        if (requested != null) {
+            for (int i = 0; i < names.size(); i++) {
+                if (requested.equals(names.get(i))) {
+                    managementFolderSpinner.setSelection(i);
+                    break;
+                }
+            }
+        }
+        boolean managementChecked = managementReportCheckbox != null && managementReportCheckbox.isChecked();
+        managementFolderSpinner.setVisibility(managementChecked ? View.VISIBLE : View.GONE);
+        managementFolderSpinner.setEnabled(managementChecked);
+    }
+
+    /**
+     * Company name plus the management job reference, so two jobs for the same company
+     * on the same day do not share one file name.
+     */
+    private String reportFileBaseName(String reportName) {
+        String base = reportName == null ? "" : reportName.trim();
+        String jobRef = getIntent().getStringExtra("MANAGEMENT_JOB_REF");
+        if (jobRef != null && !jobRef.trim().isEmpty()) {
+            String ref = jobRef.trim();
+            if (!base.toLowerCase(Locale.ROOT).contains(ref.toLowerCase(Locale.ROOT))) {
+                base = base.isEmpty() ? ref : base + " " + ref;
+            }
+        }
+        return base.isEmpty() ? "Report" : base;
+    }
+
+    /** Company_29-09-2026.pdf, then Company_29-09-2026_2.pdf when that name is already stored. */
+    private static String nextAvailableFileName(String fileName, java.util.Set<String> existingNames) {
+        String name = fileName == null || fileName.trim().isEmpty() ? "report.pdf" : fileName.trim();
+        if (existingNames == null || !existingNames.contains(name)) return name;
+        int dot = name.lastIndexOf('.');
+        String base = dot > 0 ? name.substring(0, dot) : name;
+        String ext = dot > 0 ? name.substring(dot) : "";
+        for (int n = 2; n < 100; n++) {
+            String candidate = base + "_" + n + ext;
+            if (!existingNames.contains(candidate)) return candidate;
+        }
+        return base + "_2" + ext;
+    }
+
+    /**
+     * Links a management PDF to the job that opened this screen.
+     * No-ops for contract reports, job-work reports, and reports opened with no job id.
+     * Does not create a visit and does not change visitCount.
+     */
+    private void auditReportUploaded(String fileName, String storagePath) {
+        String site = "";
+        try {
+            if (nameInput != null && nameInput.getEditText() != null && nameInput.getEditText().getText() != null) {
+                site = nameInput.getEditText().getText().toString().trim();
+            }
+        } catch (Exception ignored) {}
+        if (site.isEmpty() && contractCompanyName != null) site = contractCompanyName;
+        String jobId = getIntent().getStringExtra("JOBWORK_JOB_ID");
+        String managementJobId = getIntent().getStringExtra("MANAGEMENT_JOB_ID");
+        String jobRef = getIntent().getStringExtra("MANAGEMENT_JOB_REF");
+        com.grpc.grpc.audit.data.AuditLogRepository.reportUploaded(
+                fileName, site, storagePath, contractId, jobId, managementJobId, jobRef);
+    }
+
+    private void linkManagementJobReportIfRequested(String storagePath, String fileName) {
+        String jobId = getIntent().getStringExtra("MANAGEMENT_JOB_ID");
+        if (jobId == null || jobId.trim().isEmpty()) return;
+        if (storagePath == null || storagePath.trim().isEmpty()) return;
+        new com.grpc.grpc.jobs.data.ManagementJobRepository().linkReport(jobId.trim(), storagePath, fileName, null);
+    }
+
+    private boolean hasJobWorkJobId() {
+        String jobId = getIntent().getStringExtra("JOBWORK_JOB_ID");
+        return jobId != null && !jobId.trim().isEmpty();
+    }
+
+    /**
+     * Links a service-job PDF to jobwork/{jobId}/reports. No-ops unless this screen was opened
+     * for a service job and the file landed under JobWorkReports. Does not create a visit.
+     */
+    private void linkJobWorkReportIfRequested(String storagePath, String fileName) {
+        String jobId = getIntent().getStringExtra("JOBWORK_JOB_ID");
+        if (jobId == null || jobId.trim().isEmpty()) return;
+        if (storagePath == null || !storagePath.toLowerCase(java.util.Locale.ROOT).startsWith("jobworkreports/")) return;
+        int reportYear = 0;
+        String[] parts = storagePath.split("/");
+        if (parts.length >= 2) {
+            try {
+                int year = Integer.parseInt(parts[1]);
+                if (year > 1900) reportYear = year;
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        String actor = userName == null ? "" : userName;
+        new com.grpc.grpc.jobs.data.JobWorkRepository().linkReport(
+                jobId.trim(), storagePath, fileName, reportYear, actor, null);
     }
 
     private String defaultManagementRootFolder() {
@@ -1655,59 +1784,64 @@ public class ReportActivity extends AppCompatActivity {
             values.put("tech", techInput.getEditText().getText().toString());
         }
 
-        long newRowId = db.insert("CompanyReports", null, values);
-        if (newRowId != -1) {
-            Toast.makeText(this, "Company Report Saved Successfully!", Toast.LENGTH_SHORT).show();
+        try {
+            long newRowId = db.insert("CompanyReports", null, values);
+            if (newRowId != -1) {
+                Toast.makeText(this, "Company Report Saved Successfully!", Toast.LENGTH_SHORT).show();
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                PdfTemplateSettings settings;
-                if (selectedTemplateId != null) {
-                    SavedTemplate t = new PdfTemplateStorage(this).getSavedTemplateById(userName, selectedTemplateId);
-                    settings = t != null ? t.toPdfTemplateSettings() : new PdfTemplateStorage(this).load();
-                } else {
-                    settings = new PdfTemplateStorage(this).load();
-                    // PDF template selection removed from this screen; use GRPC by default
-                    settings.setTemplateSelection(PdfTemplateSettings.GRPC);
-                }
-                PDFReportGeneratorWithTemplate.generatePdfToDirectory(
-                        "Company",
-                        reportName,
-                        content,
-                        this,
-                        !selectedImageUris.isEmpty() ? selectedImageUris : null,
-                        reportDate,
-                        ownerPassword,
-                        settings,
-                        resolveReportOutputDirectory(),
-                        prepProductsSection.getProducts(),
-                        prepProductsSection.getLegacyPrepText()
-                );
-            }
-            clearInputFields();
-            if (contractReportCheckbox != null
-                    && contractReportCheckbox.isChecked()
-                    && ContractReportSync.hasContractId(contractId)) {
-                uploadReportToFirebase(ContractReportSync.buildContractStorageFolder(contractId));
-            } else if (hasRoutingSelection()) {
-                String autoFolder = resolveAutoRoutingFolderPath();
-                if (autoFolder != null && !autoFolder.trim().isEmpty()) {
-                    uploadReportToFirebase(autoFolder);
-                } else {
-                    String fallbackFolder = (jobReportCheckbox != null && jobReportCheckbox.isChecked()) ? "JobWorkReports"
-                            : (managementReportCheckbox != null && managementReportCheckbox.isChecked()) ? managementRootStorageFolder : "";
-                    if (!fallbackFolder.isEmpty()) {
-                        uploadReportToFirebase(fallbackFolder);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    PdfTemplateSettings settings;
+                    if (selectedTemplateId != null) {
+                        SavedTemplate t = new PdfTemplateStorage(this).getSavedTemplateById(userName, selectedTemplateId);
+                        settings = t != null ? t.toPdfTemplateSettings() : new PdfTemplateStorage(this).load();
                     } else {
-                        showRoutedReportOptionsDialog();
+                        settings = new PdfTemplateStorage(this).load();
+                        // PDF template selection removed from this screen; use GRPC by default
+                        settings.setTemplateSelection(PdfTemplateSettings.GRPC);
                     }
+                    PDFReportGeneratorWithTemplate.generatePdfToDirectory(
+                            "Company",
+                            reportFileBaseName(reportName),
+                            content,
+                            this,
+                            !selectedImageUris.isEmpty() ? selectedImageUris : null,
+                            reportDate,
+                            ownerPassword,
+                            settings,
+                            resolveReportOutputDirectory(),
+                            prepProductsSection.getProducts(),
+                            prepProductsSection.getLegacyPrepText()
+                    );
                 }
-            } else if (shouldAutoUploadContractReport()) {
-                uploadReportToFirebase(ContractReportSync.buildContractStorageFolder(contractId));
+                clearInputFields();
+                if (contractReportCheckbox != null
+                        && contractReportCheckbox.isChecked()
+                        && ContractReportSync.hasContractId(contractId)) {
+                    uploadReportToFirebase(ContractReportSync.buildContractStorageFolder(contractId));
+                } else if (hasRoutingSelection()) {
+                    String autoFolder = resolveAutoRoutingFolderPath();
+                    if (autoFolder != null && !autoFolder.trim().isEmpty()) {
+                        uploadReportToFirebase(autoFolder);
+                    } else {
+                        String fallbackFolder = (jobReportCheckbox != null && jobReportCheckbox.isChecked()) ? "JobWorkReports"
+                                : (managementReportCheckbox != null && managementReportCheckbox.isChecked()) ? managementRootStorageFolder : "";
+                        if (!fallbackFolder.isEmpty()) {
+                            uploadReportToFirebase(fallbackFolder);
+                        } else {
+                            showRoutedReportOptionsDialog();
+                        }
+                    }
+                } else if (shouldAutoUploadContractReport()) {
+                    uploadReportToFirebase(ContractReportSync.buildContractStorageFolder(contractId));
+                } else {
+                    showReportOptionsDialog();
+                }
             } else {
-                showReportOptionsDialog();
+                Toast.makeText(this, "Error Saving Report!", Toast.LENGTH_SHORT).show();
             }
-        } else {
-            Toast.makeText(this, "Error Saving Report!", Toast.LENGTH_SHORT).show();
+        } catch (SQLiteException e) {
+            Log.e("ReportActivity", "SQLite error while inserting CompanyReports", e);
+            Toast.makeText(this, "Unable to save report: database error. Please try again.", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -1717,6 +1851,9 @@ public class ReportActivity extends AppCompatActivity {
 
     private String resolveAutoRoutingFolderPath() {
         if (jobReportCheckbox != null && jobReportCheckbox.isChecked()) {
+            if (hasJobWorkJobId()) {
+                return "JobWorkReports";
+            }
             String selected = jobFolderSpinner != null && jobFolderSpinner.getSelectedItem() != null
                     ? jobFolderSpinner.getSelectedItem().toString().trim() : "";
             String base = (!selected.isEmpty() && !"JobWorkReports".equalsIgnoreCase(selected))
@@ -2017,13 +2154,37 @@ public class ReportActivity extends AppCompatActivity {
         FirebaseStorage storage = FirebaseStorage.getInstance();
         StorageReference storageReference = storage.getReference();
         final File latestFileFinal = latestFile;
-        final String targetFolderPath = ContractStoragePathHelper.resolveContractYearFolderPath(
-                folderPath,
-                latestFileFinal,
-                dateInput != null ? dateInput.getText().toString() : null);
+        String dateText = dateInput != null && dateInput.getText() != null
+                ? dateInput.getText().toString() : null;
+        final String targetFolderPath;
+        if (hasJobWorkJobId() && ContractStoragePathHelper.isJobWorkReportsPath(folderPath)) {
+            targetFolderPath = ContractStoragePathHelper.resolveJobWorkYearFolderPath(folderPath, dateText);
+        } else if (ContractStoragePathHelper.isManagementJobsPath(folderPath)) {
+            targetFolderPath = ContractStoragePathHelper.resolveManagementYearFolderPath(folderPath, dateText);
+        } else {
+            targetFolderPath = ContractStoragePathHelper.resolveContractYearFolderPath(folderPath, latestFileFinal, dateText);
+        }
         ContractStoragePathHelper.RunnableCallback doUpload = () -> runOnUiThread(() -> uploadReportToFirebaseStorage(
                 storageReference, latestFileFinal, targetFolderPath));
-        if (ContractReportSync.hasContractId(contractId)
+        if (hasJobWorkJobId() && ContractStoragePathHelper.isJobWorkReportsPath(targetFolderPath)) {
+            String yearSegment = "";
+            String[] yearParts = targetFolderPath.split("/");
+            if (yearParts.length >= 2) yearSegment = yearParts[1];
+            ContractStoragePathHelper.ensureYearFolderExists(
+                    "JobWorkReports",
+                    yearSegment,
+                    doUpload,
+                    e -> doUpload.run()
+            );
+        } else if (ContractStoragePathHelper.isManagementJobsPath(targetFolderPath)) {
+            String yearSegment = ContractStoragePathHelper.yearFromContractFolderPath(targetFolderPath);
+            ContractStoragePathHelper.ensureYearFolderExists(
+                    ContractStoragePathHelper.folderAboveYear(targetFolderPath),
+                    yearSegment != null ? yearSegment : "",
+                    doUpload,
+                    e -> doUpload.run()
+            );
+        } else if (ContractReportSync.hasContractId(contractId)
                 && targetFolderPath != null
                 && targetFolderPath.toLowerCase(Locale.ROOT).startsWith("contracts/")) {
             String yearSegment = ContractStoragePathHelper.yearFromContractFolderPath(targetFolderPath);
@@ -2054,20 +2215,16 @@ public class ReportActivity extends AppCompatActivity {
             for (StorageReference item : listResult.getItems()) {
                 if (item != null && item.getName() != null) existingNames.add(item.getName());
             }
-            String uniqueNameCandidate = uploadedFileName;
-            if (existingNames.contains(uniqueNameCandidate)) {
-                int dot = uploadedFileName.lastIndexOf('.');
-                String base = dot > 0 ? uploadedFileName.substring(0, dot) : uploadedFileName;
-                String ext = dot > 0 ? uploadedFileName.substring(dot) : "";
-                uniqueNameCandidate = base + "_" + System.currentTimeMillis() + ext;
-            }
-            final String uniqueName = uniqueNameCandidate;
+            final String uniqueName = nextAvailableFileName(uploadedFileName, existingNames);
             String storagePath = targetFolderPath + "/" + uniqueName;
             StorageReference fileRef = storageReference.child(storagePath);
             UploadTask uploadTask = fileRef.putFile(Uri.fromFile(latestFileFinal));
             uploadTask.addOnSuccessListener(taskSnapshot -> {
                 lastUploadSucceeded = true;
                 com.grpc.grpc.core.StorageMetricsHelper.recordUpload();
+                auditReportUploaded(uniqueName, storagePath);
+                linkManagementJobReportIfRequested(storagePath, uniqueName);
+                linkJobWorkReportIfRequested(storagePath, uniqueName);
                 ContractReportSync.syncMetadata(
                         contractId,
                         storagePath,
@@ -2094,6 +2251,9 @@ public class ReportActivity extends AppCompatActivity {
             fileRef.putFile(Uri.fromFile(latestFileFinal))
                     .addOnSuccessListener(taskSnapshot -> {
                         lastUploadSucceeded = true;
+                        auditReportUploaded(uploadedFileName, storagePath);
+                        linkManagementJobReportIfRequested(storagePath, uploadedFileName);
+                        linkJobWorkReportIfRequested(storagePath, uploadedFileName);
                         com.grpc.grpc.core.StorageMetricsHelper.recordUpload();
                         ContractReportSync.syncMetadata(
                                 contractId, storagePath, uploadedFileName,

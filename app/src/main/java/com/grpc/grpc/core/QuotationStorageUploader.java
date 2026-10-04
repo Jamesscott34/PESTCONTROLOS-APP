@@ -58,10 +58,12 @@ public final class QuotationStorageUploader {
                 uniqueName = base + "_" + System.currentTimeMillis() + ext;
             }
 
-            String storagePath = ROOT_FOLDER + "/" + uniqueName;
+            final String uploadedName = uniqueName;
+            String storagePath = ROOT_FOLDER + "/" + uploadedName;
             storageRoot.child(storagePath).putFile(Uri.fromFile(pdfFile))
                     .addOnSuccessListener(taskSnapshot -> {
                         StorageMetricsHelper.recordUpload();
+                        com.grpc.grpc.audit.data.AuditLogRepository.quotationCreated(uploadedName, "", storagePath);
                         if (onSuccess != null) onSuccess.run();
                     })
                     .addOnFailureListener(e -> {
@@ -73,6 +75,7 @@ public final class QuotationStorageUploader {
             storageRoot.child(storagePath).putFile(Uri.fromFile(pdfFile))
                     .addOnSuccessListener(taskSnapshot -> {
                         StorageMetricsHelper.recordUpload();
+                        com.grpc.grpc.audit.data.AuditLogRepository.quotationCreated(originalName, "", storagePath);
                         if (onSuccess != null) onSuccess.run();
                     })
                     .addOnFailureListener(err -> {

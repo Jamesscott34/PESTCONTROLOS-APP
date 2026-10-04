@@ -77,11 +77,11 @@ public class General8ptActivity extends AppCompatActivity {
 
     private static final String PREF_KEY_ANNUAL_FEE = "CONTRACT_QUOTE_ANNUAL_FEE_8PT";
     private static final double DEFAULT_ANNUAL_FEE = 900.0;
-    private static final double EXTERNAL_UNIT_PRICE = 25.0;
+    private static final double EXTERNAL_UNIT_C3CE = 25.0;
     private static final int EXTERNAL_FREE_COUNT = 2;
-    private static final double FLY_UNIT_PRICE = 25.0;
+    private static final double FLY_UNIT_C3CE = 25.0;
     private static final int FLY_FREE_COUNT = 1;
-    private static final double INSECT_MONITOR_PRICE = 50.0;
+    private static final double INSECT_MONITOR_C3CE = 50.0;
     private static final double VAT_MULTIPLIER = 1.23;
     private static final int REQUEST_PREVIEW_CONTRACT_QUOTE = 908;
     private String lastPreviewQuoteNumber;
@@ -461,12 +461,12 @@ public class General8ptActivity extends AppCompatActivity {
         }
         int chargeableExternals = Math.max(externalQty - EXTERNAL_FREE_COUNT, 0);
         int chargeableFly = Math.max(flyQty - FLY_FREE_COUNT, 0);
-        double externalsTotal = chargeableExternals * EXTERNAL_UNIT_PRICE;
-        double flyUnitsTotal = chargeableFly * FLY_UNIT_PRICE;
+        double externalsTotal = chargeableExternals * EXTERNAL_UNIT_C3CE;
+        double flyUnitsTotal = chargeableFly * FLY_UNIT_C3CE;
         boolean insectChecked = false;
         CheckBox ic = findViewById(R.id.insectMonitorCheckbox);
         if (ic != null) insectChecked = ic.isChecked();
-        double insectTotal = insectChecked ? INSECT_MONITOR_PRICE : 0.0;
+        double insectTotal = insectChecked ? INSECT_MONITOR_C3CE : 0.0;
 
         double totalExcl = basePrice + externalsTotal + flyUnitsTotal + insectTotal;
         double totalIncl = totalExcl * VAT_MULTIPLIER;
@@ -601,10 +601,10 @@ public class General8ptActivity extends AppCompatActivity {
         if (fq != null) try { flyQty = Integer.parseInt(fq.getText().toString().trim()); } catch (NumberFormatException ignored) {}
         int chargeableExternals = Math.max(externalQty - EXTERNAL_FREE_COUNT, 0);
         int chargeableFly = Math.max(flyQty - FLY_FREE_COUNT, 0);
-        externalsTotal = chargeableExternals * EXTERNAL_UNIT_PRICE;
-        flyTotal = chargeableFly * FLY_UNIT_PRICE;
+        externalsTotal = chargeableExternals * EXTERNAL_UNIT_C3CE;
+        flyTotal = chargeableFly * FLY_UNIT_C3CE;
         CheckBox ic = findViewById(R.id.insectMonitorCheckbox);
-        if (ic != null && ic.isChecked()) insectTotal = INSECT_MONITOR_PRICE;
+        if (ic != null && ic.isChecked()) insectTotal = INSECT_MONITOR_C3CE;
         double totalExcl = annualFee + externalsTotal + flyTotal + insectTotal;
         double totalIncl = totalExcl * VAT_MULTIPLIER;
         double perQuarter = totalIncl / 4.0;
@@ -623,12 +623,12 @@ public class General8ptActivity extends AppCompatActivity {
         double firstQuarterDue = perQuarter + requiredMaterialsTotalIncl;
 
         if (chargeableExternals > 0) {
-            additionalExternalDesc += "\n(Quoted: " + chargeableExternals + " units @ €" + String.format(Locale.UK, "%.2f", EXTERNAL_UNIT_PRICE) + " = €" + String.format(Locale.UK, "%.2f", externalsTotal) + " + VAT)";
+            additionalExternalDesc += "\n(Quoted: " + chargeableExternals + " units @ €" + String.format(Locale.UK, "%.2f", EXTERNAL_UNIT_C3CE) + " = €" + String.format(Locale.UK, "%.2f", externalsTotal) + " + VAT)";
         }
         descriptions.add(additionalExternalDesc);
         lineTotals.add(0.0);
         if (chargeableFly > 0) {
-            additionalFlyDesc += "\n(Quoted: " + chargeableFly + " units @ €" + String.format(Locale.UK, "%.2f", FLY_UNIT_PRICE) + " = €" + String.format(Locale.UK, "%.2f", flyTotal) + " + VAT)";
+            additionalFlyDesc += "\n(Quoted: " + chargeableFly + " units @ €" + String.format(Locale.UK, "%.2f", FLY_UNIT_C3CE) + " = €" + String.format(Locale.UK, "%.2f", flyTotal) + " + VAT)";
         }
         descriptions.add(additionalFlyDesc);
         lineTotals.add(0.0);
@@ -663,11 +663,11 @@ public class General8ptActivity extends AppCompatActivity {
                 totalIncl,
                 perQuarter,
                 chargeableExternals,
-                EXTERNAL_UNIT_PRICE,
+                EXTERNAL_UNIT_C3CE,
                 chargeableFly,
-                FLY_UNIT_PRICE,
+                FLY_UNIT_C3CE,
                 insectQty,
-                INSECT_MONITOR_PRICE,
+                INSECT_MONITOR_C3CE,
                 requiredMaterialsPdfLines,
                 requiredMaterialsTotalExcl,
                 requiredMaterialsTotalIncl,
@@ -719,6 +719,9 @@ public class General8ptActivity extends AppCompatActivity {
         ref.putFile(Uri.fromFile(pdfFile))
                 .addOnSuccessListener(taskSnapshot -> {
                     com.grpc.grpc.core.StorageMetricsHelper.recordUpload();
+                    String site = companyNameInput != null && companyNameInput.getText() != null
+                            ? companyNameInput.getText().toString().trim() : "";
+                    com.grpc.grpc.audit.data.AuditLogRepository.quotationCreated(pdfFile.getName(), site, storagePath);
                     Toast.makeText(this, getString(R.string.quotation_saved_to_cloud), Toast.LENGTH_SHORT).show();
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, getString(R.string.quotation_upload_failed) + " " + e.getMessage(), Toast.LENGTH_SHORT).show());

@@ -6,7 +6,7 @@ import android.content.Context;
 
 /**
  * Centralized flavor-aware branding for PDFs and filenames.
- * Production (grpc flavor) uses [Company 1] strings; demo/offline override in their res/values.
+ * Production (grpc flavor) uses Good Riddance Pest Control strings; demo/offline override in their res/values.
  */
 public final class TenantBranding {
     private TenantBranding() {}

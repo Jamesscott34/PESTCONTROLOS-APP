@@ -26,7 +26,12 @@ import com.grpc.grpc.workview.data.WorkViewWidgetHelper;
  */
 public class GrpcApplication extends Application {
 
+    private static GrpcApplication instance;
     private static final long SESSION_TIMEOUT_MS = 5L * 60L * 1000L; // 5 minutes
+
+    public static android.content.Context appContext() {
+        return instance;
+    }
 
     private int startedCount = 0;
     private long backgroundedAtMs = 0L;
@@ -34,6 +39,7 @@ public class GrpcApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        instance = this;
         // Offline flavor: no Firebase – no init, no App Check, no session timeout
         if (!BuildConfig.IS_OFFLINE) {
             FirebaseApp.initializeApp(this);
@@ -109,38 +115,32 @@ public class GrpcApplication extends Application {
 
     private void forceLogoutAndReturnToLogin(Activity activity) {
         try {
-            // Stop background location jobs for the previous user (if any)
-            String userName = ActiveUserContext.getActiveUserName(activity);
-            if (userName != null && !userName.trim().isEmpty()) {
-                LocationSharing.cancelScheduled(activity.getApplicationContext(), userName);
-            }
+            // Stop background location jobs for the previous auth UID (same key as ensureScheduled)
+            try {
+                com.google.firebase.auth.FirebaseUser u =
+                        com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                if (u != null && u.getUid() != null && !u.getUid().trim().isEmpty()) {
+                    LocationSharing.cancelScheduled(activity.getApplicationContext(), u.getUid());
+                } else {
+                    String staffId = SessionManager.getStaffId(activity);
+                    if (staffId != null && !staffId.trim().isEmpty()) {
+                        LocationSharing.cancelScheduled(activity.getApplicationContext(), staffId);
+                    }
+                }
+            } catch (Exception ignored) {}
 
             // Clear app session caches
             SessionManager.clear(activity.getApplicationContext());
             ActiveUserContext.clear(activity.getApplicationContext());
-            try {
-                StaffDirectory.clearCache();
-            } catch (Exception ignored) {
-            }
-            try {
-                WorkViewLocalEventStore.clearAll(activity.getApplicationContext());
-            } catch (Exception ignored) {
-            }
-            try {
-                WorkViewWidgetHelper.clearWidgetCache(activity.getApplicationContext());
-            } catch (Exception ignored) {
-            }
-            try {
-                LocationSharing.clearLocalCache(activity.getApplicationContext());
-            } catch (Exception ignored) {
-            }
+            try { StaffDirectory.clearCache(); } catch (Exception ignored) {}
+            try { WorkViewLocalEventStore.clearAll(activity.getApplicationContext()); } catch (Exception ignored) {}
+            try { WorkViewWidgetHelper.clearWidgetCache(activity.getApplicationContext()); } catch (Exception ignored) {}
+            try { LocationSharing.clearLocalCache(activity.getApplicationContext()); } catch (Exception ignored) {}
 
-            // Firebase sign-out (if signed in); no-op for offline
             if (!BuildConfig.IS_OFFLINE) {
                 try {
                     FirebaseAuth.getInstance().signOut();
-                } catch (Exception ignored) {
-                }
+                } catch (Exception ignored) {}
             }
 
             Intent intent = new Intent(activity, LoginActivity.class);
@@ -148,7 +148,6 @@ public class GrpcApplication extends Application {
             intent.putExtra("LOGOUT_REASON", "timeout");
             activity.startActivity(intent);
             activity.finish();
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
     }
 }

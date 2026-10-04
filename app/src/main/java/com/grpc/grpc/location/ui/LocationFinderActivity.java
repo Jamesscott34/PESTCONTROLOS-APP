@@ -197,25 +197,50 @@ public class LocationFinderActivity extends AppCompatActivity {
 
     private void applyFirestoreSnapshotToCacheAndUi(DocumentSnapshot snap, String techKey, String techDisplay) {
         if (snap == null || !snap.exists()) {
-            updateDetailsFromCache(techKey, techDisplay);
+            // Clear stale UI/cache entry when the server doc was deleted by cleanup.
+            try {
+                LocationSharing.cacheLastLocation(this, techKey, "");
+            } catch (Exception ignored) {}
+            TextView details = findDetailsView(techDisplay);
+            if (details != null) details.setText("Awaiting first location update…");
             return;
         }
         try {
             Double lat = snap.getDouble("lat");
             Double lng = snap.getDouble("lng");
             Long ts = snap.getLong("clientTimestampMs");
+            if (ts == null || ts <= 0L) {
+                com.google.firebase.Timestamp updatedAt = snap.getTimestamp("updatedAt");
+                if (updatedAt != null) ts = updatedAt.toDate().getTime();
+            }
             String lastMapQuery = snap.getString("lastMapQuery");
             Long lastMapTs = snap.getLong("lastMapClientTimestampMs");
 
+            boolean hasGps = lat != null && lng != null;
+            boolean hasMap = !TextUtils.isEmpty(lastMapQuery);
+            if (!hasGps && !hasMap) {
+                try {
+                    LocationSharing.cacheLastLocation(this, techKey, "");
+                } catch (Exception ignored) {}
+                TextView details = findDetailsView(techDisplay);
+                if (details != null) {
+                    details.setText("Awaiting first location update…");
+                }
+                return;
+            }
+
             JSONObject json = new JSONObject();
             json.put("userKey", techKey);
-            if (lat != null) json.put("lat", lat);
-            if (lng != null) json.put("lng", lng);
-            if (ts != null) json.put("clientTimestampMs", ts);
-            if (!TextUtils.isEmpty(lastMapQuery)) json.put("lastMapQuery", lastMapQuery);
-            if (lastMapTs != null) json.put("lastMapClientTimestampMs", lastMapTs);
-            Boolean stale = snap.getBoolean("stale");
-            if (stale != null) json.put("stale", stale);
+            if (hasGps) {
+                json.put("lat", lat);
+                json.put("lng", lng);
+                if (ts != null) json.put("clientTimestampMs", ts);
+            }
+            if (hasMap) {
+                json.put("lastMapQuery", lastMapQuery);
+                json.put("lastMapClientTimestampMs", lastMapTs);
+            }
+            json.put("stale", false);
             LocationSharing.cacheLastLocation(this, techKey, json.toString());
         } catch (Exception ignored) {}
 
@@ -263,21 +288,24 @@ public class LocationFinderActivity extends AppCompatActivity {
             String lastMapQuery = json.optString("lastMapQuery", "");
             long mapTs = json.optLong("lastMapClientTimestampMs", 0L);
 
+            boolean hasGps = lat != null && lng != null && !lat.isNaN() && !lng.isNaN();
+            boolean hasMap = !TextUtils.isEmpty(lastMapQuery);
+
+            if (!hasGps && !hasMap) {
+                details.setText("Awaiting first location update…");
+                return;
+            }
+
             StringBuilder sb = new StringBuilder();
-            if (!TextUtils.isEmpty(lastMapQuery)) {
+            if (hasMap) {
                 sb.append("Last map: ").append(lastMapQuery).append("\n");
                 if (mapTs > 0) sb.append("Map time: ").append(formatTime(mapTs)).append("\n");
             }
-            if (lat != null && lng != null) {
+            if (hasGps) {
                 sb.append("GPS: ").append(String.format(Locale.getDefault(), "%.5f, %.5f", lat, lng)).append("\n");
+                if (ts > 0) sb.append("Updated: ").append(formatTime(ts));
             }
-            if (ts > 0) sb.append("Updated: ").append(formatTime(ts));
-            boolean stale = json.optBoolean("stale", false);
-            if (stale && ts > 0) {
-                long ageMin = (System.currentTimeMillis() - ts) / 60000L;
-                sb.append("\n⚠ Location may be outdated (").append(ageMin).append(" min ago)");
-            }
-            if (sb.length() == 0) sb.append("No location fields.");
+            if (sb.length() == 0) sb.append("No current location.");
 
             details.setText(sb.toString().trim());
         } catch (Exception e) {
@@ -309,21 +337,21 @@ public class LocationFinderActivity extends AppCompatActivity {
 
         try {
             JSONObject json = new JSONObject(cached);
+            long ts = json.optLong("clientTimestampMs", 0L);
+            long mapTs = json.optLong("lastMapClientTimestampMs", 0L);
             String lastMapQuery = json.optString("lastMapQuery", "");
+
+            if (json.has("lat") && json.has("lng")) {
+                openMapsLatLng(json.optDouble("lat"), json.optDouble("lng"));
+                return;
+            }
             if (!TextUtils.isEmpty(lastMapQuery)) {
                 openMapsQuery(lastMapQuery);
                 return;
             }
-
-            if (json.has("lat") && json.has("lng")) {
-                double lat = json.optDouble("lat");
-                double lng = json.optDouble("lng");
-                openMapsLatLng(lat, lng);
-                return;
-            }
         } catch (Exception ignored) {}
 
-        Toast.makeText(this, "No usable location for " + techDisplay, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "No location saved for " + techDisplay, Toast.LENGTH_SHORT).show();
     }
 
     private void openMapsQuery(String query) {
@@ -360,7 +388,7 @@ public class LocationFinderActivity extends AppCompatActivity {
 
     private int resolveColorAttr(int attr) {
         try {
-            TypedValue tv = new TypedValue();
+            android.util.TypedValue tv = new android.util.TypedValue();
             if (getTheme() != null && getTheme().resolveAttribute(attr, tv, true)) {
                 if (tv.resourceId != 0) {
                     return androidx.core.content.ContextCompat.getColor(this, tv.resourceId);
@@ -371,4 +399,3 @@ public class LocationFinderActivity extends AppCompatActivity {
         return 0xFFAAAAAA;
     }
 }
-

@@ -2044,6 +2044,7 @@ public class ActionFormActivity extends AppCompatActivity {
             uploadTask.addOnSuccessListener(taskSnapshot -> {
                 lastUploadSucceeded = true;
                 com.grpc.grpc.core.StorageMetricsHelper.recordUpload();
+                auditActionFormUploaded(uniqueName, storagePath);
                 ContractReportSync.syncMetadata(
                         contractId,
                         storagePath,
@@ -2070,6 +2071,7 @@ public class ActionFormActivity extends AppCompatActivity {
                     .addOnSuccessListener(taskSnapshot -> {
                         lastUploadSucceeded = true;
                         com.grpc.grpc.core.StorageMetricsHelper.recordUpload();
+                        auditActionFormUploaded(uploadedFileName, storagePath);
                         ContractReportSync.syncMetadata(
                                 contractId, storagePath, uploadedFileName, "action_form", contractCompanyName,
                                 () -> { if (afterUpload != null) afterUpload.run(); },
@@ -2081,6 +2083,19 @@ public class ActionFormActivity extends AppCompatActivity {
                         if (afterUpload != null) afterUpload.run();
                     });
         });
+    }
+
+    private void auditActionFormUploaded(String fileName, String storagePath) {
+        String site = "";
+        try {
+            if (premisesNameInput != null && premisesNameInput.getEditText() != null
+                    && premisesNameInput.getEditText().getText() != null) {
+                site = premisesNameInput.getEditText().getText().toString().trim();
+            }
+        } catch (Exception ignored) {}
+        if (site.isEmpty() && contractCompanyName != null) site = contractCompanyName;
+        com.grpc.grpc.audit.data.AuditLogRepository.reportUploaded(
+                fileName, site, storagePath, contractId, null, null, null);
     }
 
     private void clearInputFields() {

@@ -20,13 +20,22 @@
             android:background="@android:color/transparent" />
 
         <TextView
+            android:id="@+id/screenTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Add New Job"
+            android:text="Add management job"
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_gravity="center"
             android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:id="@+id/companyLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textStyle="bold" />
 
         <!-- Technician Information (dropdown prevents typos -> notifications go to correct user) -->
         <TextView
@@ -47,17 +56,22 @@
             android:padding="10dp"
             android:spinnerMode="dropdown" />
 
-        <!-- Management Company -->
         <EditText
-            android:id="@+id/customerName"
+            android:id="@+id/addressInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Management Company"
-            android:inputType="textPersonName"
+            android:hint="Property / address"
+            android:inputType="textPostalAddress"
             android:padding="10dp"
             android:background="@drawable/edit_text_border"
             android:textColor="?android:attr/textColorPrimary"
             android:textColorHint="?android:attr/textColorSecondary" />
+
+        <EditText
+            android:id="@+id/customerName"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
 
         <!-- Tenant Contact -->
         <EditText

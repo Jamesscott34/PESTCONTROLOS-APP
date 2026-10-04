@@ -3,7 +3,7 @@
  * GRPest Control Application - Contract Management Hub
  * ============================================================================
  * 
- * BUSINESS OVERVIEW:
+ * BUSINEC5 OVERVIEW:
  * This activity serves as the central hub for all contract management operations
  * within the GRPest Control application. It provides technicians and administrators
  * with comprehensive tools to manage pest control contracts, track overdue services,

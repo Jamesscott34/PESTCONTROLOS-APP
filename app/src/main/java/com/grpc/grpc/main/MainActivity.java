@@ -17,6 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GestureDetectorCompat;
 
@@ -32,6 +33,11 @@ import com.grpc.grpc.core.OfflineTrialHelper;
 import com.grpc.grpc.core.RememberMeManager;
 import com.grpc.grpc.core.SessionManager;
 import com.grpc.grpc.core.StaffDirectory;
+import com.grpc.grpc.stock.data.StockRepository;
+import com.grpc.grpc.stock.ui.StockActivity;
+import com.grpc.grpc.stock.ui.StockRequestActivity;
+import com.grpc.grpc.stock.ui.StockUsersActivity;
+import com.grpc.grpc.stock.util.StockWeekHelper;
 import com.grpc.grpc.email.ui.EmailComposeActivity;
 import com.grpc.grpc.login.LoginActivity;
 
@@ -90,7 +96,7 @@ import com.grpc.grpc.converter.ui.ConverterActivity;
  *    - Generate "behinds list" reports for overdue contracts
  *    - View contract-specific reports and documentation
  * 
- * 3. JOB ASSIGNMENT & TRACKING
+ * 3. JOB AC5IGNMENT & TRACKING
  *    - Assign jobs to technicians with location tracking
  *    - Real-time job status updates and completion tracking
  *    - WhatsApp integration for instant job notifications
@@ -101,7 +107,7 @@ import com.grpc.grpc.converter.ui.ConverterActivity;
  *    - Service agreement templates with digital signatures
  *    - Customer approval tracking and contract management
  * 
- * 5. SALES & COMMISSION TRACKING
+ * 5. SALES & COMMIC5ION TRACKING
  *    - Lead generation and management system
  *    - Commission calculation and tracking for sales staff
  *    - Invoice management and payment tracking
@@ -162,7 +168,8 @@ public class MainActivity extends AppCompatActivity {
                    CommisionButton, ServiceAgreementButton, JobButton, EnviromentButton,
                    InstantMessage, MapsButton, InvoicesButton, WorkViewButton, HelpButton,
                    NotificationsButton, LocationFinderButton, SearchButton, EmailButton,
-                   DashboardButton, EmployeeButton, RouteButton, ConverterButton;
+                   DashboardButton, EmployeeButton, RouteButton, ConverterButton, ManagementButton,
+                   StockButton, AuditLogsButton, FeaturesButton;
     
     // User information extracted from login
     private String userEmail, userName;
@@ -179,6 +186,12 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_LOCATION_PERMISSION = 2;
     private static final int SWIPE_THRESHOLD = 50;
     private static final int SWIPE_VELOCITY_THRESHOLD = 50;
+    private static final String STOCK_WEEK_CARD_TAG = "stock_week_card";
+    private boolean featuresOpen;
+    @Nullable
+    private SessionManager.Session homeSession;
+    /** Hides the weekly stock card for this process after Dismiss. Key is uid + week. */
+    private static String stockCardDismissedKey = "";
 
     /**
      * Main entry point of the application
@@ -258,7 +271,6 @@ public class MainActivity extends AppCompatActivity {
             LocationSharing.ensureScheduled(MainActivity.this, uid);
             WorkViewPopupReminderScheduler.scheduleUpcomingForUser(MainActivity.this, userName);
             DailyContractPdfHelper.scheduleDailyPdfIfNeeded(MainActivity.this, userName);
-            applyInvoicesButtonVisibility(loadedSession);
             runOnUiThread(this::checkAndShowDailySummaryCard);
         }));
         }
@@ -333,7 +345,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         applyDemoExpiredVisibility();
-        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> applySearchVisibilityFromSession(session)));
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
+            applySearchVisibilityFromSession(session);
+            checkAndShowStockWeekCard(session);
+        }));
         // Unread indicators: run messaging badge only when user can see Messaging (canMessage).
         if (SessionManager.canMessage(this)) {
             checkHomeUnreadIndicators();
@@ -491,20 +506,16 @@ public class MainActivity extends AppCompatActivity {
                     if (Math.abs(diffX) > Math.abs(diffY)) {
                         if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                             if (diffX > 0) {
-                                // Swipe right - admins: View Contract; techs: Work View only
+                                // Swipe right - admin/super_admin: View Contract (Work View is super_admin UI only)
                                 if (SessionManager.isAdmin(MainActivity.this)) {
                                     Log.d("MainActivity", "Swipe RIGHT detected - opening ViewContractActivity with user: " + userName);
                                     Intent intent = new Intent(MainActivity.this, ViewContractActivity.class);
                                     intent.putExtra("USER_NAME", userName);
                                     startActivity(intent);
-                                } else {
-                                    Log.d("MainActivity", "Swipe RIGHT detected - opening WorkViewActivity (work view) with user: " + userName);
-                                    Intent intent = new Intent(MainActivity.this, WorkViewActivity.class);
-                                    intent.putExtra("USER_NAME", userName);
-                                    startActivity(intent);
+                                    finish(); // Destroy this activity
+                                    return true;
                                 }
-                                finish(); // Destroy this activity
-                                return true;
+                                return false;
                             } else {
                                 // Swipe left - open ReportActivity (previous in sequence)
                                 Log.d("MainActivity", "Swipe LEFT detected - opening ReportActivity with user: " + userName);
@@ -563,6 +574,10 @@ public class MainActivity extends AppCompatActivity {
         EmployeeButton = findViewById(R.id.EmployeeButton);
         RouteButton = findViewById(R.id.RouteButton);
         ConverterButton = findViewById(R.id.ConverterButton);
+        ManagementButton = findViewById(R.id.ManagementButton);
+        StockButton = findViewById(R.id.StockButton);
+        AuditLogsButton = findViewById(R.id.AuditLogsButton);
+        FeaturesButton = findViewById(R.id.FeaturesButton);
     }
 
     /**
@@ -704,16 +719,22 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Job assignment and tracking
+        // Job Work: tech, admin, and super_admin. The button opens the service job list.
         if (JobButton != null) {
-            JobButton.setOnClickListener(view -> openActivity(JobsActivity.class));
+            boolean canJobWork = SessionManager.isTech(this) || SessionManager.isAdmin(this);
+            JobButton.setVisibility(canJobWork ? View.VISIBLE : View.GONE);
+            if (canJobWork) {
+                JobButton.setOnClickListener(view -> openActivity(JobsActivity.class));
+            }
         }
 
-        // Work View Calendar and scheduling
+        // Work View: super_admin only (temporarily hidden from admin/tech)
         if (WorkViewButton != null) {
-            WorkViewButton.setOnClickListener(view -> {
-                openActivity(WorkViewActivity.class);
-            });
+            boolean canWorkView = SessionManager.isSuperAdmin(this);
+            WorkViewButton.setVisibility(canWorkView ? View.VISIBLE : View.GONE);
+            if (canWorkView) {
+                WorkViewButton.setOnClickListener(view -> openActivity(WorkViewActivity.class));
+            }
         }
 
         // Location Finder: super admin only
@@ -729,9 +750,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Help / README screen
+        // How to Use App: super_admin only (temporarily hidden from admin/tech)
         if (HelpButton != null) {
-            HelpButton.setOnClickListener(view -> openActivity(HelpReadmeActivity.class));
+            boolean canHelp = SessionManager.isSuperAdmin(this);
+            HelpButton.setVisibility(canHelp ? View.VISIBLE : View.GONE);
+            if (canHelp) {
+                HelpButton.setOnClickListener(view -> openActivity(HelpReadmeActivity.class));
+            }
         }
 
         // Secure logout - clears activity stack, clears saved user, and returns to login
@@ -767,6 +792,7 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             });
         }
+        applyFeatureSection();
     }
 
     private void maybeRequestLocationPermission() {
@@ -791,8 +817,15 @@ public class MainActivity extends AppCompatActivity {
      * Not restricted to super_admin only.
      */
     private void applySearchVisibilityFromSession(SessionManager.Session session) {
-        if (BuildConfig.IS_OFFLINE || userName == null || userName.equals("Offline") || userName.equals("Offline User")) return;
-        if (BuildConfig.IS_DEMO && DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this)) return;
+        homeSession = session;
+        if (BuildConfig.IS_OFFLINE || userName == null || userName.equals("Offline") || userName.equals("Offline User")) {
+            applyFeatureSection();
+            return;
+        }
+        if (BuildConfig.IS_DEMO && DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this)) {
+            applyFeatureSection();
+            return;
+        }
         boolean canSearch = session != null && session.canSearch;
         if (SearchButton != null) {
             SearchButton.setVisibility(canSearch ? View.VISIBLE : View.GONE);
@@ -832,7 +865,202 @@ public class MainActivity extends AppCompatActivity {
                 ConverterButton.setOnClickListener(v -> openActivity(ConverterActivity.class));
             }
         }
+        // Work View and How to Use App stay super_admin only. Job Work is tech, admin, and super_admin.
+        boolean isSuperAdmin = session != null && session.isSuperAdmin;
+        if (WorkViewButton != null) {
+            WorkViewButton.setVisibility(isSuperAdmin ? View.VISIBLE : View.GONE);
+            if (isSuperAdmin) {
+                WorkViewButton.setOnClickListener(view -> openActivity(WorkViewActivity.class));
+            }
+        }
+        if (JobButton != null) {
+            boolean canJobWork = session != null && (session.isTech || session.isAdmin);
+            JobButton.setVisibility(canJobWork ? View.VISIBLE : View.GONE);
+            if (canJobWork) {
+                JobButton.setOnClickListener(view -> openActivity(JobsActivity.class));
+            }
+        }
+        applyManagementButtonVisibility(session);
+        if (HelpButton != null) {
+            HelpButton.setVisibility(isSuperAdmin ? View.VISIBLE : View.GONE);
+            if (isSuperAdmin) {
+                HelpButton.setOnClickListener(view -> openActivity(HelpReadmeActivity.class));
+            }
+        }
         applyInvoicesButtonVisibility(session);
+        applyStockButtonVisibility(session);
+        applyAuditLogsButtonVisibility(session);
+        applyFeatureSection();
+    }
+
+    /**
+     * Create Report, View Reports, Job Work, Management, Stock, Contracts, and Email stay visible.
+     * Every other tool stays behind Features until it is opened, and then only if this role may use it.
+     */
+    private void applyFeatureSection() {
+        SessionManager.Session session = homeSession != null ? homeSession : SessionManager.getCached(this);
+        boolean blocked = BuildConfig.IS_OFFLINE
+                || userName == null
+                || "Offline".equals(userName)
+                || "Offline User".equals(userName)
+                || (BuildConfig.IS_DEMO && DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this));
+        boolean signedIn = !blocked && session != null && (session.isTech || session.isAdmin);
+        if (FeaturesButton != null) {
+            FeaturesButton.setVisibility(signedIn ? View.VISIBLE : View.GONE);
+            FeaturesButton.setText(featuresOpen ? R.string.main_button_hide_features : R.string.main_button_features);
+            FeaturesButton.setOnClickListener(v -> {
+                featuresOpen = !featuresOpen;
+                applySearchVisibilityFromSession(homeSession != null ? homeSession : SessionManager.getCached(this));
+            });
+        }
+        if (signedIn) {
+            setFeatureVisible(reportButton, true);
+            setFeatureVisible(reportViewButton, true);
+            setFeatureVisible(JobButton, true);
+            setFeatureVisible(ManagementButton, true);
+            setFeatureVisible(StockButton, true);
+            setFeatureVisible(contractsButton, true);
+            setFeatureVisible(EmailButton, true);
+            if (JobButton != null) JobButton.setOnClickListener(v -> openActivity(JobsActivity.class));
+            if (ManagementButton != null) {
+                ManagementButton.setOnClickListener(v -> openActivity(com.grpc.grpc.jobs.ui.ManagementCompaniesActivity.class));
+            }
+            if (StockButton != null) {
+                StockButton.setOnClickListener(v -> {
+                    if (session.isAdmin && !session.isTech) openActivity(StockUsersActivity.class);
+                    else openActivity(StockActivity.class);
+                });
+            }
+        }
+        boolean reveal = signedIn && featuresOpen;
+        if (reveal) {
+            if (NotificationsButton != null) {
+                NotificationsButton.setOnClickListener(view -> openActivity(NotificationsActivity.class));
+            }
+            if (InstantMessage != null) {
+                InstantMessage.setOnClickListener(view -> openActivity(MessagingConversationsActivity.class));
+            }
+            if (SearchButton != null) {
+                SearchButton.setOnClickListener(v -> {
+                    Intent intent = new Intent(MainActivity.this, SearchActivity.class);
+                    intent.putExtra("USER_NAME", userName);
+                    startActivity(intent);
+                });
+            }
+            if (DashboardButton != null) {
+                DashboardButton.setOnClickListener(v -> {
+                    Intent intent = new Intent(MainActivity.this, AdminDashboardActivity.class);
+                    intent.putExtra("USER_NAME", userName);
+                    startActivity(intent);
+                });
+            }
+            if (MapsButton != null) {
+                MapsButton.setOnClickListener(v -> openActivity(com.grpc.grpc.maps.ui.MapsPlaceholderActivity.class));
+            }
+            if (InvoicesButton != null) {
+                InvoicesButton.setOnClickListener(v -> {
+                    Intent intent = new Intent(MainActivity.this, InvoiceListActivity.class);
+                    intent.putExtra(InvoiceListActivity.EXTRA_CAN_CREATE, session.isAdmin || session.canInvoice);
+                    startActivity(intent);
+                });
+            }
+            if (RouteButton != null) RouteButton.setOnClickListener(v -> openActivity(RouterActivity.class));
+            if (HelpButton != null) HelpButton.setOnClickListener(view -> openActivity(HelpReadmeActivity.class));
+            if (ConverterButton != null) ConverterButton.setOnClickListener(v -> openActivity(ConverterActivity.class));
+            if (AuditLogsButton != null) {
+                AuditLogsButton.setOnClickListener(v -> openActivity(com.grpc.grpc.audit.ui.AuditLogActivity.class));
+            }
+            if (CommisionButton != null) CommisionButton.setOnClickListener(view -> openActivity(LeadsSelectionActivity.class));
+            if (WorkViewButton != null) WorkViewButton.setOnClickListener(view -> openActivity(WorkViewActivity.class));
+            if (LocationFinderButton != null) {
+                LocationFinderButton.setOnClickListener(v -> {
+                    Intent intent = new Intent(MainActivity.this, LocationFinderActivity.class);
+                    intent.putExtra("USER_NAME", userName);
+                    startActivity(intent);
+                });
+            }
+            if (EmployeeButton != null) {
+                EmployeeButton.setOnClickListener(v -> {
+                    Intent intent = new Intent(MainActivity.this, EmployeeManagementActivity.class);
+                    intent.putExtra("USER_NAME", userName);
+                    startActivity(intent);
+                });
+            }
+        }
+        setFeatureVisible(NotificationsButton, reveal);
+        setFeatureVisible(InstantMessage, reveal && session.canMessage);
+        setFeatureVisible(SearchButton, reveal && session.canSearch);
+        setFeatureVisible(DashboardButton, reveal && session.isAdmin);
+        setFeatureVisible(MapsButton, reveal && session.canMap);
+        setFeatureVisible(InvoicesButton, reveal && (session.isAdmin || session.canInvoice));
+        setFeatureVisible(RouteButton, reveal && session.canRoute);
+        setFeatureVisible(HelpButton, reveal && session.isSuperAdmin);
+        setFeatureVisible(ConverterButton, reveal && session.canConvert);
+        setFeatureVisible(AuditLogsButton, reveal && session.isAdmin);
+        setFeatureVisible(CommisionButton, reveal && session.canAccessCommissionLeads);
+        setFeatureVisible(WorkViewButton, reveal && session.isSuperAdmin);
+        setFeatureVisible(LocationFinderButton, reveal && session.canUseLocationFinder);
+        setFeatureVisible(EmployeeButton, reveal && session.isSuperAdmin);
+    }
+
+    private void setFeatureVisible(Button button, boolean show) {
+        if (button != null) button.setVisibility(show ? View.VISIBLE : View.GONE);
+    }
+
+    /** Audit Logs are admin and super_admin only, and only when Firebase is available. */
+    private void applyAuditLogsButtonVisibility(SessionManager.Session session) {
+        if (AuditLogsButton == null) return;
+        boolean blocked = BuildConfig.IS_OFFLINE
+                || userName == null
+                || "Offline".equals(userName)
+                || "Offline User".equals(userName)
+                || (BuildConfig.IS_DEMO && DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this));
+        boolean show = !blocked && session != null && session.isAdmin;
+        AuditLogsButton.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) {
+            AuditLogsButton.setOnClickListener(v -> openActivity(com.grpc.grpc.audit.ui.AuditLogActivity.class));
+        }
+    }
+
+    /**
+     * Stock is available to technicians, admins, and super admins on online flavours.
+     */
+    private void applyStockButtonVisibility(SessionManager.Session session) {
+        if (StockButton == null) return;
+        boolean blocked = BuildConfig.IS_OFFLINE
+                || userName == null
+                || "Offline".equals(userName)
+                || "Offline User".equals(userName)
+                || (BuildConfig.IS_DEMO && DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this));
+        boolean show = !blocked && session != null && (session.isTech || session.isAdmin);
+        StockButton.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) {
+            StockButton.setOnClickListener(v -> {
+                if (session.isAdmin && !session.isTech) {
+                    openActivity(StockUsersActivity.class);
+                } else {
+                    openActivity(StockActivity.class);
+                }
+            });
+        }
+    }
+
+    /**
+     * Management companies are separate from Job Work. Any signed-in user can open them.
+     * Job Work is opened from its own button for tech, admin, and super_admin.
+     */
+    private void applyManagementButtonVisibility(SessionManager.Session session) {
+        if (ManagementButton == null) return;
+        boolean blocked = BuildConfig.IS_OFFLINE
+                || userName == null
+                || "Offline".equals(userName)
+                || "Offline User".equals(userName)
+                || (BuildConfig.IS_DEMO && DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this));
+        boolean show = !blocked && session != null;
+        ManagementButton.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) {
+            ManagementButton.setOnClickListener(v -> openActivity(com.grpc.grpc.jobs.ui.ManagementCompaniesActivity.class));
+        }
     }
 
     /**
@@ -848,7 +1076,7 @@ public class MainActivity extends AppCompatActivity {
             InvoicesButton.setVisibility(View.GONE);
             return;
         }
-        boolean show = session != null && (session.isAdmin || session.canInvoice);
+        boolean show = featuresOpen && session != null && (session.isAdmin || session.canInvoice);
         InvoicesButton.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
@@ -869,6 +1097,7 @@ public class MainActivity extends AppCompatActivity {
         if (ServiceAgreementButton != null) ServiceAgreementButton.setVisibility(View.GONE);
         if (CommisionButton != null) CommisionButton.setVisibility(View.GONE);
         if (JobButton != null) JobButton.setVisibility(View.GONE);
+        if (ManagementButton != null) ManagementButton.setVisibility(View.GONE);
         if (EnviromentButton != null) EnviromentButton.setVisibility(View.GONE);
         if (InstantMessage != null) InstantMessage.setVisibility(View.GONE);
         if (MapsButton != null) MapsButton.setVisibility(View.GONE);
@@ -878,6 +1107,9 @@ public class MainActivity extends AppCompatActivity {
         if (EmployeeButton != null) EmployeeButton.setVisibility(View.GONE);
         if (InvoicesButton != null) InvoicesButton.setVisibility(View.GONE);
         if (HelpButton != null) HelpButton.setVisibility(View.GONE);
+        if (StockButton != null) StockButton.setVisibility(View.GONE);
+        if (AuditLogsButton != null) AuditLogsButton.setVisibility(View.GONE);
+        if (FeaturesButton != null) FeaturesButton.setVisibility(View.GONE);
         // Keep visible: reportButton (Create Report), reportViewButton (View Reports), logoutButton (Exit)
         if (logoutButton != null) {
             logoutButton.setText(getString(R.string.exit_button_offline));
@@ -901,6 +1133,7 @@ public class MainActivity extends AppCompatActivity {
         if (ServiceAgreementButton != null) ServiceAgreementButton.setVisibility(View.GONE);
         if (CommisionButton != null) CommisionButton.setVisibility(View.GONE);
         if (JobButton != null) JobButton.setVisibility(View.GONE);
+        if (ManagementButton != null) ManagementButton.setVisibility(View.GONE);
         if (EnviromentButton != null) EnviromentButton.setVisibility(View.GONE);
         if (InstantMessage != null) InstantMessage.setVisibility(View.GONE);
         if (MapsButton != null) MapsButton.setVisibility(View.GONE);
@@ -910,6 +1143,9 @@ public class MainActivity extends AppCompatActivity {
         if (DashboardButton != null) DashboardButton.setVisibility(View.GONE);
         if (EmployeeButton != null) EmployeeButton.setVisibility(View.GONE);
         if (InvoicesButton != null) InvoicesButton.setVisibility(View.GONE);
+        if (StockButton != null) StockButton.setVisibility(View.GONE);
+        if (AuditLogsButton != null) AuditLogsButton.setVisibility(View.GONE);
+        if (FeaturesButton != null) FeaturesButton.setVisibility(View.GONE);
         if (welcomeTextView != null) welcomeTextView.setText(getString(R.string.demo_expired_message));
     }
 
@@ -961,7 +1197,33 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if (requestCode == REQUEST_LOCATION_PERMISSION) {
-            // No-op: location sharing is best-effort; workers will check permission.
+            boolean granted = false;
+            if (grantResults.length > 0) {
+                for (int r : grantResults) {
+                    if (r == PackageManager.PERMISSION_GRANTED) {
+                        granted = true;
+                        break;
+                    }
+                }
+            }
+            if (granted) {
+                Log.d("Permissions", "Location permission granted — scheduling location updates");
+                try {
+                    String uid = SessionManager.getStaffId(this);
+                    if (uid == null || uid.trim().isEmpty()) {
+                        com.google.firebase.auth.FirebaseUser u =
+                                com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                        if (u != null) uid = u.getUid();
+                    }
+                    if (uid != null && !uid.trim().isEmpty()) {
+                        LocationSharing.ensureScheduled(MainActivity.this, uid);
+                    }
+                } catch (Exception e) {
+                    Log.w("Permissions", "Failed to schedule location after permission grant", e);
+                }
+            } else {
+                Log.w("Permissions", "Location permission denied — location sharing unavailable");
+            }
         }
     }
 
@@ -986,13 +1248,12 @@ public class MainActivity extends AppCompatActivity {
         String collectionName = StaffDirectory.capitalizeContractKey(contractKey.trim()) + " Contracts";
         String contractKeyLower = contractKey.trim().toLowerCase(java.util.Locale.getDefault());
 
-        com.google.firebase.firestore.FirebaseFirestore db =
-                com.google.firebase.firestore.FirebaseFirestore.getInstance();
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
         final int[] counts = {0, 0, 0};
         final int[] pending = {2};
 
-        db.collection(collectionName).get()
+        firestore.collection(collectionName).get()
                 .addOnSuccessListener(snap -> {
                     java.text.SimpleDateFormat fmt =
                             new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
@@ -1019,7 +1280,7 @@ public class MainActivity extends AppCompatActivity {
                     if (pending[0] <= 0) runOnUiThread(() -> showDailySummaryCard(counts));
                 });
 
-        db.collection("JobWork")
+        firestore.collection("JobWork")
                 .whereEqualTo("assignedTech", contractKeyLower)
                 .whereEqualTo("completed", false)
                 .get()
@@ -1097,4 +1358,111 @@ public class MainActivity extends AppCompatActivity {
         tv.setPadding(0, 8, 0, 0);
         parent.addView(tv);
     }
+
+    /**
+     * One non-blocking weekly stock card for technicians who have not answered this ISO week.
+     * Dismiss hides it until the next process start. A saved weekly check hides it for that week.
+     */
+    private void checkAndShowStockWeekCard(SessionManager.Session session) {
+        if (BuildConfig.IS_OFFLINE || session == null || !session.isTech) {
+            removeStockWeekCard();
+            return;
+        }
+        if (DemoFirebaseExpiryHelper.isFirebaseBlockedForCurrentUser(this)) {
+            removeStockWeekCard();
+            return;
+        }
+        String uid = StockRepository.authUid();
+        if (uid.isEmpty() && session.staffId != null) uid = session.staffId.trim();
+        if (uid.isEmpty()) return;
+        String weekKey = StockWeekHelper.currentWeekKey();
+        if ((uid + "_" + weekKey).equals(stockCardDismissedKey)) return;
+        final String cardUid = uid;
+        StockRepository.loadWeeklyCheck(cardUid, weekKey, (loaded, check) -> runOnUiThread(() -> {
+            if (isFinishing()) return;
+            if (!loaded) return;
+            if (check != null) {
+                removeStockWeekCard();
+                return;
+            }
+            showStockWeekCard(cardUid, weekKey);
+        }));
+    }
+
+    private void showStockWeekCard(String uid, String weekKey) {
+        android.widget.LinearLayout root = findMainDashboardLayout();
+        if (root == null) return;
+        if (findStockWeekCard(root) != null) return;
+
+        android.widget.LinearLayout card = new android.widget.LinearLayout(this);
+        card.setTag(STOCK_WEEK_CARD_TAG);
+        card.setOrientation(android.widget.LinearLayout.VERTICAL);
+        card.setPadding(32, 24, 32, 24);
+        card.setBackgroundResource(R.drawable.surface_frame);
+        android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(16, 16, 16, 8);
+        card.setLayoutParams(lp);
+
+        android.widget.TextView title = new android.widget.TextView(this);
+        title.setText(getString(R.string.stock_week_card_title));
+        title.setTextSize(16f);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        card.addView(title);
+
+        android.widget.TextView body = new android.widget.TextView(this);
+        body.setText(getString(R.string.stock_week_card_body));
+        body.setTextSize(14f);
+        body.setPadding(0, 8, 0, 8);
+        card.addView(body);
+
+        android.widget.Button request = new android.widget.Button(this);
+        request.setText(getString(R.string.stock_request_stock));
+        request.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, StockRequestActivity.class)));
+        card.addView(request);
+
+        android.widget.Button nothing = new android.widget.Button(this);
+        nothing.setText(getString(R.string.stock_nothing_needed));
+        nothing.setOnClickListener(v -> {
+            nothing.setEnabled(false);
+            StockRepository.markNothingNeeded(MainActivity.this, (success, message) -> runOnUiThread(() -> {
+                nothing.setEnabled(true);
+                if (!success) {
+                    Toast.makeText(MainActivity.this,
+                            message != null ? message : getString(R.string.stock_save_failed),
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+                removeStockWeekCard();
+            }));
+        });
+        card.addView(nothing);
+
+        android.widget.Button dismiss = new android.widget.Button(this);
+        dismiss.setText(getString(R.string.stock_dismiss));
+        dismiss.setOnClickListener(v -> {
+            stockCardDismissedKey = uid + "_" + weekKey;
+            removeStockWeekCard();
+        });
+        card.addView(dismiss);
+
+        root.addView(card, 0);
+    }
+
+    private android.view.View findStockWeekCard(android.widget.LinearLayout root) {
+        if (root == null) return null;
+        for (int i = 0; i < root.getChildCount(); i++) {
+            android.view.View child = root.getChildAt(i);
+            if (child != null && STOCK_WEEK_CARD_TAG.equals(child.getTag())) return child;
+        }
+        return null;
+    }
+
+    private void removeStockWeekCard() {
+        android.widget.LinearLayout root = findMainDashboardLayout();
+        android.view.View card = findStockWeekCard(root);
+        if (card != null && root != null) root.removeView(card);
+    }
 }
+ 

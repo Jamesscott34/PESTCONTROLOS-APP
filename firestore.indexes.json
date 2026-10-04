@@ -6,11 +6,44 @@
       "fields": [{"fieldPath": "createdAt", "order": "ASCENDING"}]
     },
     {
+      "collectionGroup": "jobwork",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "AssignedTechKey", "order": "ASCENDING"},
+        {"fieldPath": "AssignedTech", "order": "ASCENDING"}
+      ]
+    },
+    {
       "collectionGroup": "james_workview",
       "queryScope": "COLLECTION",
       "fields": [
         {"fieldPath": "status", "order": "ASCENDING"},
         {"fieldPath": "date", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "stock_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "requesterUid", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "stock_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "stock_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "requesterUid", "order": "ASCENDING"},
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
       ]
     }
   ],

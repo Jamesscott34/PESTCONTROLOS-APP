@@ -3,7 +3,7 @@ package com.grpc.grpc.search.ui;
 import com.grpc.grpc.BuildConfig;
 import com.grpc.grpc.R;
 import com.grpc.grpc.contracts.ui.ViewContractActivity;
-import com.grpc.grpc.jobs.ui.ViewJobActivity;
+import com.grpc.grpc.jobs.ui.JobsActivity;
 import com.grpc.grpc.leads.ui.ViewLeadsActivity;
 import com.grpc.grpc.workview.ui.WorkViewActivity;
 import com.grpc.grpc.reports.ui.CloudStorageBrowserActivity;
@@ -205,7 +205,7 @@ public class SearchActivity extends AppCompatActivity {
         String q = getQuery();
         switch (item.kind) {
             case JOB:
-                openModule(ViewJobActivity.class, q, null);
+                openModule(JobsActivity.class, q, null);
                 break;
             case CONTRACT:
                 openContractFromSearch(q, item.owner, item.contractDocumentId);
@@ -418,6 +418,7 @@ public class SearchActivity extends AppCompatActivity {
         private final List<GlobalSearchItem> workviewEvents = new ArrayList<>();
         private final Set<String> remoteReportPaths = new LinkedHashSet<>();
         private final Set<String> remoteFolderPaths = new LinkedHashSet<>();
+        private final Set<String> seenJobIds = new LinkedHashSet<>();
 
         private int pending = 0;
 
@@ -428,41 +429,38 @@ public class SearchActivity extends AppCompatActivity {
         }
 
         void run() {
-            // Jobs (same visibility rules as ViewJobActivity)
+            // Service jobs. Technicians are queried by AssignedTechKey, not display name.
             pending++;
             SessionManager.ensureLoaded(SearchActivity.this, null);
-            Query jq;
-            if (SessionManager.seesAllJobs(SearchActivity.this)) {
-                jq = db.collection(FirestorePaths.JOBWORK);
-            } else {
+            boolean seesAllServiceJobs = SessionManager.isAdmin(SearchActivity.this);
+            if (!seesAllServiceJobs) {
                 String ck = SessionManager.getContractKey(SearchActivity.this);
-                if (ck == null || ck.trim().isEmpty()) {
-                    ck = userName != null ? userName.trim() : "";
-                }
-                String techDisplay = StaffDirectory.capitalizeContractKey(ck.trim().toLowerCase(Locale.getDefault()));
-                jq = db.collection(FirestorePaths.JOBWORK).whereEqualTo("AssignedTech", techDisplay);
-            }
-            jq.get().addOnCompleteListener(t -> {
-                if (!t.isSuccessful() || t.getResult() == null) {
+                String techKey = ck == null ? "" : ck.trim().toLowerCase(Locale.getDefault());
+                if (techKey.isEmpty()) {
                     doneOne();
-                    return;
+                } else {
+                    String legacyDisplay = StaffDirectory.capitalizeContractKey(techKey);
+                    db.collection(FirestorePaths.JOBWORK)
+                            .whereEqualTo("AssignedTechKey", techKey)
+                            .get()
+                            .addOnCompleteListener(t -> {
+                                collectServiceJobs(t);
+                                db.collection(FirestorePaths.JOBWORK)
+                                        .whereEqualTo("AssignedTechKey", "")
+                                        .whereEqualTo("AssignedTech", legacyDisplay)
+                                        .get()
+                                        .addOnCompleteListener(legacy -> {
+                                            collectServiceJobs(legacy);
+                                            doneOne();
+                                        });
+                            });
                 }
-                for (QueryDocumentSnapshot ds : t.getResult()) {
-                    if (ds == null) continue;
-                    String customer = asLower(ds.getString("CustomerName"));
-                    String address = asLower(ds.getString("Address"));
-                    String issue = asLower(ds.getString("IssueDetails"));
-                    String contact = asLower(ds.getString("CustomerContact"));
-                    String email = asLower(ds.getString("CustomerEmail"));
-                    if (matchesAny(customer, address, issue, contact, email)) {
-                        String title = safeTitle(ds.getString("CustomerName"), ds.getString("IssueDetails"), "Job");
-                        String sub = "Jobs • " + safeOne(ds.getString("Address"), "No address");
-                        jobs.add(GlobalSearchItem.result(GlobalSearchKind.JOB, title, sub, null));
-                        if (jobs.size() >= MAX_RESULTS_PER_SECTION) break;
-                    }
-                }
-                doneOne();
-            });
+            } else {
+                db.collection(FirestorePaths.JOBWORK).get().addOnCompleteListener(t -> {
+                    collectServiceJobs(t);
+                    doneOne();
+                });
+            }
 
             pending++;
             searchContractsForCurrentRole();
@@ -774,6 +772,24 @@ public class SearchActivity extends AppCompatActivity {
             if (path == null || path.isEmpty()) return "";
             int slash = path.indexOf('/');
             return slash > 0 ? path.substring(0, slash) : path;
+        }
+
+        private void collectServiceJobs(com.google.android.gms.tasks.Task<com.google.firebase.firestore.QuerySnapshot> task) {
+            if (task == null || !task.isSuccessful() || task.getResult() == null) return;
+            for (QueryDocumentSnapshot ds : task.getResult()) {
+                if (ds == null || !seenJobIds.add(ds.getId())) continue;
+                String customer = asLower(ds.getString("CustomerName"));
+                String address = asLower(ds.getString("Address"));
+                String issue = asLower(ds.getString("IssueDetails"));
+                String contact = asLower(ds.getString("CustomerContact"));
+                String email = asLower(ds.getString("CustomerEmail"));
+                if (matchesAny(customer, address, issue, contact, email)) {
+                    String title = safeTitle(ds.getString("CustomerName"), ds.getString("IssueDetails"), "Job");
+                    String sub = "Jobs • " + safeOne(ds.getString("Address"), "No address");
+                    jobs.add(GlobalSearchItem.result(GlobalSearchKind.JOB, title, sub, null));
+                    if (jobs.size() >= MAX_RESULTS_PER_SECTION) break;
+                }
+            }
         }
 
         private void doneOne() {

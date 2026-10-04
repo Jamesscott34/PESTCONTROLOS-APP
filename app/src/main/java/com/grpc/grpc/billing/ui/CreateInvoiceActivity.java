@@ -492,6 +492,10 @@ public class CreateInvoiceActivity extends AppCompatActivity {
                         doc.put("createdByUid", uid);
 
                         Tasks.await(db.collection(FirestorePaths.INVOICE_LEDGER).add(doc));
+                        try {
+                            com.grpc.grpc.audit.data.AuditLogRepository.invoiceCreated(
+                                    invNum, customer, pdfName, companyId, hasContract ? contractId : "");
+                        } catch (Exception ignored) {}
 
                         runOnUiThread(() -> {
                             Toast.makeText(this, R.string.invoice_saved, Toast.LENGTH_LONG).show();

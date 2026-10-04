@@ -1,4 +1,4 @@
 <resources>
-    <!-- Demo: show Visit website button (opens pestcontrolos.ie). -->
+    <!-- Demo: show Visit website button (opens yourcompany.example). -->
     <bool name="show_grpcstaff_portal">false</bool>
 </resources>

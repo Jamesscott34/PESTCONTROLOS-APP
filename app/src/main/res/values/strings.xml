@@ -1,20 +1,20 @@
 <resources>
-    <!-- Tenant brand: Company 1. Demo / viking / primal / discreet override in src/&lt;flavor&gt;/. -->
-    <string name="app_name">Company 1</string>
-    <string name="tenant_public_name">Company 1</string>
-    <string name="tenant_public_website_url">https://yourcompany.example</string>
-    <string name="tenant_viking_name">Tenant B</string>
-    <string name="tenant_viking_website_url">https://tenantb.example/</string>
-    <string name="tenant_primal_name">Tenant C</string>
-    <string name="tenant_primal_website_url">https://tenantc.example/</string>
-    <string name="tenant_discreet_name">Tenant D</string>
-    <string name="tenant_discreet_website_url">https://tenantd.example/</string>
-    <string name="tenant_safesecure_name">Tenant E</string>
-    <string name="tenant_safesecure_website_url">https://tenante.example/</string>
+    <!-- Tenant brand: Good Riddance Pest Control (GRPC). Other flavors override in src/&lt;flavor&gt;/. -->
+    <string name="app_name">Good Riddance Pest Control</string>
+    <string name="tenant_public_name">Good Riddance Pest Control</string>
+    <string name="tenant_public_website_url">https://www.grpcstaff.ie</string>
+    <string name="tenant_viking_name">Viking Pest Control</string>
+    <string name="tenant_viking_website_url">https://vikingpestcontrol.ie/</string>
+    <string name="tenant_primal_name">Primal Pest Control</string>
+    <string name="tenant_primal_website_url">https://primalpestcontrol.ie/</string>
+    <string name="tenant_discreet_name">Discreet Pest Control</string>
+    <string name="tenant_discreet_website_url">https://discreetpestcontrol.ie/</string>
+    <string name="tenant_safesecure_name">Safe Secure Pest Control</string>
+    <string name="tenant_safesecure_website_url">https://safesecure.ie/</string>
     <string name="widget_workview_description">WorkView: next 3 upcoming jobs</string>
     <string name="exit_button_offline">Exit</string>
-    <string name="website_button_text">Visit Company 1 Staff</string>
-    <string name="main_website_url">https://yourcompany.example</string>
+    <string name="website_button_text">Visit Good Riddance Pest Control Staff</string>
+    <string name="main_website_url">https://www.grpcstaff.ie</string>
     <!-- Offline trial: message when redirecting to website after trial ends -->
     <string name="offline_trial_redirect_message">Trial period has ended. Visit our website to continue.</string>
     <!-- Template limit (demo/offline only) -->
@@ -56,6 +56,7 @@
     <string name="main_button_view_reports">View Reports</string>
     <string name="main_button_work_view">Work View</string>
     <string name="main_button_job_work">Job Work</string>
+    <string name="main_button_management">Management</string>
     <string name="main_button_contracts">Contracts</string>
     <string name="main_button_commission">Commission</string>
     <string name="main_button_location_finder">Location Finder</string>
@@ -63,11 +64,16 @@
     <string name="location_finder_refresh_done">Locations updated from the server.</string>
     <string name="location_finder_refresh_partial">Some locations could not be refreshed. Check your connection.</string>
     <string name="location_finder_refresh_none">No technicians to refresh.</string>
+    <string name="location_tracking_notification_channel">Location sharing</string>
+    <string name="location_tracking_notification_title">Sharing location</string>
+    <string name="location_tracking_notification_text">Updating your work location for the team</string>
     <string name="main_button_notifications">Notifications</string>
     <string name="main_button_dashboard">Dashboard</string>
     <string name="main_button_invoices">Billing / Invoices</string>
     <string name="main_button_search">Search</string>
     <string name="main_button_messaging">Messaging</string>
+    <string name="main_button_features">Features</string>
+    <string name="main_button_hide_features">Hide features</string>
     <string name="main_button_maps">Maps</string>
     <string name="main_button_router">Router</string>
     <string name="main_button_converter">PDF → Word</string>
@@ -355,38 +361,38 @@
     <string name="quotation_company_contact_hint">Company Contact</string>
 
     <!-- PDF branding (GRPC defaults; demo overrides in src/demo/) -->
-    <string name="pdf_company_name">Company 1</string>
-    <string name="pdf_report_title">Company 1 Report</string>
+    <string name="pdf_company_name">Good Riddance Pest Control</string>
+    <string name="pdf_report_title">Good Riddance Pest Control Report</string>
     <string name="pdf_action_form_title">Action Form</string>
     <string name="pdf_footer_text">Created by reporting system</string>
-    <string name="pdf_default_watermark_text">Company 1</string>
+    <string name="pdf_default_watermark_text">Good Riddance Pest Control</string>
     <string name="pdf_filename_prefix">GRPC</string>
 
     <!-- Additional PDF strings that were previously hardcoded in multiple generators -->
     <string name="pdf_company_website">www.grpestcontrol.ie</string>
     <string name="pdf_company_website_short">grpestcontrol.ie</string>
-    <string name="pdf_auto_generated_note">This report was automatically generated by Company 1</string>
-    <string name="pdf_company_name_with_abbrev">Company 1</string>
+    <string name="pdf_auto_generated_note">This report was automatically generated by Good Riddance Pest Control</string>
+    <string name="pdf_company_name_with_abbrev">Good Riddance Pest Control (GRPC)</string>
     <string name="pdf_company_abbrev">GRPC</string>
-    <string name="pdf_era_title">Company 1 Environmental Risk Assessment</string>
+    <string name="pdf_era_title">Good Riddance Pest Control Environmental Risk Assessment</string>
 
     <!-- Action form footer (company-specific) -->
     <string name="pdf_page_number_format">Page %1$d of %2$d</string>
-    <string name="pdf_action_form_footer">This Action Form was generated by Company 1 Reporting System</string>
+    <string name="pdf_action_form_footer">This Action Form was generated by Good Riddance Pest Control Reporting System</string>
     <string name="pdf_action_form_footer_password_protected"> - Password Protected</string>
 
     <!-- Quotation success toast and filename prefix (company abbrev for quote numbers) -->
-    <string name="quote_saved_toast">Company 1 quote created and saved successfully!</string>
+    <string name="quote_saved_toast">Good Riddance Pest Control quote created and saved successfully!</string>
 
     <!-- Push notification channel (company-specific) -->
-    <string name="notification_channel_name">Company 1 Alerts</string>
+    <string name="notification_channel_name">Good Riddance Pest Control Alerts</string>
 
     <!-- Local storage folder names (reports and quotes). Use short, filesystem-safe names; demo overrides. -->
     <string name="reports_folder_name">GRPEST REPORTS</string>
     <string name="quotes_folder_name">GRPEST_QUOTES</string>
 
     <!-- PDF Template Settings UI hints (default GRPC examples; demo overrides) -->
-    <string name="pdf_template_main_header_hint">Main header (e.g. Company 1)</string>
+    <string name="pdf_template_main_header_hint">Main header (e.g. Good Riddance Pest Control)</string>
     <string name="pdf_template_footer_hint">Leave blank for default: Created by reporting system</string>
 
     <string-array name="reason_options">
@@ -415,56 +421,13 @@
     <string name="general_quotation_success">Quotation PDF generated and saved.</string>
     <string name="general_quotation_additional_info_hint">Quotation details (editable – pre-filled from selected issue)</string>
     <string name="general_quotation_add_second_issue">Add second issue</string>
-    <string name="quotation_viewer_search_hint">Company 1 Quotes…</string>
+    <string name="quotation_viewer_search_hint">Good Riddance Pest Control Quotes…</string>
     <string name="general_quotation_remove_second_issue">Remove second issue</string>
     <string name="general_quotation_issue_2_hint">Second issue (optional)</string>
     <string name="general_quotation_base_price_2_hint">Second issue price (€)</string>
     <string name="general_quotation_description_hint">Description (short summary, e.g. Rodent 3 part rodent riddance)</string>
 
-    <!-- Help README section content -->
-    <!-- Generic (unknown user) -->
-    <string name="help_section1_generic">How to Use the Pest Control App\n\n1. Login and main dashboard\n\n• Login: Sign in with your email and password. Your role (technician, admin, or super admin) and permissions are loaded from your profile (e.g. canSearch, canSeeContracts, canViewAllContracts).\n\n• Main menu: After login you see the main dashboard with buttons for Work View, Jobs, Contracts, Create Report, View Reports, Leads (if enabled), Notifications, and Search (if your account has search enabled). Use Help (this screen) anytime.</string>
-    <string name="help_section2_generic">2. Reports and quotations\n\n• Create Report: From the main menu open Create Report. You can open Company Report (service report), Contract Quotation (including Custom Quote), Bird Quotation, Action Form, Service Agreements, ERA, Invoice, or Create Custom Report (with your saved template). Each opens the same way; fill the form and save to generate a PDF.\n\n• View Reports: Open View Reports to see saved or uploaded PDFs. Upload PDFs to Firebase Storage using the folder path ReportsYY/Month (e.g. Reports26/January).</string>
-    <string name="help_section3_generic">3. Contracts\n\nContracts hold customer and visit information. Add and service customer contracts. Mark visits done when you complete a visit so Last Visit and Next Visit stay correct. From a contract you can create reports (fields auto-fill), view past reports by year folder, and add the contract to your Work View schedule.</string>
-    <string name="help_section4_generic">4. Work View and Jobs\n\n- Use Work View to schedule your day and mark work complete.\n- Use Jobs to manage assigned work items.\n\nCustom times and drag-and-drop\n- Create with custom duration: Add Job/Contract/Follow-up → when the time dialog appears choose “Custom time…”, enter start (e.g. 08:30) and end (e.g. 15:00).\n- Change event time: Tap event → Edit Time → set start/end and save.\n- Move event: In daily view, long-press an event, drag to another time slot and release; start moves to that slot, duration is kept.</string>
-    <string name="help_section5_generic">5. Commission (Leads)\n\nUse Leads to add and track leads and commission where this is enabled for your account. Add a lead, assign a technician or added-by, and track invoices and commission as allowed by your role.</string>
-    <string name="help_section6_generic">6. Notifications\n\nNotifications are in-app only. Open Notifications from the main menu to see assignments and updates. Each user sees only their own. You can delete individual notifications or clear all.</string>
-    <string name="help_section7_generic">7. Support and saving\n\nWhen you save a report, the PDF is stored on the device and you can upload it to Storage. When you save a job or add a Work View event, data is saved to the cloud. If something looks wrong, try logging out and back in. Contact your support contact for help.</string>
-
-    <!-- Role-based help (no hardcoded staff names) -->
-    <string name="help_section1_admin">How to Use the Pest Control App\n\n1. Login and main dashboard (Admin / Super Admin)\n\n• Login and roles: Sign in with email and password. Your role (admin or super_admin) and permissions are loaded from your profile. Admins can see contracts, assign work, and use the Admin Dashboard; super admins also have the Super Admin screen, Location Finder, and Messaging.\n\n• Main menu: Work View, Jobs, Contracts, Create Report, View Reports, Leads, Notifications, Search (if enabled), Admin Dashboard, and (super admin only) Super Admin. Use Help anytime.</string>
-    <string name="help_section2_admin">2. Reports and quotations (Admin)\n\n• Create Report: Same flow as technicians — Company Report, Contract Quotation (incl. Custom Quote), Action Form, Create Custom Report, etc. Create reports from Contracts/Jobs or from the main menu.\n\n• Upload PDFs to Firebase Storage: ReportsYY/Month/&lt;PDF&gt;. Use View Reports to share with customers/office.</string>
-    <string name="help_section3_admin">3. Contracts (Admin)\n\nAdd contracts from the main menu. Use the Assign-to dropdown to assign a technician; the assigned technician receives an in-app notification. You can view, edit, and delete contracts where your role permits. From a contract you can create reports, view past reports by year folder, and add the contract to a technician’s Work View schedule.</string>
-    <string name="help_section4_admin">4. Work View and Jobs (Admin)\n\nWork View: Schedule events and mark complete.\n- Reminders are scheduled ~30 minutes before jobs/contracts.\n- Custom duration: Add Job/Contract/Follow-up → “Custom time…” → enter start and end (e.g. 08:30 and 15:00).\n- Edit time: Tap event → Edit Time → change start/end and save.\n- Move event: Long-press in daily view, drag to another slot, release; duration is kept.\n\nJobs\n- Create jobs and assign technician via dropdown.\n- Admins may have additional delete/edit capabilities depending on role flags.</string>
-    <string name="help_section5_admin">5. Commission (Leads) (Admin)\n\nUse Leads for oversight. Add and track leads; assign technicians or added-by. Updating materials or commission can notify the assigned technician. Use this to keep commission and invoices in order across the team.</string>
-    <string name="help_section6_admin">6. Notifications (Admin)\n\nNotifications are in-app only. Open Notifications to see assignments and updates. Each user sees only their own. Use them to audit what was assigned and when. You can delete individual notifications or clear all from your own list.</string>
-    <string name="help_section7_admin">7. Support (Admin)\n\nWhen staff report missing items, confirm assignment and owner are correct. For report issues, confirm the correct Storage year folder was used and upload completed. When you save a report, job, or Work View event, data is saved to the cloud. Contact your support path for further help.</string>
-
-    <string name="help_section1_tech">How to Use the Pest Control App\n\n1. Login and main dashboard (Technician)\n\n• Login: Sign in with your email and password. Your role and permissions (e.g. canSearch, canSeeContracts) are loaded from your profile.\n\n• Main menu: Work View, Jobs, Contracts, Create Report, View Reports, Leads (if enabled), Notifications. If your account has search enabled, the Search button appears — use it to find contracts, reports, commission, and work view items. Use Help (this screen) anytime.</string>
-    <string name="help_section2_tech">2. Reports and quotations (Technician)\n\n• Create Report: From the main menu open Create Report. You can open Company Report (service report), Contract Quotation (including Custom Quote), Action Form, or Create Custom Report. Each works the same: fill the form and save to generate a PDF. Create reports from Jobs or Contracts so fields auto-fill.\n\n• Upload: Use folder path ReportsYY/Month (e.g. Reports26/January). Use View Reports to open and share saved or uploaded PDFs.</string>
-    <string name="help_section3_tech">3. Contracts\n\nContracts hold customer and visit information. Add and service customer contracts. Mark visits done when you complete a visit so Last Visit and Next Visit stay correct. From a contract you can create reports (fields auto-fill), view past reports by year folder, and add the contract to your Work View schedule.</string>
-    <string name="help_section4_tech">4. Jobs &amp; Work View\n\nWork View + Jobs (Technician)\n\nWork View\n- Check your daily schedule and upcoming events.\n- Mark events complete when finished.\n- Custom duration: Add Job/Contract/Follow-up → when the time dialog appears choose “Custom time…”, enter start (e.g. 08:30) and end (e.g. 15:00).\n- Change event time: Tap event → Edit Time → set start/end and save.\n- Move event: In daily view, long-press an event, drag to another time slot and release; start moves to that slot, duration is kept.</string>
-    <string name="help_section5_tech">5. Commission\n\nCommission (Leads) (Technician)\n\n- Use Leads to track invoices/commission where enabled.</string>
-    <string name="help_section6_tech">6. Notifications\n\nNotifications are in-app only. Open Notifications from the main menu to see assignments and updates. You see only your own. You can delete individual notifications or clear all.</string>
-    <string name="help_section7_tech">7. Support and saving\n\nWhen you save a report, the PDF is stored on the device and you can upload it to Storage. When you save a job or add a Work View event, data is saved to the cloud. If something needs correcting in jobs or contracts, contact support. If reports are missing, confirm you uploaded to the correct year folder (ReportsYY/Month).</string>
-
-    <!-- Backward compatible IDs used by layout defaults (will be overridden in HelpReadmeActivity) -->
-    <string name="help_section1">How to Use the Pest Control App\n\n1. Getting started\n\nAfter login you see the main menu. Your main tools are Work View, Jobs, Contracts, and Reports. Use Notifications to see assigned work and updates. Use Help (this screen) anytime. Search is available if your account has search enabled.</string>
-
-    <string name="help_section2">2. Reports\n\nCreate reports from the main menu, from Jobs, or from Contracts. Report types include Company Report, Generic Report, and Action Form. When you save a report, a PDF is created on the device. Upload PDFs to Firebase Storage before removing local copies. Use the folder path ReportsYY/Month (e.g. Reports26/January). Use View Reports to open and share saved or uploaded PDFs.</string>
-
-    <string name="help_section3">Contracts\n\n- Add and service customer contracts.\n- Mark visits done to keep Last/Next Visit correct.</string>
-
-    <string name="help_section4">4. Work View and Jobs\n\n- Use Work View to schedule your day and mark work complete.\n- Use Jobs to manage assigned work items.\n\nCustom times and drag-and-drop\n- Create with custom duration: Add Job/Contract/Follow-up → when the time dialog appears choose “Custom time…”, enter start (e.g. 08:30) and end (e.g. 15:00).\n- Change event time: Tap event → Edit Time → set start/end and save.\n- Move event: In daily view, long-press an event, drag to another time slot and release; start moves to that slot, duration is kept.</string>
-
-    <string name="help_section5">5. Commission (Leads)\n\nUse Leads to add and track leads and commission where this is enabled for your account. Add a lead, assign a technician or added-by, and track invoices and commission as allowed by your role.</string>
-
-    <string name="help_section6">6. Notifications\n\nNotifications are in-app only. Open Notifications from the main menu to see assignments and updates. Each user sees only their own. You can delete individual notifications or clear all.</string>
-
-    <string name="help_section7">7. Support and saving\n\nWhen you save a report, the PDF is stored on the device and you can upload it to Storage. When you save a job or add a Work View event, data is saved to the cloud. If something looks wrong, try logging out and back in. Contact your support contact for help.</string>
-
-    <!-- Admin-only: API keys in Firestore for AI Fix feature -->
-    <string name="help_section8_admin_ai_key">API keys for the AI Fix feature are stored in Firestore (collection AI-Chat, document AI-API). Only a super admin can update them via Firebase Console.\n\n• KEY = Hugging Face token (Inference permissions).\n• key-grog = Groq API key.\n\nThe app uses Groq if key-grog is set; otherwise Hugging Face if KEY is set. Set at least one in Firestore.</string>
+    <!-- How To Use App content lives in values/help_guide.xml -->
 
     <!-- Platform invoices (super_admin create; admin view — PDFs in Storage companies/{tenant}/invoices/) -->
     <string name="invoice_screen_list_title">Billing / Invoices</string>
@@ -568,4 +531,124 @@
     <string name="invoice_tpl_custom_title">Pest control invoice</string>
     <string name="invoice_tpl_custom_body">Pest control service as described below.</string>
     <string name="invoice_tpl_custom_notes">Payment due on receipt.</string>
+
+    <string name="main_button_stock">Stock</string>
+    <string name="main_button_audit_logs">Audit Logs</string>
+    <string name="audit_title">Audit Logs</string>
+    <string name="audit_today">Today</string>
+    <string name="audit_seven_days">7 Days</string>
+    <string name="audit_all">All</string>
+    <string name="audit_delete_all">Delete</string>
+    <string name="audit_delete_title">Delete all audit logs?</string>
+    <string name="audit_delete_message">This permanently removes every audit log.</string>
+    <string name="audit_delete_confirm">Delete</string>
+    <string name="audit_deleted">Audit logs deleted.</string>
+    <string name="audit_delete_failed">Could not delete the audit logs.</string>
+    <string name="audit_empty">No completed activity in this view.</string>
+    <string name="audit_unavailable">Audit Logs need a signed-in online account.</string>
+    <string name="audit_load_failed">Could not load Audit Logs.</string>
+    <string name="audit_save_pdf">Save to PDF</string>
+    <string name="audit_save_excel">Save to Excel</string>
+    <string name="audit_export_empty">No completed activity in this view to save.</string>
+    <string name="audit_export_failed">Could not save the audit log.</string>
+    <string name="audit_export_saved">Saved to the Behinds list folder.</string>
+    <string name="stock_unavailable_offline">Stock is unavailable in the offline app.</string>
+    <string name="stock_not_signed_in">You are not signed in.</string>
+    <string name="stock_admin_only">Only an admin can do that.</string>
+    <string name="stock_title">Stock</string>
+    <string name="stock_request_stock">Request stock</string>
+    <string name="stock_my_requests">My requests</string>
+    <string name="stock_nothing_needed">Nothing needed this week</string>
+    <string name="stock_week_heading">Weekly stock check</string>
+    <string name="stock_week_not_completed">This week\'s response:\nNOT COMPLETED</string>
+    <string name="stock_week_completed_request">Completed: %1$s\nRequest submitted</string>
+    <string name="stock_week_completed_none">Completed: %1$s\nNothing needed</string>
+    <string name="stock_week_load_failed">Could not load this week\'s stock check.</string>
+    <string name="stock_users_title">Users</string>
+    <string name="stock_all_pending">All pending</string>
+    <string name="stock_pending_count">Pending: %1$d</string>
+    <string name="stock_no_users">No users to show.</string>
+    <string name="stock_users_load_failed">Could not load users.</string>
+    <string name="stock_filter_pending">Pending</string>
+    <string name="stock_filter_ready">Ready</string>
+    <string name="stock_filter_retrieved">Retrieved</string>
+    <string name="stock_filter_all">All</string>
+    <string name="stock_no_requests">No stock requests.</string>
+    <string name="stock_requests_load_failed">Could not load stock requests.</string>
+    <string name="stock_item_count_one">1 item</string>
+    <string name="stock_item_count_many">%1$d items</string>
+    <string name="stock_status_pending">PENDING</string>
+    <string name="stock_status_ready">READY FOR COLLECTION</string>
+    <string name="stock_status_retrieved">RETRIEVED</string>
+    <string name="stock_product_hint">Search or type a product</string>
+    <string name="stock_quantity_hint">Quantity</string>
+    <string name="stock_add_item">Add item</string>
+    <string name="stock_remove_item">Remove</string>
+    <string name="stock_notes_hint">Request notes (optional)</string>
+    <string name="stock_submit">Submit request</string>
+    <string name="stock_need_product">Enter a product name.</string>
+    <string name="stock_need_quantity">Enter a quantity.</string>
+    <string name="stock_quantity_too_long">Quantity must be 80 characters or fewer.</string>
+    <string name="stock_too_many_items">A request can include up to 30 items.</string>
+    <string name="stock_need_items">Add at least one item.</string>
+    <string name="stock_notes_too_long">Notes must be 500 characters or fewer.</string>
+    <string name="stock_submitted">Stock request submitted.</string>
+    <string name="stock_nothing_saved">Nothing needed this week has been saved.</string>
+    <string name="stock_save_failed">Could not save the stock response.</string>
+    <string name="stock_request_title">Request stock</string>
+    <string name="stock_detail_title">Stock request</string>
+    <string name="stock_detail_missing">This stock request is no longer available.</string>
+    <string name="stock_detail_requested_by">Requested by:\n%1$s</string>
+    <string name="stock_detail_requested_on">Requested:\n%1$s</string>
+    <string name="stock_detail_status">Status:\n%1$s</string>
+    <string name="stock_detail_items">Items:</string>
+    <string name="stock_detail_qty">Qty: %1$s</string>
+    <string name="stock_detail_notes">Notes:\n%1$s</string>
+    <string name="stock_detail_approved">Approved:\n%1$s\nApproved by:\n%2$s</string>
+    <string name="stock_detail_retrieved">Retrieved:\n%1$s\nRetrieved by:\n%2$s</string>
+    <string name="stock_mark_ready">Mark ready</string>
+    <string name="stock_mark_retrieved">Mark retrieved</string>
+    <string name="stock_marked_ready">Request marked ready for collection.</string>
+    <string name="stock_marked_retrieved">Request marked retrieved.</string>
+    <string name="stock_ready_notification_title">Stock</string>
+    <string name="stock_ready_notification_body">Your Stock request is ready for collection.</string>
+    <string name="stock_delete_request">Delete request</string>
+    <string name="stock_delete_title">Delete Stock Request?</string>
+    <string name="stock_delete_message">%1$s\nRetrieved: %2$s\n\nThis will permanently remove this Stock request.</string>
+    <string name="stock_delete_confirm">Delete</string>
+    <string name="stock_cancel">Cancel</string>
+    <string name="stock_deleted">Stock request deleted.</string>
+    <string name="stock_delete_failed">Could not delete this stock request.</string>
+    <string name="stock_only_pending_ready">Only a pending request can be marked ready.</string>
+    <string name="stock_only_ready_retrieved">Only a ready request can be marked retrieved.</string>
+    <string name="stock_only_retrieved_delete">Only a retrieved request can be deleted.</string>
+    <string name="stock_week_card_title">Weekly stock check</string>
+    <string name="stock_week_card_body">Confirm what you need this week.</string>
+    <string name="stock_dismiss">Dismiss</string>
+    <string name="stock_history_title">Stock requests</string>
+    <string name="stock_line_summary">%1$s\nQty: %2$s</string>
+
+    <string name="contract_assets_title">Assets</string>
+    <string name="contract_assets_edit_title">Edit Assets</string>
+    <string name="contract_assets_edit">Edit Assets</string>
+    <string name="contract_assets_add">Add Assets</string>
+    <string name="contract_assets_empty">No Assets Added</string>
+    <string name="contract_assets_quantity">Quantity:</string>
+    <string name="contract_assets_name">Name:</string>
+    <string name="contract_assets_custom_heading">Custom Asset:</string>
+    <string name="contract_assets_add_custom">Add Custom Asset</string>
+    <string name="contract_assets_remove">Remove</string>
+    <string name="contract_assets_save">Save Assets</string>
+    <string name="contract_assets_saved">Assets saved</string>
+    <string name="contract_assets_save_failed">Could not save Assets.</string>
+    <string name="contract_assets_load_failed">Could not load Assets.</string>
+    <string name="contract_assets_denied">You do not have permission to open these Assets.</string>
+    <string name="contract_assets_missing">This contract is no longer available.</string>
+    <string name="contract_assets_unavailable">Assets need a signed-in online account.</string>
+    <string name="contract_assets_blank_name">Enter a name for the custom Asset.</string>
+    <string name="contract_assets_name_too_long">Asset names must be 80 characters or fewer.</string>
+    <string name="contract_assets_duplicate">That Asset name is already on this Contract.</string>
+    <string name="contract_assets_standard_exists">Use the %1$s quantity. It is already on this Contract.</string>
+    <string name="contract_assets_bad_quantity">Enter a whole number for %1$s. Zero or greater.</string>
+    <string name="contract_assets_too_many_custom">A contract can have up to 20 custom Assets.</string>
 </resources>

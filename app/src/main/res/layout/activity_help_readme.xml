@@ -15,14 +15,23 @@
         android:id="@+id/helpTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="How to Use the Pest Control App"
+        android:text="@string/help_title"
         android:textSize="20sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="12dp"
+        android:layout_marginBottom="8dp"
         android:textColor="?android:attr/textColorPrimary" />
 
-    <!-- Admin-only: preview help text for other roles -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/help_intro_hint"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:layout_marginBottom="12dp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <!-- Super Admin: preview help text for other roles -->
     <LinearLayout
         android:id="@+id/helpRoleRow"
         android:layout_width="match_parent"
@@ -35,7 +44,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="View help for:"
+            android:text="@string/help_view_for_label"
             android:textColor="?android:attr/textColorSecondary"
             android:layout_marginEnd="8dp" />
 
@@ -60,219 +69,121 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Section 1: Logging In and Navigation -->
-            <LinearLayout
-                android:id="@+id/section1"
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="8dp">
+                android:text="@string/help_toc"
+                android:textSize="13sp"
+                android:padding="10dp"
+                android:layout_marginBottom="12dp"
+                android:background="?attr/colorSurface"
+                android:textColor="?android:attr/textColorSecondary" />
 
-                <TextView
-                    android:id="@+id/section1Header"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="1. Getting Started"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:padding="10dp"
-                    android:background="?attr/colorSurface"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:id="@+id/section1Content"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    android:padding="8dp"
-                    android:textSize="14sp"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:text="@string/help_section1" />
+            <!-- Section 1 -->
+            <LinearLayout android:id="@+id/section1" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section1Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_1" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section1Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section1" />
             </LinearLayout>
 
-            <!-- Section 2: Contracts Overview -->
-            <LinearLayout
-                android:id="@+id/section2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:id="@+id/section2Header"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="2. Reports (Create &amp; Upload)"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:padding="10dp"
-                    android:background="?attr/colorSurface"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:id="@+id/section2Content"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    android:padding="8dp"
-                    android:textSize="14sp"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:text="@string/help_section2" />
+            <!-- Section 2 -->
+            <LinearLayout android:id="@+id/section2" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section2Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_2" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section2Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section2" />
             </LinearLayout>
 
-            <!-- Section 3: Editing / Transferring Contracts -->
-            <LinearLayout
-                android:id="@+id/section3"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:id="@+id/section3Header"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="3. Contracts"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:padding="10dp"
-                    android:background="?attr/colorSurface"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:id="@+id/section3Content"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    android:padding="8dp"
-                    android:textSize="14sp"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:text="@string/help_section3" />
+            <!-- Section 3 -->
+            <LinearLayout android:id="@+id/section3" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section3Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_3" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section3Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section3" />
             </LinearLayout>
 
-            <!-- Section 4: Marking Contracts as Done and Options -->
-            <LinearLayout
-                android:id="@+id/section4"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:id="@+id/section4Header"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="4. Jobs &amp; Work View"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:padding="10dp"
-                    android:background="?attr/colorSurface"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:id="@+id/section4Content"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    android:padding="8dp"
-                    android:textSize="14sp"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:text="@string/help_section4" />
+            <!-- Section 4 -->
+            <LinearLayout android:id="@+id/section4" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section4Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_4" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section4Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section4" />
             </LinearLayout>
 
-            <!-- Section 5: Exporting Contracts to PDF -->
-            <LinearLayout
-                android:id="@+id/section5"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:id="@+id/section5Header"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="5. Commission"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:padding="10dp"
-                    android:background="?attr/colorSurface"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:id="@+id/section5Content"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    android:padding="8dp"
-                    android:textSize="14sp"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:text="@string/help_section5" />
+            <!-- Section 5 -->
+            <LinearLayout android:id="@+id/section5" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section5Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_5" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section5Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section5" />
             </LinearLayout>
 
-            <!-- Section 6: Work View and Notifications -->
-            <LinearLayout
-                android:id="@+id/section6"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:id="@+id/section6Header"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="6. Notifications"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:padding="10dp"
-                    android:background="?attr/colorSurface"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:id="@+id/section6Content"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    android:padding="8dp"
-                    android:textSize="14sp"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:text="@string/help_section6" />
+            <!-- Section 6 -->
+            <LinearLayout android:id="@+id/section6" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section6Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_6" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section6Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section6" />
             </LinearLayout>
 
-            <!-- Section 7: Tips -->
-            <LinearLayout
-                android:id="@+id/section7"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:id="@+id/section7Header"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="7. Support"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:padding="10dp"
-                    android:background="?attr/colorSurface"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:id="@+id/section7Content"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    android:padding="8dp"
-                    android:textSize="14sp"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:text="@string/help_section7" />
+            <!-- Section 7 -->
+            <LinearLayout android:id="@+id/section7" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section7Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_7" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section7Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section7" />
             </LinearLayout>
 
-            <!-- Section 8: Admin-only - API keys in Firestore (AI Fix feature) -->
+            <!-- Section 8 -->
+            <LinearLayout android:id="@+id/section8" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section8Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_8" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section8Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section8" />
+            </LinearLayout>
+
+            <!-- Section 9 -->
+            <LinearLayout android:id="@+id/section9" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section9Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_9" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section9Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section9" />
+            </LinearLayout>
+
+            <!-- Section 10 -->
+            <LinearLayout android:id="@+id/section10" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section10Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_10" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section10Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section10" />
+            </LinearLayout>
+
+            <!-- Section 11 -->
+            <LinearLayout android:id="@+id/section11" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section11Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_11" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section11Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section11" />
+            </LinearLayout>
+
+            <!-- Section 12 -->
+            <LinearLayout android:id="@+id/section12" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section12Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_12" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section12Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section12" />
+            </LinearLayout>
+
+            <!-- Section 13 -->
+            <LinearLayout android:id="@+id/section13" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section13Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_13" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section13Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section13" />
+            </LinearLayout>
+
+            <!-- Section 14 -->
+            <LinearLayout android:id="@+id/section14" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section14Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_14" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section14Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section14" />
+            </LinearLayout>
+
+            <!-- Section 15 -->
+            <LinearLayout android:id="@+id/section15" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section15Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_15" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section15Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section15" />
+            </LinearLayout>
+
+            <!-- Section 16 -->
+            <LinearLayout android:id="@+id/section16" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section16Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_16" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section16Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section16" />
+            </LinearLayout>
+
+            <!-- Section 17 -->
+            <LinearLayout android:id="@+id/section17" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="8dp">
+                <TextView android:id="@+id/section17Header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/help_header_17" android:textSize="16sp" android:textStyle="bold" android:padding="10dp" android:background="?attr/colorSurface" android:textColor="?android:attr/textColorPrimary" />
+                <TextView android:id="@+id/section17Content" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:padding="10dp" android:textSize="14sp" android:lineSpacingExtra="2dp" android:textColor="?android:attr/textColorPrimary" android:text="@string/help_section17" />
+            </LinearLayout>
+
+            <!-- Section 18: Super Admin / Owner only -->
             <LinearLayout
-                android:id="@+id/section8"
+                android:id="@+id/sectionOwner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -280,10 +191,10 @@
                 android:visibility="gone">
 
                 <TextView
-                    android:id="@+id/section8Header"
+                    android:id="@+id/sectionOwnerHeader"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="8. Admin: API Keys (Firestore)"
+                    android:text="@string/help_header_owner"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:padding="10dp"
@@ -291,14 +202,15 @@
                     android:textColor="?android:attr/textColorPrimary" />
 
                 <TextView
-                    android:id="@+id/section8Content"
+                    android:id="@+id/sectionOwnerContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:visibility="gone"
-                    android:padding="8dp"
+                    android:padding="10dp"
                     android:textSize="14sp"
+                    android:lineSpacingExtra="2dp"
                     android:textColor="?android:attr/textColorPrimary"
-                    android:text="@string/help_section8_admin_ai_key" />
+                    android:text="@string/help_section_owner" />
             </LinearLayout>
 
         </LinearLayout>
@@ -308,7 +220,7 @@
         android:id="@+id/helpBackButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Back"
+        android:text="@string/help_back"
         android:textSize="16sp"
         android:textStyle="bold"
         android:background="@drawable/button_background"

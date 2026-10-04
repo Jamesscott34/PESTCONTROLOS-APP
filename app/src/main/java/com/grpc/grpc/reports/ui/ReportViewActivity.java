@@ -414,6 +414,8 @@ public class ReportViewActivity extends AppCompatActivity {
         UploadTask uploadTask = fileRef.putFile(fileUri);
         uploadTask.addOnSuccessListener(taskSnapshot -> {
                 com.grpc.grpc.core.StorageMetricsHelper.recordUpload();
+                com.grpc.grpc.audit.data.AuditLogRepository.reportUploaded(
+                        originalFileName, "", folderPath + "/" + originalFileName, null, null, null, null);
                 Toast.makeText(this, "File uploaded successfully to " + folderPath, Toast.LENGTH_SHORT).show();
         }).addOnFailureListener(e ->
                 Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()

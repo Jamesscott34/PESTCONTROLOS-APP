@@ -1,6 +1,6 @@
 # PestControlOS — Android Field Operations Platform
 
-**Version:** 2.1.2 &nbsp;|&nbsp; **Min SDK:** 27 (Android 8.1) &nbsp;|&nbsp; **Target SDK:** 35 &nbsp;|&nbsp; **Language:** Java
+**Version:** 2.2.0 &nbsp;|&nbsp; **Min SDK:** 27 (Android 8.1) &nbsp;|&nbsp; **Target SDK:** 35 &nbsp;|&nbsp; **Language:** Java
 
 PestControlOS is a multi-tenant Android application built for pest control field operations. It covers the full service lifecycle: scheduling, contracts, job management, PDF report generation, quotations, service agreements, environmental risk assessments, invoicing, team messaging, lead tracking, site mapping, and staff location monitoring — all backed by Firebase and producing professional PDFs on-device via iText7.
 

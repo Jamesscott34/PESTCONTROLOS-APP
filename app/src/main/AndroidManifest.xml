@@ -39,6 +39,13 @@
     <!-- Location (for admin location finder; tech devices publish last known location) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- WorkManager briefly promotes location workers to a location foreground service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- Restore WorkManager location scheduling after reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     
     <!-- External storage: save reports locally; read for viewing reports on device (incl. offline flavor) -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
@@ -117,6 +124,31 @@
 
         <activity
             android:name="com.grpc.grpc.billing.ui.InvoiceListActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <activity
+            android:name="com.grpc.grpc.stock.ui.StockActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+        <activity
+            android:name="com.grpc.grpc.audit.ui.AuditLogActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+        <activity
+            android:name="com.grpc.grpc.stock.ui.StockUsersActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+        <activity
+            android:name="com.grpc.grpc.stock.ui.StockRequestActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+        <activity
+            android:name="com.grpc.grpc.stock.ui.StockRequestDetailActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+        <activity
+            android:name="com.grpc.grpc.stock.ui.MyStockRequestsActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
@@ -310,11 +342,26 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <activity
+            android:name="com.grpc.grpc.contracts.ui.ContractDetailActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
         <!-- New contract creation -->
         <activity
             android:name="com.grpc.grpc.contracts.ui.AddContractActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
+        <activity
+            android:name="com.grpc.grpc.contracts.ui.ContractAssetsActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
+        <activity
+            android:name="com.grpc.grpc.contracts.ui.ContractAssetsEditActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
 
         <!-- ============================================================================
              QUOTATION & SERVICE AGREEMENT ACTIVITIES
@@ -413,6 +460,11 @@
             android:name="com.grpc.grpc.jobs.ui.ViewJobActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
+
+        <activity
+            android:name="com.grpc.grpc.jobs.ui.JobWorkDetailActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
 
         <!-- ============================================================================
              RODENT CONTROL ACTIVITIES
@@ -577,6 +629,18 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true"/>
 
+        <activity android:name="com.grpc.grpc.jobs.ui.ManagementCompaniesActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
+        <activity android:name="com.grpc.grpc.jobs.ui.AddManagementCompanyActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
+        <activity android:name="com.grpc.grpc.jobs.ui.ManagementJobDetailActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
         <!-- ============================================================================
              CONTRACT REPORT & BEHINDS LIST ACTIVITIES
              ============================================================================
@@ -618,6 +682,23 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <!-- WorkManager temporary foreground service while acquiring GPS (location type) -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="location"
+            tools:node="merge" />
+
+        <receiver
+            android:name="com.grpc.grpc.location.LocationBootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <!-- ============================================================================
              FILE PROVIDER CONFIGURATION

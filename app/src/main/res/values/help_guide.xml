@@ -1,0 +1,2608 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="help_title" formatted="false"><![CDATA[How to Use the App]]></string>
+    <string name="help_intro_hint" formatted="false"><![CDATA[Tap a section heading to open or close it. Use clear step-by-step instructions below.]]></string>
+    <string name="help_view_for_label" formatted="false"><![CDATA[View help for:]]></string>
+    <string name="help_role_admin_view" formatted="false"><![CDATA[Admin view]]></string>
+    <string name="help_role_tech_view" formatted="false"><![CDATA[Technician view]]></string>
+    <string name="help_back" formatted="false"><![CDATA[Back]]></string>
+    <string name="help_toc" formatted="false"><![CDATA[Tap a heading below to open or close that section.
+
+1 Getting Started
+2 Understanding Your Access
+3 Main Screen
+4 Notifications
+5 Creating Reports
+6 Viewing Reports
+7 Job Work
+8 Management
+9 Contracts
+10 Quotations
+11 Billing / Invoices
+12 Leads / Commission
+13 Email and Sharing
+14 Other Tools
+15 Finding Previous Work and Common Tasks
+16 Troubleshooting and Glossary
+17 Quick Guide
+Owner Tools (application owner only)]]></string>
+    <string name="help_header_1" formatted="false"><![CDATA[1. Getting Started]]></string>
+    <string name="help_header_2" formatted="false"><![CDATA[2. Understanding Your Access]]></string>
+    <string name="help_header_3" formatted="false"><![CDATA[3. Main Screen]]></string>
+    <string name="help_header_4" formatted="false"><![CDATA[4. Notifications]]></string>
+    <string name="help_header_5" formatted="false"><![CDATA[5. Creating Reports]]></string>
+    <string name="help_header_6" formatted="false"><![CDATA[6. Viewing Reports]]></string>
+    <string name="help_header_7" formatted="false"><![CDATA[7. Job Work]]></string>
+    <string name="help_header_8" formatted="false"><![CDATA[8. Management]]></string>
+    <string name="help_header_9" formatted="false"><![CDATA[9. Contracts]]></string>
+    <string name="help_header_10" formatted="false"><![CDATA[10. Quotations]]></string>
+    <string name="help_header_11" formatted="false"><![CDATA[11. Billing / Invoices]]></string>
+    <string name="help_header_12" formatted="false"><![CDATA[12. Leads / Commission]]></string>
+    <string name="help_header_13" formatted="false"><![CDATA[13. Email and Sharing]]></string>
+    <string name="help_header_14" formatted="false"><![CDATA[14. Other Tools]]></string>
+    <string name="help_header_15" formatted="false"><![CDATA[15. Finding Previous Work and Common Tasks]]></string>
+    <string name="help_header_16" formatted="false"><![CDATA[16. Troubleshooting and Glossary]]></string>
+    <string name="help_header_17" formatted="false"><![CDATA[17. Quick Guide]]></string>
+    <string name="help_header_owner" formatted="false"><![CDATA[18. Super Admin / Owner Tools]]></string>
+    <string name="help_section1" formatted="false"><![CDATA[WHAT THIS SECTION COVERS
+How to open the app and reach the main screen.
+
+STEPS
+1. Open the app.
+2. Enter your email address.
+3. Enter your password.
+4. Tap the login button.
+5. After a successful sign-in you arrive at the main screen.
+6. The app can remember your sign-in so you may not need to type your password every time. If you tap Logout, you will need to sign in again next time.
+
+MAIN SCREEN
+You will see a welcome message and a list of buttons. The buttons you see depend on your account. That is normal.
+
+LOGOUT
+At the bottom of the main screen, tap Logout when you have finished. On some limited versions the button may say Exit instead.
+
+LIMITED / OFFLINE VERSIONS
+Some company versions of the app open with little or no sign-in and mainly allow Create Report and View Reports. If you use one of those versions, many business buttons will not appear. That is expected.]]></string>
+    <string name="help_section2" formatted="false"><![CDATA[TECHNICIAN
+You mainly work on jobs and contracts assigned to you.
+
+You can normally:
+• Create and view reports and quotations
+• Use Job Work for your own jobs
+• Use Management for jobs assigned to you
+• Service your contracts
+• Use Notifications and Email
+• Use Commission if it is shown on your screen
+
+You normally cannot:
+• Manage all staff accounts
+• See every other technician’s Job Work
+• Reopen completed jobs
+• Create Management companies
+• Use Location Finder (this is not available to technician accounts)
+
+If a button is missing, your account does not include that access. Ask your administrator if you believe something should be available.]]></string>
+    <string name="help_section3" formatted="false"><![CDATA[The main screen is your home menu. Buttons are grouped into sections such as Quick Actions, Operations, Business, Tools, and System.
+
+BUTTONS YOU MAY SEE
+• Create Report — make service reports, quotations, agreements, and similar documents
+• View Reports — open PDFs saved on this phone or in company cloud folders
+• Job Work — your service jobs
+• Management — jobs for management companies
+• Contracts — recurring customer contracts
+• Email — write an email and attach files
+• Commission — leads and commission (only if shown)
+• Notifications — alerts and updates
+• Messaging — only if shown on your account
+• Maps — only if shown on your account
+• Router — only if shown on your account
+• Search — only if shown on your account
+• PDF to Word — only if shown on your account
+• Billing / Invoices — only if your account has been given invoice access
+• Logout — sign out
+
+IMPORTANT
+• Work View and How To Use App are not normally shown to technicians on the main screen.
+• Location Finder is not available to technician accounts.
+• Some buttons such as General Quotes, Service agreement, and ERA may be hidden on the main screen. Those options are still available inside Create Report.]]></string>
+    <string name="help_section4" formatted="false"><![CDATA[WHAT IT IS FOR
+Notifications shows alerts about work assigned to you and important updates.
+
+HOW TO OPEN
+Main screen then Notifications
+
+WHAT YOU MAY SEE
+• Job assignment updates
+• Management work updates
+• Contract updates
+• Message alerts
+• Other work reminders
+
+HOW TO USE
+1. Open Notifications.
+2. Read the list.
+3. Tap a notification when it links to a job, contract, or related screen.
+4. You can mark items as read or remove them from your own list where the app allows.
+
+You only see your own notifications.]]></string>
+    <string name="help_section5" formatted="false"><![CDATA[WHAT IT IS FOR
+Create Report is where you make PDFs for site visits, quotations, agreements, and related documents.
+
+HOW TO OPEN
+Main screen then Create Report
+
+You will see sections such as REPORTS, QUOTATIONS, AGREEMENTS AND COMPLIANCE, and TEMPLATES.
+
+REPORT OPTIONS
+• Service Report — full visit report
+• Action Form — shorter action document
+• Contract Quotation — 4 / 6 / 8 / 12 part quotes
+• Bird Quote
+• Generic Quotation — standard wording from the built-in list
+• Custom Quotation — write your own lines
+• Service Agreements
+• ERA
+• Safety Statement
+• Custom Template — set your branding options
+• Create Custom Report — service report using your saved template
+
+SERVICE REPORT — STEP BY STEP
+1. Tap Create Report.
+2. Tap Service Report.
+3. Enter or confirm the customer / site details.
+4. Before saving, choose the correct routing option so the report goes to the right place:
+   • Job
+   • Management
+   • Contract
+5. Enter inspection findings and site details.
+6. Add recommendations. You can pick common recommendation wording where offered.
+7. Add products used.
+8. Add photos or signatures if those options are shown.
+9. Tap Preview if you want to check the PDF first.
+10. Save / generate the report.
+11. Find it later under View Reports, or from the related Job / Management / Contract screen.
+
+PRODUCT ENTRY
+1. Start typing the product name.
+2. Matching products appear underneath.
+3. Tap the correct product.
+4. If it is not in the list and manual typing is allowed, keep typing the full name.
+5. Enter the quantity and any other required details such as batch or location.
+6. Add further products the same way.
+
+IMPORTANT
+Saving a report does not automatically complete a Job Work or Management job. After the report, still use Mark follow up or Mark complete when needed.
+For contracts, still use Mark as Routine or Mark as Call Out when the visit type requires it.]]></string>
+    <string name="help_section6" formatted="false"><![CDATA[WHAT IT IS FOR
+View Reports lets you open PDFs that are already on this phone or stored in company cloud folders.
+
+HOW TO OPEN
+Main screen then View Reports
+
+LOCAL REPORTS
+• Reports — PDFs saved on this phone
+• Quotations — quotation PDFs saved on this phone
+
+CLOUD AND STORAGE
+• Stored Reports
+• Report folders (cloud)
+• Contract files (cloud)
+• Cloud Quotations
+• Management Jobs
+• Jobs Folder
+
+OTHER DOCUMENTS
+• Service Agreements
+• ERA
+• View Behinds
+
+VIEW / SHARE / DOWNLOAD
+When a file list or report dialog offers these actions:
+• View — opens the PDF on the phone
+• Share — sends the PDF using another app on the phone (email, WhatsApp, Drive, and similar)
+• Download — keeps a copy in the app’s normal local report area so you can open it again from View Reports then Reports
+
+TIP
+If you cannot find a file on this phone, check the matching cloud folder. Company cloud copies remain available even if this phone’s local files were cleared.]]></string>
+    <string name="help_section7" formatted="false"><![CDATA[WHAT IT IS FOR
+Job Work is for one-off / service jobs that are not Management company jobs and not normal contract routines.
+
+WHO CAN USE IT
+Technicians and admins. Technicians see jobs assigned to them. Admins see all jobs.
+
+HOW TO OPEN
+Main screen then Job Work
+
+FILTERS
+• Active — open jobs
+• Follow ups — still need another visit
+• Completed — finished jobs (still available to open later)
+• All — everything
+
+CREATING A JOB
+1. Open Job Work.
+2. Tap Add job.
+3. Enter Customer Name.
+4. Enter Address.
+5. Enter Contact.
+6. Enter Email if available.
+7. Enter Issue.
+8. Assigned Technician is normally you.
+9. Tap Submit Job.
+
+OPENING A JOB
+The list shows customer, address, technician, and status. Tap a job to open full details.
+
+ACTIONS YOU MAY SEE
+• Create report
+• View reports
+• View visit history
+• Mark follow up
+• Mark complete
+• Set follow-up date
+• Save address
+• Change email
+• Open map
+• Browse historical reports
+• Back
+
+MARK FOLLOW UP
+Use Mark follow up when today’s visit is done but the job still needs another visit.
+• The job stays open
+• Status becomes Follow Up Required
+• Visit history is updated
+• Reports already created stay available
+
+MARK COMPLETE
+Use Mark complete only when no further visit is currently required.
+• The job moves to Completed
+• It is not deleted
+• Reports and visit history remain available
+• An admin can reopen it later if needed
+
+SET FOLLOW-UP DATE
+Set follow-up date records a diary date. It is not the same as Mark follow up. Use Mark follow up when the status should move to Follow Up Required.
+
+COMMON MISTAKES
+• Creating a report but forgetting Mark follow up or Mark complete
+• Looking under Active when the job is already under Follow ups or Completed
+• Expecting to reopen a completed job without an admin]]></string>
+    <string name="help_section8" formatted="false"><![CDATA[WHAT IT IS FOR
+Management is for jobs belonging to management companies / property groups. Each company can have its own report folder and automatic job references such as HS001.
+
+HOW TO OPEN
+Main screen then Management
+
+COMPANY LIST
+Tap a company to see its jobs.
+
+CREATING A MANAGEMENT JOB (TECHNICIAN)
+1. Open the company.
+2. Tap Add management job / Create job.
+3. Enter property / address.
+4. Enter contact.
+5. Enter issue.
+6. The job is assigned to you.
+7. The next job reference is created automatically. You do not type the number.
+
+FILTERS
+Active / Follow up / Completed / All
+
+DETAIL ACTIONS
+• Create report
+• Mark follow up
+• Mark complete
+• View company reports
+• Open map
+• Save address
+• Back
+
+Status meanings match Job Work: Active, Follow Up Required, Completed.
+
+IMPORTANT
+Technicians do not create Management companies. Ask an admin if a new company is needed.]]></string>
+    <string name="help_section9" formatted="false"><![CDATA[WHAT IT IS FOR
+Contracts are recurring customer sites with planned visit frequency.
+
+HOW TO OPEN
+Main screen then Contracts
+
+HUB OPTIONS
+• Add Contract
+• View Contracts
+• Behinds List
+• Due List
+• Export options may appear for admins
+
+COLOURS ON VIEW CONTRACTS
+• Red — never visited or overdue
+• Yellow — due soon
+• Normal — up to date
+
+Stats at the top show Total / Behind / Due / Up-to-Date.
+
+MARK AS ROUTINE
+Use this for a normal scheduled visit.
+1. Find the contract.
+2. Tick Mark as Routine.
+3. Confirm Yes.
+4. Today becomes the latest routine visit.
+5. The next routine date is calculated from the visit frequency.
+6. The yearly routine total increases.
+
+MARK AS CALL OUT
+Use this for an extra visit that is not the normal routine.
+1. Tick Mark as Call Out.
+2. Confirm Yes.
+3. The call-out is recorded.
+4. The yearly call-out total increases.
+5. Important: the next routine date does not change.
+
+OTHER CONTRACT ACTIONS
+Tap a contract for Contract Options:
+• Update Last Visit
+• Create Report
+• Action Form
+• Route
+
+Also use:
+• View Reports
+• View Maps
+• Assets
+• View Visits
+• Remind me
+
+Long-press edit/delete is only available if your account allows it.
+
+VIEWING CONTRACT ASSETS
+1. Open Contracts.
+2. Open the Contract.
+3. Tap Assets.
+4. The screen shows the number of Externals, Internals, Fly Units, Insect Monitors, Moth Pots and any custom Assets recorded for the site.
+
+EDITING ASSETS
+1. Tap Edit Assets.
+2. Enter the quantity beside each Asset type.
+3. If the Asset is not listed, tap Add Custom Asset.
+4. Enter the Asset name.
+5. Enter the quantity.
+6. Tap Save Assets.
+
+Assigned technicians can edit Assets for their own Contracts.
+
+Admin and Super Admin can edit Assets for all Contracts.
+
+COMMON MISTAKES
+• Using Call Out when you meant Routine (next date will not move)
+• Creating a report but forgetting Mark as Routine / Mark as Call Out]]></string>
+    <string name="help_section10" formatted="false"><![CDATA[WHAT IT IS FOR
+Quotations create a priced PDF proposal for a customer.
+
+HOW TO OPEN
+Main screen then Create Report then choose a quotation type
+
+The main Quotes button on the home screen may be hidden. Use Create Report instead.
+
+GENERIC QUOTATION (MOST COMMON)
+1. Create Report then Generic Quotation.
+2. Enter Customer Name.
+3. Enter Customer Address.
+4. Confirm Date.
+5. Tap Issue and select the type of work.
+6. Standard quotation wording appears automatically.
+7. Review or edit the wording.
+8. Enter Base Price (euro).
+9. Optional: tap Add second issue and enter a second price.
+10. Choose VAT 13.5 percent or 23 percent.
+11. Optional: password protect the PDF.
+12. Tap Preview PDF to check, or Generate PDF to save.
+13. The quotation is saved on this phone and also stored in the company quotations area.
+14. Later: View Reports then Quotations or Cloud Quotations.
+15. Share from the PDF screen, or attach it in Email.
+
+STANDARD QUOTE WORDING
+Standard quotation options contain pre-written work descriptions. Selecting one fills the wording automatically. You can review or edit before generating the PDF.
+
+CUSTOM QUOTATION
+1. Create Report then Custom Quotation.
+2. Enter customer / company details.
+3. Type a line description and price.
+4. Tap Add Item.
+5. Add more lines as needed.
+6. Add images or signature if shown.
+7. Choose deposit options if shown.
+8. Choose VAT.
+9. Preview PDF / Generate PDF.
+
+CONTRACT QUOTATION
+1. Create Report then Contract Quotation.
+2. Choose 4 Part, 6 Part, 8 Part, or 12 Part.
+3. Enter equipment quantities and prices.
+4. Enter annual fee and other required fields.
+5. Tap Generate PDF Quote.
+
+BIRD QUOTE
+1. Create Report then Bird Quote.
+2. Enter the bird / materials details shown on screen.
+3. Generate the PDF.
+
+FINDING A QUOTATION LATER
+View Reports then Quotations (this phone)
+View Reports then Cloud Quotations (company cloud)
+Email then browse quotations when attaching files]]></string>
+    <string name="help_section11" formatted="false"><![CDATA[Billing / Invoices appears only if your account has been given invoice access.
+
+If you do not see Billing / Invoices, that is normal for most technicians.
+
+If you do see it:
+1. Open Billing / Invoices.
+2. Create an invoice if allowed.
+3. Enter customer details, template, amount, VAT, and notes.
+4. Tap Generate PDF and save.
+5. Use View PDF, Download, Email, Share, or Delete where available.]]></string>
+    <string name="help_section12" formatted="false"><![CDATA[WHAT IT IS FOR
+Commission tracks sales leads and commission.
+
+HOW TO OPEN
+Main screen then Commission (only if shown)
+
+GENERATE LEAD
+1. Tap Generate Lead.
+2. Enter premise name and address.
+3. Enter price quoted.
+4. Choose reason: Job or Contract.
+5. For Contract, commission is calculated automatically (shown with a per-quarter figure).
+6. For Job, commission may show as TBC until materials are updated later.
+7. Admins can assign the lead to a staff member.
+8. Save.
+
+VIEW LEADS
+1. Tap View Leads.
+2. Search or browse.
+3. Update materials / commission where allowed.
+4. Mark paid where your account allows.
+5. Admins may export a spreadsheet where that option is shown.]]></string>
+    <string name="help_section13" formatted="false"><![CDATA[EMAIL
+1. Main screen then Email.
+2. Enter the recipient.
+3. Enter the subject and message.
+4. Attach a report, quotation, or invoice from the browse options.
+5. Send using your phone’s email app when prompted.
+
+SHARING FROM A PDF SCREEN
+When viewing a PDF:
+• View opens it
+• Share sends it through another app on the phone
+• Download keeps a local copy in the app’s report area
+
+This is useful for WhatsApp, email apps, Drive, and similar.]]></string>
+    <string name="help_section14" formatted="false"><![CDATA[These tools appear only when your account includes them.
+
+ROUTER
+Plan a multi-stop day.
+1. Open Router.
+2. Select stops / contracts.
+3. Optimise or build the route if offered.
+4. Open maps / navigation.
+5. Save or view created routes.
+6. Create a route PDF if that option is shown.
+
+MAPS
+Create or edit a site map for a contract when Maps is shown on your account.
+
+SEARCH
+Find contracts, work, and related items when Search is shown.
+
+PDF TO WORD
+Convert a PDF to a Word document when this button is shown.
+
+MESSAGING
+Opens only if Messaging is shown on your account. If it closes immediately, your account does not have full messaging access.
+
+NOT INCLUDED FOR TECHNICIANS
+• Location Finder is not available to technician accounts
+• Work View is not normally shown to technicians on the main screen]]></string>
+    <string name="help_section15" formatted="false"><![CDATA[NEED then WHERE TO GO
+
+Completed service job
+Job Work then Completed
+
+Open service job again
+Job Work then tap the job
+
+Management job
+Management then company then Completed / Active / Follow up
+
+Job report
+Open the job then View reports
+or View Reports then Jobs Folder
+
+Management report
+Open the job / company then View company reports
+or View Reports then Management Jobs
+
+Contract report
+Contract then View Reports
+or View Reports then Contract files (cloud)
+
+Quotation
+View Reports then Quotations or Cloud Quotations
+
+Invoice
+Billing / Invoices
+
+Local PDF on this phone
+View Reports then Reports
+
+COMMON TASKS
+
+I need to create a Service Job
+Main then Job Work then Add job then fill details then Submit Job
+
+I need to create a Management Job
+Main then Management then company then Add management job then Create job
+
+I need to create a new Management Company
+Main then Management then Add management company then Save company (admin)
+
+I need to assign a technician
+Use Assigned Technician when creating, or Change technician on an existing job (admin)
+
+I need to create a report
+Main then Create Report then Service Report
+or open the job/contract and tap Create report / Create Report
+
+I need to record a follow-up
+Open the job then Mark follow up then optional Set follow-up date
+
+I need to complete a job
+Open the job then Mark complete
+
+I need to reopen a job
+Open Completed job then Reopen job (admin)
+
+I need to record a Contract Routine
+Contracts then View Contracts then Mark as Routine then Yes then create report if needed
+
+I need to record a Call Out
+Contracts then View Contracts then Mark as Call Out then Yes
+
+I need to create a quotation
+Create Report then Generic Quotation (or Custom / Bird / Contract Quotation) then Generate PDF
+
+I need to email a report
+Email then attach from browse options
+or open the PDF then Share
+
+I need to find an old report
+View Reports then choose the matching local or cloud folder
+
+I need to download a PDF
+Open the PDF list then Download or Share]]></string>
+    <string name="help_section16" formatted="false"><![CDATA[I cannot see a button
+Your account does not include that option, or you are on a limited / offline version.
+
+I cannot see another technician’s job
+Technicians normally only see their own Job Work and assigned Management jobs.
+
+My job is in the wrong filter
+Check Active, Follow ups, Completed, and All.
+
+I cannot assign another technician
+Technicians cannot reassign Job Work / Management jobs. Ask an admin.
+
+I cannot reopen a job
+Only an admin can Reopen job.
+
+I cannot find a report
+Check View Reports local folders and the matching cloud folder (Jobs Folder, Management Jobs, Contract files).
+
+I cannot open a PDF
+Try View again, re-download from cloud, or enter the password if the PDF is protected.
+
+I cannot find my quotation
+View Reports then Quotations or Cloud Quotations.
+
+I cannot see Location Finder
+Location Finder is not available to technician accounts. This is normal.
+
+I cannot see Work View / How To Use App
+Those main-screen buttons are not normally shown to technicians.
+
+Messaging opens then closes
+Your account does not have full messaging access.
+
+GENERAL
+Some options depend on your account access. Contact your administrator if you believe you should have access.
+
+GLOSSARY
+Active — job still open
+Follow Up Required — another visit is needed
+Completed — finished, but still available to open later
+Routine — normal scheduled contract visit (moves next visit date)
+Call Out — extra contract visit (does not move next routine date)
+Service Job — a Job Work job
+Management Job — a job under a management company, often with a code like HS001
+Contract — recurring customer site
+Report — PDF of work done
+Quotation — PDF price proposal
+Behind — contract visit overdue
+Due — contract visit due soon]]></string>
+    <string name="help_section17" formatted="false"><![CDATA[START OF DAY
+1. Sign in.
+2. Check Notifications.
+3. Check Job Work (Active and Follow ups).
+4. Check Management for assigned company jobs.
+5. Check your Contracts for due / behind sites.
+
+ON A JOB
+1. Open the assigned job.
+2. Check customer, address, and issue.
+3. Carry out the visit.
+4. Create report (choose Job or Management routing as required).
+5. Tap Mark follow up or Mark complete.
+6. Set follow-up date if another visit is planned.
+
+CONTRACT VISIT
+1. Find the contract.
+2. Create Report or Action Form.
+3. Tick Mark as Routine or Mark as Call Out correctly.
+4. Confirm.
+
+QUOTATION
+Create Report then Generic Quotation then fill details then Generate PDF.
+
+END OF JOB
+Confirm the PDF is saved and the job/contract status is correct.
+
+Do not use Location Finder, staff management, or owner-only tools.]]></string>
+    <string name="help_section1_tech" formatted="false"><![CDATA[WHAT THIS SECTION COVERS
+How to open the app and reach the main screen.
+
+STEPS
+1. Open the app.
+2. Enter your email address.
+3. Enter your password.
+4. Tap the login button.
+5. After a successful sign-in you arrive at the main screen.
+6. The app can remember your sign-in so you may not need to type your password every time. If you tap Logout, you will need to sign in again next time.
+
+MAIN SCREEN
+You will see a welcome message and a list of buttons. The buttons you see depend on your account. That is normal.
+
+LOGOUT
+At the bottom of the main screen, tap Logout when you have finished. On some limited versions the button may say Exit instead.
+
+LIMITED / OFFLINE VERSIONS
+Some company versions of the app open with little or no sign-in and mainly allow Create Report and View Reports. If you use one of those versions, many business buttons will not appear. That is expected.]]></string>
+    <string name="help_section1_admin" formatted="false"><![CDATA[WHAT THIS SECTION COVERS
+How to open the app and reach the main screen.
+
+STEPS
+1. Open the app.
+2. Enter your email address.
+3. Enter your password.
+4. Tap the login button.
+5. After a successful sign-in you arrive at the main screen.
+6. The app can remember your sign-in so you may not need to type your password every time. If you tap Logout, you will need to sign in again next time.
+
+MAIN SCREEN
+You will see a welcome message and a list of buttons. The buttons you see depend on your account. That is normal.
+
+LOGOUT
+At the bottom of the main screen, tap Logout when you have finished. On some limited versions the button may say Exit instead.
+
+LIMITED / OFFLINE VERSIONS
+Some company versions of the app open with little or no sign-in and mainly allow Create Report and View Reports. If you use one of those versions, many business buttons will not appear. That is expected.]]></string>
+    <string name="help_section1_generic" formatted="false"><![CDATA[WHAT THIS SECTION COVERS
+How to open the app and reach the main screen.
+
+STEPS
+1. Open the app.
+2. Enter your email address.
+3. Enter your password.
+4. Tap the login button.
+5. After a successful sign-in you arrive at the main screen.
+6. The app can remember your sign-in so you may not need to type your password every time. If you tap Logout, you will need to sign in again next time.
+
+MAIN SCREEN
+You will see a welcome message and a list of buttons. The buttons you see depend on your account. That is normal.
+
+LOGOUT
+At the bottom of the main screen, tap Logout when you have finished. On some limited versions the button may say Exit instead.
+
+LIMITED / OFFLINE VERSIONS
+Some company versions of the app open with little or no sign-in and mainly allow Create Report and View Reports. If you use one of those versions, many business buttons will not appear. That is expected.]]></string>
+    <string name="help_section2_tech" formatted="false"><![CDATA[TECHNICIAN
+You mainly work on jobs and contracts assigned to you.
+
+You can normally:
+• Create and view reports and quotations
+• Use Job Work for your own jobs
+• Use Management for jobs assigned to you
+• Service your contracts
+• Use Notifications and Email
+• Use Commission if it is shown on your screen
+
+You normally cannot:
+• Manage all staff accounts
+• See every other technician’s Job Work
+• Reopen completed jobs
+• Create Management companies
+• Use Location Finder (this is not available to technician accounts)
+
+If a button is missing, your account does not include that access. Ask your administrator if you believe something should be available.]]></string>
+    <string name="help_section2_admin" formatted="false"><![CDATA[ADMIN
+You can oversee day-to-day company work as well as your own tasks.
+
+You can normally:
+• See all Job Work and Management jobs
+• Assign and reassign technicians
+• Create Management companies
+• Reopen completed jobs
+• Use Billing / Invoices
+• Use Dashboard
+• Use Audit Logs
+• Wider Contracts access and exports where shown
+
+AUDIT LOGS
+Audit Logs shows important completed activity by staff, such as Contract visits, reports uploaded, jobs created or completed, and quotations created.
+
+Filter by staff member, by date (Today, 7 Days, 30 Days, or All), and by activity such as Reports, Contracts, Job Work, Management, Quotations, Billing, or Stock.
+
+SUPER ADMIN (APPLICATION OWNER)
+The application owner can do everything an admin can, plus staff account management, Work View on the main screen, Location Finder, How To Use App, and other owner tools.
+
+Some extra buttons only appear when that access has been turned on for the account.]]></string>
+    <string name="help_section2_generic" formatted="false"><![CDATA[TECHNICIAN
+You mainly work on jobs and contracts assigned to you.
+
+You can normally:
+• Create and view reports and quotations
+• Use Job Work for your own jobs
+• Use Management for jobs assigned to you
+• Service your contracts
+• Use Notifications and Email
+• Use Commission if it is shown on your screen
+
+You normally cannot:
+• Manage all staff accounts
+• See every other technician’s Job Work
+• Reopen completed jobs
+• Create Management companies
+• Use Location Finder (this is not available to technician accounts)
+
+If a button is missing, your account does not include that access. Ask your administrator if you believe something should be available.]]></string>
+    <string name="help_section3_tech" formatted="false"><![CDATA[The main screen is your home menu. Buttons are grouped into sections such as Quick Actions, Operations, Business, Tools, and System.
+
+BUTTONS YOU MAY SEE
+• Create Report — make service reports, quotations, agreements, and similar documents
+• View Reports — open PDFs saved on this phone or in company cloud folders
+• Job Work — your service jobs
+• Management — jobs for management companies
+• Contracts — recurring customer contracts
+• Email — write an email and attach files
+• Commission — leads and commission (only if shown)
+• Notifications — alerts and updates
+• Messaging — only if shown on your account
+• Maps — only if shown on your account
+• Router — only if shown on your account
+• Search — only if shown on your account
+• PDF to Word — only if shown on your account
+• Billing / Invoices — only if your account has been given invoice access
+• Logout — sign out
+
+IMPORTANT
+• Work View and How To Use App are not normally shown to technicians on the main screen.
+• Location Finder is not available to technician accounts.
+• Some buttons such as General Quotes, Service agreement, and ERA may be hidden on the main screen. Those options are still available inside Create Report.]]></string>
+    <string name="help_section3_admin" formatted="false"><![CDATA[The main screen is your home menu. Buttons are grouped into Quick Actions, Operations, Business, Tools, and System.
+
+COMMON BUTTONS
+• Create Report — reports, quotations, agreements, templates
+• View Reports — local and company cloud PDFs
+• Job Work — all service jobs
+• Management — management companies and their jobs
+• Contracts — recurring contracts, behinds, due lists, exports
+• Email — compose and attach PDFs
+• Commission — leads and commission
+• Notifications — alerts
+• Billing / Invoices — create and manage invoices
+• Dashboard — admin overview and user tools
+• Audit Logs — completed work by staff, filtered by person, date, and activity
+• Messaging / Maps / Router / Search / PDF to Word — only when enabled for the account
+• Logout
+
+OWNER-ONLY ON THE MAIN SCREEN (TYPICALLY)
+• Work View
+• Location Finder
+• How To Use App
+• Super Admin (staff accounts)
+
+If a button is missing, that access is not turned on for the account.]]></string>
+    <string name="help_section3_generic" formatted="false"><![CDATA[The main screen is your home menu. Buttons are grouped into sections such as Quick Actions, Operations, Business, Tools, and System.
+
+BUTTONS YOU MAY SEE
+• Create Report — make service reports, quotations, agreements, and similar documents
+• View Reports — open PDFs saved on this phone or in company cloud folders
+• Job Work — your service jobs
+• Management — jobs for management companies
+• Contracts — recurring customer contracts
+• Email — write an email and attach files
+• Commission — leads and commission (only if shown)
+• Notifications — alerts and updates
+• Messaging — only if shown on your account
+• Maps — only if shown on your account
+• Router — only if shown on your account
+• Search — only if shown on your account
+• PDF to Word — only if shown on your account
+• Billing / Invoices — only if your account has been given invoice access
+• Logout — sign out
+
+IMPORTANT
+• Work View and How To Use App are not normally shown to technicians on the main screen.
+• Location Finder is not available to technician accounts.
+• Some buttons such as General Quotes, Service agreement, and ERA may be hidden on the main screen. Those options are still available inside Create Report.]]></string>
+    <string name="help_section4_tech" formatted="false"><![CDATA[WHAT IT IS FOR
+Notifications shows alerts about work assigned to you and important updates.
+
+HOW TO OPEN
+Main screen then Notifications
+
+WHAT YOU MAY SEE
+• Job assignment updates
+• Management work updates
+• Contract updates
+• Message alerts
+• Other work reminders
+
+HOW TO USE
+1. Open Notifications.
+2. Read the list.
+3. Tap a notification when it links to a job, contract, or related screen.
+4. You can mark items as read or remove them from your own list where the app allows.
+
+You only see your own notifications.]]></string>
+    <string name="help_section4_admin" formatted="false"><![CDATA[WHAT IT IS FOR
+Notifications shows alerts about work assigned to you and important updates.
+
+HOW TO OPEN
+Main screen then Notifications
+
+WHAT YOU MAY SEE
+• Job assignment updates
+• Management work updates
+• Contract updates
+• Message alerts
+• Other work reminders
+
+HOW TO USE
+1. Open Notifications.
+2. Read the list.
+3. Tap a notification when it links to a job, contract, or related screen.
+4. You can mark items as read or remove them from your own list where the app allows.
+
+You only see your own notifications.]]></string>
+    <string name="help_section4_generic" formatted="false"><![CDATA[WHAT IT IS FOR
+Notifications shows alerts about work assigned to you and important updates.
+
+HOW TO OPEN
+Main screen then Notifications
+
+WHAT YOU MAY SEE
+• Job assignment updates
+• Management work updates
+• Contract updates
+• Message alerts
+• Other work reminders
+
+HOW TO USE
+1. Open Notifications.
+2. Read the list.
+3. Tap a notification when it links to a job, contract, or related screen.
+4. You can mark items as read or remove them from your own list where the app allows.
+
+You only see your own notifications.]]></string>
+    <string name="help_section5_tech" formatted="false"><![CDATA[WHAT IT IS FOR
+Create Report is where you make PDFs for site visits, quotations, agreements, and related documents.
+
+HOW TO OPEN
+Main screen then Create Report
+
+You will see sections such as REPORTS, QUOTATIONS, AGREEMENTS AND COMPLIANCE, and TEMPLATES.
+
+REPORT OPTIONS
+• Service Report — full visit report
+• Action Form — shorter action document
+• Contract Quotation — 4 / 6 / 8 / 12 part quotes
+• Bird Quote
+• Generic Quotation — standard wording from the built-in list
+• Custom Quotation — write your own lines
+• Service Agreements
+• ERA
+• Safety Statement
+• Custom Template — set your branding options
+• Create Custom Report — service report using your saved template
+
+SERVICE REPORT — STEP BY STEP
+1. Tap Create Report.
+2. Tap Service Report.
+3. Enter or confirm the customer / site details.
+4. Before saving, choose the correct routing option so the report goes to the right place:
+   • Job
+   • Management
+   • Contract
+5. Enter inspection findings and site details.
+6. Add recommendations. You can pick common recommendation wording where offered.
+7. Add products used.
+8. Add photos or signatures if those options are shown.
+9. Tap Preview if you want to check the PDF first.
+10. Save / generate the report.
+11. Find it later under View Reports, or from the related Job / Management / Contract screen.
+
+PRODUCT ENTRY
+1. Start typing the product name.
+2. Matching products appear underneath.
+3. Tap the correct product.
+4. If it is not in the list and manual typing is allowed, keep typing the full name.
+5. Enter the quantity and any other required details such as batch or location.
+6. Add further products the same way.
+
+IMPORTANT
+Saving a report does not automatically complete a Job Work or Management job. After the report, still use Mark follow up or Mark complete when needed.
+For contracts, still use Mark as Routine or Mark as Call Out when the visit type requires it.]]></string>
+    <string name="help_section5_admin" formatted="false"><![CDATA[WHAT IT IS FOR
+Create Report is where you make PDFs for site visits, quotations, agreements, and related documents.
+
+HOW TO OPEN
+Main screen then Create Report
+
+You will see sections such as REPORTS, QUOTATIONS, AGREEMENTS AND COMPLIANCE, and TEMPLATES.
+
+REPORT OPTIONS
+• Service Report — full visit report
+• Action Form — shorter action document
+• Contract Quotation — 4 / 6 / 8 / 12 part quotes
+• Bird Quote
+• Generic Quotation — standard wording from the built-in list
+• Custom Quotation — write your own lines
+• Service Agreements
+• ERA
+• Safety Statement
+• Custom Template — set your branding options
+• Create Custom Report — service report using your saved template
+
+SERVICE REPORT — STEP BY STEP
+1. Tap Create Report.
+2. Tap Service Report.
+3. Enter or confirm the customer / site details.
+4. Before saving, choose the correct routing option so the report goes to the right place:
+   • Job
+   • Management
+   • Contract
+5. Enter inspection findings and site details.
+6. Add recommendations. You can pick common recommendation wording where offered.
+7. Add products used.
+8. Add photos or signatures if those options are shown.
+9. Tap Preview if you want to check the PDF first.
+10. Save / generate the report.
+11. Find it later under View Reports, or from the related Job / Management / Contract screen.
+
+PRODUCT ENTRY
+1. Start typing the product name.
+2. Matching products appear underneath.
+3. Tap the correct product.
+4. If it is not in the list and manual typing is allowed, keep typing the full name.
+5. Enter the quantity and any other required details such as batch or location.
+6. Add further products the same way.
+
+IMPORTANT
+Saving a report does not automatically complete a Job Work or Management job. After the report, still use Mark follow up or Mark complete when needed.
+For contracts, still use Mark as Routine or Mark as Call Out when the visit type requires it.]]></string>
+    <string name="help_section5_generic" formatted="false"><![CDATA[WHAT IT IS FOR
+Create Report is where you make PDFs for site visits, quotations, agreements, and related documents.
+
+HOW TO OPEN
+Main screen then Create Report
+
+You will see sections such as REPORTS, QUOTATIONS, AGREEMENTS AND COMPLIANCE, and TEMPLATES.
+
+REPORT OPTIONS
+• Service Report — full visit report
+• Action Form — shorter action document
+• Contract Quotation — 4 / 6 / 8 / 12 part quotes
+• Bird Quote
+• Generic Quotation — standard wording from the built-in list
+• Custom Quotation — write your own lines
+• Service Agreements
+• ERA
+• Safety Statement
+• Custom Template — set your branding options
+• Create Custom Report — service report using your saved template
+
+SERVICE REPORT — STEP BY STEP
+1. Tap Create Report.
+2. Tap Service Report.
+3. Enter or confirm the customer / site details.
+4. Before saving, choose the correct routing option so the report goes to the right place:
+   • Job
+   • Management
+   • Contract
+5. Enter inspection findings and site details.
+6. Add recommendations. You can pick common recommendation wording where offered.
+7. Add products used.
+8. Add photos or signatures if those options are shown.
+9. Tap Preview if you want to check the PDF first.
+10. Save / generate the report.
+11. Find it later under View Reports, or from the related Job / Management / Contract screen.
+
+PRODUCT ENTRY
+1. Start typing the product name.
+2. Matching products appear underneath.
+3. Tap the correct product.
+4. If it is not in the list and manual typing is allowed, keep typing the full name.
+5. Enter the quantity and any other required details such as batch or location.
+6. Add further products the same way.
+
+IMPORTANT
+Saving a report does not automatically complete a Job Work or Management job. After the report, still use Mark follow up or Mark complete when needed.
+For contracts, still use Mark as Routine or Mark as Call Out when the visit type requires it.]]></string>
+    <string name="help_section6_tech" formatted="false"><![CDATA[WHAT IT IS FOR
+View Reports lets you open PDFs that are already on this phone or stored in company cloud folders.
+
+HOW TO OPEN
+Main screen then View Reports
+
+LOCAL REPORTS
+• Reports — PDFs saved on this phone
+• Quotations — quotation PDFs saved on this phone
+
+CLOUD AND STORAGE
+• Stored Reports
+• Report folders (cloud)
+• Contract files (cloud)
+• Cloud Quotations
+• Management Jobs
+• Jobs Folder
+
+OTHER DOCUMENTS
+• Service Agreements
+• ERA
+• View Behinds
+
+VIEW / SHARE / DOWNLOAD
+When a file list or report dialog offers these actions:
+• View — opens the PDF on the phone
+• Share — sends the PDF using another app on the phone (email, WhatsApp, Drive, and similar)
+• Download — keeps a copy in the app’s normal local report area so you can open it again from View Reports then Reports
+
+TIP
+If you cannot find a file on this phone, check the matching cloud folder. Company cloud copies remain available even if this phone’s local files were cleared.]]></string>
+    <string name="help_section6_admin" formatted="false"><![CDATA[WHAT IT IS FOR
+View Reports lets you open PDFs that are already on this phone or stored in company cloud folders.
+
+HOW TO OPEN
+Main screen then View Reports
+
+LOCAL REPORTS
+• Reports — PDFs saved on this phone
+• Quotations — quotation PDFs saved on this phone
+
+CLOUD AND STORAGE
+• Stored Reports
+• Report folders (cloud)
+• Contract files (cloud)
+• Cloud Quotations
+• Management Jobs
+• Jobs Folder
+
+OTHER DOCUMENTS
+• Service Agreements
+• ERA
+• View Behinds
+
+VIEW / SHARE / DOWNLOAD
+When a file list or report dialog offers these actions:
+• View — opens the PDF on the phone
+• Share — sends the PDF using another app on the phone (email, WhatsApp, Drive, and similar)
+• Download — keeps a copy in the app’s normal local report area so you can open it again from View Reports then Reports
+
+TIP
+If you cannot find a file on this phone, check the matching cloud folder. Company cloud copies remain available even if this phone’s local files were cleared.]]></string>
+    <string name="help_section6_generic" formatted="false"><![CDATA[WHAT IT IS FOR
+View Reports lets you open PDFs that are already on this phone or stored in company cloud folders.
+
+HOW TO OPEN
+Main screen then View Reports
+
+LOCAL REPORTS
+• Reports — PDFs saved on this phone
+• Quotations — quotation PDFs saved on this phone
+
+CLOUD AND STORAGE
+• Stored Reports
+• Report folders (cloud)
+• Contract files (cloud)
+• Cloud Quotations
+• Management Jobs
+• Jobs Folder
+
+OTHER DOCUMENTS
+• Service Agreements
+• ERA
+• View Behinds
+
+VIEW / SHARE / DOWNLOAD
+When a file list or report dialog offers these actions:
+• View — opens the PDF on the phone
+• Share — sends the PDF using another app on the phone (email, WhatsApp, Drive, and similar)
+• Download — keeps a copy in the app’s normal local report area so you can open it again from View Reports then Reports
+
+TIP
+If you cannot find a file on this phone, check the matching cloud folder. Company cloud copies remain available even if this phone’s local files were cleared.]]></string>
+    <string name="help_section7_tech" formatted="false"><![CDATA[WHAT IT IS FOR
+Job Work is for one-off / service jobs that are not Management company jobs and not normal contract routines.
+
+WHO CAN USE IT
+Technicians and admins. Technicians see jobs assigned to them. Admins see all jobs.
+
+HOW TO OPEN
+Main screen then Job Work
+
+FILTERS
+• Active — open jobs
+• Follow ups — still need another visit
+• Completed — finished jobs (still available to open later)
+• All — everything
+
+CREATING A JOB
+1. Open Job Work.
+2. Tap Add job.
+3. Enter Customer Name.
+4. Enter Address.
+5. Enter Contact.
+6. Enter Email if available.
+7. Enter Issue.
+8. Assigned Technician is normally you.
+9. Tap Submit Job.
+
+OPENING A JOB
+The list shows customer, address, technician, and status. Tap a job to open full details.
+
+ACTIONS YOU MAY SEE
+• Create report
+• View reports
+• View visit history
+• Mark follow up
+• Mark complete
+• Set follow-up date
+• Save address
+• Change email
+• Open map
+• Browse historical reports
+• Back
+
+MARK FOLLOW UP
+Use Mark follow up when today’s visit is done but the job still needs another visit.
+• The job stays open
+• Status becomes Follow Up Required
+• Visit history is updated
+• Reports already created stay available
+
+MARK COMPLETE
+Use Mark complete only when no further visit is currently required.
+• The job moves to Completed
+• It is not deleted
+• Reports and visit history remain available
+• An admin can reopen it later if needed
+
+SET FOLLOW-UP DATE
+Set follow-up date records a diary date. It is not the same as Mark follow up. Use Mark follow up when the status should move to Follow Up Required.
+
+COMMON MISTAKES
+• Creating a report but forgetting Mark follow up or Mark complete
+• Looking under Active when the job is already under Follow ups or Completed
+• Expecting to reopen a completed job without an admin]]></string>
+    <string name="help_section7_admin" formatted="false"><![CDATA[WHAT IT IS FOR
+Job Work is for one-off / service jobs that are not Management company jobs and not normal contract routines.
+
+WHO CAN USE IT
+Admins and the application owner see all jobs. Technicians see only their own.
+
+HOW TO OPEN
+Main screen then Job Work
+
+FILTERS
+• Active — open jobs
+• Follow ups — still need another visit
+• Completed — finished jobs (still available to open later)
+• All — everything
+
+CREATING A JOB
+1. Open Job Work.
+2. Tap Add job.
+3. Enter Customer Name.
+4. Enter Address.
+5. Enter Contact.
+6. Enter Email if available.
+7. Enter Issue.
+8. Choose Assigned Technician (any staff member).
+9. Tap Submit Job.
+
+OPENING A JOB
+The list shows customer, address, technician, and status. Tap a job to open full details.
+
+ACTIONS YOU MAY SEE
+• Create report
+• View reports
+• View visit history
+• Mark follow up
+• Mark complete
+• Reopen job (completed jobs)
+• Change technician
+• Set follow-up date
+• Save address
+• Change email
+• Open map
+• Browse historical reports
+• Back
+
+MARK FOLLOW UP
+Use Mark follow up when today’s visit is done but the job still needs another visit.
+• The job stays open
+• Status becomes Follow Up Required
+• Visit history is updated
+• Reports already created stay available
+
+MARK COMPLETE
+Use Mark complete only when no further visit is currently required.
+• The job moves to Completed
+• It is not deleted
+• Reports and visit history remain available
+• You can Reopen job later if needed
+
+SET FOLLOW-UP DATE
+Set follow-up date records a diary date. It is not the same as Mark follow up.
+
+ADMIN EXTRA
+• You see all jobs
+• You can reassign with Change technician
+• You can Reopen job after completion]]></string>
+    <string name="help_section7_generic" formatted="false"><![CDATA[WHAT IT IS FOR
+Job Work is for one-off / service jobs that are not Management company jobs and not normal contract routines.
+
+WHO CAN USE IT
+Technicians and admins. Technicians see jobs assigned to them. Admins see all jobs.
+
+HOW TO OPEN
+Main screen then Job Work
+
+FILTERS
+• Active — open jobs
+• Follow ups — still need another visit
+• Completed — finished jobs (still available to open later)
+• All — everything
+
+CREATING A JOB
+1. Open Job Work.
+2. Tap Add job.
+3. Enter Customer Name.
+4. Enter Address.
+5. Enter Contact.
+6. Enter Email if available.
+7. Enter Issue.
+8. Assigned Technician is normally you.
+9. Tap Submit Job.
+
+OPENING A JOB
+The list shows customer, address, technician, and status. Tap a job to open full details.
+
+ACTIONS YOU MAY SEE
+• Create report
+• View reports
+• View visit history
+• Mark follow up
+• Mark complete
+• Set follow-up date
+• Save address
+• Change email
+• Open map
+• Browse historical reports
+• Back
+
+MARK FOLLOW UP
+Use Mark follow up when today’s visit is done but the job still needs another visit.
+• The job stays open
+• Status becomes Follow Up Required
+• Visit history is updated
+• Reports already created stay available
+
+MARK COMPLETE
+Use Mark complete only when no further visit is currently required.
+• The job moves to Completed
+• It is not deleted
+• Reports and visit history remain available
+• An admin can reopen it later if needed
+
+SET FOLLOW-UP DATE
+Set follow-up date records a diary date. It is not the same as Mark follow up. Use Mark follow up when the status should move to Follow Up Required.
+
+COMMON MISTAKES
+• Creating a report but forgetting Mark follow up or Mark complete
+• Looking under Active when the job is already under Follow ups or Completed
+• Expecting to reopen a completed job without an admin]]></string>
+    <string name="help_section8_tech" formatted="false"><![CDATA[WHAT IT IS FOR
+Management is for jobs belonging to management companies / property groups. Each company can have its own report folder and automatic job references such as HS001.
+
+HOW TO OPEN
+Main screen then Management
+
+COMPANY LIST
+Tap a company to see its jobs.
+
+CREATING A MANAGEMENT JOB (TECHNICIAN)
+1. Open the company.
+2. Tap Add management job / Create job.
+3. Enter property / address.
+4. Enter contact.
+5. Enter issue.
+6. The job is assigned to you.
+7. The next job reference is created automatically. You do not type the number.
+
+FILTERS
+Active / Follow up / Completed / All
+
+DETAIL ACTIONS
+• Create report
+• Mark follow up
+• Mark complete
+• View company reports
+• Open map
+• Save address
+• Back
+
+Status meanings match Job Work: Active, Follow Up Required, Completed.
+
+IMPORTANT
+Technicians do not create Management companies. Ask an admin if a new company is needed.]]></string>
+    <string name="help_section8_admin" formatted="false"><![CDATA[WHAT IT IS FOR
+Management is for jobs belonging to management companies / property groups. Each company can have its own report folder and automatic job references such as HS001.
+
+HOW TO OPEN
+Main screen then Management
+
+ADDING A MANAGEMENT COMPANY (ADMIN / OWNER)
+1. Tap Add management company.
+2. Enter the company name and contact details.
+3. Choose or confirm the report storage folder.
+4. Enter a short 2–3 letter job code (prefix).
+5. Tap Save company.
+Once jobs have been created, the company code stays with that company.
+
+JOB REFERENCES
+Each new Management Job receives the next reference automatically, for example:
+HS001
+HS002
+HS003
+Staff do not enter the number manually.
+
+CREATING A MANAGEMENT JOB
+1. Open the company.
+2. Tap Add management job / Create job.
+3. Enter address, contact, and issue.
+4. Assign any technician (admins) or leave as yourself where appropriate.
+5. Save / Create job.
+
+FILTERS
+All / Active / Follow up / Completed
+
+DETAIL ACTIONS
+• Create report
+• Mark follow up
+• Mark complete
+• View company reports
+• Open map
+• Save address
+• Change technician
+• Reopen job
+• Delete job (admin) — removes the job record; reports already stored for the company are kept
+• Back
+
+Admins see the company’s jobs. Technicians see jobs assigned to them.]]></string>
+    <string name="help_section8_generic" formatted="false"><![CDATA[WHAT IT IS FOR
+Management is for jobs belonging to management companies / property groups. Each company can have its own report folder and automatic job references such as HS001.
+
+HOW TO OPEN
+Main screen then Management
+
+COMPANY LIST
+Tap a company to see its jobs.
+
+CREATING A MANAGEMENT JOB (TECHNICIAN)
+1. Open the company.
+2. Tap Add management job / Create job.
+3. Enter property / address.
+4. Enter contact.
+5. Enter issue.
+6. The job is assigned to you.
+7. The next job reference is created automatically. You do not type the number.
+
+FILTERS
+Active / Follow up / Completed / All
+
+DETAIL ACTIONS
+• Create report
+• Mark follow up
+• Mark complete
+• View company reports
+• Open map
+• Save address
+• Back
+
+Status meanings match Job Work: Active, Follow Up Required, Completed.
+
+IMPORTANT
+Technicians do not create Management companies. Ask an admin if a new company is needed.]]></string>
+    <string name="help_section9_tech" formatted="false"><![CDATA[WHAT IT IS FOR
+Contracts are recurring customer sites with planned visit frequency.
+
+HOW TO OPEN
+Main screen then Contracts
+
+HUB OPTIONS
+• Add Contract
+• View Contracts
+• Behinds List
+• Due List
+• Export options may appear for admins
+
+COLOURS ON VIEW CONTRACTS
+• Red — never visited or overdue
+• Yellow — due soon
+• Normal — up to date
+
+Stats at the top show Total / Behind / Due / Up-to-Date.
+
+MARK AS ROUTINE
+Use this for a normal scheduled visit.
+1. Find the contract.
+2. Tick Mark as Routine.
+3. Confirm Yes.
+4. Today becomes the latest routine visit.
+5. The next routine date is calculated from the visit frequency.
+6. The yearly routine total increases.
+
+MARK AS CALL OUT
+Use this for an extra visit that is not the normal routine.
+1. Tick Mark as Call Out.
+2. Confirm Yes.
+3. The call-out is recorded.
+4. The yearly call-out total increases.
+5. Important: the next routine date does not change.
+
+OTHER CONTRACT ACTIONS
+Tap a contract for Contract Options:
+• Update Last Visit
+• Create Report
+• Action Form
+• Route
+
+Also use:
+• View Reports
+• View Maps
+• Assets
+• View Visits
+• Remind me
+
+Long-press edit/delete is only available if your account allows it.
+
+VIEWING CONTRACT ASSETS
+1. Open Contracts.
+2. Open the Contract.
+3. Tap Assets.
+4. The screen shows the number of Externals, Internals, Fly Units, Insect Monitors, Moth Pots and any custom Assets recorded for the site.
+
+EDITING ASSETS
+1. Tap Edit Assets.
+2. Enter the quantity beside each Asset type.
+3. If the Asset is not listed, tap Add Custom Asset.
+4. Enter the Asset name.
+5. Enter the quantity.
+6. Tap Save Assets.
+
+Assigned technicians can edit Assets for their own Contracts.
+
+Admin and Super Admin can edit Assets for all Contracts.
+
+COMMON MISTAKES
+• Using Call Out when you meant Routine (next date will not move)
+• Creating a report but forgetting Mark as Routine / Mark as Call Out]]></string>
+    <string name="help_section9_admin" formatted="false"><![CDATA[WHAT IT IS FOR
+Contracts are recurring customer sites with planned visit frequency.
+
+HOW TO OPEN
+Main screen then Contracts
+
+HUB OPTIONS
+• Add Contract
+• View Contracts
+• Behinds List
+• Due List
+• Export options may appear for admins
+
+COLOURS ON VIEW CONTRACTS
+• Red — never visited or overdue
+• Yellow — due soon
+• Normal — up to date
+
+Stats at the top show Total / Behind / Due / Up-to-Date.
+
+MARK AS ROUTINE
+Use this for a normal scheduled visit.
+1. Find the contract.
+2. Tick Mark as Routine.
+3. Confirm Yes.
+4. Today becomes the latest routine visit.
+5. The next routine date is calculated from the visit frequency.
+6. The yearly routine total increases.
+
+MARK AS CALL OUT
+Use this for an extra visit that is not the normal routine.
+1. Tick Mark as Call Out.
+2. Confirm Yes.
+3. The call-out is recorded.
+4. The yearly call-out total increases.
+5. Important: the next routine date does not change.
+
+OTHER CONTRACT ACTIONS
+Tap a contract for Contract Options:
+• Update Last Visit
+• Create Report
+• Action Form
+• Route
+
+Also use:
+• View Reports
+• View Maps
+• Assets
+• View Visits
+• Remind me
+
+Long-press edit/delete is only available if your account allows it.
+
+VIEWING CONTRACT ASSETS
+1. Open Contracts.
+2. Open the Contract.
+3. Tap Assets.
+4. The screen shows the number of Externals, Internals, Fly Units, Insect Monitors, Moth Pots and any custom Assets recorded for the site.
+
+EDITING ASSETS
+1. Tap Edit Assets.
+2. Enter the quantity beside each Asset type.
+3. If the Asset is not listed, tap Add Custom Asset.
+4. Enter the Asset name.
+5. Enter the quantity.
+6. Tap Save Assets.
+
+Assigned technicians can edit Assets for their own Contracts.
+
+Admin and Super Admin can edit Assets for all Contracts.
+
+COMMON MISTAKES
+• Using Call Out when you meant Routine (next date will not move)
+• Creating a report but forgetting Mark as Routine / Mark as Call Out
+
+ADMIN EXTRA
+• Add Contract and assign a technician
+• Wider visibility of contracts
+• Export Contracts Excel / PDF tools where shown
+• Long-press edit or delete when allowed
+• Behinds List and Due List for planning]]></string>
+    <string name="help_section9_generic" formatted="false"><![CDATA[WHAT IT IS FOR
+Contracts are recurring customer sites with planned visit frequency.
+
+HOW TO OPEN
+Main screen then Contracts
+
+HUB OPTIONS
+• Add Contract
+• View Contracts
+• Behinds List
+• Due List
+• Export options may appear for admins
+
+COLOURS ON VIEW CONTRACTS
+• Red — never visited or overdue
+• Yellow — due soon
+• Normal — up to date
+
+Stats at the top show Total / Behind / Due / Up-to-Date.
+
+MARK AS ROUTINE
+Use this for a normal scheduled visit.
+1. Find the contract.
+2. Tick Mark as Routine.
+3. Confirm Yes.
+4. Today becomes the latest routine visit.
+5. The next routine date is calculated from the visit frequency.
+6. The yearly routine total increases.
+
+MARK AS CALL OUT
+Use this for an extra visit that is not the normal routine.
+1. Tick Mark as Call Out.
+2. Confirm Yes.
+3. The call-out is recorded.
+4. The yearly call-out total increases.
+5. Important: the next routine date does not change.
+
+OTHER CONTRACT ACTIONS
+Tap a contract for Contract Options:
+• Update Last Visit
+• Create Report
+• Action Form
+• Route
+
+Also use:
+• View Reports
+• View Maps
+• Assets
+• View Visits
+• Remind me
+
+Long-press edit/delete is only available if your account allows it.
+
+VIEWING CONTRACT ASSETS
+1. Open Contracts.
+2. Open the Contract.
+3. Tap Assets.
+4. The screen shows the number of Externals, Internals, Fly Units, Insect Monitors, Moth Pots and any custom Assets recorded for the site.
+
+EDITING ASSETS
+1. Tap Edit Assets.
+2. Enter the quantity beside each Asset type.
+3. If the Asset is not listed, tap Add Custom Asset.
+4. Enter the Asset name.
+5. Enter the quantity.
+6. Tap Save Assets.
+
+Assigned technicians can edit Assets for their own Contracts.
+
+Admin and Super Admin can edit Assets for all Contracts.
+
+COMMON MISTAKES
+• Using Call Out when you meant Routine (next date will not move)
+• Creating a report but forgetting Mark as Routine / Mark as Call Out]]></string>
+    <string name="help_section10_tech" formatted="false"><![CDATA[WHAT IT IS FOR
+Quotations create a priced PDF proposal for a customer.
+
+HOW TO OPEN
+Main screen then Create Report then choose a quotation type
+
+The main Quotes button on the home screen may be hidden. Use Create Report instead.
+
+GENERIC QUOTATION (MOST COMMON)
+1. Create Report then Generic Quotation.
+2. Enter Customer Name.
+3. Enter Customer Address.
+4. Confirm Date.
+5. Tap Issue and select the type of work.
+6. Standard quotation wording appears automatically.
+7. Review or edit the wording.
+8. Enter Base Price (euro).
+9. Optional: tap Add second issue and enter a second price.
+10. Choose VAT 13.5 percent or 23 percent.
+11. Optional: password protect the PDF.
+12. Tap Preview PDF to check, or Generate PDF to save.
+13. The quotation is saved on this phone and also stored in the company quotations area.
+14. Later: View Reports then Quotations or Cloud Quotations.
+15. Share from the PDF screen, or attach it in Email.
+
+STANDARD QUOTE WORDING
+Standard quotation options contain pre-written work descriptions. Selecting one fills the wording automatically. You can review or edit before generating the PDF.
+
+CUSTOM QUOTATION
+1. Create Report then Custom Quotation.
+2. Enter customer / company details.
+3. Type a line description and price.
+4. Tap Add Item.
+5. Add more lines as needed.
+6. Add images or signature if shown.
+7. Choose deposit options if shown.
+8. Choose VAT.
+9. Preview PDF / Generate PDF.
+
+CONTRACT QUOTATION
+1. Create Report then Contract Quotation.
+2. Choose 4 Part, 6 Part, 8 Part, or 12 Part.
+3. Enter equipment quantities and prices.
+4. Enter annual fee and other required fields.
+5. Tap Generate PDF Quote.
+
+BIRD QUOTE
+1. Create Report then Bird Quote.
+2. Enter the bird / materials details shown on screen.
+3. Generate the PDF.
+
+FINDING A QUOTATION LATER
+View Reports then Quotations (this phone)
+View Reports then Cloud Quotations (company cloud)
+Email then browse quotations when attaching files]]></string>
+    <string name="help_section10_admin" formatted="false"><![CDATA[WHAT IT IS FOR
+Quotations create a priced PDF proposal for a customer.
+
+HOW TO OPEN
+Main screen then Create Report then choose a quotation type
+
+The main Quotes button on the home screen may be hidden. Use Create Report instead.
+
+GENERIC QUOTATION (MOST COMMON)
+1. Create Report then Generic Quotation.
+2. Enter Customer Name.
+3. Enter Customer Address.
+4. Confirm Date.
+5. Tap Issue and select the type of work.
+6. Standard quotation wording appears automatically.
+7. Review or edit the wording.
+8. Enter Base Price (euro).
+9. Optional: tap Add second issue and enter a second price.
+10. Choose VAT 13.5 percent or 23 percent.
+11. Optional: password protect the PDF.
+12. Tap Preview PDF to check, or Generate PDF to save.
+13. The quotation is saved on this phone and also stored in the company quotations area.
+14. Later: View Reports then Quotations or Cloud Quotations.
+15. Share from the PDF screen, or attach it in Email.
+
+STANDARD QUOTE WORDING
+Standard quotation options contain pre-written work descriptions. Selecting one fills the wording automatically. You can review or edit before generating the PDF.
+
+CUSTOM QUOTATION
+1. Create Report then Custom Quotation.
+2. Enter customer / company details.
+3. Type a line description and price.
+4. Tap Add Item.
+5. Add more lines as needed.
+6. Add images or signature if shown.
+7. Choose deposit options if shown.
+8. Choose VAT.
+9. Preview PDF / Generate PDF.
+
+CONTRACT QUOTATION
+1. Create Report then Contract Quotation.
+2. Choose 4 Part, 6 Part, 8 Part, or 12 Part.
+3. Enter equipment quantities and prices.
+4. Enter annual fee and other required fields.
+5. Tap Generate PDF Quote.
+
+BIRD QUOTE
+1. Create Report then Bird Quote.
+2. Enter the bird / materials details shown on screen.
+3. Generate the PDF.
+
+FINDING A QUOTATION LATER
+View Reports then Quotations (this phone)
+View Reports then Cloud Quotations (company cloud)
+Email then browse quotations when attaching files]]></string>
+    <string name="help_section10_generic" formatted="false"><![CDATA[WHAT IT IS FOR
+Quotations create a priced PDF proposal for a customer.
+
+HOW TO OPEN
+Main screen then Create Report then choose a quotation type
+
+The main Quotes button on the home screen may be hidden. Use Create Report instead.
+
+GENERIC QUOTATION (MOST COMMON)
+1. Create Report then Generic Quotation.
+2. Enter Customer Name.
+3. Enter Customer Address.
+4. Confirm Date.
+5. Tap Issue and select the type of work.
+6. Standard quotation wording appears automatically.
+7. Review or edit the wording.
+8. Enter Base Price (euro).
+9. Optional: tap Add second issue and enter a second price.
+10. Choose VAT 13.5 percent or 23 percent.
+11. Optional: password protect the PDF.
+12. Tap Preview PDF to check, or Generate PDF to save.
+13. The quotation is saved on this phone and also stored in the company quotations area.
+14. Later: View Reports then Quotations or Cloud Quotations.
+15. Share from the PDF screen, or attach it in Email.
+
+STANDARD QUOTE WORDING
+Standard quotation options contain pre-written work descriptions. Selecting one fills the wording automatically. You can review or edit before generating the PDF.
+
+CUSTOM QUOTATION
+1. Create Report then Custom Quotation.
+2. Enter customer / company details.
+3. Type a line description and price.
+4. Tap Add Item.
+5. Add more lines as needed.
+6. Add images or signature if shown.
+7. Choose deposit options if shown.
+8. Choose VAT.
+9. Preview PDF / Generate PDF.
+
+CONTRACT QUOTATION
+1. Create Report then Contract Quotation.
+2. Choose 4 Part, 6 Part, 8 Part, or 12 Part.
+3. Enter equipment quantities and prices.
+4. Enter annual fee and other required fields.
+5. Tap Generate PDF Quote.
+
+BIRD QUOTE
+1. Create Report then Bird Quote.
+2. Enter the bird / materials details shown on screen.
+3. Generate the PDF.
+
+FINDING A QUOTATION LATER
+View Reports then Quotations (this phone)
+View Reports then Cloud Quotations (company cloud)
+Email then browse quotations when attaching files]]></string>
+    <string name="help_section11_tech" formatted="false"><![CDATA[Billing / Invoices appears only if your account has been given invoice access.
+
+If you do not see Billing / Invoices, that is normal for most technicians.
+
+If you do see it:
+1. Open Billing / Invoices.
+2. Create an invoice if allowed.
+3. Enter customer details, template, amount, VAT, and notes.
+4. Tap Generate PDF and save.
+5. Use View PDF, Download, Email, Share, or Delete where available.]]></string>
+    <string name="help_section11_admin" formatted="false"><![CDATA[WHAT IT IS FOR
+Create and manage customer invoices.
+
+WHO CAN USE IT
+Admins, the application owner, and any account given invoice access.
+
+HOW TO OPEN
+Main screen then Billing / Invoices
+
+CREATE AN INVOICE
+1. Open Billing / Invoices.
+2. Tap Create.
+3. Optionally search and select a contract.
+4. Enter customer name and email.
+5. Choose a template: Initial Setup, Monthly Maintenance, Feature Update, or Custom Invoice.
+6. Enter title, body, amount, VAT rate, and notes.
+7. Tap Generate PDF and save.
+
+AFTERWARDS
+From the list you can:
+• View PDF
+• Download
+• Email
+• Share
+• Delete (when allowed)
+
+Invoices remain in Billing / Invoices so you can find them later.]]></string>
+    <string name="help_section11_generic" formatted="false"><![CDATA[Billing / Invoices appears only if your account has been given invoice access.
+
+If you do not see Billing / Invoices, that is normal for most technicians.
+
+If you do see it:
+1. Open Billing / Invoices.
+2. Create an invoice if allowed.
+3. Enter customer details, template, amount, VAT, and notes.
+4. Tap Generate PDF and save.
+5. Use View PDF, Download, Email, Share, or Delete where available.]]></string>
+    <string name="help_section12_tech" formatted="false"><![CDATA[WHAT IT IS FOR
+Commission tracks sales leads and commission.
+
+HOW TO OPEN
+Main screen then Commission (only if shown)
+
+GENERATE LEAD
+1. Tap Generate Lead.
+2. Enter premise name and address.
+3. Enter price quoted.
+4. Choose reason: Job or Contract.
+5. For Contract, commission is calculated automatically (shown with a per-quarter figure).
+6. For Job, commission may show as TBC until materials are updated later.
+7. Admins can assign the lead to a staff member.
+8. Save.
+
+VIEW LEADS
+1. Tap View Leads.
+2. Search or browse.
+3. Update materials / commission where allowed.
+4. Mark paid where your account allows.
+5. Admins may export a spreadsheet where that option is shown.]]></string>
+    <string name="help_section12_admin" formatted="false"><![CDATA[WHAT IT IS FOR
+Commission tracks sales leads and commission.
+
+HOW TO OPEN
+Main screen then Commission (only if shown)
+
+GENERATE LEAD
+1. Tap Generate Lead.
+2. Enter premise name and address.
+3. Enter price quoted.
+4. Choose reason: Job or Contract.
+5. For Contract, commission is calculated automatically (shown with a per-quarter figure).
+6. For Job, commission may show as TBC until materials are updated later.
+7. Admins can assign the lead to a staff member.
+8. Save.
+
+VIEW LEADS
+1. Tap View Leads.
+2. Search or browse.
+3. Update materials / commission where allowed.
+4. Mark paid where your account allows.
+5. Admins may export a spreadsheet where that option is shown.]]></string>
+    <string name="help_section12_generic" formatted="false"><![CDATA[WHAT IT IS FOR
+Commission tracks sales leads and commission.
+
+HOW TO OPEN
+Main screen then Commission (only if shown)
+
+GENERATE LEAD
+1. Tap Generate Lead.
+2. Enter premise name and address.
+3. Enter price quoted.
+4. Choose reason: Job or Contract.
+5. For Contract, commission is calculated automatically (shown with a per-quarter figure).
+6. For Job, commission may show as TBC until materials are updated later.
+7. Admins can assign the lead to a staff member.
+8. Save.
+
+VIEW LEADS
+1. Tap View Leads.
+2. Search or browse.
+3. Update materials / commission where allowed.
+4. Mark paid where your account allows.
+5. Admins may export a spreadsheet where that option is shown.]]></string>
+    <string name="help_section13_tech" formatted="false"><![CDATA[EMAIL
+1. Main screen then Email.
+2. Enter the recipient.
+3. Enter the subject and message.
+4. Attach a report, quotation, or invoice from the browse options.
+5. Send using your phone’s email app when prompted.
+
+SHARING FROM A PDF SCREEN
+When viewing a PDF:
+• View opens it
+• Share sends it through another app on the phone
+• Download keeps a local copy in the app’s report area
+
+This is useful for WhatsApp, email apps, Drive, and similar.]]></string>
+    <string name="help_section13_admin" formatted="false"><![CDATA[EMAIL
+1. Main screen then Email.
+2. Enter the recipient.
+3. Enter the subject and message.
+4. Attach a report, quotation, or invoice from the browse options.
+5. Send using your phone’s email app when prompted.
+
+SHARING FROM A PDF SCREEN
+When viewing a PDF:
+• View opens it
+• Share sends it through another app on the phone
+• Download keeps a local copy in the app’s report area
+
+This is useful for WhatsApp, email apps, Drive, and similar.]]></string>
+    <string name="help_section13_generic" formatted="false"><![CDATA[EMAIL
+1. Main screen then Email.
+2. Enter the recipient.
+3. Enter the subject and message.
+4. Attach a report, quotation, or invoice from the browse options.
+5. Send using your phone’s email app when prompted.
+
+SHARING FROM A PDF SCREEN
+When viewing a PDF:
+• View opens it
+• Share sends it through another app on the phone
+• Download keeps a local copy in the app’s report area
+
+This is useful for WhatsApp, email apps, Drive, and similar.]]></string>
+    <string name="help_section14_tech" formatted="false"><![CDATA[These tools appear only when your account includes them.
+
+ROUTER
+Plan a multi-stop day.
+1. Open Router.
+2. Select stops / contracts.
+3. Optimise or build the route if offered.
+4. Open maps / navigation.
+5. Save or view created routes.
+6. Create a route PDF if that option is shown.
+
+MAPS
+Create or edit a site map for a contract when Maps is shown on your account.
+
+SEARCH
+Find contracts, work, and related items when Search is shown.
+
+PDF TO WORD
+Convert a PDF to a Word document when this button is shown.
+
+MESSAGING
+Opens only if Messaging is shown on your account. If it closes immediately, your account does not have full messaging access.
+
+NOT INCLUDED FOR TECHNICIANS
+• Location Finder is not available to technician accounts
+• Work View is not normally shown to technicians on the main screen]]></string>
+    <string name="help_section14_admin" formatted="false"><![CDATA[ROUTER
+Main then Router (when shown)
+Select stops, build or optimise the route, open navigation, save routes, and create a route PDF if offered.
+
+MAPS
+Main then Maps (when shown)
+Choose a contract, open or create a site map, draw the layout, and save / upload.
+
+SEARCH
+Main then Search (when shown)
+Find contracts and related work quickly.
+
+PDF TO WORD
+Main then PDF to Word (when shown)
+Pick a PDF and export to Word / text. Password-protected PDFs may ask for the password.
+
+MESSAGING
+Main then Messaging (when shown)
+Conversation list and chat. Full messaging screens are currently limited to the application owner.
+
+WORK VIEW
+Usually shown to the application owner on the main screen.
+Use it to review the calendar, add jobs from the calendar, and manage reminders.
+
+LOCATION FINDER
+Usually an owner tool. It shows the last known location of staff who are sharing location. See Owner Tools for more detail.
+
+DASHBOARD
+Main then Dashboard
+Admin overview, users, and related office tools.]]></string>
+    <string name="help_section14_generic" formatted="false"><![CDATA[These tools appear only when your account includes them.
+
+ROUTER
+Plan a multi-stop day.
+1. Open Router.
+2. Select stops / contracts.
+3. Optimise or build the route if offered.
+4. Open maps / navigation.
+5. Save or view created routes.
+6. Create a route PDF if that option is shown.
+
+MAPS
+Create or edit a site map for a contract when Maps is shown on your account.
+
+SEARCH
+Find contracts, work, and related items when Search is shown.
+
+PDF TO WORD
+Convert a PDF to a Word document when this button is shown.
+
+MESSAGING
+Opens only if Messaging is shown on your account. If it closes immediately, your account does not have full messaging access.
+
+NOT INCLUDED FOR TECHNICIANS
+• Location Finder is not available to technician accounts
+• Work View is not normally shown to technicians on the main screen]]></string>
+    <string name="help_section15_tech" formatted="false"><![CDATA[NEED then WHERE TO GO
+
+Completed service job
+Job Work then Completed
+
+Open service job again
+Job Work then tap the job
+
+Management job
+Management then company then Completed / Active / Follow up
+
+Job report
+Open the job then View reports
+or View Reports then Jobs Folder
+
+Management report
+Open the job / company then View company reports
+or View Reports then Management Jobs
+
+Contract report
+Contract then View Reports
+or View Reports then Contract files (cloud)
+
+Quotation
+View Reports then Quotations or Cloud Quotations
+
+Invoice
+Billing / Invoices
+
+Local PDF on this phone
+View Reports then Reports
+
+COMMON TASKS
+
+I need to create a Service Job
+Main then Job Work then Add job then fill details then Submit Job
+
+I need to create a Management Job
+Main then Management then company then Add management job then Create job
+
+I need to create a new Management Company
+Main then Management then Add management company then Save company (admin)
+
+I need to assign a technician
+Use Assigned Technician when creating, or Change technician on an existing job (admin)
+
+I need to create a report
+Main then Create Report then Service Report
+or open the job/contract and tap Create report / Create Report
+
+I need to record a follow-up
+Open the job then Mark follow up then optional Set follow-up date
+
+I need to complete a job
+Open the job then Mark complete
+
+I need to reopen a job
+Open Completed job then Reopen job (admin)
+
+I need to record a Contract Routine
+Contracts then View Contracts then Mark as Routine then Yes then create report if needed
+
+I need to record a Call Out
+Contracts then View Contracts then Mark as Call Out then Yes
+
+I need to create a quotation
+Create Report then Generic Quotation (or Custom / Bird / Contract Quotation) then Generate PDF
+
+I need to email a report
+Email then attach from browse options
+or open the PDF then Share
+
+I need to find an old report
+View Reports then choose the matching local or cloud folder
+
+I need to download a PDF
+Open the PDF list then Download or Share]]></string>
+    <string name="help_section15_admin" formatted="false"><![CDATA[NEED then WHERE TO GO
+
+Completed service job
+Job Work then Completed
+
+Open service job again
+Job Work then tap the job
+
+Management job
+Management then company then Completed / Active / Follow up
+
+Job report
+Open the job then View reports
+or View Reports then Jobs Folder
+
+Management report
+Open the job / company then View company reports
+or View Reports then Management Jobs
+
+Contract report
+Contract then View Reports
+or View Reports then Contract files (cloud)
+
+Quotation
+View Reports then Quotations or Cloud Quotations
+
+Invoice
+Billing / Invoices
+
+Local PDF on this phone
+View Reports then Reports
+
+COMMON TASKS
+
+I need to create a Service Job
+Main then Job Work then Add job then fill details then Submit Job
+
+I need to create a Management Job
+Main then Management then company then Add management job then Create job
+
+I need to create a new Management Company
+Main then Management then Add management company then Save company (admin)
+
+I need to assign a technician
+Use Assigned Technician when creating, or Change technician on an existing job (admin)
+
+I need to create a report
+Main then Create Report then Service Report
+or open the job/contract and tap Create report / Create Report
+
+I need to record a follow-up
+Open the job then Mark follow up then optional Set follow-up date
+
+I need to complete a job
+Open the job then Mark complete
+
+I need to reopen a job
+Open Completed job then Reopen job (admin)
+
+I need to record a Contract Routine
+Contracts then View Contracts then Mark as Routine then Yes then create report if needed
+
+I need to record a Call Out
+Contracts then View Contracts then Mark as Call Out then Yes
+
+I need to create a quotation
+Create Report then Generic Quotation (or Custom / Bird / Contract Quotation) then Generate PDF
+
+I need to email a report
+Email then attach from browse options
+or open the PDF then Share
+
+I need to find an old report
+View Reports then choose the matching local or cloud folder
+
+I need to download a PDF
+Open the PDF list then Download or Share]]></string>
+    <string name="help_section15_generic" formatted="false"><![CDATA[NEED then WHERE TO GO
+
+Completed service job
+Job Work then Completed
+
+Open service job again
+Job Work then tap the job
+
+Management job
+Management then company then Completed / Active / Follow up
+
+Job report
+Open the job then View reports
+or View Reports then Jobs Folder
+
+Management report
+Open the job / company then View company reports
+or View Reports then Management Jobs
+
+Contract report
+Contract then View Reports
+or View Reports then Contract files (cloud)
+
+Quotation
+View Reports then Quotations or Cloud Quotations
+
+Invoice
+Billing / Invoices
+
+Local PDF on this phone
+View Reports then Reports
+
+COMMON TASKS
+
+I need to create a Service Job
+Main then Job Work then Add job then fill details then Submit Job
+
+I need to create a Management Job
+Main then Management then company then Add management job then Create job
+
+I need to create a new Management Company
+Main then Management then Add management company then Save company (admin)
+
+I need to assign a technician
+Use Assigned Technician when creating, or Change technician on an existing job (admin)
+
+I need to create a report
+Main then Create Report then Service Report
+or open the job/contract and tap Create report / Create Report
+
+I need to record a follow-up
+Open the job then Mark follow up then optional Set follow-up date
+
+I need to complete a job
+Open the job then Mark complete
+
+I need to reopen a job
+Open Completed job then Reopen job (admin)
+
+I need to record a Contract Routine
+Contracts then View Contracts then Mark as Routine then Yes then create report if needed
+
+I need to record a Call Out
+Contracts then View Contracts then Mark as Call Out then Yes
+
+I need to create a quotation
+Create Report then Generic Quotation (or Custom / Bird / Contract Quotation) then Generate PDF
+
+I need to email a report
+Email then attach from browse options
+or open the PDF then Share
+
+I need to find an old report
+View Reports then choose the matching local or cloud folder
+
+I need to download a PDF
+Open the PDF list then Download or Share]]></string>
+    <string name="help_section16_tech" formatted="false"><![CDATA[I cannot see a button
+Your account does not include that option, or you are on a limited / offline version.
+
+I cannot see another technician’s job
+Technicians normally only see their own Job Work and assigned Management jobs.
+
+My job is in the wrong filter
+Check Active, Follow ups, Completed, and All.
+
+I cannot assign another technician
+Technicians cannot reassign Job Work / Management jobs. Ask an admin.
+
+I cannot reopen a job
+Only an admin can Reopen job.
+
+I cannot find a report
+Check View Reports local folders and the matching cloud folder (Jobs Folder, Management Jobs, Contract files).
+
+I cannot open a PDF
+Try View again, re-download from cloud, or enter the password if the PDF is protected.
+
+I cannot find my quotation
+View Reports then Quotations or Cloud Quotations.
+
+I cannot see Location Finder
+Location Finder is not available to technician accounts. This is normal.
+
+I cannot see Work View / How To Use App
+Those main-screen buttons are not normally shown to technicians.
+
+Messaging opens then closes
+Your account does not have full messaging access.
+
+GENERAL
+Some options depend on your account access. Contact your administrator if you believe you should have access.
+
+GLOSSARY
+Active — job still open
+Follow Up Required — another visit is needed
+Completed — finished, but still available to open later
+Routine — normal scheduled contract visit (moves next visit date)
+Call Out — extra contract visit (does not move next routine date)
+Service Job — a Job Work job
+Management Job — a job under a management company, often with a code like HS001
+Contract — recurring customer site
+Report — PDF of work done
+Quotation — PDF price proposal
+Behind — contract visit overdue
+Due — contract visit due soon]]></string>
+    <string name="help_section16_admin" formatted="false"><![CDATA[I cannot see a button
+The account may not have that access turned on, or the app is in offline / limited mode.
+
+I cannot see another technician’s job
+Admins should see all Job Work. Check filters and search. If still missing, confirm the job was created.
+
+My job is in the wrong filter
+Check Active, Follow ups, Completed, and All.
+
+I cannot assign another technician
+Use Change technician on the job detail screen, or assign during create.
+
+I cannot reopen a job
+Open the completed job and tap Reopen job.
+
+I cannot find a report
+Use View Reports cloud folders, or open the job/contract and use View reports / View Reports.
+
+I cannot open a PDF
+Try View, Download, or enter a password if protected.
+
+I cannot find a quotation
+View Reports then Quotations / Cloud Quotations.
+
+Staff cannot see Location Finder
+Location Finder is an owner / specially permitted tool, not a technician tool.
+
+Staff cannot see Work View
+Work View is currently shown to the application owner on the main screen.
+
+GENERAL
+Some options depend on account access. Use Super Admin / Dashboard tools to adjust staff access where you are the owner.
+
+GLOSSARY
+Active — job still open
+Follow Up Required — another visit is needed
+Completed — finished, still retrievable
+Routine — scheduled contract visit; updates next visit
+Call Out — extra visit; does not change next routine date
+Service Job — Job Work item
+Management Job — company job with automatic reference
+Contract — recurring site
+Report — visit PDF
+Quotation — priced PDF proposal
+Behind / Due — contract timing colours]]></string>
+    <string name="help_section16_generic" formatted="false"><![CDATA[I cannot see a button
+Your account does not include that option, or you are on a limited / offline version.
+
+I cannot see another technician’s job
+Technicians normally only see their own Job Work and assigned Management jobs.
+
+My job is in the wrong filter
+Check Active, Follow ups, Completed, and All.
+
+I cannot assign another technician
+Technicians cannot reassign Job Work / Management jobs. Ask an admin.
+
+I cannot reopen a job
+Only an admin can Reopen job.
+
+I cannot find a report
+Check View Reports local folders and the matching cloud folder (Jobs Folder, Management Jobs, Contract files).
+
+I cannot open a PDF
+Try View again, re-download from cloud, or enter the password if the PDF is protected.
+
+I cannot find my quotation
+View Reports then Quotations or Cloud Quotations.
+
+I cannot see Location Finder
+Location Finder is not available to technician accounts. This is normal.
+
+I cannot see Work View / How To Use App
+Those main-screen buttons are not normally shown to technicians.
+
+Messaging opens then closes
+Your account does not have full messaging access.
+
+GENERAL
+Some options depend on your account access. Contact your administrator if you believe you should have access.
+
+GLOSSARY
+Active — job still open
+Follow Up Required — another visit is needed
+Completed — finished, but still available to open later
+Routine — normal scheduled contract visit (moves next visit date)
+Call Out — extra contract visit (does not move next routine date)
+Service Job — a Job Work job
+Management Job — a job under a management company, often with a code like HS001
+Contract — recurring customer site
+Report — PDF of work done
+Quotation — PDF price proposal
+Behind — contract visit overdue
+Due — contract visit due soon]]></string>
+    <string name="help_section17_tech" formatted="false"><![CDATA[START OF DAY
+1. Sign in.
+2. Check Notifications.
+3. Check Job Work (Active and Follow ups).
+4. Check Management for assigned company jobs.
+5. Check your Contracts for due / behind sites.
+
+ON A JOB
+1. Open the assigned job.
+2. Check customer, address, and issue.
+3. Carry out the visit.
+4. Create report (choose Job or Management routing as required).
+5. Tap Mark follow up or Mark complete.
+6. Set follow-up date if another visit is planned.
+
+CONTRACT VISIT
+1. Find the contract.
+2. Create Report or Action Form.
+3. Tick Mark as Routine or Mark as Call Out correctly.
+4. Confirm.
+
+QUOTATION
+Create Report then Generic Quotation then fill details then Generate PDF.
+
+END OF JOB
+Confirm the PDF is saved and the job/contract status is correct.
+
+Do not use Location Finder, staff management, or owner-only tools.]]></string>
+    <string name="help_section17_admin" formatted="false"><![CDATA[START OF DAY
+1. Sign in.
+2. Check Notifications.
+3. Review Job Work across the team.
+4. Review Management companies and follow-ups.
+5. Check Contracts behind / due lists.
+6. Check Billing / Invoices and Commission as needed.
+
+ASSIGNING WORK
+• Create jobs and choose Assigned Technician
+• Use Change technician on existing jobs
+• Add Management companies and prefixes when needed
+
+OVERSIGHT
+• Reopen completed jobs when further visits are required
+• Confirm technicians have marked Routine / Call Out correctly
+• Use Dashboard for admin tools
+• Use exports where shown
+
+OWNER HANDOFF
+Staff accounts, Work View, Location Finder, and How To Use App are application-owner tools. Use Super Admin when you are the owner.]]></string>
+    <string name="help_section17_generic" formatted="false"><![CDATA[START OF DAY
+1. Sign in.
+2. Check Notifications.
+3. Check Job Work (Active and Follow ups).
+4. Check Management for assigned company jobs.
+5. Check your Contracts for due / behind sites.
+
+ON A JOB
+1. Open the assigned job.
+2. Check customer, address, and issue.
+3. Carry out the visit.
+4. Create report (choose Job or Management routing as required).
+5. Tap Mark follow up or Mark complete.
+6. Set follow-up date if another visit is planned.
+
+CONTRACT VISIT
+1. Find the contract.
+2. Create Report or Action Form.
+3. Tick Mark as Routine or Mark as Call Out correctly.
+4. Confirm.
+
+QUOTATION
+Create Report then Generic Quotation then fill details then Generate PDF.
+
+END OF JOB
+Confirm the PDF is saved and the job/contract status is correct.
+
+Do not use Location Finder, staff management, or owner-only tools.]]></string>
+    <string name="help_section_owner" formatted="false"><![CDATA[SUPER ADMIN / APPLICATION OWNER
+
+You have full access to the live features of the app.
+
+EXTRA MAIN-SCREEN TOOLS
+• Work View — calendar of staff work, add jobs from the calendar, reminders
+• Location Finder — last known locations for staff who are sharing location
+• How To Use App — this staff manual (with Admin view / Technician view preview)
+• Super Admin — create and edit staff accounts, roles, and access switches
+• Audit Logs — important completed activity by staff, such as Contract visits, reports uploaded, jobs created or completed, and quotations created
+
+AUDIT LOGS
+1. Open Audit Logs from the main screen.
+2. Filter by staff member.
+3. Filter by date: Today, 7 Days, 30 Days, or All.
+4. Filter by activity, such as Reports, Contracts, Job Work, Management, Quotations, Billing, or Stock.
+
+STAFF ACCOUNTS
+1. Open Super Admin.
+2. Create or edit a staff member.
+3. Set role: tech, admin, or super_admin.
+4. Turn access switches on or off (for example Search, Maps, Router, Messaging, Billing, and similar).
+5. Save.
+
+LOCATION FINDER
+1. Open Location Finder.
+2. Review staff last known locations.
+3. Select a person for more detail where offered.
+
+WORK VIEW
+1. Open Work View.
+2. Move between days or weeks.
+3. Review events for technicians.
+4. Add a job from the calendar when needed.
+5. Use reminders / widget support where set up.
+
+REMEMBER
+Technician guides should never instruct technicians to use Location Finder.
+Admin day-to-day work uses Dashboard, Job Work, Management, Contracts, Billing, and assignment tools.
+Owner tools are for system oversight and staff access.]]></string>
+    <string name="help_section8_admin_ai_key" formatted="false"><![CDATA[SUPER ADMIN / APPLICATION OWNER
+
+You have full access to the live features of the app.
+
+EXTRA MAIN-SCREEN TOOLS
+• Work View — calendar of staff work, add jobs from the calendar, reminders
+• Location Finder — last known locations for staff who are sharing location
+• How To Use App — this staff manual (with Admin view / Technician view preview)
+• Super Admin — create and edit staff accounts, roles, and access switches
+• Audit Logs — important completed activity by staff, such as Contract visits, reports uploaded, jobs created or completed, and quotations created
+
+AUDIT LOGS
+1. Open Audit Logs from the main screen.
+2. Filter by staff member.
+3. Filter by date: Today, 7 Days, 30 Days, or All.
+4. Filter by activity, such as Reports, Contracts, Job Work, Management, Quotations, Billing, or Stock.
+
+STAFF ACCOUNTS
+1. Open Super Admin.
+2. Create or edit a staff member.
+3. Set role: tech, admin, or super_admin.
+4. Turn access switches on or off (for example Search, Maps, Router, Messaging, Billing, and similar).
+5. Save.
+
+LOCATION FINDER
+1. Open Location Finder.
+2. Review staff last known locations.
+3. Select a person for more detail where offered.
+
+WORK VIEW
+1. Open Work View.
+2. Move between days or weeks.
+3. Review events for technicians.
+4. Add a job from the calendar when needed.
+5. Use reminders / widget support where set up.
+
+REMEMBER
+Technician guides should never instruct technicians to use Location Finder.
+Admin day-to-day work uses Dashboard, Job Work, Management, Contracts, Billing, and assignment tools.
+Owner tools are for system oversight and staff access.]]></string>
+</resources>

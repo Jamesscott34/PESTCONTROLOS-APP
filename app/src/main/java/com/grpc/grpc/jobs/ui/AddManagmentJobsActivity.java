@@ -1,227 +1,207 @@
 package com.grpc.grpc.jobs.ui;
 
-import com.grpc.grpc.R;
-import com.grpc.grpc.messaging.NotificationUtils;
-import com.grpc.grpc.core.SessionManager;
-import com.grpc.grpc.core.StaffDirectory;
-import android.annotation.SuppressLint;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.widget.*;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.firebase.firestore.*;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.grpc.grpc.R;
+import com.grpc.grpc.core.DemoFirebaseExpiryHelper;
+import com.grpc.grpc.core.SessionManager;
+import com.grpc.grpc.core.StaffDirectory;
+import com.grpc.grpc.jobs.data.ManagementCompanyRepository;
+import com.grpc.grpc.jobs.data.ManagementJobRepository;
+import com.grpc.grpc.messaging.NotificationUtils;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
- * AddJobsActivity.java
- *
- * This activity allows users to add job assignments to Firestore.
- * The form collects technician and customer details, validates input,
- * and stores the job in the database. It also sends a WhatsApp notification
- * to the assigned technician after a job is successfully added.
- *
- * Features:
- * - Input validation for job details
- * - Firestore database integration
- * - Automatic formatting of Irish mobile numbers
- * - WhatsApp notification for the assigned technician
- * - Navigation back to JobsActivity after submission
- *
- * Author: GRPC
+ * Creates one management job for an existing management company.
+ * The job reference is allocated in a transaction. The user does not type the number.
  */
-
 public class AddManagmentJobsActivity extends AppCompatActivity {
-    private Spinner techNameSpinner;
+
+    private TextView companyLabel;
     private TextView assignedTechLabel;
-    private EditText customerName,  customerContact, issueDetails;
+    private Spinner techNameSpinner;
+    private EditText addressInput;
+    private EditText customerContact;
+    private EditText issueDetails;
     private Button submitButton;
-    private FirebaseFirestore db;
-    private String userName,  custName,  custContact, issueDetailsText; // Stores values for WhatsApp
-    private List<StaffDirectory.OwnerOption> techOptions = new ArrayList<>();
-    private String[] techOptionKeys = new String[0]; // ContractKey values for spinner storage
-    private String[] techOptionDisplays = new String[0];
-    private boolean isAdminUser = false;
+    private String userName = "";
+    private String companyId = "";
+    private boolean isAdminUser;
+    private boolean submitting;
     private String currentTechKey = "";
     private String currentTechDisplay = "";
+    private String currentTechUid = "";
+    private final List<StaffDirectory.OwnerOption> techOptions = new ArrayList<>();
+    private final ManagementJobRepository jobs = new ManagementJobRepository();
+    private final ManagementCompanyRepository companies = new ManagementCompanyRepository();
 
-    /**
-     * Initializes the activity, retrieves user information, and sets up UI elements.
-     * Handles button click events for job submission.
-     *
-     * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
-     *                           this Bundle contains the most recent data.
-     */
-
-
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_managment_jobs);
+        if (DemoFirebaseExpiryHelper.finishIfBlocked(this)) return;
 
-        techNameSpinner = findViewById(R.id.techNameSpinner);
-        assignedTechLabel = findViewById(R.id.assignedTechLabel);
-
-        customerName = findViewById(R.id.customerName);
-
-        customerContact = findViewById(R.id.customerContact);
-        issueDetails = findViewById(R.id.issueDetails);
-        submitButton = findViewById(R.id.submitButton);
-
-        db = FirebaseFirestore.getInstance();
-
-        // Retrieve username from intent
         userName = getIntent().getStringExtra("USER_NAME");
-        if (userName == null || userName.isEmpty()) {
-            Toast.makeText(this, "Error: Username not found!", Toast.LENGTH_SHORT).show();
+        companyId = getIntent().getStringExtra("COMPANY_ID");
+        if (userName == null || userName.trim().isEmpty() || companyId == null || companyId.trim().isEmpty()) {
+            Toast.makeText(this, "Open this screen from a management company.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
-        if (techNameSpinner != null) {
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"Loading..."});
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            techNameSpinner.setAdapter(adapter);
-        }
+        companyLabel = findViewById(R.id.companyLabel);
+        assignedTechLabel = findViewById(R.id.assignedTechLabel);
+        techNameSpinner = findViewById(R.id.techNameSpinner);
+        addressInput = findViewById(R.id.addressInput);
+        customerContact = findViewById(R.id.customerContact);
+        issueDetails = findViewById(R.id.issueDetails);
+        submitButton = findViewById(R.id.submitButton);
+        submitButton.setText("Create job");
 
-        SessionManager.ensureLoaded(this, session -> runOnUiThread(() -> {
-            isAdminUser = SessionManager.isAdmin(this);
-            String key = SessionManager.getContractKey(this);
-            if (key == null || key.trim().isEmpty()) key = userName;
-            currentTechKey = key != null ? key.trim().toLowerCase() : "";
-            currentTechDisplay = StaffDirectory.capitalizeContractKey(currentTechKey);
-
-            StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
-                techOptions = options != null ? options : new ArrayList<>();
-                techOptionKeys = new String[techOptions.size()];
-                techOptionDisplays = new String[techOptions.size()];
-                for (int i = 0; i < techOptions.size(); i++) {
-                    StaffDirectory.OwnerOption o = techOptions.get(i);
-                    String ownerKey = o != null && o.ownerKey != null ? o.ownerKey.trim() : "";
-                    techOptionKeys[i] = ownerKey;
-                    techOptionDisplays[i] = StaffDirectory.capitalizeContractKey(ownerKey);
-                }
-
-                if (assignedTechLabel != null) {
-                    assignedTechLabel.setText(isAdminUser
-                            ? "Assigned Technician"
-                            : "Assigned Technician: " + (currentTechDisplay.isEmpty() ? "Unknown" : currentTechDisplay));
-                }
-                if (techNameSpinner != null) {
-                    techNameSpinner.setVisibility(isAdminUser ? android.view.View.VISIBLE : android.view.View.GONE);
-                    if (isAdminUser) {
-                        ArrayAdapter<String> a = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, techOptionDisplays);
-                        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                        techNameSpinner.setAdapter(a);
-
-                        int sel = 0;
-                        for (int i = 0; i < techOptionKeys.length; i++) {
-                            if (currentTechKey.equalsIgnoreCase(techOptionKeys[i])) { sel = i; break; }
-                        }
-                        techNameSpinner.setSelection(sel);
-                    }
-                }
-            }));
+        SessionManager.ensureLoaded(this, session -> runOnUiThread(this::bindTechnician));
+        companies.getCompany(companyId, (company, error) -> runOnUiThread(() -> {
+            if (company == null) {
+                Toast.makeText(this, "Management company not found.", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
+            if (!company.active) {
+                Toast.makeText(this, "This management company is inactive.", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
+            companyLabel.setText(company.name + "\nJob reference assigned automatically (" + company.jobPrefix + ")");
         }));
-
         submitButton.setOnClickListener(v -> validateAndSubmitJob());
     }
-    /**
-     * Validates the input fields and ensures all required fields are filled.
-     * Formats the technician and customer mobile numbers before processing.
-     * If valid, the job is submitted to Firestore.
-     */
-    private void validateAndSubmitJob() {
-        String techKey = "";
-        String techDisplay = "";
-        if (techNameSpinner != null) {
-            if (isAdminUser) {
-                int pos = techNameSpinner.getSelectedItemPosition();
-                if (pos >= 0 && pos < techOptionKeys.length) {
-                    techKey = techOptionKeys[pos] != null ? techOptionKeys[pos].trim() : "";
-                    techDisplay = pos < techOptionDisplays.length && techOptionDisplays[pos] != null
-                            ? techOptionDisplays[pos].trim()
-                            : StaffDirectory.capitalizeContractKey(techKey);
-                } else if (techNameSpinner.getSelectedItem() != null) {
-                    techDisplay = String.valueOf(techNameSpinner.getSelectedItem()).trim();
-                    techKey = techDisplay.toLowerCase();
-                }
-            } else {
-                techKey = currentTechKey;
-                techDisplay = currentTechDisplay;
-            }
-        }
-        custName = customerName.getText().toString().trim();
-        custContact = formatIrishMobile(customerContact.getText().toString().trim());
-        issueDetailsText = issueDetails.getText().toString().trim();
 
-        if (TextUtils.isEmpty(techKey) || TextUtils.isEmpty(custName) ||
-                TextUtils.isEmpty(custContact) || TextUtils.isEmpty(issueDetailsText)) {
-            Toast.makeText(this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
+    private void bindTechnician() {
+        isAdminUser = SessionManager.isAdmin(this);
+        String key = SessionManager.getContractKey(this);
+        currentTechKey = key == null ? "" : key.trim().toLowerCase(Locale.ROOT);
+        currentTechDisplay = StaffDirectory.capitalizeContractKey(currentTechKey);
+        try {
+            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                currentTechUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            }
+        } catch (Exception ignored) {
+        }
+        if (!isAdminUser && !SessionManager.isTech(this)) {
+            Toast.makeText(this, "You cannot create management jobs.", Toast.LENGTH_SHORT).show();
+            finish();
             return;
         }
+        assignedTechLabel.setText(isAdminUser
+                ? "Assigned technician"
+                : "Assigned technician: " + (currentTechDisplay.isEmpty() ? "Unknown" : currentTechDisplay)
+                + "\nAutomatically assigned to you");
+        techNameSpinner.setVisibility(isAdminUser ? View.VISIBLE : View.GONE);
+        if (!isAdminUser) return;
+        StaffDirectory.fetchOwnerOptions(this, options -> runOnUiThread(() -> {
+            techOptions.clear();
+            if (options != null) techOptions.addAll(options);
+            String[] labels = new String[techOptions.size()];
+            int selected = 0;
+            for (int i = 0; i < techOptions.size(); i++) {
+                StaffDirectory.OwnerOption option = techOptions.get(i);
+                String ownerKey = option == null || option.ownerKey == null ? "" : option.ownerKey.trim();
+                labels[i] = StaffDirectory.capitalizeContractKey(ownerKey);
+                if (currentTechKey.equalsIgnoreCase(ownerKey)) selected = i;
+            }
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(
+                    this, android.R.layout.simple_spinner_item, labels);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            techNameSpinner.setAdapter(adapter);
+            if (labels.length > 0) techNameSpinner.setSelection(selected);
+        }));
+    }
 
-        if (TextUtils.isEmpty(techDisplay)) {
+    private void validateAndSubmitJob() {
+        if (submitting) return;
+        String techKey = currentTechKey;
+        String techDisplay = currentTechDisplay;
+        String techUid = currentTechUid;
+        if (isAdminUser) {
+            int pos = techNameSpinner.getSelectedItemPosition();
+            if (pos < 0 || pos >= techOptions.size()) {
+                Toast.makeText(this, "Choose a technician.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            StaffDirectory.OwnerOption option = techOptions.get(pos);
+            techKey = option.ownerKey == null ? "" : option.ownerKey.trim().toLowerCase(Locale.ROOT);
             techDisplay = StaffDirectory.capitalizeContractKey(techKey);
+            techUid = option.staffId == null ? "" : option.staffId;
         }
+        String address = addressInput.getText().toString().trim();
+        String contact = formatIrishMobile(customerContact.getText().toString().trim());
+        String issue = issueDetails.getText().toString().trim();
+        if (TextUtils.isEmpty(techKey) || TextUtils.isEmpty(address) || TextUtils.isEmpty(contact) || TextUtils.isEmpty(issue)) {
+            Toast.makeText(this, "Enter the address, contact, issue, and technician.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        ManagementJobRepository.NewJob job = new ManagementJobRepository.NewJob();
+        job.companyId = companyId;
+        job.address = address;
+        job.contact = contact;
+        job.issue = issue;
+        job.assignedTo = techKey;
+        job.assignedTech = techDisplay;
+        job.assignedTechUid = techUid;
+        job.createdBy = userName;
+        submitting = true;
+        submitButton.setEnabled(false);
+        final String notifyKey = techKey;
+        final String notifyDisplay = techDisplay;
+        jobs.createJob(job, new ManagementJobRepository.CreatedCallback() {
+            @Override
+            public void onSuccess(ManagementJobRepository.CreatedJob created) {
+                runOnUiThread(() -> {
+                    writeInAppManagementJobNotifications(created.jobId, address, notifyDisplay, notifyKey, userName);
+                    Toast.makeText(AddManagmentJobsActivity.this, "Job created: " + created.jobRef, Toast.LENGTH_LONG).show();
+                    finish();
+                });
+            }
 
-        addJobToFirestore(techKey, techDisplay, custName, custContact, issueDetailsText);
+            @Override
+            public void onError(Exception error) {
+                runOnUiThread(() -> {
+                    submitting = false;
+                    submitButton.setEnabled(true);
+                    String message = error == null || error.getMessage() == null
+                            ? "Could not create the job." : error.getMessage();
+                    Toast.makeText(AddManagmentJobsActivity.this, message, Toast.LENGTH_LONG).show();
+                });
+            }
+        });
     }
 
-    /**
-     * Adds a management job entry to Firestore (separate from jobwork service jobs).
-     * Stores technician details, customer details, and issue information.
-     *
-     * @param techName    The name of the assigned technician.
-     * @param custName    The name of the customer.
-
-     * @param custContact The customer's contact number.
-     * @param issue       The issue description.
-
-     */
-    private void addJobToFirestore(String techKey, String techDisplay, String custName,  String custContact, String issue) {
-        Map<String, Object> job = new HashMap<>();
-        job.put("AssignedTech", techDisplay);
-        job.put("AssignedTo", techKey != null ? techKey.trim().toLowerCase() : "");
-        job.put("CustomerName", custName);
-        job.put("CustomerContact", custContact);
-        job.put("IssueDetails", issue);
-        job.put("CreatedBy", userName);
-        job.put("CreatedAt", new java.util.Date());
-
-        db.collection("ManagmentJobs").add(job)
-                .addOnSuccessListener(documentReference -> {
-                    writeInAppManagementJobNotifications(documentReference.getId(), custName, techDisplay, techKey, userName);
-                    Toast.makeText(this, "Job Added Successfully", Toast.LENGTH_SHORT).show();
-                    clearInputFields();
-                    returnToJobsActivity(); // Return to jobs first, then open WhatsApp
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Failed to add job", Toast.LENGTH_SHORT).show());
-    }
-
-    /**
-     * In-app notifications for Management jobs:
-     * - Always notify the assigned technician (if different from creator)
-     */
-    private void writeInAppManagementJobNotifications(String jobId, String customerName, String assignedTechDisplay, String assignedTechKey, String createdBy) {
+    private void writeInAppManagementJobNotifications(String jobId, String customerName, String assignedTechDisplay,
+                                                      String assignedTechKey, String createdBy) {
         try {
-            String creator = (createdBy != null && !createdBy.trim().isEmpty()) ? createdBy.trim() : "";
-            String techDisplay = assignedTechDisplay != null ? assignedTechDisplay.trim() : "";
-            String techKey = assignedTechKey != null ? assignedTechKey.trim() : "";
-
+            String creator = createdBy == null ? "" : createdBy.trim();
+            String techKey = assignedTechKey == null ? "" : assignedTechKey.trim();
             Map<String, Object> data = new HashMap<>();
             data.put("managementJobId", jobId);
-
             if (!techKey.isEmpty() && (creator.isEmpty() || !techKey.equalsIgnoreCase(creator))) {
                 NotificationUtils.writeInAppNotification(
                         techKey,
                         "management_assign_" + jobId,
-                        "🗂️ New Management Job",
+                        "New management job",
                         "Management job for " + customerName + " assigned to you",
                         "management",
                         data
@@ -230,42 +210,12 @@ public class AddManagmentJobsActivity extends AppCompatActivity {
         } catch (Exception ignored) {
         }
     }
-    /**
-     * Returns to the JobsActivity after successfully adding a job.
-     * Passes the username back to maintain user session.
-     * After navigation, triggers a WhatsApp notification to the technician.
-     */
-    private void returnToJobsActivity() {
-        Intent intent = new Intent(AddManagmentJobsActivity.this, JobsActivity.class);
-        intent.putExtra("USER_NAME", userName);
-        startActivity(intent);
-        finish();
 
-    }
-
-    /**
-     * Formats Irish mobile numbers to international format (+353).
-     * Only applies to valid Irish mobile prefixes (087, 086, 085, etc.).
-     *
-     * @param number The mobile number to be formatted.
-     * @return The formatted mobile number with the international prefix.
-     */
     private String formatIrishMobile(String number) {
-        if (number.startsWith("087") || number.startsWith("086") || number.startsWith("085") ||
-                number.startsWith("089") || number.startsWith("083") || number.startsWith("088")) {
+        if (number.startsWith("087") || number.startsWith("086") || number.startsWith("085")
+                || number.startsWith("089") || number.startsWith("083") || number.startsWith("088")) {
             return "+353" + number.substring(1);
         }
         return number;
-    }
-
-    /**
-     * Clears all input fields after a job is successfully added.
-     * Resets technician details, customer details, and issue description fields.
-     */
-    private void clearInputFields() {
-        if (techNameSpinner != null) techNameSpinner.setSelection(0);
-        customerName.setText("");
-        customerContact.setText("");
-        issueDetails.setText("");
     }
 }

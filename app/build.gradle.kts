@@ -13,8 +13,8 @@ android {
         applicationId = "com.grpc.grpc"
         minSdk = 27
         targetSdk = 35
-        versionCode = 4
-        versionName = "2.1.2"
+        versionCode = 5
+        versionName = "2.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["MAPS_API_KEY"] = project.findProperty("MAPS_API_KEY") as String? ?: ""

@@ -1,25 +1,17 @@
 package com.grpc.grpc.location.worker;
 
-import com.grpc.grpc.core.*;
-import com.grpc.grpc.location.LocationSharing;
-
 import android.content.Context;
 
 import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-
 /**
- * Deletes the current user's last location once it's older than 15 minutes.
- * Runs every 15 minutes.
+ * Previously deleted locations older than 30 minutes.
+ * Locations are now kept until the next update, including across days.
  */
 public class LastLocationCleanupWorker extends Worker {
     public static final String KEY_USER_NAME = "USER_NAME";
-
-    private static final long EXPIRE_MS = 30L * 60L * 1000L;
 
     public LastLocationCleanupWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
@@ -28,37 +20,6 @@ public class LastLocationCleanupWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        String userName = getInputData().getString(KEY_USER_NAME);
-        final String userKey = LocationSharing.userKey(userName);
-        if (userKey.isEmpty()) return Result.success();
-
-        try {
-            FirebaseFirestore db = FirebaseFirestore.getInstance();
-            DocumentSnapshot snap = com.google.android.gms.tasks.Tasks.await(
-                    db.collection(LocationSharing.COLLECTION_LAST_LOCATIONS)
-                            .document(userKey)
-                            .get(),
-                    8, java.util.concurrent.TimeUnit.SECONDS
-            );
-
-            if (snap == null || !snap.exists()) return Result.success();
-            Long ts = snap.getLong("clientTimestampMs");
-            if (ts == null) return Result.success();
-
-            long age = System.currentTimeMillis() - ts;
-            boolean isStale = age >= EXPIRE_MS;
-
-            // Mark stale but never delete — admin should always see the last known position.
-            java.util.Map<String, Object> update = new java.util.HashMap<>();
-            update.put("stale", isStale);
-            db.collection(LocationSharing.COLLECTION_LAST_LOCATIONS)
-                    .document(userKey)
-                    .set(update, com.google.firebase.firestore.SetOptions.merge());
-
-            return Result.success();
-        } catch (Exception e) {
-            return Result.retry();
-        }
+        return Result.success();
     }
 }
-

@@ -174,4 +174,33 @@ public class SiteMapEditorActivity extends AppCompatActivity {
             File pdfFile = MapsUtil.generateLandscapeMapPdf(this, companyName, address, bitmap);
             if (hasContract() && ContractStorageUploader.shouldAutoUpload(contractId)) {
                 ContractStorageUploader.uploadContractReport(
-                 
+                        pdfFile,
+                        contractId,
+                        "site_map",
+                        companyName,
+                        () -> {
+                            Toast.makeText(this, "Map saved and uploaded successfully.", Toast.LENGTH_SHORT).show();
+                            finish();
+                        },
+                        error -> {
+                            Toast.makeText(this, "Map saved locally but upload failed: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+                );
+            } else {
+                Toast.makeText(this, "Map saved successfully.", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed to save map: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private boolean hasContract() {
+        return contractId != null && !contractId.trim().isEmpty();
+    }
+
+    private String safe(String value) {
+        return value != null && !value.trim().isEmpty() ? value.trim() : "N/A";
+    }
+}
